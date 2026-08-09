@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 124aed6c493347c45a5308110da9f364, type: 3}
+  m_Name: CountrysideEnvironment
+  m_EditorClassIdentifier: Assembly-CSharp::AnimeHillRacing.CameraSystem.EnvironmentDefinition
+  environmentId: countryside
+  sky: {fileID: 21300000, guid: ced41b0fef1084b42969721c68956cb6, type: 3}
+  mountains: {fileID: 21300000, guid: a6116bcf8435eb24fb79d4b5b5310f68, type: 3}
+  mountainParallaxX: 0.2
+  mountainParallaxY: 0.04
+  mountainVisualHeight: 17
+  mountainBaseY: -4
+  pooledMountainSegments: 5
+  seamOverlap: 0.012

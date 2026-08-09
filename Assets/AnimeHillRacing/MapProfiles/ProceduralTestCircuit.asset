@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 402f850b1b7115147a1da8613198f88a, type: 3}
+  m_Name: ProceduralTestCircuit
+  m_EditorClassIdentifier: Assembly-CSharp::AnimeHillRacing.TimeTrial.CircuitDefinition
+  mapId: procedural-test-circuit
+  displayName: PROCEDURAL TEST CIRCUIT
+  supportedGameMode: 2
+  seed: 12345
+  coinRoute: {fileID: 0}
+  introEndDistance: 150
+  easyEndDistance: 500
+  normalEndDistance: 1200
+  hardEndDistance: 2500
+  targetLength: 900
+  roadWidth: 10
+  samples: 192
+  laps: 1
+  fuelEnabled: 0
+  difficulty: 1
+  shortcutChance: 0.65
+  techChance: 0.18
+  respawnPenaltySeconds: 3
+  roadMaterial: {fileID: 2100000, guid: 248944311d42efc478d9d0ad59ac05a2, type: 2}
+  shortcutMaterial: {fileID: 2100000, guid: d3b63df9a95df6f4a9e7a445f85af807, type: 2}

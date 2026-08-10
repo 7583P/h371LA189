@@ -397,10 +397,13 @@ namespace AnimeHillRacing.Vehicle
         private void SyncVisual()
         {
             if (wheelVisual == null || wheelBody == null) return;
-            Vector3 position = wheelBody.position;
+            // Rigidbody.position/rotation expose the simulation pose, while Transform exposes the
+            // interpolated render pose. Mixing simulation-pose wheels with the interpolated chassis
+            // creates a one-physics-step visual offset that grows with speed.
+            Vector3 position = wheelBody.transform.position;
             position.z = wheelVisual.position.z;
             wheelVisual.position = position;
-            wheelVisual.rotation = Quaternion.Euler(0f, 0f, wheelBody.rotation.eulerAngles.z);
+            wheelVisual.rotation = Quaternion.Euler(0f, 0f, wheelBody.transform.rotation.eulerAngles.z);
         }
 
         private void OnCollisionStay(Collision collision) => CaptureContact(collision);

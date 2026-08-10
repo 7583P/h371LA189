@@ -1122,13 +1122,23 @@ namespace AnimeHillRacing.Editor
                     Mathf.Abs(rear.localPosition.x - definition.RearWheelAnchor) > .001f ||
                     Mathf.Abs(front.localPosition.x - definition.FrontWheelAnchor) > .001f)
                     throw new System.InvalidOperationException($"{definition.displayName} visual wheels and physical anchors are misaligned.");
+                VehicleVisual2D visual = prefab.GetComponentInChildren<VehicleVisual2D>(true);
+                SpriteRenderer bodyRenderer = visual != null ? visual.BodyRenderer : null;
+                SpriteRenderer frontWheelRenderer = visual != null ? visual.FrontWheelRenderer : null;
+                SpriteRenderer rearWheelRenderer = visual != null ? visual.RearWheelRenderer : null;
+                if (bodyRenderer == null || frontWheelRenderer == null || rearWheelRenderer == null ||
+                    frontWheelRenderer.sortingLayerID != bodyRenderer.sortingLayerID ||
+                    rearWheelRenderer.sortingLayerID != bodyRenderer.sortingLayerID ||
+                    frontWheelRenderer.sortingOrder <= bodyRenderer.sortingOrder ||
+                    rearWheelRenderer.sortingOrder <= bodyRenderer.sortingOrder)
+                    throw new System.InvalidOperationException($"{definition.displayName} wheels must render on the chassis layer with a greater sorting order.");
             }
             if (Mathf.Abs(assets.jeep.FrontWheelAnchor - 1.24f) > .001f ||
                 assets.countryside.groundPhysicsMaterial != assets.groundPhysics ||
                 assets.countrysideRoad.groundPhysicsMaterial != assets.groundPhysics)
                 throw new System.InvalidOperationException("Jeep front axle or stable terrain physics material is not configured.");
             Debug.Log("Vehicle physics validation: chassis-relative joint axes, rounded zero-bounce chassis, " +
-                      "bounded suspension and visual/physical wheel anchors aligned.");
+                      "bounded suspension, visual/physical wheel anchors aligned and 2D wheels sorted above chassis.");
         }
 
         private struct SuspensionAuditResult
@@ -3415,10 +3425,10 @@ namespace AnimeHillRacing.Editor
                 new Vector3(definition.bodyVisualOffset.x, definition.bodyVisualOffset.y, 0f), definition.visualWidth, 10);
             Transform rearWheel = CreateSpriteVisual("Rear Wheel", visual, wheelSprite,
                 new Vector3(definition.rearWheelVisualPosition.x, definition.rearWheelVisualPosition.y, -.04f),
-                definition.wheelVisualDiameter, 9);
+                definition.wheelVisualDiameter, 11);
             Transform frontWheel = CreateSpriteVisual("Front Wheel", visual, wheelSprite,
                 new Vector3(definition.frontWheelVisualPosition.x, definition.frontWheelVisualPosition.y, -.04f),
-                definition.wheelVisualDiameter, 9);
+                definition.wheelVisualDiameter, 11);
             DriverDefinition defaultDriver = AssetDatabase.LoadAssetAtPath<DriverDefinition>(Root + "/VehicleData/StickmanBlack.asset");
             ArticulatedDriver2D articulated = CreateArticulatedDriver(visual, defaultDriver, definition,
                 root.GetComponent<Rigidbody>(), true);

@@ -21,6 +21,9 @@ namespace AnimeHillRacing.Vehicle
         public Transform FrontWheelSprite => frontWheelSprite;
         public Transform RearWheelSprite => rearWheelSprite;
         public Transform DriverAnchor => driverAnchor;
+        public SpriteRenderer BodyRenderer => bodyRenderer;
+        public SpriteRenderer FrontWheelRenderer => frontWheelRenderer;
+        public SpriteRenderer RearWheelRenderer => rearWheelRenderer;
 
         private void OnEnable() => ApplySavedCustomization();
 

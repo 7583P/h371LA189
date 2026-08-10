@@ -14,6 +14,9 @@ namespace AnimeHillRacing.Vehicle
     [CreateAssetMenu(menuName = "Anime Hill Racing/Vehicle Definition", fileName = "MainVehicle")]
     public sealed class VehicleDefinition : ScriptableObject
     {
+        public const int GlobalGripMaximum = 500;
+        public const float UpgradeCurveK = 2.5f;
+
         [Serializable]
         public sealed class CustomizationOption
         {
@@ -100,7 +103,7 @@ namespace AnimeHillRacing.Vehicle
             public float[] accelerationZeroToHundredSeconds =
                 { 9.5f, 9.2f, 8.9f, 8.6f, 8.3f, 8.0f, 7.7f, 7.4f, 7.1f, 6.8f, 6.5f, 6.2f, 5.9f, 5.6f, 5.4f, 5.2f };
             public float[] gripRatings =
-                { 0.85f, 0.89f, 0.93f, 0.97f, 1.01f, 1.05f, 1.09f, 1.13f, 1.17f, 1.21f, 1.24f, 1.27f, 1.30f };
+                { 80f, 120f, 160f, 200f, 240f, 280f, 320f, 355f, 390f, 420f, 450f, 478f, 500f };
             public float[] airControlTorque = { 3200f };
             public float[] airborneDownforceAcceleration = { 0f };
             [FormerlySerializedAs("fuelFullThrottleSeconds")]
@@ -233,20 +236,20 @@ namespace AnimeHillRacing.Vehicle
         {
             upgrades ??= new VehicleUpgradeState();
             upgrades.ClampTo(this);
-            float engineLevel = NormalizeTune(upgrades.engineTune, engineMaxTunes);
-            float accelerationLevel = NormalizeTune(upgrades.accelerationTune, accelerationMaxTunes);
-            float turboLevel = NormalizeTune(upgrades.turboTune, turboMaxTunes);
-            float suspensionLevel = NormalizeTune(upgrades.suspensionTune, suspensionMaxTunes);
-            float suspensionQuality = Mathf.SmoothStep(0f, 1f, suspensionLevel);
-            float airControl = TableValue(tuneTargets?.airControlTorque, upgrades.airControlTune,
-                airControlMaxTunes, airControlTorque);
-            float airborneDownforce = TableValue(tuneTargets?.airborneDownforceAcceleration,
-                upgrades.downforceTune, downforceMaxTunes, 0f);
-            float topSpeed = TableValue(tuneTargets?.engineTopSpeedKmh, upgrades.engineTune,
-                engineMaxTunes, 135f) / 3.6f;
-            float accelerationTarget = TableValue(tuneTargets?.accelerationZeroToHundredSeconds,
-                archetype == VehicleArchetype.Rally ? upgrades.turboTune : upgrades.accelerationTune,
-                archetype == VehicleArchetype.Rally ? turboMaxTunes : accelerationMaxTunes, 9.5f);
+            float engineLevel = UpgradeProgress(upgrades.engineTune, engineMaxTunes);
+            float accelerationLevel = UpgradeProgress(upgrades.accelerationTune, accelerationMaxTunes);
+            float turboLevel = UpgradeProgress(upgrades.turboTune, turboMaxTunes);
+            float suspensionQuality = UpgradeProgress(upgrades.suspensionTune, suspensionMaxTunes);
+            float gripProgress = UpgradeProgress(upgrades.gripTune, gripMaxTunes);
+            float airControl = TargetValue(tuneTargets?.airControlTorque,
+                UpgradeProgress(upgrades.airControlTune, airControlMaxTunes), airControlTorque);
+            float downforceProgress = archetype == VehicleArchetype.Formula
+                ? gripProgress : UpgradeProgress(upgrades.downforceTune, downforceMaxTunes);
+            float airborneDownforce = TargetValue(tuneTargets?.airborneDownforceAcceleration,
+                downforceProgress, 0f);
+            float topSpeed = TargetValue(tuneTargets?.engineTopSpeedKmh, engineLevel, 135f) / 3.6f;
+            float accelerationTarget = TargetValue(tuneTargets?.accelerationZeroToHundredSeconds,
+                archetype == VehicleArchetype.Rally ? turboLevel : accelerationLevel, 9.5f);
             float suspensionTravel = Mathf.Lerp(suspension.minTravel, suspension.maxTravel, suspensionQuality);
             SuspensionPhysics.GetTravelLimits(suspension, suspensionTravel,
                 out _, out float suspensionExtension);
@@ -260,11 +263,11 @@ namespace AnimeHillRacing.Vehicle
             float dampingRatio = Mathf.Lerp(suspension.dampingRatio.x,
                 suspension.dampingRatio.y, suspensionQuality);
             float resolvedDamping = 2f * Mathf.Sqrt(resolvedSpring * sprungMassPerWheel) * dampingRatio;
-            float gripRating = TableValue(tuneTargets?.gripRatings, upgrades.gripTune, gripMaxTunes, 0.75f);
-            float physicalGrip = Mathf.Lerp(grip.minGrip, grip.maxGrip,
-                Mathf.InverseLerp(.65f, .95f, gripRating));
-            float fuelDuration = TableValue(tuneTargets?.fuelRunDurationSeconds, upgrades.fuelTune,
-                fuelMaxTunes, 45f);
+            float gripRating = GripPointValue(tuneTargets?.gripRatings, gripProgress);
+            float normalizedGrip = Mathf.Clamp01(gripRating / GlobalGripMaximum);
+            float physicalGrip = Mathf.Lerp(grip.minGrip, grip.maxGrip, normalizedGrip);
+            float fuelDuration = TargetValue(tuneTargets?.fuelRunDurationSeconds,
+                UpgradeProgress(upgrades.fuelTune, fuelMaxTunes), 45f);
             float accelerationAuthority = archetype == VehicleArchetype.Rally ? turboLevel : accelerationLevel;
             float torque = Mathf.Lerp(engine.minTorqueNm, engine.maxTorqueNm, accelerationAuthority) *
                            Mathf.Lerp(.92f, 1f, engineLevel);
@@ -284,13 +287,13 @@ namespace AnimeHillRacing.Vehicle
                 progressiveSpringMultiplier = suspension.progressiveSpringMultiplier *
                                                Mathf.Lerp(.90f, 1.10f, suspensionQuality),
                 grip = physicalGrip,
-                gripRating01 = gripRating,
+                gripRating = Mathf.RoundToInt(gripRating),
+                normalizedGrip = normalizedGrip,
                 slipThreshold = grip.slipThreshold * Mathf.Lerp(1.08f, .86f,
-                    Mathf.InverseLerp(.65f, .95f, gripRating)),
+                    normalizedGrip),
                 slidingGripMultiplier = grip.slidingGripMultiplier,
                 tractionRecoveryPerSecond = grip.tractionRecoveryPerSecond *
-                                            Mathf.Lerp(.82f, 1.18f,
-                                                Mathf.InverseLerp(.65f, .95f, gripRating)),
+                                            Mathf.Lerp(.82f, 1.18f, normalizedGrip),
                 totalRunFuelDuration = fuelDuration,
                 airControlTorque = archetype == VehicleArchetype.Rally
                     ? airControl * Mathf.Lerp(1f, 1.12f, turboLevel) : airControl,
@@ -316,25 +319,15 @@ namespace AnimeHillRacing.Vehicle
 
         public VehicleUpgradeType GetTuneTypeForSlot(int slot)
         {
-            if (archetype == VehicleArchetype.Rally)
-            {
-                if (slot == 0) return VehicleUpgradeType.Engine;
-                if (slot == 1) return VehicleUpgradeType.Suspension;
-                return slot == 2 ? VehicleUpgradeType.Grip : VehicleUpgradeType.Turbo;
-            }
             if (slot == 0) return VehicleUpgradeType.Engine;
-            if (slot == 1) return VehicleUpgradeType.Acceleration;
-            if (archetype == VehicleArchetype.Formula)
-            {
-                if (slot == 2) return VehicleUpgradeType.Suspension;
-                return slot == 3 ? VehicleUpgradeType.Downforce : VehicleUpgradeType.Fuel;
-            }
+            if (slot == 1) return archetype == VehicleArchetype.Rally
+                ? VehicleUpgradeType.Turbo : VehicleUpgradeType.Acceleration;
             if (slot == 2) return VehicleUpgradeType.Suspension;
             if (slot == 3) return VehicleUpgradeType.Grip;
             return VehicleUpgradeType.Fuel;
         }
 
-        public int GetTuneSlotCount() => archetype == VehicleArchetype.Rally ? 4 : 5;
+        public int GetTuneSlotCount() => 5;
 
         public string GetTuneDisplayName(VehicleUpgradeType type)
         {
@@ -346,20 +339,34 @@ namespace AnimeHillRacing.Vehicle
                 case VehicleUpgradeType.Grip: return "GRIP";
                 case VehicleUpgradeType.AirControl: return "AIR CONTROL";
                 case VehicleUpgradeType.Downforce: return "DOWNFORCE";
-                case VehicleUpgradeType.Turbo: return "TURBO";
+                case VehicleUpgradeType.Turbo: return "ACCELERATION";
                 default: return "FUEL";
             }
         }
 
-        private static float NormalizeTune(int tune, int maximum) =>
-            maximum <= 1 ? 0f : Mathf.Clamp01((tune - 1f) / (maximum - 1f));
+        public static float UpgradeProgress(int level, int maximum)
+        {
+            if (maximum <= 0 || level <= 0) return 0f;
+            if (level >= maximum) return 1f;
+            float t = Mathf.Clamp01(level / (float)maximum);
+            float denominator = 1f - Mathf.Exp(-UpgradeCurveK);
+            return denominator <= Mathf.Epsilon ? t : (1f - Mathf.Exp(-UpgradeCurveK * t)) / denominator;
+        }
 
-        private static float TableValue(float[] values, int level, int maximum, float fallback)
+        private static float TargetValue(float[] values, float progress, float fallback)
         {
             if (values == null || values.Length == 0) return fallback;
-            if (values.Length == 1 || maximum <= 1) return values[0];
-            float normalized = Mathf.Clamp01((level - 1f) / (maximum - 1f));
-            return values[Mathf.Clamp(Mathf.RoundToInt(normalized * (values.Length - 1)), 0, values.Length - 1)];
+            if (values.Length == 1) return values[0];
+            return Mathf.Lerp(values[0], values[values.Length - 1], Mathf.Clamp01(progress));
+        }
+
+        private static float GripPointValue(float[] values, float progress)
+        {
+            float value = TargetValue(values, progress, 100f);
+            // Migrates recovered assets that still contain the previous .65-.95 rating scale in memory.
+            if (value <= 2f)
+                value = Mathf.InverseLerp(.65f, .95f, value) * GlobalGripMaximum;
+            return Mathf.Clamp(value, 0f, GlobalGripMaximum);
         }
 
         private void OnValidate()
@@ -431,7 +438,8 @@ namespace AnimeHillRacing.Vehicle
         public float damping;
         public float progressiveSpringMultiplier;
         public float grip;
-        public float gripRating01;
+        public int gripRating;
+        public float normalizedGrip;
         public float slipThreshold;
         public float slidingGripMultiplier;
         public float tractionRecoveryPerSecond;

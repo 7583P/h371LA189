@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using AnimeHillRacing.CameraSystem;
 using AnimeHillRacing.Core;
@@ -43,7 +44,25 @@ namespace AnimeHillRacing.Editor
         private const string RallyNoRoofPath = "Assets/Art/Vehicles/Rally/Vehicle/Rally_No_Roof_01.png";
         private const string RallyRoofPath = "Assets/Art/Vehicles/Rally/Vehicle/Rally_Roof_01.png";
         private const string RallyWheelPath = "Assets/Art/Vehicles/Rally/Wheels/Rally_Wheel_01.png";
-        private const string MainMenuBackgroundPath = "Assets/Art/Interface/Background_Interface.png";
+        private const string ButtonRoot = "Assets/Art/Buttons";
+        private const string MainMenuBackgroundPath = ButtonRoot + "/mainmenu.png";
+        private const string HomeButtonPath = ButtonRoot + "/home.png";
+        private const string RaceButtonPath = ButtonRoot + "/race.png";
+        private const string SettingsButtonPath = ButtonRoot + "/settings.png";
+        private const string SkinsButtonPath = ButtonRoot + "/Skins.png";
+        private const string StoreButtonPath = ButtonRoot + "/store.png";
+        private const string TuningButtonPath = ButtonRoot + "/tuning.png";
+        private const string UpgradeButtonPath = ButtonRoot + "/upgrade.png";
+        private const string VehicleButtonPath = ButtonRoot + "/vehicle_button.png";
+        private const string GameUiRoot = "Assets/Art/Game";
+        private const string BrakePedalPath = GameUiRoot + "/brake.png";
+        private const string BrakePedalPressedPath = GameUiRoot + "/brake_push.png";
+        private const string GasPedalPath = GameUiRoot + "/gas.png";
+        private const string GasPedalPressedPath = GameUiRoot + "/gas_push.png";
+        private const string RpmGaugePath = GameUiRoot + "/rpm.png";
+        private const string RpmNeedlePath = GameUiRoot + "/rpm_arrow.png";
+        private const string SpeedGaugePath = GameUiRoot + "/kmh.png";
+        private const string SpeedNeedlePath = GameUiRoot + "/kmh_arrow.png";
         private const string FuelCanPath = "Assets/Art/Collectibles/Fuel/Fuel_Can_Default.png";
         private const string Coin01Path = "Assets/Art/Collectibles/Coins/Coin_01.png";
         private const string Coin05Path = "Assets/Art/Collectibles/Coins/Coin_05.png";
@@ -74,6 +93,22 @@ namespace AnimeHillRacing.Editor
             public Sprite rallyRoof;
             public Sprite rallyWheel;
             public Sprite mainMenuBackground;
+            public Sprite homeButton;
+            public Sprite raceButton;
+            public Sprite settingsButton;
+            public Sprite skinsButton;
+            public Sprite storeButton;
+            public Sprite tuningButton;
+            public Sprite upgradeButton;
+            public Sprite vehicleButton;
+            public Sprite brakePedal;
+            public Sprite brakePedalPressed;
+            public Sprite gasPedal;
+            public Sprite gasPedalPressed;
+            public Sprite rpmGauge;
+            public Sprite rpmNeedle;
+            public Sprite speedGauge;
+            public Sprite speedNeedle;
             public Sprite fuelCan;
             public Sprite coin01;
             public Sprite coin05;
@@ -99,9 +134,14 @@ namespace AnimeHillRacing.Editor
             public PhysicsMaterial tirePhysics;
         }
 
-        [MenuItem("Anime Hill Racing/Build All Game Scenes")]
+        [MenuItem("Anime Hill Racing/Build All Game Scenes _F8")]
         public static void BuildAllGameScenes()
         {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                Debug.LogError("Exit Play Mode before rebuilding scenes.");
+                return;
+            }
             string previousScenePath = SceneManager.GetActiveScene().path;
             try
             {
@@ -125,14 +165,11 @@ namespace AnimeHillRacing.Editor
             BuiltAssets assets = CreateAssets();
             ValidateCustomizationContract(assets);
             ValidateVehiclePhysicsContract(assets);
-            ValidateSuspensionContract(assets);
             ValidateFuelSequenceContract(assets);
             ValidateCoinRouteContract(assets);
-            ValidateVehiclePerformance(assets);
-            ValidateAirControlContract(assets);
-            BuildGarage(assets);
+            BuildGarageModern(assets);
             BuildMainMenu(assets);
-            BuildPreStart(assets);
+            BuildPreStartModern(assets);
             BuildAdventure2_5D(assets);
             BuildAdventure3D(assets);
             BuildTimeTrial3D(assets);
@@ -164,11 +201,20 @@ namespace AnimeHillRacing.Editor
             BuiltAssets assets = CreateAssets();
             ValidateVehiclePhysicsContract(assets);
             ValidateSuspensionContract(assets);
-            ValidateVehiclePerformance(assets);
-            ValidateAirControlContract(assets);
             LogResolvedPhysicsProfiles(assets);
             AssetDatabase.SaveAssets();
             Debug.Log("COMPLETE VEHICLE PHYSICS AUDIT PASS");
+        }
+
+        [MenuItem("Anime Hill Racing/Validate Vehicle Performance Audit")]
+        public static void ValidateVehiclePerformanceAudit()
+        {
+            EnsureFolders();
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            BuiltAssets assets = CreateAssets();
+            ValidateVehiclePerformance(assets);
+            ValidateAirControlContract(assets);
+            Debug.Log("COMPLETE VEHICLE PERFORMANCE AUDIT PASS");
         }
 
         [MenuItem("Anime Hill Racing/Validate Countryside Geometry")]
@@ -229,6 +275,22 @@ namespace AnimeHillRacing.Editor
                 Debug.LogError("Anime Hill Racing validation failed. Review the errors above.");
         }
 
+        [MenuItem("Anime Hill Racing/Validate Gameplay Scenes")]
+        public static void ValidateGameplayScenes()
+        {
+            string[] paths = { Adventure2DPath, Adventure3DPath, TimeTrialPath };
+            bool valid = true;
+            for (int i = 0; i < paths.Length; i++)
+            {
+                Scene scene = EditorSceneManager.OpenScene(paths[i], OpenSceneMode.Single);
+                valid &= ValidateScene(scene);
+            }
+            if (!valid)
+                throw new System.InvalidOperationException("Gameplay scene validation failed.");
+            Debug.Log("GAMEPLAY SCENE VALIDATION PASS: HUD calibration, authoritative references, " +
+                      "half-screen multitouch and automatic-only transmission UI.");
+        }
+
         private static bool ValidateScene(Scene scene)
         {
             bool valid = true;
@@ -243,31 +305,21 @@ namespace AnimeHillRacing.Editor
             if (scene.name == "MainMenu")
             {
                 valid &= RequireCount(scene, mainMenus, 1, "MainMenuUI");
-                if (mainMenus.Length == 1) valid &= RequireReference(scene, mainMenus[0], "coinsText");
-                Text[] labels = SceneComponents<Text>(scene);
-                bool play = false, timeTrial = false, garage = false, tuning = false;
-                for (int i = 0; i < labels.Length; i++)
+                if (mainMenus.Length == 1)
                 {
-                    string value = labels[i] != null ? labels[i].text.Trim().ToUpperInvariant() : string.Empty;
-                    play |= value == "PLAY" || value == "PLAY / ADVENTURE";
-                    timeTrial |= value == "TIME TRIAL";
-                    garage |= value == "GARAGE" || value == "GARAGE / CUSTOMIZE";
-                    tuning |= value == "TUNING";
+                    string[] fields = { "catalog", "preview", "coinsText", "vehicleNameText" };
+                    for (int i = 0; i < fields.Length; i++) valid &= RequireReference(scene, mainMenus[0], fields[i]);
                 }
-                if (!play || !timeTrial || !garage || tuning)
-                {
-                    Debug.LogError("MainMenu navigation must expose PLAY / TIME TRIAL / GARAGE and no standalone TUNING.");
-                    valid = false;
-                }
+                valid &= RequireCount(scene, SceneComponents<GaragePreviewRenderer>(scene), 1, "selected vehicle preview");
                 Image[] images = SceneComponents<Image>(scene);
                 bool correctBackground = false;
                 Sprite expectedBackground = AssetDatabase.LoadAssetAtPath<Sprite>(MainMenuBackgroundPath);
                 for (int i = 0; i < images.Length; i++)
-                    correctBackground |= images[i] != null && images[i].name == "Background Interface" &&
+                    correctBackground |= images[i] != null && images[i].name == "Garage Background" &&
                                          images[i].sprite == expectedBackground;
                 if (!correctBackground)
                 {
-                    Debug.LogError("MainMenu must use Assets/Art/Interface/Background_Interface.png.");
+                    Debug.LogError("MainMenu must use the recovered mainmenu.png background.");
                     valid = false;
                 }
                 valid &= ValidateDisplayCamera(scene, false);
@@ -281,7 +333,10 @@ namespace AnimeHillRacing.Editor
                     string[] fields = { "catalog", "preview", "vehicleName", "categoryName", "skinSummary",
                         "wheelSummary", "driverSummary", "categoryButtons", "optionButtons", "optionImages",
                         "optionLabels", "tuningPanel", "tuningNames", "tuningLevels", "tuningValues",
-                        "tuningCosts", "tuningButtons", "tuningCoins" };
+                        "tuningCosts", "tuningButtons", "tuningCoins", "sectionTitle", "upgradeSummary",
+                        "vehiclePanel", "customizationPanel", "upgradePanel", "storePanel", "settingsPanel",
+                        "confirmationModal", "confirmationTitle", "confirmationValues", "confirmationCost",
+                        "confirmationStatus", "confirmationYes" };
                     for (int i = 0; i < fields.Length; i++) valid &= RequireReference(scene, garages[0], fields[i]);
                 }
                 valid &= ValidateDisplayCamera(scene, false);
@@ -295,17 +350,18 @@ namespace AnimeHillRacing.Editor
                     valid &= RequireReference(scene, preStarts[0], "modeText");
                     valid &= RequireReference(scene, preStarts[0], "mapText");
                     valid &= RequireReference(scene, preStarts[0], "vehicleText");
+                    valid &= RequireReference(scene, preStarts[0], "vehiclePreviewRenderer");
                     SerializedObject serialized = new SerializedObject(preStarts[0]);
                     SerializedProperty cards = serialized.FindProperty("modeCards");
                     SerializedProperty tuningPanel = serialized.FindProperty("tuningPanel");
-                    if (cards == null || cards.arraySize != 2 ||
+                    SerializedProperty panels = serialized.FindProperty("stepPanels");
+                    if (cards == null || cards.arraySize != 3 || panels == null || panels.arraySize != 2 ||
                         (tuningPanel != null && tuningPanel.objectReferenceValue != null))
                     {
-                        Debug.LogError("PreStart must contain only the two Adventure mode cards and no editable tuning panel.");
+                        Debug.LogError("PreStart must contain MODE -> VEHICLE, all three existing modes, and no tuning/transmission selector.");
                         valid = false;
                     }
                     InvokePrivate(preStarts[0], "Start");
-                    SerializedProperty panels = serialized.FindProperty("stepPanels");
                     int activePanels = 0;
                     if (panels != null)
                         for (int i = 0; i < panels.arraySize; i++)
@@ -318,14 +374,9 @@ namespace AnimeHillRacing.Editor
                         Debug.LogError($"PreStart runtime initialization must leave exactly one step visible, found {activePanels}.");
                         valid = false;
                     }
-                    Text[] labels = SceneComponents<Text>(scene);
-                    for (int i = 0; i < labels.Length; i++)
-                        if (labels[i] != null && labels[i].text.Trim().ToUpperInvariant() == "TIME TRIAL")
-                        {
-                            Debug.LogError("TIME TRIAL must not appear inside the PLAY / PreStart flow.");
-                            valid = false;
-                        }
                 }
+                valid &= RequireCount(scene, SceneComponents<GaragePreviewRenderer>(scene), 1, "selected vehicle preview");
+                valid &= RequireCount(scene, SceneComponents<ShifterUI>(scene), 0, "transmission selector");
                 valid &= ValidateDisplayCamera(scene, false);
             }
             else
@@ -338,19 +389,40 @@ namespace AnimeHillRacing.Editor
                     if (timeTrialFactories.Length == 1)
                     {
                         string[] fields = { "catalog", "input", "timeTrialManager", "circuitGenerator", "circuit",
-                            "timeTrialHud", "results", "capture", "controls", "shifter", "roadCamera" };
+                            "timeTrialHud", "results", "capture", "controls", "roadCamera" };
                         for (int i = 0; i < fields.Length; i++)
                             valid &= RequireReference(scene, timeTrialFactories[0], fields[i]);
                     }
                     valid &= RequireCount(scene, SceneComponents<TimeTrialManager>(scene), 1, "TimeTrialManager");
-                    valid &= RequireCount(scene, SceneComponents<TimeTrialHUD>(scene), 1, "TimeTrialHUD");
+                    TimeTrialHUD[] timeTrialHuds = SceneComponents<TimeTrialHUD>(scene);
+                    valid &= RequireCount(scene, timeTrialHuds, 1, "TimeTrialHUD");
+                    if (timeTrialHuds.Length == 1)
+                    {
+                        valid &= RequireReference(scene, timeTrialHuds[0], "speedNeedle");
+                        valid &= RequireReference(scene, timeTrialHuds[0], "rpmNeedle");
+                        valid &= ValidateVehicleGauge(scene, timeTrialHuds[0], "rpmNeedle", "RPM Gauge",
+                            new Vector2(-150f, 118f), new Vector2(.499694f, .357008f),
+                            new Vector2(.136906f, .202061f), 104f, 159f, -49f);
+                        valid &= ValidateVehicleGauge(scene, timeTrialHuds[0], "speedNeedle", "KMH Gauge",
+                            new Vector2(150f, 118f), new Vector2(.499704f, .316062f),
+                            new Vector2(.138627f, .166769f), 116f, 172f, -63f);
+                    }
                     valid &= RequireCount(scene, SceneComponents<TimeTrialCircuitGenerator>(scene), 1, "TimeTrialCircuitGenerator");
-                    valid &= RequireCount(scene, SceneComponents<ShifterUI>(scene), 1, "ShifterUI");
+                    valid &= RequireCount(scene, SceneComponents<ShifterUI>(scene), 0, "manual transmission selector");
                     Text[] timeTrialLabels = SceneComponents<Text>(scene);
                     bool hasJump = false;
                     for (int i = 0; i < timeTrialLabels.Length; i++)
+                    {
                         hasJump |= timeTrialLabels[i] != null &&
                                    timeTrialLabels[i].text.Contains("HORIZONTAL JUMP");
+                        string objectName = timeTrialLabels[i] != null
+                            ? timeTrialLabels[i].name.ToUpperInvariant() : string.Empty;
+                        if (objectName == "GEAR" || objectName == "TRANSMISSION")
+                        {
+                            Debug.LogError($"{scene.name}: legacy {objectName} HUD text still exists.");
+                            valid = false;
+                        }
+                    }
                     CircuitDefinition builtCircuit = AssetDatabase.LoadAssetAtPath<CircuitDefinition>(
                         Root + "/MapProfiles/ProceduralTestCircuit.asset");
                     if (!hasJump || builtCircuit == null || builtCircuit.laps != 1)
@@ -368,7 +440,7 @@ namespace AnimeHillRacing.Editor
                 if (factories.Length == 1)
                 {
                     string[] factoryFields = { "catalog", "input", "gameManager", "gameplayHud", "results",
-                        "capture", "controls", "shifter", "pickupPool" };
+                        "capture", "controls", "pickupPool" };
                     for (int i = 0; i < factoryFields.Length; i++)
                         valid &= RequireReference(scene, factories[0], factoryFields[i]);
                     string[] modeFields = scene.name == "Adventure2_5D"
@@ -381,7 +453,7 @@ namespace AnimeHillRacing.Editor
                 {
                     string[] fields = { "distanceText", "bestText", "coinsText", "coinIcon", "nextFuelText",
                         "nextFuelIcon", "fuelText", "fuelIcon", "fuelFill",
-                        "speedText", "rpmText", "gearText", "transmissionText", "debugPanel", "debugText" };
+                        "speedNeedle", "rpmNeedle", "debugPanel", "debugText" };
                     for (int i = 0; i < fields.Length; i++) valid &= RequireReference(scene, huds[0], fields[i]);
                     Image fuelFill = new SerializedObject(huds[0]).FindProperty("fuelFill")?.objectReferenceValue as Image;
                     if (fuelFill == null || fuelFill.type != Image.Type.Filled || fuelFill.sprite == null)
@@ -389,6 +461,21 @@ namespace AnimeHillRacing.Editor
                         Debug.LogError($"{scene.name}: Fuel Fill requires a sprite-backed Filled Image.");
                         valid = false;
                     }
+                    Text[] hudLabels = huds[0].GetComponentsInChildren<Text>(true);
+                    for (int i = 0; i < hudLabels.Length; i++)
+                    {
+                        string objectName = hudLabels[i].name.ToUpperInvariant();
+                        if (objectName != "RPM" && objectName != "SPEED" && objectName != "GEAR" &&
+                            objectName != "TRANSMISSION") continue;
+                        Debug.LogError($"{scene.name}: legacy {objectName} HUD text still exists.");
+                        valid = false;
+                    }
+                    valid &= ValidateVehicleGauge(scene, huds[0], "rpmNeedle", "RPM Gauge",
+                        new Vector2(-150f, 118f), new Vector2(.499694f, .357008f),
+                        new Vector2(.136906f, .202061f), 104f, 159f, -49f);
+                    valid &= ValidateVehicleGauge(scene, huds[0], "speedNeedle", "KMH Gauge",
+                        new Vector2(150f, 118f), new Vector2(.499704f, .316062f),
+                        new Vector2(.138627f, .166769f), 116f, 172f, -63f);
                 }
                 if (scene.name == "Adventure2_5D")
                 {
@@ -417,6 +504,73 @@ namespace AnimeHillRacing.Editor
                             Debug.LogError($"{scene.name}: Results photo must be at least 560 px wide.");
                             valid = false;
                         }
+                    }
+                    HoldButton[] touchZones = SceneComponents<HoldButton>(scene);
+                    if (touchZones.Length != 2)
+                    {
+                        Debug.LogError($"{scene.name}: expected exactly two independent Brake/Gas touch zones, found {touchZones.Length}.");
+                        valid = false;
+                    }
+                    for (int i = 0; i < touchZones.Length; i++)
+                    {
+                        valid &= RequireReference(scene, touchZones[i], "visual");
+                        valid &= RequireReference(scene, touchZones[i], "normalSprite");
+                        valid &= RequireReference(scene, touchZones[i], "pressedSprite");
+                        RectTransform zone = touchZones[i].transform as RectTransform;
+                        bool brakeZone = touchZones[i].name.StartsWith("Brake");
+                        Vector2 expectedMin = brakeZone ? Vector2.zero : new Vector2(.5f, 0f);
+                        Vector2 expectedMax = brakeZone ? new Vector2(.5f, 1f) : Vector2.one;
+                        if (zone == null || Vector2.Distance(zone.anchorMin, expectedMin) > .001f ||
+                            Vector2.Distance(zone.anchorMax, expectedMax) > .001f)
+                        {
+                            Debug.LogError($"{scene.name}: {touchZones[i].name} must cover its exact half of the screen.");
+                            valid = false;
+                        }
+                        SerializedProperty visualProperty = new SerializedObject(touchZones[i]).FindProperty("visual");
+                        Image pedalVisual = visualProperty?.objectReferenceValue as Image;
+                        if (pedalVisual == null || Vector2.Distance(pedalVisual.rectTransform.sizeDelta,
+                                new Vector2(265f, 334f)) > .1f || !pedalVisual.preserveAspect)
+                        {
+                            Debug.LogError($"{scene.name}: {touchZones[i].name} visual must be 265x334 with preserved aspect ratio.");
+                            valid = false;
+                        }
+                    }
+                    VehicleInputController[] touchInputs = SceneComponents<VehicleInputController>(scene);
+                    EventSystem[] eventSystems = SceneComponents<EventSystem>(scene);
+                    if (touchZones.Length == 2 && touchInputs.Length == 1 && eventSystems.Length == 1)
+                    {
+                        HoldButton brake = touchZones[0].name.StartsWith("Brake") ? touchZones[0] : touchZones[1];
+                        HoldButton gas = brake == touchZones[0] ? touchZones[1] : touchZones[0];
+                        var brakePointer = new PointerEventData(eventSystems[0]) { pointerId = 101 };
+                        var gasPointer = new PointerEventData(eventSystems[0]) { pointerId = 202 };
+                        FieldInfo brakeState = typeof(VehicleInputController).GetField("touchBrake",
+                            BindingFlags.Instance | BindingFlags.NonPublic);
+                        FieldInfo gasState = typeof(VehicleInputController).GetField("touchGas",
+                            BindingFlags.Instance | BindingFlags.NonPublic);
+                        bool hasTouchState = brakeState != null && gasState != null;
+                        brake.OnPointerDown(brakePointer);
+                        gas.OnPointerDown(gasPointer);
+                        bool simultaneous = hasTouchState &&
+                                            (bool)brakeState.GetValue(touchInputs[0]) &&
+                                            (bool)gasState.GetValue(touchInputs[0]);
+                        brake.OnPointerUp(brakePointer);
+                        bool independentRelease = hasTouchState &&
+                                                  !(bool)brakeState.GetValue(touchInputs[0]) &&
+                                                  (bool)gasState.GetValue(touchInputs[0]);
+                        gas.OnPointerUp(gasPointer);
+                        bool fullyReleased = hasTouchState &&
+                                             !(bool)brakeState.GetValue(touchInputs[0]) &&
+                                             !(bool)gasState.GetValue(touchInputs[0]);
+                        if (!simultaneous || !independentRelease || !fullyReleased)
+                        {
+                            Debug.LogError($"{scene.name}: Brake/Gas multitouch independence test failed.");
+                            valid = false;
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogError($"{scene.name}: touch input test requires 2 zones, 1 input and 1 EventSystem.");
+                        valid = false;
                     }
                 }
                 else if (scene.name == "Adventure3D")
@@ -623,6 +777,140 @@ namespace AnimeHillRacing.Editor
             return false;
         }
 
+        [MenuItem("Anime Hill Racing/Validate Wheel Stability Diagnostics")]
+        public static void ValidateWheelStabilityDiagnostics()
+        {
+            EnsureFolders();
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            BuiltAssets assets = CreateAssets();
+            ValidateVehiclePhysicsContract(assets);
+            ValidateTerrainSeamContinuity(assets.countryside);
+            VehicleDefinition[] vehicles = { assets.jeep, assets.formula, assets.rally };
+            var failures = new List<string>();
+            for (int v = 0; v < vehicles.Length; v++)
+            {
+                int maximum = Mathf.Max(0, vehicles[v].suspensionMaxTunes);
+                int[] levels = { 0, maximum / 2, maximum };
+                for (int i = 0; i < levels.Length; i++)
+                {
+                    if (i > 0 && levels[i] == levels[i - 1]) continue;
+                    WheelStabilityResult result = SimulateWheelStability(vehicles[v], levels[i]);
+                    Debug.Log($"Wheel stability {vehicles[v].displayName} L{levels[i]} | " +
+                              $"axis={result.maximumAxisDrift:0.0000}deg, anchors={result.maximumAnchorDrift:0.000000}m, " +
+                              $"settledSpan={result.settledCompressionSpan:P2}, relWheelV={result.maximumRelativeWheelVelocity:0.000}m/s, " +
+                              $"phaseV={result.stationaryRelativeWheelVelocity:0.000}/{result.coastRelativeWheelVelocity:0.000}/" +
+                              $"{result.seamRelativeWheelVelocity:0.000}/{result.motorRelativeWheelVelocity:0.000}/" +
+                              $"{result.reverseRelativeWheelVelocity:0.000}m/s, " +
+                              $"chassisV={result.maximumChassisVerticalVelocity:0.000}m/s, " +
+                              $"travelExcess={result.maximumTravelExcess:0.0000}m, motor+reverse+5/20/40/80kmh=RUN.");
+                    if (result.maximumAxisDrift > .02f) failures.Add($"{vehicles[v].displayName} L{levels[i]} axis drift");
+                    if (result.maximumAnchorDrift > .0001f) failures.Add($"{vehicles[v].displayName} L{levels[i]} anchor drift");
+                    if (result.settledCompressionSpan > .10f) failures.Add($"{vehicles[v].displayName} L{levels[i]} stationary jitter");
+                    if (result.maximumRelativeWheelVelocity > 2.5f) failures.Add($"{vehicles[v].displayName} L{levels[i]} wheel velocity spike");
+                    if (result.maximumChassisVerticalVelocity > 1.5f) failures.Add($"{vehicles[v].displayName} L{levels[i]} chassis vertical spike");
+                    if (result.maximumTravelExcess > .04f) failures.Add($"{vehicles[v].displayName} L{levels[i]} joint over-travel");
+                }
+            }
+            if (failures.Count > 0)
+                throw new System.InvalidOperationException("WHEEL STABILITY DIAGNOSTICS FAILED: " +
+                                                           string.Join("; ", failures));
+            Debug.Log("WHEEL STABILITY DIAGNOSTICS PASS: JEEP/FORMULA/RALLY level 0/mid/max, " +
+                      "stationary, motor, reverse, 5/20/40/80 km/h and a collider seam.");
+        }
+
+        [MenuItem("Anime Hill Racing/Capture HUD Calibration Frames")]
+        public static void CaptureHudCalibrationFrames()
+        {
+            Scene scene = EditorSceneManager.OpenScene(Adventure2DPath, OpenSceneMode.Single);
+            Canvas canvas = SceneComponents<Canvas>(scene).FirstOrDefault();
+            GameplayHUD hud = SceneComponents<GameplayHUD>(scene).FirstOrDefault();
+            Camera camera = SceneComponents<Camera>(scene).FirstOrDefault(c => c.CompareTag("MainCamera"));
+            if (canvas == null || hud == null || camera == null)
+                throw new System.InvalidOperationException("Adventure2_5D HUD capture dependencies are missing.");
+            RectTransform rpm = new SerializedObject(hud).FindProperty("rpmNeedle")?.objectReferenceValue as RectTransform;
+            RectTransform speed = new SerializedObject(hud).FindProperty("speedNeedle")?.objectReferenceValue as RectTransform;
+            if (rpm == null || speed == null)
+                throw new System.InvalidOperationException("HUD needles are not connected for calibration capture.");
+
+            RenderMode oldRenderMode = canvas.renderMode;
+            Camera oldCanvasCamera = canvas.worldCamera;
+            RenderTexture oldTarget = camera.targetTexture;
+            var target = new RenderTexture(1920, 1080, 24, RenderTextureFormat.ARGB32);
+            var image = new Texture2D(1920, 1080, TextureFormat.RGBA32, false);
+            canvas.renderMode = RenderMode.ScreenSpaceCamera;
+            canvas.worldCamera = camera;
+            canvas.planeDistance = 1f;
+            camera.targetTexture = target;
+            string directory = Path.Combine(Path.GetTempPath(), "AnimeHillRacing_HUD_Calibration");
+            Directory.CreateDirectory(directory);
+            for (int sample = 0; sample <= 4; sample++)
+            {
+                float normalized = sample * .25f;
+                rpm.localRotation = Quaternion.Euler(0f, 0f, Mathf.Lerp(159f, -49f, normalized));
+                speed.localRotation = Quaternion.Euler(0f, 0f, Mathf.Lerp(172f, -63f, normalized));
+                Canvas.ForceUpdateCanvases();
+                camera.Render();
+                RenderTexture.active = target;
+                image.ReadPixels(new Rect(0f, 0f, 1920f, 1080f), 0, 0, false);
+                image.Apply(false, false);
+                File.WriteAllBytes(Path.Combine(directory, $"hud_{sample * 25:000}.png"), image.EncodeToPNG());
+            }
+            RenderTexture.active = null;
+            camera.targetTexture = oldTarget;
+            canvas.worldCamera = oldCanvasCamera;
+            canvas.renderMode = oldRenderMode;
+            Object.DestroyImmediate(image);
+            Object.DestroyImmediate(target);
+            Debug.Log("HUD calibration frames captured at " + directory);
+        }
+
+        private static bool ValidateVehicleGauge(Scene scene, Component hud, string needleField, string gaugeName,
+            Vector2 expectedPosition, Vector2 expectedFaceCenter, Vector2 expectedPivot,
+            float expectedTipLength, float zeroAngle, float fullAngle)
+        {
+            RectTransform needle = new SerializedObject(hud).FindProperty(needleField)?.objectReferenceValue as RectTransform;
+            RectTransform gauge = needle != null ? needle.parent as RectTransform : null;
+            Image face = gauge != null ? gauge.GetComponent<Image>() : null;
+            bool valid = needle != null && gauge != null && gauge.name == gaugeName && face != null &&
+                         face.sprite != null && face.preserveAspect &&
+                         Mathf.Abs(gauge.sizeDelta.y - 200f) <= .1f &&
+                         Vector2.Distance(gauge.anchoredPosition, expectedPosition) <= .1f &&
+                         Vector2.Distance(needle.anchorMin, expectedFaceCenter) <= .0005f &&
+                         Vector2.Distance(needle.anchorMax, expectedFaceCenter) <= .0005f &&
+                         Vector2.Distance(needle.pivot, expectedPivot) <= .0005f &&
+                         Vector2.Distance(needle.anchoredPosition, Vector2.zero) <= .01f &&
+                         Vector3.Distance(needle.localScale, Vector3.one) <= .001f;
+            if (!valid)
+            {
+                Debug.LogError($"{scene.name}: {gaugeName} layout/pivot/scale calibration is invalid.");
+                return false;
+            }
+
+            Vector2 sourceTip = new Vector2((1f - needle.pivot.x) * needle.rect.width,
+                (1f - needle.pivot.y) * needle.rect.height);
+            if (Mathf.Abs(sourceTip.magnitude - expectedTipLength) > .75f)
+            {
+                Debug.LogError($"{scene.name}: {gaugeName} needle tip length is {sourceTip.magnitude:0.00}, expected {expectedTipLength:0.00} px.");
+                return false;
+            }
+
+            Vector2 hub = Vector2.Scale(expectedFaceCenter - new Vector2(.5f, .5f), gauge.rect.size);
+            for (int sample = 0; sample <= 4; sample++)
+            {
+                float normalized = sample * .25f;
+                float radians = Mathf.Lerp(zeroAngle, fullAngle, normalized) * Mathf.Deg2Rad;
+                Vector2 rotatedTip = new Vector2(
+                    sourceTip.x * Mathf.Cos(radians) - sourceTip.y * Mathf.Sin(radians),
+                    sourceTip.x * Mathf.Sin(radians) + sourceTip.y * Mathf.Cos(radians));
+                Vector2 tip = hub + rotatedTip;
+                if (Mathf.Abs(tip.x) <= gauge.rect.width * .5f + .5f &&
+                    Mathf.Abs(tip.y) <= gauge.rect.height * .5f + .5f) continue;
+                Debug.LogError($"{scene.name}: {gaugeName} needle leaves the dial at {normalized:P0} ({tip}).");
+                return false;
+            }
+            return true;
+        }
+
         private static void ConfigureFormulaSprite(string path, int maximumSize)
         {
             TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
@@ -718,9 +1006,40 @@ namespace AnimeHillRacing.Editor
                 lateDensity > route.MaximumGroupsPer100Meters * route.MaximumCoinsPerGroup + .01f)
                 throw new System.InvalidOperationException($"Coin density progression invalid: " +
                     $"early={earlyDensity:0.0}, middle={middleDensity:0.0}, late={lateDensity:0.0} coins/100m.");
+            bool foundMixedGroup = false;
+            int firstMixedCell = route.FirstCellForDistance(route.sparseEndDistance);
+            int lastMixedCell = route.LastCellForDistance(route.allFiveStartDistance - 1f);
+            for (int cell = firstMixedCell; cell <= lastMixedCell; cell++)
+            {
+                if (!route.TryGetGroup(cell, out CoinRouteGroup group) || group.anchorDistance >= route.allFiveStartDistance)
+                    continue;
+                foundMixedGroup = true;
+                for (int point = 0; point < group.coinCount; point++)
+                {
+                    int expected = point == group.coinCount - 1 ? 5 : 1;
+                    if (route.GetPoint(group, point).value != expected)
+                        throw new System.InvalidOperationException("Every mixed coin group must end with its only Coin 05.");
+                }
+            }
+            if (!foundMixedGroup)
+                throw new System.InvalidOperationException("Coin Route has no mixed Coin 01/Coin 05 phase.");
+            int firstFinalCell = route.FirstCellForDistance(route.allFiveStartDistance);
+            int lastFinalCell = route.LastCellForDistance(route.allFiveStartDistance + 1000f);
+            bool foundFinalGroup = false;
+            for (int cell = firstFinalCell; cell <= lastFinalCell; cell++)
+            {
+                if (!route.TryGetGroup(cell, out CoinRouteGroup group) || group.anchorDistance < route.allFiveStartDistance)
+                    continue;
+                foundFinalGroup = true;
+                for (int point = 0; point < group.coinCount; point++)
+                    if (route.GetPoint(group, point).value != 5)
+                        throw new System.InvalidOperationException("All coins in the final route phase must be Coin 05.");
+            }
+            if (!foundFinalGroup)
+                throw new System.InvalidOperationException("Coin Route has no all-Coin-05 final phase.");
             Debug.Log($"Countryside Coin Route validation | snapshot={deterministicHashA}, " +
                       $"density={earlyDensity:0.0}->{middleDensity:0.0}->{lateDensity:0.0} coins/100m, " +
-                      $"maxGroups={route.MaximumGroupsPer100Meters:0.00}/100m, values=1/5, deterministic=OK.");
+                      $"maxGroups={route.MaximumGroupsPer100Meters:0.00}/100m, mixed-final=05, final-phase=all-05, deterministic=OK.");
         }
 
         private static int RouteSnapshotHash(CoinRouteDefinition route, int firstCell, int lastCell)
@@ -781,9 +1100,15 @@ namespace AnimeHillRacing.Editor
                 ConfigurableJoint[] joints = prefab.GetComponentsInChildren<ConfigurableJoint>(true);
                 bool physicalWheels = suspension.Length == 2;
                 for (int wheel = 0; wheel < suspension.Length; wheel++)
+                {
+                    ConfigurableJoint joint = suspension[wheel].SuspensionJoint;
                     physicalWheels &= suspension[wheel].GetComponent<Rigidbody>() != null &&
                                       suspension[wheel].GetComponent<SphereCollider>() != null &&
-                                      suspension[wheel].GetComponent<ConfigurableJoint>() != null;
+                                      joint != null && joint.gameObject == prefab &&
+                                      joint.connectedBody == suspension[wheel].GetComponent<Rigidbody>() &&
+                                      joint.secondaryAxis == Vector3.up &&
+                                      !joint.configuredInWorldSpace;
+                }
                 if (rigidbodies.Length != 3 || joints.Length != 2 || !physicalWheels)
                     throw new System.InvalidOperationException($"{definition.displayName} requires one chassis and two independent physical wheel rigidbodies/colliders/joints.");
                 Transform rear = null;
@@ -802,7 +1127,8 @@ namespace AnimeHillRacing.Editor
                 assets.countryside.groundPhysicsMaterial != assets.groundPhysics ||
                 assets.countrysideRoad.groundPhysicsMaterial != assets.groundPhysics)
                 throw new System.InvalidOperationException("Jeep front axle or stable terrain physics material is not configured.");
-            Debug.Log("Vehicle physics validation: rounded zero-bounce chassis, bounded suspension and visual/physical wheel anchors aligned.");
+            Debug.Log("Vehicle physics validation: chassis-relative joint axes, rounded zero-bounce chassis, " +
+                      "bounded suspension and visual/physical wheel anchors aligned.");
         }
 
         private struct SuspensionAuditResult
@@ -1106,12 +1432,14 @@ namespace AnimeHillRacing.Editor
         {
             float[] speed = new float[21];
             float[] acceleration = new float[21];
+            float[] grip = new float[21];
             float[] downforce = new float[21];
             float[] fuel = new float[26];
             for (int i = 0; i < 21; i++)
             {
                 speed[i] = 160f + i * 7f;
                 acceleration[i] = 5f - i * .15f;
+                grip[i] = Mathf.Lerp(200f, 417f, i / 20f);
                 downforce[i] = 1.5f + i * .6f;
             }
             for (int i = 0; i < fuel.Length; i++) fuel[i] = 20f + i;
@@ -1119,7 +1447,7 @@ namespace AnimeHillRacing.Editor
             {
                 engineTopSpeedKmh = speed,
                 accelerationZeroToHundredSeconds = acceleration,
-                gripRatings = new float[] { .90f },
+                gripRatings = grip,
                 airControlTorque = new float[] { 9000f },
                 airborneDownforceAcceleration = downforce,
                 fuelRunDurationSeconds = fuel
@@ -1130,10 +1458,12 @@ namespace AnimeHillRacing.Editor
         {
             float[] speed = new float[20];
             float[] turbo = new float[20];
-            float[] grip = new float[14];
+            float[] grip = new float[15];
+            float[] fuel = new float[16];
             for (int i = 0; i < speed.Length; i++) speed[i] = 145f + i * (135f / 19f);
             for (int i = 0; i < turbo.Length; i++) turbo[i] = 5.8f - i * (3.3f / 19f);
-            for (int i = 0; i < grip.Length; i++) grip[i] = .75f + i * (.20f / 13f);
+            for (int i = 0; i < grip.Length; i++) grip[i] = Mathf.Lerp(167f, 500f, i / 14f);
+            for (int i = 0; i < fuel.Length; i++) fuel[i] = Mathf.Lerp(25f, 50f, i / 15f);
             return new VehicleDefinition.TuneTargets
             {
                 engineTopSpeedKmh = speed,
@@ -1141,7 +1471,7 @@ namespace AnimeHillRacing.Editor
                 gripRatings = grip,
                 airControlTorque = new[] { 6500f },
                 airborneDownforceAcceleration = new[] { 0f },
-                fuelRunDurationSeconds = new[] { 50f }
+                fuelRunDurationSeconds = fuel
             };
         }
 
@@ -1171,6 +1501,231 @@ namespace AnimeHillRacing.Editor
             GameObject prefab = PrefabUtility.SaveAsPrefabAsset(root, path);
             Object.DestroyImmediate(root);
             return prefab;
+        }
+
+        private struct WheelStabilityResult
+        {
+            public float maximumAxisDrift;
+            public float maximumAnchorDrift;
+            public float settledCompressionSpan;
+            public float maximumRelativeWheelVelocity;
+            public float stationaryRelativeWheelVelocity;
+            public float coastRelativeWheelVelocity;
+            public float seamRelativeWheelVelocity;
+            public float motorRelativeWheelVelocity;
+            public float reverseRelativeWheelVelocity;
+            public float maximumChassisVerticalVelocity;
+            public float maximumTravelExcess;
+        }
+
+        private static void ValidateTerrainSeamContinuity(MapProfile profile)
+        {
+            Mesh first = new Mesh();
+            Mesh second = new Mesh();
+            TerrainGenerator.BuildMesh(first, profile, 0f, 80f, 48, 10f, false, 0f, 0f,
+                out float[] firstHeights, out float endHeight, out float endSlope);
+            TerrainGenerator.BuildMesh(second, profile, 80f, 80f, 48, 10f, true, endHeight, endSlope,
+                out float[] secondHeights, out _, out _);
+            float dx = 80f / 48f;
+            float outgoingSlope = (firstHeights[firstHeights.Length - 1] -
+                                   firstHeights[firstHeights.Length - 2]) / dx;
+            float incomingSlope = (secondHeights[1] - secondHeights[0]) / dx;
+            float heightGap = Mathf.Abs(firstHeights[firstHeights.Length - 1] - secondHeights[0]);
+            float slopeGap = Mathf.Abs(outgoingSlope - incomingSlope);
+            Object.DestroyImmediate(first);
+            Object.DestroyImmediate(second);
+            if (heightGap > .00001f || slopeGap > .00001f)
+                throw new System.InvalidOperationException($"Terrain seam discontinuity: height={heightGap:0.000000}m, slope={slopeGap:0.000000}.");
+            Debug.Log($"Terrain seam continuity PASS: heightGap={heightGap:0.000000}m, slopeGap={slopeGap:0.000000}; " +
+                      "one MeshCollider surface plus a non-physical LineRenderer edge.");
+        }
+
+        private static WheelStabilityResult SimulateWheelStability(VehicleDefinition source, int level)
+        {
+            NewScene();
+            SimulationMode previousMode = Physics.simulationMode;
+            Physics.simulationMode = SimulationMode.Script;
+            VehicleDefinition testDefinition = CreateSuspensionLevelClone(source, level);
+            PhysicsMaterial terrainMaterial = AssetDatabase.LoadAssetAtPath<PhysicsMaterial>(
+                Root + "/Materials/TerrainStable.physicMaterial");
+            GameObject firstGround = new GameObject("Single Authoritative Flat Diagnostic Ground");
+            MeshCollider firstCollider = firstGround.AddComponent<MeshCollider>();
+            Mesh diagnosticGroundMesh = new Mesh { name = "Diagnostic Welded Seam Mesh" };
+            diagnosticGroundMesh.vertices = new[]
+            {
+                new Vector3(-1000f, 0f, -10f), new Vector3(-1000f, 0f, 10f),
+                new Vector3(100f, 0f, -10f), new Vector3(100f, 0f, 10f),
+                new Vector3(1000f, 0f, -10f), new Vector3(1000f, 0f, 10f)
+            };
+            diagnosticGroundMesh.triangles = new[] { 0, 1, 2, 1, 3, 2, 2, 3, 4, 3, 5, 4 };
+            diagnosticGroundMesh.RecalculateNormals();
+            diagnosticGroundMesh.RecalculateBounds();
+            firstCollider.sharedMesh = diagnosticGroundMesh;
+            firstCollider.sharedMaterial = terrainMaterial;
+            GameObject inputObject = new GameObject("Wheel Diagnostic Input");
+            VehicleInputController input = inputObject.AddComponent<VehicleInputController>();
+            input.SetInputMode(GameModeType.Adventure2_5D);
+            GameObject instance = Object.Instantiate(source.gameplayPrefab2D,
+                new Vector3(0f, 1.25f, 0f), Quaternion.identity);
+            VehicleController controller = instance.GetComponent<VehicleController>();
+            SuspensionController[] points = instance.GetComponentsInChildren<SuspensionController>(true);
+            controller.AssignRuntimeReferences(testDefinition, input, points);
+            InvokePrivate(controller, "Awake");
+            MovementPlaneConstraint plane = instance.GetComponent<MovementPlaneConstraint>();
+            if (plane != null) InvokePrivate(plane, "Awake");
+            Physics.SyncTransforms();
+
+            Vector3[] expectedAnchors = new Vector3[points.Length];
+            Vector3[] expectedConnectedAnchors = new Vector3[points.Length];
+            float[] minimumCompression = new float[points.Length];
+            float[] maximumCompression = new float[points.Length];
+            for (int i = 0; i < points.Length; i++)
+            {
+                ConfigurableJoint joint = points[i].SuspensionJoint;
+                if (joint == null || joint.gameObject != instance || joint.connectedBody != points[i].WheelBody)
+                    throw new System.InvalidOperationException($"{source.displayName} L{level}: joint is not chassis-relative.");
+                expectedAnchors[i] = joint.anchor;
+                expectedConnectedAnchors[i] = joint.connectedAnchor;
+                minimumCompression[i] = float.PositiveInfinity;
+                maximumCompression[i] = float.NegativeInfinity;
+            }
+
+            WheelStabilityResult result = default;
+            for (int frame = 0; frame < 350; frame++)
+            {
+                StepWheelDiagnostic(controller, plane, input);
+                if (frame >= 250)
+                    SampleWheelDiagnostic(controller, points, expectedAnchors, expectedConnectedAnchors,
+                        ref result, minimumCompression, maximumCompression, 0);
+            }
+
+            float[] speedsKmh = { 5f, 20f, 40f, 80f };
+            for (int speedIndex = 0; speedIndex < speedsKmh.Length; speedIndex++)
+            {
+                float speed = speedsKmh[speedIndex] / 3.6f;
+                controller.Body.linearVelocity = controller.transform.right * speed;
+                for (int p = 0; p < points.Length; p++)
+                {
+                    points[p].WheelBody.linearVelocity = controller.Body.linearVelocity;
+                    points[p].WheelBody.angularVelocity = controller.Body.angularVelocity +
+                        Vector3.back * (speed / Mathf.Max(.05f, source.wheelRadius));
+                }
+                for (int frame = 0; frame < 100; frame++)
+                {
+                    StepWheelDiagnostic(controller, plane, input);
+                    if (frame >= 30)
+                        SampleWheelDiagnostic(controller, points, expectedAnchors, expectedConnectedAnchors,
+                            ref result, minimumCompression, maximumCompression, 1);
+                }
+            }
+
+            // Isolate the collider-boundary test from the speed sweeps: approach the exact x=100 seam slowly.
+            Vector3 relocation = new Vector3(98f - controller.Body.position.x, 0f, 0f);
+            controller.Body.position += relocation;
+            controller.Body.linearVelocity = Vector3.zero;
+            controller.Body.angularVelocity = Vector3.zero;
+            for (int p = 0; p < points.Length; p++)
+            {
+                points[p].WheelBody.position += relocation;
+                points[p].WheelBody.linearVelocity = Vector3.zero;
+                points[p].WheelBody.angularVelocity = Vector3.zero;
+            }
+            Physics.SyncTransforms();
+            for (int frame = 0; frame < 200; frame++)
+                StepWheelDiagnostic(controller, plane, input);
+            controller.Body.linearVelocity = controller.transform.right * (5f / 3.6f);
+            for (int p = 0; p < points.Length; p++)
+            {
+                points[p].WheelBody.linearVelocity = controller.Body.linearVelocity;
+                points[p].WheelBody.angularVelocity = controller.Body.angularVelocity +
+                    Vector3.back * ((5f / 3.6f) / Mathf.Max(.05f, source.wheelRadius));
+            }
+            for (int frame = 0; frame < 120; frame++)
+            {
+                StepWheelDiagnostic(controller, plane, input);
+                if (frame >= 20)
+                    SampleWheelDiagnostic(controller, points, expectedAnchors, expectedConnectedAnchors,
+                        ref result, minimumCompression, maximumCompression, 4);
+            }
+
+            input.SetTouchGas(true);
+            for (int frame = 0; frame < 250; frame++)
+            {
+                StepWheelDiagnostic(controller, plane, input);
+                if (frame >= 50)
+                    SampleWheelDiagnostic(controller, points, expectedAnchors, expectedConnectedAnchors,
+                        ref result, minimumCompression, maximumCompression, 2);
+            }
+            input.SetTouchGas(false);
+            input.SetTouchBrake(true);
+            for (int frame = 0; frame < 250; frame++)
+            {
+                StepWheelDiagnostic(controller, plane, input);
+                if (frame >= 50)
+                    SampleWheelDiagnostic(controller, points, expectedAnchors, expectedConnectedAnchors,
+                        ref result, minimumCompression, maximumCompression, 3);
+            }
+
+            for (int i = 0; i < points.Length; i++)
+                result.settledCompressionSpan = Mathf.Max(result.settledCompressionSpan,
+                    maximumCompression[i] - minimumCompression[i]);
+            Object.DestroyImmediate(instance);
+            Object.DestroyImmediate(inputObject);
+            Object.DestroyImmediate(firstGround);
+            Object.DestroyImmediate(diagnosticGroundMesh);
+            Object.DestroyImmediate(testDefinition);
+            Physics.simulationMode = previousMode;
+            return result;
+        }
+
+        private static void StepWheelDiagnostic(VehicleController controller, MovementPlaneConstraint plane,
+            VehicleInputController input)
+        {
+            InvokePrivate(input, "Update");
+            InvokePrivate(controller, "FixedUpdate");
+            if (plane != null) InvokePrivate(plane, "FixedUpdate");
+            Physics.Simulate(.02f);
+        }
+
+        private static void SampleWheelDiagnostic(VehicleController controller, SuspensionController[] points,
+            Vector3[] expectedAnchors, Vector3[] expectedConnectedAnchors, ref WheelStabilityResult result,
+            float[] minimumCompression, float[] maximumCompression, int phase)
+        {
+            result.maximumChassisVerticalVelocity = Mathf.Max(result.maximumChassisVerticalVelocity,
+                Mathf.Abs(Vector3.Dot(controller.Body.linearVelocity, controller.transform.up)));
+            for (int i = 0; i < points.Length; i++)
+            {
+                ConfigurableJoint joint = points[i].SuspensionJoint;
+                result.maximumAxisDrift = Mathf.Max(result.maximumAxisDrift,
+                    Vector3.Angle(points[i].SuspensionAxisWorld, controller.transform.up));
+                result.maximumAnchorDrift = Mathf.Max(result.maximumAnchorDrift,
+                    Vector3.Distance(joint.anchor, expectedAnchors[i]),
+                    Vector3.Distance(joint.connectedAnchor, expectedConnectedAnchors[i]));
+                Vector3 relativeVelocity = points[i].WheelBody.linearVelocity -
+                                           controller.Body.GetPointVelocity(points[i].WheelBody.position);
+                float verticalWheelVelocity = Mathf.Abs(Vector3.Dot(relativeVelocity, controller.transform.up));
+                if (points[i].IsGrounded)
+                {
+                    result.maximumRelativeWheelVelocity = Mathf.Max(result.maximumRelativeWheelVelocity,
+                        verticalWheelVelocity);
+                    if (phase == 0) result.stationaryRelativeWheelVelocity = Mathf.Max(
+                        result.stationaryRelativeWheelVelocity, verticalWheelVelocity);
+                    else if (phase == 1) result.coastRelativeWheelVelocity = Mathf.Max(
+                        result.coastRelativeWheelVelocity, verticalWheelVelocity);
+                    else if (phase == 2) result.motorRelativeWheelVelocity = Mathf.Max(
+                        result.motorRelativeWheelVelocity, verticalWheelVelocity);
+                    else if (phase == 3) result.reverseRelativeWheelVelocity = Mathf.Max(
+                        result.reverseRelativeWheelVelocity, verticalWheelVelocity);
+                    else result.seamRelativeWheelVelocity = Mathf.Max(
+                        result.seamRelativeWheelVelocity, verticalWheelVelocity);
+                }
+                float halfTravel = (points[i].MaximumCompression + points[i].MaximumExtension) * .5f;
+                result.maximumTravelExcess = Mathf.Max(result.maximumTravelExcess,
+                    Mathf.Max(0f, Mathf.Abs(points[i].JointTranslation) - halfTravel));
+                if (phase != 0) continue;
+                minimumCompression[i] = Mathf.Min(minimumCompression[i], points[i].Compression01);
+                maximumCompression[i] = Mathf.Max(maximumCompression[i], points[i].Compression01);
+            }
         }
 
         private struct VehiclePerformanceResult
@@ -1372,7 +1927,15 @@ namespace AnimeHillRacing.Editor
                 conditions.Add($"settled pitch speed {result.settledAngularVelocity:0.00}rad/s > 0.35rad/s");
             if (conditions.Count > 0)
                 failures.Add($"{vehicle.displayName} LEVEL {result.level} {(hard ? "HARD DROP" : "NORMAL DROP")} " +
-                             $"@ {result.speedKmh:0}km/h: " + string.Join("; ", conditions));
+                             $"@ {result.speedKmh:0}km/h: " + string.Join("; ", conditions) +
+                             $" | metrics impact={result.impactSpeedMps:0.00}m/s, " +
+                             $"maxRebound={result.maximumReboundMps:0.00}m/s, " +
+                             $"pitch={result.maximumAngularVelocity:0.00}rad/s, " +
+                             $"compression={result.maximumCompression01:P0}, " +
+                             $"penetration={result.maximumGroundPenetration:0.000}m, " +
+                             $"episodes={result.reboundEpisodes}, " +
+                             $"settledV={result.settledVerticalSpeed:0.00}m/s, " +
+                             $"settledW={result.settledAngularVelocity:0.00}rad/s");
         }
 
         private static LandingResult SimulateFlatLanding(VehicleDefinition source, int level, float speedKmh,
@@ -1513,7 +2076,7 @@ namespace AnimeHillRacing.Editor
                           $"compression={compression:0.000}m, extension={extension:0.000}m, sag={sag:P1}, " +
                           $"spring={stats.spring:0}N/m, damping={stats.damping:0}Ns/m, " +
                           $"progressive={stats.progressiveSpringMultiplier:0.00}x, bumpStart={definition.suspension.bumpStopStart:P0}, " +
-                          $"motor={stats.motorTorqueNm:0}Nm, grip={stats.gripRating01 * 100f:0}/100 ({stats.grip:0.00}), " +
+                          $"motor={stats.motorTorqueNm:0}Nm, grip={stats.gripRating}/{VehicleDefinition.GlobalGripMaximum} ({stats.grip:0.00}), " +
                           $"air={stats.airControlTorque:0}Nm, maxAir={definition.maxAirAngularVelocity:0.00}rad/s, " +
                           $"airDamping={definition.airAngularDamping:0.00}, downforce={stats.airborneDownforceAcceleration:0.00}m/s2");
             }
@@ -1667,19 +2230,19 @@ namespace AnimeHillRacing.Editor
                 VehicleUpgradeType formulaType = assets.formula.GetTuneTypeForSlot(i);
                 if (assets.jeep.GetMaxTunes(jeepType) != jeepMax[i] ||
                     assets.formula.GetMaxTunes(formulaType) != formulaMax[i] ||
-                    fresh.GetTune(jeepType) != 1 || fresh.GetTune(formulaType) != 1)
-                    throw new System.InvalidOperationException("Vehicle tuning slots, maxima or fresh Level 1 defaults are invalid.");
+                    fresh.GetTune(jeepType) != 0 || fresh.GetTune(formulaType) != 0)
+                    throw new System.InvalidOperationException("Vehicle tuning slots, maxima or fresh Level 0 defaults are invalid.");
             }
-            VehicleUpgradeType[] rallyTypes = { VehicleUpgradeType.Engine, VehicleUpgradeType.Suspension,
-                VehicleUpgradeType.Grip, VehicleUpgradeType.Turbo };
-            int[] rallyMax = { 20, 14, 14, 20 };
-            if (assets.rally.GetTuneSlotCount() != 4 || assets.rally.accelerationMaxTunes != 0 ||
-                assets.rally.fuelMaxTunes != 0) throw new System.InvalidOperationException("Rally must expose exactly four tunes.");
+            VehicleUpgradeType[] rallyTypes = { VehicleUpgradeType.Engine, VehicleUpgradeType.Turbo,
+                VehicleUpgradeType.Suspension, VehicleUpgradeType.Grip, VehicleUpgradeType.Fuel };
+            int[] rallyMax = { 20, 20, 14, 14, 15 };
+            if (assets.rally.GetTuneSlotCount() != 5 || assets.rally.accelerationMaxTunes != 0)
+                throw new System.InvalidOperationException("Rally must expose the five common performance stats.");
             for (int i = 0; i < rallyTypes.Length; i++)
                 if (assets.rally.GetTuneTypeForSlot(i) != rallyTypes[i] ||
-                    assets.rally.GetMaxTunes(rallyTypes[i]) != rallyMax[i] || fresh.GetTune(rallyTypes[i]) != 1)
-                    throw new System.InvalidOperationException("Rally tuning order, maxima or fresh Level 1 defaults are invalid.");
-            Debug.Log("Tuning validation: Jeep 14/15/12/12/15; Formula 20/20/20/20/25; Rally Speed20/Suspension14/Grip14/Turbo20; fresh=1.");
+                    assets.rally.GetMaxTunes(rallyTypes[i]) != rallyMax[i] || fresh.GetTune(rallyTypes[i]) != 0)
+                    throw new System.InvalidOperationException("Rally tuning order, maxima or fresh Level 0 defaults are invalid.");
+            Debug.Log("Tuning validation: Jeep 14/15/12/12/15; Formula 20/20/20/20/25; Rally 20/20/14/14/15; fresh=0.");
         }
 
         private static float SimulateAirTorque(VehicleDefinition source, bool roadMode, bool gas,
@@ -1749,12 +2312,17 @@ namespace AnimeHillRacing.Editor
             var assets = new BuiltAssets();
             string[] spritePaths = { JeepBodyPath, JeepWheel01Path, JeepWheel02Path, FormulaBodyPath,
                 FormulaWheelPath, FormulaReferencePath, RallyBodyPath, RallyNoRoofPath, RallyRoofPath,
-                RallyWheelPath, MainMenuBackgroundPath, DriverPreviewPath, DriverHeadPath, DriverTorsoPath,
+                RallyWheelPath, MainMenuBackgroundPath, HomeButtonPath, RaceButtonPath, SettingsButtonPath,
+                SkinsButtonPath, StoreButtonPath, TuningButtonPath, UpgradeButtonPath, VehicleButtonPath,
+                BrakePedalPath, BrakePedalPressedPath, GasPedalPath, GasPedalPressedPath,
+                RpmGaugePath, RpmNeedlePath, SpeedGaugePath, SpeedNeedlePath,
+                DriverPreviewPath, DriverHeadPath, DriverTorsoPath,
                 DriverUpperArmPath, DriverForearmPath, DriverThighPath, DriverLowerLegPath,
                 CountrysideSkyPath, CountrysideMountainsPath, FuelCanPath, Coin01Path, Coin05Path };
             for (int i = 0; i < spritePaths.Length; i++)
                 ConfigureFormulaSprite(spritePaths[i], spritePaths[i] == CountrysideSkyPath ||
-                    spritePaths[i] == CountrysideMountainsPath || spritePaths[i] == MainMenuBackgroundPath ? 4096 :
+                    spritePaths[i] == CountrysideMountainsPath || spritePaths[i].StartsWith(ButtonRoot) ||
+                    spritePaths[i].StartsWith(GameUiRoot) ? 4096 :
                     spritePaths[i] == FuelCanPath || spritePaths[i] == Coin01Path || spritePaths[i] == Coin05Path ? 512 : 2048);
             assets.jeepBody = AssetDatabase.LoadAssetAtPath<Sprite>(JeepBodyPath);
             assets.jeepWheel01 = AssetDatabase.LoadAssetAtPath<Sprite>(JeepWheel01Path);
@@ -1766,11 +2334,27 @@ namespace AnimeHillRacing.Editor
             assets.rallyRoof = AssetDatabase.LoadAssetAtPath<Sprite>(RallyRoofPath);
             assets.rallyWheel = AssetDatabase.LoadAssetAtPath<Sprite>(RallyWheelPath);
             assets.mainMenuBackground = AssetDatabase.LoadAssetAtPath<Sprite>(MainMenuBackgroundPath);
+            assets.homeButton = AssetDatabase.LoadAssetAtPath<Sprite>(HomeButtonPath);
+            assets.raceButton = AssetDatabase.LoadAssetAtPath<Sprite>(RaceButtonPath);
+            assets.settingsButton = AssetDatabase.LoadAssetAtPath<Sprite>(SettingsButtonPath);
+            assets.skinsButton = AssetDatabase.LoadAssetAtPath<Sprite>(SkinsButtonPath);
+            assets.storeButton = AssetDatabase.LoadAssetAtPath<Sprite>(StoreButtonPath);
+            assets.tuningButton = AssetDatabase.LoadAssetAtPath<Sprite>(TuningButtonPath);
+            assets.upgradeButton = AssetDatabase.LoadAssetAtPath<Sprite>(UpgradeButtonPath);
+            assets.vehicleButton = AssetDatabase.LoadAssetAtPath<Sprite>(VehicleButtonPath);
+            assets.brakePedal = AssetDatabase.LoadAssetAtPath<Sprite>(BrakePedalPath);
+            assets.brakePedalPressed = AssetDatabase.LoadAssetAtPath<Sprite>(BrakePedalPressedPath);
+            assets.gasPedal = AssetDatabase.LoadAssetAtPath<Sprite>(GasPedalPath);
+            assets.gasPedalPressed = AssetDatabase.LoadAssetAtPath<Sprite>(GasPedalPressedPath);
+            assets.rpmGauge = AssetDatabase.LoadAssetAtPath<Sprite>(RpmGaugePath);
+            assets.rpmNeedle = AssetDatabase.LoadAssetAtPath<Sprite>(RpmNeedlePath);
+            assets.speedGauge = AssetDatabase.LoadAssetAtPath<Sprite>(SpeedGaugePath);
+            assets.speedNeedle = AssetDatabase.LoadAssetAtPath<Sprite>(SpeedNeedlePath);
             assets.fuelCan = AssetDatabase.LoadAssetAtPath<Sprite>(FuelCanPath);
             assets.coin01 = AssetDatabase.LoadAssetAtPath<Sprite>(Coin01Path);
             assets.coin05 = AssetDatabase.LoadAssetAtPath<Sprite>(Coin05Path);
-            assets.countrysideMaterial = UnlitMaterialAsset("CountrysideGround", new Color(0.09f, 0.34f, 0.15f));
-            assets.countrysideEdgeMaterial = UnlitMaterialAsset("CountrysideEdge", new Color(0.42f, 0.86f, 0.28f));
+            assets.countrysideMaterial = UnlitMaterialAsset("CountrysideGround", new Color(0.34f, 0.16f, 0.07f));
+            assets.countrysideEdgeMaterial = UnlitMaterialAsset("CountrysideEdge", new Color(0.30f, 0.78f, 0.20f));
             assets.nearMountains = MaterialAsset("MountainsNear", new Color(0.12f, 0.32f, 0.24f));
             assets.farMountains = MaterialAsset("MountainsFar", new Color(0.22f, 0.38f, 0.46f));
             assets.road = MaterialAsset("Road", new Color(0.17f, 0.18f, 0.20f));
@@ -1795,15 +2379,15 @@ namespace AnimeHillRacing.Editor
             {
                 engineTopSpeedKmh = new float[] { 60, 63, 66, 69, 72, 75, 78, 81, 84, 87, 90, 93, 96, 98, 100 },
                 accelerationZeroToHundredSeconds = new float[] { 12f, 11.6f, 11.2f, 10.8f, 10.4f, 10f, 9.6f, 9.2f, 8.8f, 8.5f, 8.2f, 7.9f, 7.6f, 7.4f, 7.2f, 7f },
-                gripRatings = new float[] { .68f, .70f, .72f, .74f, .76f, .78f, .80f, .82f, .84f, .85f, .86f, .87f, .88f },
+                gripRatings = new float[] { 50f, 83f, 117f, 150f, 183f, 217f, 250f, 283f, 317f, 333f, 350f, 367f, 383f },
                 airControlTorque = new float[] { 3200f }, airborneDownforceAcceleration = new float[] { 0f },
                 fuelRunDurationSeconds = new float[] { 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30 }
             };
-            assets.jeep.suspension.minTravel = .44f; assets.jeep.suspension.maxTravel = .44f;
+            assets.jeep.suspension.minTravel = .28f; assets.jeep.suspension.maxTravel = .44f;
             assets.jeep.suspension.restLength = .52f;
             assets.jeep.suspension.compressionTravelRatio = .90f;
             assets.jeep.suspension.targetSag01 = .30f;
-            assets.jeep.suspension.stiffnessTuneScale = new Vector2(.94f, 1.06f);
+            assets.jeep.suspension.stiffnessTuneScale = new Vector2(.82f, 1.32f);
             assets.jeep.suspension.dampingRatio = new Vector2(.80f, .94f);
             assets.jeep.suspension.springMin = 70000f; assets.jeep.suspension.springMax = 82000f;
             assets.jeep.suspension.dampingMin = 10000f; assets.jeep.suspension.dampingMax = 12000f;
@@ -1848,8 +2432,8 @@ namespace AnimeHillRacing.Editor
             assets.formula.vehicleId = "formula-01"; assets.formula.displayName = "FORMULA";
             assets.formula.archetype = VehicleArchetype.Formula; assets.formula.previewSprite = assets.formulaBody;
             assets.formula.engineMaxTunes = 20; assets.formula.accelerationMaxTunes = 20;
-            assets.formula.suspensionMaxTunes = 20; assets.formula.gripMaxTunes = 0;
-            assets.formula.airControlMaxTunes = 0; assets.formula.downforceMaxTunes = 20; assets.formula.fuelMaxTunes = 25;
+            assets.formula.suspensionMaxTunes = 20; assets.formula.gripMaxTunes = 20;
+            assets.formula.airControlMaxTunes = 0; assets.formula.downforceMaxTunes = 0; assets.formula.fuelMaxTunes = 25;
             assets.formula.tuneTargets = CreateFormulaTuneTargets();
             assets.formula.mass = 780f; assets.formula.wheelMass = 28f; assets.formula.wheelRadius = .48f;
             assets.formula.engine.speedTorqueCurve = ArcadeSpeedTorqueCurve();
@@ -1865,10 +2449,10 @@ namespace AnimeHillRacing.Editor
             assets.formula.engine.minTorqueNm = 300f; assets.formula.engine.maxTorqueNm = 700f;
             assets.formula.engine.drivetrainEfficiency = .88f;
             assets.formula.transmission.forwardGearRatios = new[] { 3.80f, 2.75f, 2.15f, 1.75f, 1.48f, 1.30f, 1.18f };
-            assets.formula.suspension.restLength = .38f; assets.formula.suspension.minTravel = .25f;
+            assets.formula.suspension.restLength = .38f; assets.formula.suspension.minTravel = .16f;
             assets.formula.suspension.maxTravel = .25f; assets.formula.suspension.compressionTravelRatio = .90f;
             assets.formula.suspension.targetSag01 = .29f;
-            assets.formula.suspension.stiffnessTuneScale = new Vector2(.97f, 1.10f);
+            assets.formula.suspension.stiffnessTuneScale = new Vector2(.78f, 1.25f);
             assets.formula.suspension.dampingRatio = new Vector2(.96f, 1.08f);
             assets.formula.suspension.springMin = 82000f; assets.formula.suspension.springMax = 96000f;
             assets.formula.suspension.dampingMin = 14000f; assets.formula.suspension.dampingMax = 16000f;
@@ -1899,7 +2483,7 @@ namespace AnimeHillRacing.Editor
             assets.rally.engineMaxTunes = 20; assets.rally.accelerationMaxTunes = 0;
             assets.rally.suspensionMaxTunes = 14; assets.rally.gripMaxTunes = 14;
             assets.rally.airControlMaxTunes = 0; assets.rally.downforceMaxTunes = 0;
-            assets.rally.fuelMaxTunes = 0; assets.rally.turboMaxTunes = 20;
+            assets.rally.fuelMaxTunes = 15; assets.rally.turboMaxTunes = 20;
             assets.rally.tuneTargets = CreateRallyTuneTargets();
             assets.rally.mass = 1030f; assets.rally.wheelMass = 36f; assets.rally.wheelRadius = .51f;
             assets.rally.engine.speedTorqueCurve = ArcadeSpeedTorqueCurve();
@@ -1915,10 +2499,10 @@ namespace AnimeHillRacing.Editor
             assets.rally.engine.minTorqueNm = 280f; assets.rally.engine.maxTorqueNm = 650f;
             assets.rally.engine.drivetrainEfficiency = .86f;
             assets.rally.transmission.forwardGearRatios = new[] { 4.20f, 3.10f, 2.50f, 2.10f, 1.82f, 1.58f, 1.38f };
-            assets.rally.suspension.restLength = .56f; assets.rally.suspension.minTravel = .40f;
+            assets.rally.suspension.restLength = .56f; assets.rally.suspension.minTravel = .25f;
             assets.rally.suspension.maxTravel = .40f; assets.rally.suspension.compressionTravelRatio = .89f;
             assets.rally.suspension.targetSag01 = .30f;
-            assets.rally.suspension.stiffnessTuneScale = new Vector2(.94f, 1.06f);
+            assets.rally.suspension.stiffnessTuneScale = new Vector2(.82f, 1.33f);
             assets.rally.suspension.dampingRatio = new Vector2(.90f, 1.02f);
             assets.rally.suspension.springMin = 72000f; assets.rally.suspension.springMax = 84000f;
             assets.rally.suspension.dampingMin = 12500f; assets.rally.suspension.dampingMax = 15000f;
@@ -1970,6 +2554,7 @@ namespace AnimeHillRacing.Editor
             assets.countrysideCoinRoute.sparseEndDistance = 300f;
             assets.countrysideCoinRoute.growingEndDistance = 600f;
             assets.countrysideCoinRoute.variedEndDistance = 1200f;
+            assets.countrysideCoinRoute.allFiveStartDistance = 2600f;
             EditorUtility.SetDirty(assets.countrysideCoinRoute);
 
             assets.countryside = LoadOrCreate<MapProfile>(Root + "/MapProfiles/Countryside.asset");
@@ -2079,31 +2664,59 @@ namespace AnimeHillRacing.Editor
         private static void BuildMainMenu(BuiltAssets assets)
         {
             Scene scene = NewScene();
-            Color background = new Color(0.015f, 0.025f, 0.08f);
-            CreateMenuCamera(background);
+            CreateMenuCamera(new Color(.01f, .015f, .03f));
             Canvas canvas = CreateCanvas(Color.clear, false);
-            Image backdrop = CreateImage("Background Interface", canvas.transform, Color.white, Vector2.zero,
-                Vector2.one, Vector2.zero, Vector2.zero).GetComponent<Image>();
-            backdrop.sprite = assets.mainMenuBackground; backdrop.preserveAspect = false; backdrop.raycastTarget = false;
-            CreateImage("Interface Dark Overlay", canvas.transform, new Color(.01f, .02f, .08f, .42f),
+            CreateAspectCoverBackground(canvas.transform, assets.mainMenuBackground);
+            CreateImage("Readability Overlay", canvas.transform, new Color(.005f, .015f, .04f, .12f),
                 Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero).GetComponent<Image>().raycastTarget = false;
             Transform safe = CreateSafeArea(canvas.transform);
             MainMenuUI menu = new GameObject("Main Menu Controller").AddComponent<MainMenuUI>();
-            Text title = CreateText("Title", safe, "CLIMB ANIME", 82, TextAnchor.MiddleCenter,
-                new Vector2(0.5f, 0.82f), new Vector2(0.5f, 0.82f), Vector2.zero, new Vector2(900f, 130f));
-            title.fontStyle = FontStyle.Bold;
             GameObject coinCard = CreateHudCard("Total Coins Card", safe, Vector2.one,
-                new Vector2(-175f, -52f), new Vector2(300f, 72f));
+                new Vector2(-175f, -56f), new Vector2(300f, 76f));
             CreateSpriteImage("Coin Icon", coinCard.transform, assets.coin01, new Vector2(.5f, .5f),
                 new Vector2(-112f, 0f), new Vector2(52f, 52f));
-            Text coins = CreateText("Total Coins", coinCard.transform, "COINS\n0", 27, TextAnchor.MiddleRight,
+            Text coins = CreateText("Total Coins", coinCard.transform, "COINS  0", 27, TextAnchor.MiddleRight,
                 Vector2.zero, Vector2.one, new Vector2(-15f, 0f), new Vector2(-30f, 0f));
-            menu.Assign(coins);
-            Button play = CreateModernMenuButton("Play Adventure", safe, "PLAY / ADVENTURE", new Vector2(0f, 105f));
-            Button threeD = CreateModernMenuButton("3D", safe, "3D", new Vector2(0f, -5f));
-            Button timeTrial = CreateModernMenuButton("Time Trial", safe, "TIME TRIAL", new Vector2(0f, -115f));
-            Button vehicles = CreateModernMenuButton("Garage", safe, "GARAGE / CUSTOMIZE", new Vector2(0f, -225f));
-            Bind(play, menu.Play); Bind(threeD, menu.ThreeD); Bind(vehicles, menu.Garage); Bind(timeTrial, menu.TimeTrial);
+
+            Button skins = CreateSpriteButton("Skins", safe, assets.skinsButton, new Vector2(0f, 1f),
+                new Vector2(155f, -62f), new Vector2(260f, 98f));
+            Button store = CreateSpriteButton("Store", safe, assets.storeButton, new Vector2(0f, 1f),
+                new Vector2(430f, -62f), new Vector2(260f, 98f));
+            Button settings = CreateSpriteButton("Settings", safe, assets.settingsButton, new Vector2(0f, 1f),
+                new Vector2(705f, -62f), new Vector2(260f, 98f));
+
+            Text vehicleName = CreateText("Selected Vehicle Name", safe, "JEEP", 42, TextAnchor.MiddleCenter,
+                new Vector2(.5f, .5f), new Vector2(.5f, .5f), new Vector2(0f, 178f), new Vector2(520f, 66f));
+            vehicleName.fontStyle = FontStyle.Bold;
+            RawImage previewImage = UIObject("Selected Vehicle Preview", safe, new Vector2(.5f, .5f),
+                new Vector2(.5f, .5f), new Vector2(0f, -52f), new Vector2(790f, 390f)).AddComponent<RawImage>();
+            previewImage.color = Color.white;
+            previewImage.raycastTarget = false;
+            Button previous = CreateButton("Previous Vehicle", safe, "<", new Vector2(-470f, -45f),
+                new Vector2(88f, 110f));
+            Button next = CreateButton("Next Vehicle", safe, ">", new Vector2(470f, -45f),
+                new Vector2(88f, 110f));
+
+            Button vehicle = CreateSpriteButton("Vehicle", safe, assets.vehicleButton, new Vector2(0f, 0f),
+                new Vector2(245f, 64f), new Vector2(430f, 150f));
+            Button tuning = CreateSpriteButton("Tuning", safe, assets.tuningButton, new Vector2(0f, 0f),
+                new Vector2(675f, 64f), new Vector2(400f, 150f));
+            Button upgrade = CreateSpriteButton("Upgrade", safe, assets.upgradeButton, new Vector2(1f, 0f),
+                new Vector2(-665f, 64f), new Vector2(400f, 150f));
+            Button race = CreateSpriteButton("Race", safe, assets.raceButton, new Vector2(1f, 0f),
+                new Vector2(-225f, 70f), new Vector2(440f, 164f));
+
+            Bind(skins, menu.Skins); Bind(store, menu.Store); Bind(settings, menu.Settings);
+            Bind(previous, menu.PreviousVehicle); Bind(next, menu.NextVehicle);
+            Bind(vehicle, menu.Vehicle); Bind(tuning, menu.Tuning); Bind(upgrade, menu.Upgrade); Bind(race, menu.Race);
+            GaragePreviewRenderer preview = CreateGarageVehiclePreview(assets, previewImage, "Home");
+            menu.Assign(assets.catalog, preview, coins, vehicleName);
+            VehicleDefinition.CustomizationOption initialSkin = assets.jeep.skins != null && assets.jeep.skins.Length > 0
+                ? assets.jeep.skins[0] : null;
+            VehicleDefinition.CustomizationOption initialWheel = assets.jeep.wheels != null && assets.jeep.wheels.Length > 0
+                ? assets.jeep.wheels[0] : null;
+            preview.Apply(assets.jeep, initialSkin, initialWheel, assets.stickmanBlack);
+            vehicleName.text = assets.jeep.displayName.ToUpperInvariant();
             CreateEventSystem();
             EditorSceneManager.SaveScene(scene, MainMenuPath);
         }
@@ -2207,10 +2820,10 @@ namespace AnimeHillRacing.Editor
                 new Vector3(initial.bodyVisualOffset.x, initial.bodyVisualOffset.y, 0f), initial.visualWidth, 10);
             Transform rearWheel = CreateSpriteVisual("Preview Rear Wheel", previewRoot, assets.jeepWheel01,
                 new Vector3(initial.rearWheelVisualPosition.x, initial.rearWheelVisualPosition.y, -.02f),
-                initial.wheelVisualDiameter, 11);
+                initial.wheelVisualDiameter, 9);
             Transform frontWheel = CreateSpriteVisual("Preview Front Wheel", previewRoot, assets.jeepWheel01,
                 new Vector3(initial.frontWheelVisualPosition.x, initial.frontWheelVisualPosition.y, -.02f),
-                initial.wheelVisualDiameter, 11);
+                initial.wheelVisualDiameter, 9);
             ArticulatedDriver2D driver = CreateArticulatedDriver(previewRoot, assets.stickmanBlack, initial, null, false);
             GaragePreviewRenderer preview = new GameObject("Garage Preview Renderer").AddComponent<GaragePreviewRenderer>();
             preview.Assign(previewCamera, previewImage, previewRoot, body.GetComponent<SpriteRenderer>(),
@@ -2221,6 +2834,221 @@ namespace AnimeHillRacing.Editor
             CreateEventSystem();
             ValidateGarageComposition(assets);
             EditorSceneManager.SaveScene(scene, GaragePath);
+        }
+
+        private static void BuildGarageModern(BuiltAssets assets)
+        {
+            Scene scene = NewScene();
+            CreateMenuCamera(new Color(.01f, .015f, .03f));
+            Canvas canvas = CreateCanvas(Color.clear, false);
+            CreateAspectCoverBackground(canvas.transform, assets.mainMenuBackground);
+            CreateImage("Garage Overlay", canvas.transform, new Color(.005f, .015f, .04f, .30f),
+                Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero).GetComponent<Image>().raycastTarget = false;
+            Transform safe = CreateSafeArea(canvas.transform);
+            GarageUI menu = new GameObject("Garage Controller").AddComponent<GarageUI>();
+            Button home = CreateSpriteButton("Home", safe, assets.homeButton, new Vector2(0f, 1f),
+                new Vector2(165f, -62f), new Vector2(285f, 110f));
+            Text sectionTitle = CreateText("Section Title", safe, "VEHICLE", 42, TextAnchor.MiddleCenter,
+                new Vector2(.5f, 1f), new Vector2(.5f, 1f), new Vector2(0f, -58f), new Vector2(520f, 72f));
+            sectionTitle.fontStyle = FontStyle.Bold;
+            GameObject coinCard = CreateHudCard("Coins Card", safe, Vector2.one,
+                new Vector2(-175f, -56f), new Vector2(300f, 76f));
+            CreateSpriteImage("Coin Icon", coinCard.transform, assets.coin01, new Vector2(.5f, .5f),
+                new Vector2(-112f, 0f), new Vector2(52f, 52f));
+            Text tuningCoins = CreateText("Tuning Coins", coinCard.transform, "COINS  0", 27,
+                TextAnchor.MiddleRight, Vector2.zero, Vector2.one, new Vector2(-15f, 0f), new Vector2(-30f, 0f));
+            Text vehicleName = CreateText("Vehicle Name", safe, "JEEP", 38, TextAnchor.MiddleCenter,
+                new Vector2(.04f, .80f), new Vector2(.48f, .91f), Vector2.zero, Vector2.zero);
+            RawImage previewImage = UIObject("Live Composed Preview", safe, new Vector2(.04f, .25f),
+                new Vector2(.48f, .80f), Vector2.zero, Vector2.zero).AddComponent<RawImage>();
+            previewImage.color = Color.white; previewImage.raycastTarget = false;
+            Button previous = CreateButton("Previous Vehicle", safe, "<", new Vector2(-820f, -30f), new Vector2(76f, 100f));
+            Button next = CreateButton("Next Vehicle", safe, ">", new Vector2(-80f, -30f), new Vector2(76f, 100f));
+            Text skinSummary = CreateText("Skin Summary", safe, "SKIN\nDEFAULT", 17, TextAnchor.MiddleCenter,
+                new Vector2(.04f, .12f), new Vector2(.18f, .23f), Vector2.zero, Vector2.zero);
+            Text wheelSummary = CreateText("Wheel Summary", safe, "WHEELS\nWHEEL 01", 17, TextAnchor.MiddleCenter,
+                new Vector2(.19f, .12f), new Vector2(.33f, .23f), Vector2.zero, Vector2.zero);
+            Text driverSummary = CreateText("Driver Summary", safe, "DRIVER\nSTICKMAN BLACK", 17, TextAnchor.MiddleCenter,
+                new Vector2(.34f, .12f), new Vector2(.48f, .23f), Vector2.zero, Vector2.zero);
+
+            GameObject vehiclePanel = CreateImage("Vehicle Panel", safe, new Color(.025f, .06f, .12f, .88f),
+                new Vector2(.52f, .16f), new Vector2(.97f, .84f), Vector2.zero, Vector2.zero);
+            CreateText("Title", vehiclePanel.transform, "VEHICLE SELECTION", 34, TextAnchor.MiddleCenter,
+                new Vector2(.08f, .78f), new Vector2(.92f, .94f), Vector2.zero, Vector2.zero).fontStyle = FontStyle.Bold;
+            CreateText("Description", vehiclePanel.transform,
+                "USE THE ARROWS TO SELECT A VEHICLE\n\nALL AVAILABLE VEHICLES USE THEIR REAL SAVED STATS, SKIN AND WHEELS.",
+                24, TextAnchor.MiddleCenter, new Vector2(.10f, .25f), new Vector2(.90f, .72f), Vector2.zero, Vector2.zero);
+
+            GameObject customizationPanel = UIObject("Skins Panel", safe, new Vector2(.51f, .13f),
+                new Vector2(.98f, .86f), Vector2.zero, Vector2.zero);
+            var categories = new Button[3];
+            categories[0] = CreateButton("Vehicle Skin Category", customizationPanel.transform, "VEHICLE SKIN", new Vector2(-250f, 280f), new Vector2(220f, 64f));
+            categories[1] = CreateButton("Wheels Category", customizationPanel.transform, "WHEELS", new Vector2(0f, 280f), new Vector2(220f, 64f));
+            categories[2] = CreateButton("Driver Category", customizationPanel.transform, "CHARACTER", new Vector2(250f, 280f), new Vector2(220f, 64f));
+            Bind(categories[0], menu.ShowSkins); Bind(categories[1], menu.ShowWheels); Bind(categories[2], menu.ShowDrivers);
+            Text categoryName = CreateText("Category Name", customizationPanel.transform, "VEHICLE SKIN", 28,
+                TextAnchor.MiddleCenter, new Vector2(.15f, .69f), new Vector2(.85f, .80f), Vector2.zero, Vector2.zero);
+            var optionButtons = new Button[6]; var optionImages = new Image[6]; var optionLabels = new Text[6];
+            UnityAction[] selections = { menu.SelectOption0, menu.SelectOption1, menu.SelectOption2,
+                menu.SelectOption3, menu.SelectOption4, menu.SelectOption5 };
+            for (int i = 0; i < optionButtons.Length; i++)
+            {
+                int column = i % 3; int rowIndex = i / 3;
+                float x = -260f + column * 260f; float y = 65f - rowIndex * 235f;
+                optionButtons[i] = CreateButton("Option " + (i + 1), customizationPanel.transform, "", new Vector2(x, y), new Vector2(235f, 210f));
+                optionImages[i] = CreateImage("Icon", optionButtons[i].transform, Color.white,
+                    new Vector2(.12f, .30f), new Vector2(.88f, .92f), Vector2.zero, Vector2.zero).GetComponent<Image>();
+                optionImages[i].raycastTarget = false; optionImages[i].preserveAspect = true;
+                optionLabels[i] = CreateText("Status", optionButtons[i].transform, "OPTION", 19, TextAnchor.MiddleCenter,
+                    new Vector2(.04f, .02f), new Vector2(.96f, .28f), Vector2.zero, Vector2.zero);
+                Bind(optionButtons[i], selections[i]);
+            }
+
+            GameObject tuningPanel = UIObject("Garage Tuning Panel", safe, new Vector2(.50f, .10f),
+                new Vector2(.98f, .86f), Vector2.zero, Vector2.zero);
+            var tuningNames = new Text[5]; var tuningLevels = new Text[5]; var tuningValues = new Text[5];
+            var tuningCosts = new Text[5]; var tuningButtons = new Button[5];
+            UnityAction[] upgrades = { menu.UpgradeTune0, menu.UpgradeTune1, menu.UpgradeTune2, menu.UpgradeTune3, menu.UpgradeTune4 };
+            for (int i = 0; i < 5; i++)
+            {
+                float y = 270f - i * 135f;
+                GameObject row = CreateImage("Tune Row " + (i + 1), tuningPanel.transform,
+                    new Color(.065f, .125f, .20f, .98f), new Vector2(.5f, .5f), new Vector2(.5f, .5f),
+                    new Vector2(0f, y), new Vector2(870f, 118f));
+                tuningNames[i] = CreateText("Name", row.transform, "SPEED", 20, TextAnchor.MiddleLeft,
+                    new Vector2(.02f, .52f), new Vector2(.25f, .96f), Vector2.zero, Vector2.zero);
+                tuningLevels[i] = CreateText("Level", row.transform, "LEVEL 0 / 20", 18, TextAnchor.MiddleLeft,
+                    new Vector2(.02f, .06f), new Vector2(.25f, .52f), Vector2.zero, Vector2.zero);
+                tuningValues[i] = CreateText("Value", row.transform, "CURRENT\nNEXT", 16, TextAnchor.MiddleLeft,
+                    new Vector2(.27f, .05f), new Vector2(.72f, .95f), Vector2.zero, Vector2.zero);
+                tuningButtons[i] = CreateButton("Upgrade", row.transform, "PRICE", new Vector2(330f, 0f), new Vector2(190f, 70f));
+                tuningCosts[i] = tuningButtons[i].GetComponentInChildren<Text>(true);
+                Bind(tuningButtons[i], upgrades[i]);
+            }
+
+            GameObject upgradePanel = CreateImage("Upgrade Panel", safe, new Color(.025f, .06f, .12f, .90f),
+                new Vector2(.52f, .16f), new Vector2(.97f, .84f), Vector2.zero, Vector2.zero);
+            Text upgradeSummary = CreateText("Upgrade Summary", upgradePanel.transform, "CURRENT PERFORMANCE", 27,
+                TextAnchor.UpperLeft, new Vector2(.10f, .12f), new Vector2(.90f, .88f), Vector2.zero, Vector2.zero);
+            GameObject storePanel = CreateImage("Store Panel", safe, new Color(.025f, .06f, .12f, .90f),
+                new Vector2(.52f, .16f), new Vector2(.97f, .84f), Vector2.zero, Vector2.zero);
+            CreateText("Store Placeholder", storePanel.transform, "STORE\n\nCOMING SOON\nNO IAP IS CONFIGURED", 34,
+                TextAnchor.MiddleCenter, new Vector2(.08f, .12f), new Vector2(.92f, .88f), Vector2.zero, Vector2.zero);
+            GameObject settingsPanel = CreateImage("Settings Panel", safe, new Color(.025f, .06f, .12f, .90f),
+                new Vector2(.52f, .16f), new Vector2(.97f, .84f), Vector2.zero, Vector2.zero);
+            CreateText("Settings Placeholder", settingsPanel.transform, "SETTINGS", 42, TextAnchor.MiddleCenter,
+                new Vector2(.08f, .12f), new Vector2(.92f, .88f), Vector2.zero, Vector2.zero);
+
+            GameObject modal = CreateImage("Purchase Confirmation", safe, new Color(.01f, .025f, .055f, .985f),
+                new Vector2(.5f, .5f), new Vector2(.5f, .5f), Vector2.zero, new Vector2(760f, 470f));
+            modal.AddComponent<Outline>().effectColor = new Color(.20f, .74f, 1f, 1f);
+            Text modalTitle = CreateText("Title", modal.transform, "UPGRADE SPEED?", 36, TextAnchor.MiddleCenter,
+                new Vector2(.08f, .76f), new Vector2(.92f, .94f), Vector2.zero, Vector2.zero);
+            Text modalValues = CreateText("Values", modal.transform, "CURRENT\nNEXT", 25, TextAnchor.MiddleCenter,
+                new Vector2(.08f, .39f), new Vector2(.92f, .75f), Vector2.zero, Vector2.zero);
+            Text modalCost = CreateText("Cost", modal.transform, "COST", 26, TextAnchor.MiddleCenter,
+                new Vector2(.08f, .25f), new Vector2(.92f, .40f), Vector2.zero, Vector2.zero);
+            Text modalStatus = CreateText("Status", modal.transform, "", 22, TextAnchor.MiddleCenter,
+                new Vector2(.08f, .15f), new Vector2(.92f, .26f), Vector2.zero, Vector2.zero);
+            modalStatus.color = new Color(1f, .30f, .28f);
+            Button yes = CreateButton("Yes", modal.transform, "YES", new Vector2(-170f, -175f), new Vector2(260f, 72f));
+            Button no = CreateButton("No", modal.transform, "NO", new Vector2(170f, -175f), new Vector2(260f, 72f));
+            yes.image.color = new Color(.16f, .72f, .26f, 1f); no.image.color = new Color(.82f, .16f, .14f, 1f);
+            Bind(yes, menu.ConfirmPurchase); Bind(no, menu.CancelPurchase); modal.SetActive(false);
+
+            Bind(home, menu.Back); Bind(previous, menu.PreviousVehicle); Bind(next, menu.NextVehicle);
+            GaragePreviewRenderer preview = CreateGarageVehiclePreview(assets, previewImage, "Garage");
+            menu.Assign(assets.catalog, preview, vehicleName, categoryName, skinSummary, wheelSummary, driverSummary,
+                categories, optionButtons, optionImages, optionLabels, tuningPanel, tuningNames, tuningLevels,
+                tuningValues, tuningCosts, tuningButtons, tuningCoins, sectionTitle, upgradeSummary, vehiclePanel,
+                customizationPanel, upgradePanel, storePanel, settingsPanel, modal, modalTitle, modalValues,
+                modalCost, modalStatus, yes);
+            CreateEventSystem();
+            ValidateGarageComposition(assets);
+            EditorSceneManager.SaveScene(scene, GaragePath);
+        }
+
+        private static void BuildPreStartModern(BuiltAssets assets)
+        {
+            Scene scene = NewScene();
+            CreateMenuCamera(new Color(.01f, .015f, .03f));
+            Canvas canvas = CreateCanvas(Color.clear, false);
+            CreateAspectCoverBackground(canvas.transform, assets.mainMenuBackground);
+            CreateImage("Race Overlay", canvas.transform, new Color(.005f, .015f, .04f, .36f),
+                Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero).GetComponent<Image>().raycastTarget = false;
+            Transform safe = CreateSafeArea(canvas.transform);
+            PreStartMenuUI menu = new GameObject("Pre-Start Controller").AddComponent<PreStartMenuUI>();
+            Button home = CreateSpriteButton("Home", safe, assets.homeButton, new Vector2(0f, 1f),
+                new Vector2(165f, -62f), new Vector2(285f, 110f));
+            Text coins = CreateText("Coins", safe, "COINS  0", 27, TextAnchor.MiddleRight,
+                Vector2.one, Vector2.one, new Vector2(-190f, -55f), new Vector2(340f, 70f));
+            Text progress = CreateText("Progress", safe, "1 MODE   >   2 VEHICLE", 25,
+                TextAnchor.MiddleCenter, new Vector2(.5f, 1f), new Vector2(.5f, 1f),
+                new Vector2(0f, -62f), new Vector2(800f, 52f));
+
+            var panels = new GameObject[2];
+            for (int i = 0; i < panels.Length; i++)
+                panels[i] = UIObject($"Step {i + 1}", safe, Vector2.zero, Vector2.one,
+                    new Vector2(0f, -20f), new Vector2(-80f, -180f));
+
+            CreateText("Title", panels[0].transform, "SELECT RACE MODE", 45, TextAnchor.MiddleCenter,
+                new Vector2(.5f, 1f), new Vector2(.5f, 1f), new Vector2(0f, -52f), new Vector2(700f, 72f));
+            GameObject gridRoot = UIObject("Mode Card Grid", panels[0].transform, new Vector2(.5f, .5f),
+                new Vector2(.5f, .5f), new Vector2(0f, -15f), new Vector2(1510f, 535f));
+            GridLayoutGroup grid = gridRoot.AddComponent<GridLayoutGroup>();
+            grid.cellSize = new Vector2(455f, 510f); grid.spacing = new Vector2(42f, 0f);
+            grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount; grid.constraintCount = 3;
+            grid.childAlignment = TextAnchor.MiddleCenter;
+            var cards = new Image[3]; var cardRects = new RectTransform[3]; var statuses = new Text[3];
+            CreateModeCard(gridRoot.transform, "Adventure", "SIDE-VIEW CLIMB",
+                "COUNTRYSIDE\nDISTANCE RUN\n2.5D CAMERA", menu.SelectAdventure2_5D,
+                out cards[0], out cardRects[0], out statuses[0]);
+            CreateModeCard(gridRoot.transform, "3D", "OPEN ROAD",
+                "COUNTRYSIDE\nDISTANCE RUN\nCHASE CAMERA", menu.SelectAdventure3D,
+                out cards[1], out cardRects[1], out statuses[1]);
+            CreateModeCard(gridRoot.transform, "Time Trial", "PROCEDURAL CIRCUIT",
+                "ONE LAP\nBEST TIME\nCHASE CAMERA", menu.SelectTimeTrial3D,
+                out cards[2], out cardRects[2], out statuses[2]);
+            Text mode = CreateText("Selected Mode", panels[0].transform, "ADVENTURE", 24,
+                TextAnchor.MiddleCenter, new Vector2(.25f, 0f), new Vector2(.50f, 0f),
+                new Vector2(0f, 74f), Vector2.zero);
+            Text map = CreateText("Selected Map", panels[0].transform, "COUNTRYSIDE", 22,
+                TextAnchor.MiddleCenter, new Vector2(.50f, 0f), new Vector2(.75f, 0f),
+                new Vector2(0f, 74f), Vector2.zero);
+            Button continueMode = CreateButton("Continue", panels[0].transform, "CONTINUE",
+                new Vector2(0f, -356f), new Vector2(310f, 72f));
+            Bind(home, menu.BackStep); Bind(continueMode, menu.ContinueStep);
+
+            CreateText("Title", panels[1].transform, "SELECT VEHICLE", 45, TextAnchor.MiddleCenter,
+                new Vector2(.5f, 1f), new Vector2(.5f, 1f), new Vector2(0f, -52f), new Vector2(700f, 72f));
+            GameObject vehicleCard = CreateImage("Vehicle Card", panels[1].transform,
+                new Color(.025f, .06f, .12f, .90f), new Vector2(.5f, .5f), new Vector2(.5f, .5f),
+                new Vector2(0f, -20f), new Vector2(1310f, 600f));
+            RawImage previewImage = UIObject("Selected Vehicle Preview", vehicleCard.transform,
+                new Vector2(.04f, .10f), new Vector2(.57f, .88f), Vector2.zero, Vector2.zero).AddComponent<RawImage>();
+            previewImage.color = Color.white; previewImage.raycastTarget = false;
+            Text vehicle = CreateText("Vehicle", vehicleCard.transform, "JEEP", 38, TextAnchor.UpperLeft,
+                new Vector2(.61f, .78f), new Vector2(.95f, .93f), Vector2.zero, Vector2.zero);
+            Text stats = CreateText("Vehicle Stats", vehicleCard.transform, "", 23, TextAnchor.UpperLeft,
+                new Vector2(.61f, .16f), new Vector2(.95f, .77f), Vector2.zero, Vector2.zero);
+            CreateText("Transmission", vehicleCard.transform, "AUTOMATIC TRANSMISSION", 21,
+                TextAnchor.MiddleCenter, new Vector2(.61f, .05f), new Vector2(.95f, .15f), Vector2.zero, Vector2.zero)
+                .color = new Color(.38f, .88f, 1f);
+            Button previous = CreateButton("Previous Vehicle", panels[1].transform, "<",
+                new Vector2(-730f, -20f), new Vector2(90f, 110f));
+            Button next = CreateButton("Next Vehicle", panels[1].transform, ">",
+                new Vector2(730f, -20f), new Vector2(90f, 110f));
+            Button back = CreateButton("Back", panels[1].transform, "BACK",
+                new Vector2(-520f, -365f), new Vector2(250f, 68f));
+            Button start = CreateButton("Start Race", panels[1].transform, "START RACE",
+                new Vector2(520f, -365f), new Vector2(340f, 76f));
+            Bind(previous, menu.PreviousVehicle); Bind(next, menu.NextVehicle);
+            Bind(back, menu.BackStep); Bind(start, menu.ContinueStep);
+            GaragePreviewRenderer preview = CreateGarageVehiclePreview(assets, previewImage, "PreStart");
+            menu.Assign(assets.catalog, coins, progress, panels, cards, cardRects, statuses, mode, map, vehicle,
+                null, null, stats, null, null, null, null, null, null, null, null, null, preview);
+            CreateEventSystem();
+            EditorSceneManager.SaveScene(scene, PreStartPath);
         }
 
         private static void BuildPreStart(BuiltAssets assets)
@@ -2413,10 +3241,9 @@ namespace AnimeHillRacing.Editor
             GameplayHUD hud = CreateGameplayHud(safe, input, assets);
             ResultsUI results = CreateResults(safe, manager, out RawImage resultImage);
             CanvasGroup controls = CreateClimbControls(safe, input);
-            ShifterUI shifter = CreateShifter(safe, null, input, GameModeType.Adventure2_5D);
             ResultCaptureService capture = CreateResultCapture(null, resultImage, true);
             systems.AddComponent<SelectedVehicleFactory>().ConfigureAdventure2D(assets.catalog, input, manager, hud,
-                results, capture, controls, shifter, terrain, assets.countryside, pool, camera);
+                results, capture, controls, null, terrain, assets.countryside, pool, camera);
             CreateEventSystem();
             EditorSceneManager.SaveScene(scene, Adventure2DPath);
         }
@@ -2439,10 +3266,9 @@ namespace AnimeHillRacing.Editor
             GameplayHUD hud = CreateGameplayHud(safe, input, assets);
             ResultsUI results = CreateResults(safe, manager, out RawImage resultImage);
             CanvasGroup controls = CreateRoadControls(safe, input);
-            ShifterUI shifter = CreateShifter(safe, null, input, GameModeType.Adventure3D);
             ResultCaptureService capture = CreateResultCapture(null, resultImage);
             systems.AddComponent<SelectedVehicleFactory>().ConfigureAdventure3D(assets.catalog, input, manager, hud,
-                results, capture, controls, shifter, road, assets.countrysideRoad, pool, camera);
+                results, capture, controls, null, road, assets.countrysideRoad, pool, camera);
             CreateEventSystem();
             EditorSceneManager.SaveScene(scene, Adventure3DPath);
         }
@@ -2475,10 +3301,9 @@ namespace AnimeHillRacing.Editor
             respawn.image.color = new Color(.42f, .22f, .08f, .96f);
             respawn.GetComponent<Outline>().effectColor = new Color(1f, .62f, .20f, .9f);
             Bind(horizontalJump, manager.HorizontalJump);
-            ShifterUI shifter = CreateShifter(safe, null, input, GameModeType.TimeTrial3D);
             ResultCaptureService capture = CreateResultCapture(null, resultImage);
             systems.AddComponent<SelectedVehicleFactory>().ConfigureTimeTrial(assets.catalog, input, manager, circuit,
-                assets.testCircuit, hud, results, capture, controls, shifter, camera, new Vector3(radius, 3f, -5f));
+                assets.testCircuit, hud, results, capture, controls, null, camera, new Vector3(radius, 3f, -5f));
             CreateEventSystem();
             EditorSceneManager.SaveScene(scene, TimeTrialPath);
         }
@@ -2562,7 +3387,7 @@ namespace AnimeHillRacing.Editor
                 bool front = z == 1;
                 Vector2 wheelPosition = front ? definition.frontWheelVisualPosition : definition.rearWheelVisualPosition;
                 Transform wheel = CreateSpriteVisual(front ? "Front Wheel" : "Rear Wheel", visual, wheelSprite,
-                    new Vector3(xs[x], wheelPosition.y, wheelPosition.x), definition.wheelVisualDiameter, 11);
+                    new Vector3(xs[x], wheelPosition.y, wheelPosition.x), definition.wheelVisualDiameter, 9);
                 wheel.localRotation = Quaternion.Euler(0f, x == 0 ? -90f : 90f, 0f);
                 wheelRenderers[wheelIndex] = wheel.GetComponent<SpriteRenderer>();
                 if (x == 1) wheelRenderers[wheelIndex].flipX = true;
@@ -2590,10 +3415,10 @@ namespace AnimeHillRacing.Editor
                 new Vector3(definition.bodyVisualOffset.x, definition.bodyVisualOffset.y, 0f), definition.visualWidth, 10);
             Transform rearWheel = CreateSpriteVisual("Rear Wheel", visual, wheelSprite,
                 new Vector3(definition.rearWheelVisualPosition.x, definition.rearWheelVisualPosition.y, -.04f),
-                definition.wheelVisualDiameter, 11);
+                definition.wheelVisualDiameter, 9);
             Transform frontWheel = CreateSpriteVisual("Front Wheel", visual, wheelSprite,
                 new Vector3(definition.frontWheelVisualPosition.x, definition.frontWheelVisualPosition.y, -.04f),
-                definition.wheelVisualDiameter, 11);
+                definition.wheelVisualDiameter, 9);
             DriverDefinition defaultDriver = AssetDatabase.LoadAssetAtPath<DriverDefinition>(Root + "/VehicleData/StickmanBlack.asset");
             ArticulatedDriver2D articulated = CreateArticulatedDriver(visual, defaultDriver, definition,
                 root.GetComponent<Rigidbody>(), true);
@@ -2686,11 +3511,12 @@ namespace AnimeHillRacing.Editor
             SphereCollider wheelCollider = origin.AddComponent<SphereCollider>();
             wheelCollider.radius = definition.wheelRadius;
             wheelCollider.sharedMaterial = tireMaterial;
-            ConfigurableJoint joint = origin.AddComponent<ConfigurableJoint>();
-            joint.connectedBody = root.GetComponent<Rigidbody>();
+            ConfigurableJoint joint = root.gameObject.AddComponent<ConfigurableJoint>();
+            joint.connectedBody = wheelBody;
             joint.enableCollision = false;
             SuspensionController suspension = origin.AddComponent<SuspensionController>();
             suspension.AssignWheelVisual(wheelVisual);
+            suspension.AssignPhysicalReferences(wheelBody, wheelCollider, joint);
             return suspension;
         }
 
@@ -2780,14 +3606,12 @@ namespace AnimeHillRacing.Editor
             fuelFill.fillMethod = Image.FillMethod.Horizontal;
             fuelFill.fillOrigin = (int)Image.OriginHorizontal.Left;
             fuelFill.fillAmount = 1f;
-            Text rpm = CreateText("RPM", root.transform, "RPM\n1100", 26, TextAnchor.MiddleCenter,
-                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 465f), new Vector2(260f, 70f));
-            Text speed = CreateText("Speed", root.transform, "0\n<size=24>KM/H</size>", 52, TextAnchor.MiddleCenter,
-                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 385f), new Vector2(270f, 100f));
-            Text gear = CreateText("Gear", root.transform, "GEAR 1", 29, TextAnchor.MiddleCenter,
-                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 310f), new Vector2(260f, 40f));
-            Text transmission = CreateText("Transmission", root.transform, "AUTO", 24, TextAnchor.MiddleCenter,
-                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 270f), new Vector2(220f, 35f));
+            RectTransform rpmNeedle = CreateVehicleGauge("RPM Gauge", root.transform,
+                assets.rpmGauge, assets.rpmNeedle, new Vector2(-150f, 118f), 200f,
+                new Vector2(.499694f, .357008f), new Vector2(.136906f, .202061f), 104f, 159f);
+            RectTransform speedNeedle = CreateVehicleGauge("KMH Gauge", root.transform,
+                assets.speedGauge, assets.speedNeedle, new Vector2(150f, 118f), 200f,
+                new Vector2(.499704f, .316062f), new Vector2(.138627f, .166769f), 116f, 172f);
             Text status = CreateText("Status", root.transform, "", 34, TextAnchor.MiddleCenter,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 120f), new Vector2(500f, 60f));
             GameObject debugPanel = CreateImage("Debug Panel", root.transform, new Color(0f, 0f, 0f, 0.75f),
@@ -2796,8 +3620,8 @@ namespace AnimeHillRacing.Editor
                 Vector2.zero, Vector2.one, new Vector2(15f, -15f), new Vector2(-30f, -30f));
             GameplayHUD hud = root.AddComponent<GameplayHUD>();
             hud.Assign(distance, best, coins, coinIcon, nextFuel, nextFuelIcon, fuelText, fuelIcon, fuelFill,
-                speed, rpm, gear, transmission, status,
-                debugPanel, debug, input);
+                speedNeedle, rpmNeedle, status,
+                debugPanel, debug, input, nextFuelCard);
             debugPanel.SetActive(false);
             return hud;
         }
@@ -2826,10 +3650,14 @@ namespace AnimeHillRacing.Editor
         {
             GameObject root = UIObject("Gameplay Controls", safe, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             CanvasGroup group = root.AddComponent<CanvasGroup>();
-            Button brake = CreateButton("Brake", root.transform, "BRAKE", new Vector2(170f, 115f), new Vector2(300f, 170f), Vector2.zero);
-            Button gas = CreateButton("Gas", root.transform, "GAS", new Vector2(-170f, 115f), new Vector2(300f, 170f), new Vector2(1f, 0f));
-            brake.gameObject.AddComponent<HoldButton>().Assign(input, HoldControl.Brake);
-            gas.gameObject.AddComponent<HoldButton>().Assign(input, HoldControl.Gas);
+            CreateHalfScreenPedal("Brake", root.transform, input, HoldControl.Brake,
+                AssetDatabase.LoadAssetAtPath<Sprite>(BrakePedalPath),
+                AssetDatabase.LoadAssetAtPath<Sprite>(BrakePedalPressedPath),
+                Vector2.zero, new Vector2(.5f, 1f), Vector2.zero, new Vector2(165f, 177f));
+            CreateHalfScreenPedal("Gas", root.transform, input, HoldControl.Gas,
+                AssetDatabase.LoadAssetAtPath<Sprite>(GasPedalPath),
+                AssetDatabase.LoadAssetAtPath<Sprite>(GasPedalPressedPath),
+                new Vector2(.5f, 0f), Vector2.one, new Vector2(1f, 0f), new Vector2(-165f, 177f));
             return group;
         }
 
@@ -2839,12 +3667,16 @@ namespace AnimeHillRacing.Editor
             CanvasGroup group = root.AddComponent<CanvasGroup>();
             Button left = CreateButton("Left", root.transform, "LEFT", new Vector2(155f, 290f), new Vector2(250f, 120f), Vector2.zero);
             Button right = CreateButton("Right", root.transform, "RIGHT", new Vector2(435f, 290f), new Vector2(250f, 120f), Vector2.zero);
-            Button brake = CreateButton("Brake", root.transform, "BRAKE", new Vector2(155f, 115f), new Vector2(250f, 140f), Vector2.zero);
-            Button gas = CreateButton("Gas", root.transform, "GAS", new Vector2(-155f, 115f), new Vector2(280f, 150f), new Vector2(1f, 0f));
             left.gameObject.AddComponent<HoldButton>().Assign(input, HoldControl.Left);
             right.gameObject.AddComponent<HoldButton>().Assign(input, HoldControl.Right);
-            brake.gameObject.AddComponent<HoldButton>().Assign(input, HoldControl.Brake);
-            gas.gameObject.AddComponent<HoldButton>().Assign(input, HoldControl.Gas);
+            CreatePedalButton("Brake", root.transform, input, HoldControl.Brake,
+                AssetDatabase.LoadAssetAtPath<Sprite>(BrakePedalPath),
+                AssetDatabase.LoadAssetAtPath<Sprite>(BrakePedalPressedPath),
+                Vector2.zero, new Vector2(156f, 147f), new Vector2(219f, 274f));
+            CreatePedalButton("Gas", root.transform, input, HoldControl.Gas,
+                AssetDatabase.LoadAssetAtPath<Sprite>(GasPedalPath),
+                AssetDatabase.LoadAssetAtPath<Sprite>(GasPedalPressedPath),
+                new Vector2(1f, 0f), new Vector2(-156f, 147f), new Vector2(219f, 274f));
             return group;
         }
 
@@ -2892,20 +3724,22 @@ namespace AnimeHillRacing.Editor
                 new Vector2(-180f, -52f), new Vector2(320f, 78f));
             Text best = CreateText("Best Lap", bestCard.transform, "BEST LAP\n--:--.---", 25,
                 TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-            Text rpm = CreateText("RPM", root.transform, "RPM\n1100", 25, TextAnchor.MiddleCenter,
-                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 465f), new Vector2(250f, 70f));
-            Text speed = CreateText("Speed", root.transform, "0\n<size=24>KM/H</size>", 50, TextAnchor.MiddleCenter,
-                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 385f), new Vector2(260f, 100f));
-            Text gear = CreateText("Gear", root.transform, "GEAR 1", 28, TextAnchor.MiddleCenter,
-                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 310f), new Vector2(230f, 40f));
-            Text transmission = CreateText("Transmission", root.transform, "AUTO", 24, TextAnchor.MiddleCenter,
-                new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 270f), new Vector2(200f, 35f));
+            Sprite rpmGauge = AssetDatabase.LoadAssetAtPath<Sprite>(RpmGaugePath);
+            Sprite rpmArrow = AssetDatabase.LoadAssetAtPath<Sprite>(RpmNeedlePath);
+            Sprite speedGauge = AssetDatabase.LoadAssetAtPath<Sprite>(SpeedGaugePath);
+            Sprite speedArrow = AssetDatabase.LoadAssetAtPath<Sprite>(SpeedNeedlePath);
+            RectTransform rpmNeedle = CreateVehicleGauge("RPM Gauge", root.transform, rpmGauge, rpmArrow,
+                new Vector2(-150f, 118f), 200f, new Vector2(.499694f, .357008f),
+                new Vector2(.136906f, .202061f), 104f, 159f);
+            RectTransform speedNeedle = CreateVehicleGauge("KMH Gauge", root.transform, speedGauge, speedArrow,
+                new Vector2(150f, 118f), 200f, new Vector2(.499704f, .316062f),
+                new Vector2(.138627f, .166769f), 116f, 172f);
             GameObject debugPanel = CreateImage("Debug Panel", root.transform, new Color(0f, 0f, 0f, 0.75f),
                 new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-25f, 80f), new Vector2(500f, 340f));
             Text debug = CreateText("Debug Text", debugPanel.transform, "", 20, TextAnchor.UpperLeft,
                 Vector2.zero, Vector2.one, new Vector2(15f, -15f), new Vector2(-30f, -30f));
             TimeTrialHUD hud = root.AddComponent<TimeTrialHUD>();
-            hud.Assign(timer, lap, best, speed, rpm, gear, transmission, debugPanel, debug, input);
+            hud.Assign(timer, lap, best, speedNeedle, rpmNeedle, debugPanel, debug, input);
             debugPanel.SetActive(false); return hud;
         }
 
@@ -3020,11 +3854,14 @@ namespace AnimeHillRacing.Editor
         {
             string path = Root + "/Materials/" + name + ".mat";
             Material material = AssetDatabase.LoadAssetAtPath<Material>(path);
+            Shader shader = Shader.Find("Standard") ?? Shader.Find("Legacy Shaders/Diffuse");
+            if (shader == null) throw new System.InvalidOperationException("No compatible built-in lit shader was found.");
             if (material == null)
             {
-                material = new Material(Shader.Find("Universal Render Pipeline/Lit")) { name = name };
+                material = new Material(shader) { name = name };
                 AssetDatabase.CreateAsset(material, path);
             }
+            else if (material.shader != shader) material.shader = shader;
             material.color = color; EditorUtility.SetDirty(material); return material;
         }
 
@@ -3050,11 +3887,14 @@ namespace AnimeHillRacing.Editor
         {
             string path = Root + "/Materials/Unlit_" + name + ".mat";
             Material material = AssetDatabase.LoadAssetAtPath<Material>(path);
+            Shader shader = Shader.Find("Unlit/Color") ?? Shader.Find("Sprites/Default");
+            if (shader == null) throw new System.InvalidOperationException("No compatible built-in unlit shader was found.");
             if (material == null)
             {
-                material = new Material(Shader.Find("Universal Render Pipeline/Unlit")) { name = "Unlit_" + name };
+                material = new Material(shader) { name = "Unlit_" + name };
                 AssetDatabase.CreateAsset(material, path);
             }
+            else if (material.shader != shader) material.shader = shader;
             material.color = color; EditorUtility.SetDirty(material); return material;
         }
 
@@ -3142,6 +3982,123 @@ namespace AnimeHillRacing.Editor
             image.preserveAspect = true;
             image.raycastTarget = false;
             return image;
+        }
+
+        private static RectTransform CreateVehicleGauge(string name, Transform parent, Sprite face, Sprite needle,
+            Vector2 position, float faceHeight, Vector2 faceCenter, Vector2 needlePivot,
+            float needleTipLength, float zeroAngle)
+        {
+            float faceAspect = face != null && face.rect.height > 0f ? face.rect.width / face.rect.height : 1.3f;
+            GameObject gaugeObject = UIObject(name, parent, new Vector2(.5f, 0f), new Vector2(.5f, 0f),
+                position, new Vector2(faceHeight * faceAspect, faceHeight));
+            Image faceImage = gaugeObject.AddComponent<Image>();
+            faceImage.sprite = face; faceImage.preserveAspect = true; faceImage.raycastTarget = false;
+
+            Vector2 sourceTip = needle != null
+                ? new Vector2((1f - needlePivot.x) * needle.rect.width,
+                    (1f - needlePivot.y) * needle.rect.height)
+                : Vector2.one;
+            float needleScale = needleTipLength / Mathf.Max(1f, sourceTip.magnitude);
+            Vector2 needleSize = needle != null
+                ? new Vector2(needle.rect.width * needleScale, needle.rect.height * needleScale)
+                : new Vector2(needleTipLength, needleTipLength * .7f);
+            GameObject needleObject = UIObject(name + " Needle", gaugeObject.transform,
+                faceCenter, faceCenter, Vector2.zero, needleSize);
+            RectTransform needleRect = needleObject.GetComponent<RectTransform>();
+            needleRect.pivot = needlePivot;
+            needleRect.localRotation = Quaternion.Euler(0f, 0f, zeroAngle);
+            Image needleImage = needleObject.AddComponent<Image>();
+            needleImage.sprite = needle; needleImage.preserveAspect = true; needleImage.raycastTarget = false;
+            return needleRect;
+        }
+
+        private static HoldButton CreateHalfScreenPedal(string name, Transform parent,
+            VehicleInputController input, HoldControl control, Sprite normal, Sprite pressed,
+            Vector2 zoneAnchorMin, Vector2 zoneAnchorMax, Vector2 visualAnchor, Vector2 visualPosition)
+        {
+            GameObject zone = UIObject(name + " Touch Zone", parent, zoneAnchorMin, zoneAnchorMax,
+                Vector2.zero, Vector2.zero);
+            Image hitArea = zone.AddComponent<Image>();
+            hitArea.color = new Color(1f, 1f, 1f, .001f);
+            hitArea.raycastTarget = true;
+            Image visual = CreateSpriteImage(name + " Pedal", zone.transform, normal, visualAnchor,
+                visualPosition, new Vector2(265f, 334f));
+            HoldButton hold = zone.AddComponent<HoldButton>();
+            hold.Assign(input, control, visual, normal, pressed);
+            return hold;
+        }
+
+        private static HoldButton CreatePedalButton(string name, Transform parent, VehicleInputController input,
+            HoldControl control, Sprite normal, Sprite pressed, Vector2 anchor, Vector2 position, Vector2 size)
+        {
+            GameObject pedal = UIObject(name, parent, anchor, anchor, position, size);
+            Image visual = pedal.AddComponent<Image>();
+            visual.sprite = normal; visual.preserveAspect = true; visual.raycastTarget = true;
+            HoldButton hold = pedal.AddComponent<HoldButton>();
+            hold.Assign(input, control, visual, normal, pressed);
+            return hold;
+        }
+
+        private static Image CreateAspectCoverBackground(Transform parent, Sprite sprite)
+        {
+            GameObject gameObject = UIObject("Garage Background", parent, new Vector2(.5f, .5f),
+                new Vector2(.5f, .5f), Vector2.zero, Vector2.zero);
+            Image image = gameObject.AddComponent<Image>();
+            image.sprite = sprite;
+            image.raycastTarget = false;
+            AspectRatioFitter fitter = gameObject.AddComponent<AspectRatioFitter>();
+            fitter.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
+            fitter.aspectRatio = sprite != null && sprite.rect.height > 0f
+                ? sprite.rect.width / sprite.rect.height : 1.5f;
+            return image;
+        }
+
+        private static Button CreateSpriteButton(string name, Transform parent, Sprite sprite, Vector2 anchor,
+            Vector2 position, Vector2 size)
+        {
+            GameObject gameObject = UIObject(name, parent, anchor, anchor, position, size);
+            Image image = gameObject.AddComponent<Image>();
+            image.sprite = sprite;
+            image.preserveAspect = true;
+            Button button = gameObject.AddComponent<Button>();
+            ColorBlock colors = button.colors;
+            colors.normalColor = Color.white;
+            colors.highlightedColor = new Color(1.08f, 1.08f, 1.08f, 1f);
+            colors.pressedColor = new Color(.72f, .86f, 1f, 1f);
+            colors.disabledColor = new Color(.35f, .38f, .42f, .65f);
+            colors.fadeDuration = .06f;
+            button.colors = colors;
+            gameObject.AddComponent<ButtonPressFeedback>();
+            return button;
+        }
+
+        private static GaragePreviewRenderer CreateGarageVehiclePreview(BuiltAssets assets, RawImage target,
+            string context)
+        {
+            GameObject previewCameraObject = new GameObject(context + " Preview Camera");
+            previewCameraObject.transform.position = new Vector3(1000f, 0f, -10f);
+            Camera previewCamera = previewCameraObject.AddComponent<Camera>();
+            previewCamera.orthographic = true;
+            previewCamera.orthographicSize = 2.35f;
+            previewCamera.clearFlags = CameraClearFlags.SolidColor;
+            previewCamera.backgroundColor = new Color(0f, 0f, 0f, 0f);
+            previewCamera.enabled = false;
+            Transform previewRoot = new GameObject(context + " Composed Vehicle Preview").transform;
+            previewRoot.position = new Vector3(1000f, 0f, 0f);
+            VehicleDefinition initial = assets.jeep;
+            Transform body = CreateSpriteVisual("Preview Body", previewRoot, assets.jeepBody,
+                new Vector3(initial.bodyVisualOffset.x, initial.bodyVisualOffset.y, 0f), initial.visualWidth, 10);
+            Transform rearWheel = CreateSpriteVisual("Preview Rear Wheel", previewRoot, assets.jeepWheel01,
+                new Vector3(initial.rearWheelVisualPosition.x, initial.rearWheelVisualPosition.y, -.02f),
+                initial.wheelVisualDiameter, 9);
+            Transform frontWheel = CreateSpriteVisual("Preview Front Wheel", previewRoot, assets.jeepWheel01,
+                new Vector3(initial.frontWheelVisualPosition.x, initial.frontWheelVisualPosition.y, -.02f),
+                initial.wheelVisualDiameter, 9);
+            ArticulatedDriver2D driver = CreateArticulatedDriver(previewRoot, assets.stickmanBlack, initial, null, false);
+            GaragePreviewRenderer preview = new GameObject(context + " Preview Renderer").AddComponent<GaragePreviewRenderer>();
+            preview.Assign(previewCamera, target, previewRoot, body.GetComponent<SpriteRenderer>(),
+                rearWheel.GetComponent<SpriteRenderer>(), frontWheel.GetComponent<SpriteRenderer>(), driver);
+            return preview;
         }
 
         private static GameObject CreateHudCard(string name, Transform parent, Vector2 anchor, Vector2 position,

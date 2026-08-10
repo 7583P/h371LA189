@@ -56,8 +56,8 @@ namespace AnimeHillRacing.Core
 
         public static TransmissionMode SelectedTransmission
         {
-            get => (TransmissionMode)Mathf.Clamp(PlayerPrefs.GetInt(SelectedTransmissionKey, 0), 0, 1);
-            set { PlayerPrefs.SetInt(SelectedTransmissionKey, (int)value); PlayerPrefs.Save(); }
+            get => TransmissionMode.Auto;
+            set { PlayerPrefs.SetInt(SelectedTransmissionKey, (int)TransmissionMode.Auto); PlayerPrefs.Save(); }
         }
 
         public static string GetSelectedSkinId(VehicleDefinition vehicle) => GetVehicleCustomization(
@@ -133,21 +133,21 @@ namespace AnimeHillRacing.Core
         public static VehicleUpgradeState LoadUpgrades(string vehicleId, VehicleDefinition definition)
         {
             var state = new VehicleUpgradeState();
-            state.engineTune = LoadOrMigrateTune(vehicleId, VehicleUpgradeType.Engine,
+            state.engineTune = LoadOrMigrateUpgradeLevel(vehicleId, VehicleUpgradeType.Engine,
                 definition != null ? definition.engineMaxTunes : 14);
-            state.accelerationTune = LoadOrMigrateTune(vehicleId, VehicleUpgradeType.Acceleration,
+            state.accelerationTune = LoadOrMigrateUpgradeLevel(vehicleId, VehicleUpgradeType.Acceleration,
                 definition != null ? definition.accelerationMaxTunes : 15);
-            state.suspensionTune = LoadOrMigrateTune(vehicleId, VehicleUpgradeType.Suspension,
+            state.suspensionTune = LoadOrMigrateUpgradeLevel(vehicleId, VehicleUpgradeType.Suspension,
                 definition != null ? definition.suspensionMaxTunes : 12);
-            state.gripTune = LoadOrMigrateTune(vehicleId, VehicleUpgradeType.Grip,
+            state.gripTune = LoadOrMigrateUpgradeLevel(vehicleId, VehicleUpgradeType.Grip,
                 definition != null ? definition.gripMaxTunes : 12);
-            state.airControlTune = LoadOrMigrateTune(vehicleId, VehicleUpgradeType.AirControl,
+            state.airControlTune = LoadOrMigrateUpgradeLevel(vehicleId, VehicleUpgradeType.AirControl,
                 definition != null ? definition.airControlMaxTunes : 0);
-            state.downforceTune = LoadOrMigrateTune(vehicleId, VehicleUpgradeType.Downforce,
+            state.downforceTune = LoadOrMigrateUpgradeLevel(vehicleId, VehicleUpgradeType.Downforce,
                 definition != null ? definition.downforceMaxTunes : 0);
-            state.fuelTune = LoadOrMigrateTune(vehicleId, VehicleUpgradeType.Fuel,
+            state.fuelTune = LoadOrMigrateUpgradeLevel(vehicleId, VehicleUpgradeType.Fuel,
                 definition != null ? definition.fuelMaxTunes : 15);
-            state.turboTune = LoadOrMigrateTune(vehicleId, VehicleUpgradeType.Turbo,
+            state.turboTune = LoadOrMigrateUpgradeLevel(vehicleId, VehicleUpgradeType.Turbo,
                 definition != null ? definition.turboMaxTunes : 0);
             state.ClampTo(definition);
             return state;
@@ -156,44 +156,73 @@ namespace AnimeHillRacing.Core
         public static bool TryPurchaseTune(VehicleDefinition definition, VehicleUpgradeType type,
             UpgradeEconomyDefinition economy, out int resultingTune)
         {
-            if (definition == null) { resultingTune = 0; return false; }
+            return TryPurchaseTune(definition, type, economy, out resultingTune, out _);
+        }
+
+        public static bool TryPurchaseTune(VehicleDefinition definition, VehicleUpgradeType type,
+            UpgradeEconomyDefinition economy, out int resultingTune, out TunePurchaseResult result)
+        {
+            if (definition == null || economy == null)
+            {
+                resultingTune = 0;
+                result = TunePurchaseResult.InvalidConfiguration;
+                return false;
+            }
             int maximum = definition.GetMaxTunes(type);
             int current = LoadUpgrades(definition.vehicleId, definition).GetTune(type);
             resultingTune = current;
-            if (current >= maximum || economy == null)
+            if (maximum <= 0 || current >= maximum)
+            {
+                result = TunePurchaseResult.MaximumLevel;
                 return false;
-            int cost = economy.GetCostForNextTune(current - 1);
-            if (cost < 0 || TotalCoins < cost)
+            }
+            int cost = economy.GetCostForNextTune(current);
+            if (cost < 0)
+            {
+                result = TunePurchaseResult.InvalidConfiguration;
                 return false;
+            }
+            if (TotalCoins < cost)
+            {
+                result = TunePurchaseResult.NotEnoughCoins;
+                return false;
+            }
             PlayerPrefs.SetInt(TotalCoinsKey, TotalCoins - cost);
             resultingTune = current + 1;
-            PlayerPrefs.SetInt(TuneKey(definition.vehicleId, type), resultingTune);
+            PlayerPrefs.SetInt(UpgradeLevelKey(definition.vehicleId, type), resultingTune);
+            PlayerPrefs.SetInt(ZeroBasedSchemaKey(definition.vehicleId, type), 1);
             PlayerPrefs.Save();
+            result = TunePurchaseResult.Success;
             return true;
         }
 
         public static int GetTune(string vehicleId, VehicleUpgradeType type, int maximum)
         {
-            return LoadOrMigrateTune(vehicleId, type, maximum);
+            return LoadOrMigrateUpgradeLevel(vehicleId, type, maximum);
         }
 
-        private static int LoadOrMigrateTune(string vehicleId, VehicleUpgradeType type, int maximum)
+        private static int LoadOrMigrateUpgradeLevel(string vehicleId, VehicleUpgradeType type, int maximum)
         {
             if (maximum <= 0) return 0;
-            string newKey = TuneKey(vehicleId, type);
-            string oneBasedKey = TuneSchemaKey(vehicleId, type);
-            if (PlayerPrefs.HasKey(oneBasedKey))
-                return Mathf.Clamp(PlayerPrefs.GetInt(newKey, 1), 1, maximum);
+            string levelKey = UpgradeLevelKey(vehicleId, type);
+            string zeroBasedKey = ZeroBasedSchemaKey(vehicleId, type);
+            if (PlayerPrefs.HasKey(zeroBasedKey))
+                return Mathf.Clamp(PlayerPrefs.GetInt(levelKey, 0), 0, maximum);
 
+            string tuneKey = TuneKey(vehicleId, type);
             string oldUpgradeKey = UpgradeKey(vehicleId, type);
-            int tune = 1;
-            if (PlayerPrefs.HasKey(newKey))
+            int level = 0;
+            if (PlayerPrefs.HasKey(TuneSchemaKey(vehicleId, type)))
             {
-                tune = PlayerPrefs.GetInt(newKey, 0) + 1;
+                level = Mathf.Max(0, PlayerPrefs.GetInt(tuneKey, 1) - 1);
+            }
+            else if (PlayerPrefs.HasKey(tuneKey))
+            {
+                level = Mathf.Max(0, PlayerPrefs.GetInt(tuneKey, 0));
             }
             else if (PlayerPrefs.HasKey(oldUpgradeKey))
             {
-                tune = Mathf.Max(1, PlayerPrefs.GetInt(oldUpgradeKey, 1));
+                level = Mathf.Max(0, PlayerPrefs.GetInt(oldUpgradeKey, 1) - 1);
             }
             else
             {
@@ -202,15 +231,15 @@ namespace AnimeHillRacing.Core
                 for (int i = 0; i < legacyKeys.Length; i++)
                 {
                     if (!PlayerPrefs.HasKey(legacyKeys[i])) continue;
-                    tune = Mathf.Max(1, PlayerPrefs.GetInt(legacyKeys[i], 1));
+                    level = Mathf.Max(0, PlayerPrefs.GetInt(legacyKeys[i], 1) - 1);
                     break;
                 }
             }
-            tune = Mathf.Clamp(tune, 1, maximum);
-            PlayerPrefs.SetInt(newKey, tune);
-            PlayerPrefs.SetInt(oneBasedKey, 1);
+            level = Mathf.Clamp(level, 0, maximum);
+            PlayerPrefs.SetInt(levelKey, level);
+            PlayerPrefs.SetInt(zeroBasedKey, 1);
             PlayerPrefs.Save();
-            return tune;
+            return level;
         }
 
         private static string BestKey(GameModeType mode, string mapId) =>
@@ -224,6 +253,12 @@ namespace AnimeHillRacing.Core
 
         private static string TuneSchemaKey(string vehicleId, VehicleUpgradeType type) =>
             $"AHR.TuneSchema.OneBased.{vehicleId}.{(int)type}";
+
+        private static string UpgradeLevelKey(string vehicleId, VehicleUpgradeType type) =>
+            $"AHR.UpgradeLevel.{vehicleId}.{(int)type}";
+
+        private static string ZeroBasedSchemaKey(string vehicleId, VehicleUpgradeType type) =>
+            $"AHR.UpgradeSchema.ZeroBasedV2.{vehicleId}.{(int)type}";
 
         private static string TimeKey(string circuitId) => $"AHR.BestTime.{circuitId}";
         private static string LapKey(string circuitId) => $"AHR.BestLap.{circuitId}";

@@ -16,15 +16,18 @@ namespace AnimeHillRacing.UI
         [SerializeField] private Image coinIcon;
         [SerializeField] private Text nextFuelText;
         [SerializeField] private Image nextFuelIcon;
+        [SerializeField] private GameObject nextFuelPanel;
         [SerializeField] private Text fuelText;
         [SerializeField] private Image fuelIcon;
         [SerializeField] private Image fuelFill;
         [SerializeField] private Gradient fuelGradient = new Gradient();
         [SerializeField] private bool useDefaultFuelGradient = true;
-        [SerializeField] private Text speedText;
-        [SerializeField] private Text rpmText;
-        [SerializeField] private Text gearText;
-        [SerializeField] private Text transmissionText;
+        [SerializeField] private RectTransform speedNeedle;
+        [SerializeField] private RectTransform rpmNeedle;
+        [SerializeField] private float speedNeedleZeroAngle = 172f;
+        [SerializeField] private float speedNeedleFullAngle = -63f;
+        [SerializeField] private float rpmNeedleZeroAngle = 159f;
+        [SerializeField] private float rpmNeedleFullAngle = -49f;
         [SerializeField] private Text statusText;
         [SerializeField] private GameObject debugPanel;
         [SerializeField] private Text debugText;
@@ -48,6 +51,8 @@ namespace AnimeHillRacing.UI
             roadManager = FindFirstObjectByType<RoadTrackGenerator>();
             if (input == null)
                 input = FindFirstObjectByType<VehicleInputController>();
+            if (nextFuelPanel == null && nextFuelText != null && nextFuelText.transform.parent != null)
+                nextFuelPanel = nextFuelText.transform.parent.gameObject;
             if (fuelFill != null)
             {
                 fuelFillRect = fuelFill.rectTransform;
@@ -82,8 +87,12 @@ namespace AnimeHillRacing.UI
             if (nextFuelText != null)
             {
                 float progress = vehicle.ProgressPosition;
-                nextFuelText.text = pickupPool != null && pickupPool.TryGetNextFuelDistance(progress, out float fuelDistance)
-                    ? $"NEXT FUEL   {Mathf.CeilToInt(fuelDistance):N0} m" : "NEXT FUEL   ---";
+                float fuelDistance = 0f;
+                bool showNextFuel = pickupPool != null &&
+                    pickupPool.TryGetNextFuelDistance(progress, out fuelDistance) && fuelDistance <= 200f;
+                if (nextFuelPanel != null) nextFuelPanel.SetActive(showNextFuel);
+                if (showNextFuel)
+                    nextFuelText.text = $"NEXT FUEL   {Mathf.CeilToInt(fuelDistance):N0} m";
             }
             FuelSystem runtimeFuel = vehicle.Fuel;
             float normalizedFuel = runtimeFuel != null ? runtimeFuel.NormalizedFuel : 0f;
@@ -100,10 +109,10 @@ namespace AnimeHillRacing.UI
                     fuelFillRect.offsetMax = Vector2.Lerp(fuelEmptyOffsetMax, fuelFullOffsetMax, normalizedFuel);
                 }
             }
-            if (speedText != null) speedText.text = $"{vehicle.SpeedKmh:0}\n<size=24>KM/H</size>";
-            if (rpmText != null) rpmText.text = $"RPM\n{vehicle.EngineRpm:0}";
-            if (gearText != null) gearText.text = $"GEAR  {transmission.CurrentGear}";
-            if (transmissionText != null) transmissionText.text = transmission.Mode.ToString().ToUpperInvariant();
+            SetNeedle(speedNeedle, Mathf.Abs(vehicle.SpeedKmh) / 400f,
+                speedNeedleZeroAngle, speedNeedleFullAngle);
+            SetNeedle(rpmNeedle, vehicle.EngineRpm / 10000f,
+                rpmNeedleZeroAngle, rpmNeedleFullAngle);
             if (statusText != null)
             {
                 if (gameManager.State == RunState.CrashPending)
@@ -156,9 +165,10 @@ namespace AnimeHillRacing.UI
         }
 
         public void Assign(Text distance, Text best, Text coins, Image targetCoinIcon, Text nextFuel,
-            Image targetNextFuelIcon, Text fuelLabel, Image targetFuelIcon, Image fuelBar, Text speed,
-            Text rpm, Text gear, Text transmission, Text status, GameObject targetDebugPanel, Text targetDebugText,
-            VehicleInputController targetInput)
+            Image targetNextFuelIcon, Text fuelLabel, Image targetFuelIcon, Image fuelBar,
+            RectTransform targetSpeedNeedle, RectTransform targetRpmNeedle,
+            Text status, GameObject targetDebugPanel, Text targetDebugText,
+            VehicleInputController targetInput, GameObject targetNextFuelPanel = null)
         {
             distanceText = distance;
             bestText = best;
@@ -166,17 +176,23 @@ namespace AnimeHillRacing.UI
             coinIcon = targetCoinIcon;
             nextFuelText = nextFuel;
             nextFuelIcon = targetNextFuelIcon;
+            nextFuelPanel = targetNextFuelPanel;
             fuelText = fuelLabel;
             fuelIcon = targetFuelIcon;
             fuelFill = fuelBar;
-            speedText = speed;
-            rpmText = rpm;
-            gearText = gear;
-            transmissionText = transmission;
+            speedNeedle = targetSpeedNeedle;
+            rpmNeedle = targetRpmNeedle;
             statusText = status;
             debugPanel = targetDebugPanel;
             debugText = targetDebugText;
             input = targetInput;
+        }
+
+        private static void SetNeedle(RectTransform needle, float normalized, float zeroAngle, float fullAngle)
+        {
+            if (needle == null) return;
+            needle.localRotation = Quaternion.Euler(0f, 0f,
+                Mathf.Lerp(zeroAngle, fullAngle, Mathf.Clamp01(normalized)));
         }
 
         public void AssignPickupPool(PickupPool pool) => pickupPool = pool;

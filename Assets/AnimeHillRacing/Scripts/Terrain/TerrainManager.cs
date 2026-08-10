@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using AnimeHillRacing.Pickups;
 using AnimeHillRacing.Vehicle;
 using UnityEngine;
@@ -12,7 +13,7 @@ namespace AnimeHillRacing.Terrain
         [SerializeField, Min(20f)] private float chunkLength = 80f;
         [SerializeField, Range(8, 96)] private int samples = 48;
         [SerializeField, Min(2f)] private float width = 10f;
-        [SerializeField, Range(0, 8)] private int chunksBehind = 4;
+        [SerializeField, Range(0, 8)] private int chunksBehind = 2;
         [SerializeField, Range(1, 12)] private int chunksAhead = 7;
 
         private TerrainChunk[] chunks;
@@ -20,6 +21,8 @@ namespace AnimeHillRacing.Terrain
         private int minimumLoadedIndex;
         private int maximumLoadedIndex;
         private readonly ProgressiveFuelSequence fuelSequence = new ProgressiveFuelSequence();
+        private MeshCollider authoritativeTerrainCollider;
+        private Mesh authoritativeTerrainMesh;
 
         public int CurrentChunkIndex => currentChunkIndex;
         public MapProfile ActiveProfile => mapProfile;
@@ -42,6 +45,7 @@ namespace AnimeHillRacing.Terrain
             }
 
             pickupPool?.Initialize();
+            EnsureAuthoritativeTerrainCollider();
             fuelSequence.Reset(0f, mapProfile.initialFuelGap, mapProfile.fuelGapIncrease);
             int count = chunksBehind + chunksAhead + 1;
             chunks = new TerrainChunk[count];
@@ -56,6 +60,7 @@ namespace AnimeHillRacing.Terrain
                 chunks[i] = chunk;
                 GenerateChunk(chunk, minimumLoadedIndex + i);
             }
+            RebuildAuthoritativeTerrainCollider();
         }
 
         private void Update()
@@ -78,7 +83,10 @@ namespace AnimeHillRacing.Terrain
             minimumLoadedIndex++;
             maximumLoadedIndex++;
             if (oldest != null)
+            {
                 GenerateChunk(oldest, maximumLoadedIndex);
+                RebuildAuthoritativeTerrainCollider();
+            }
         }
 
         private TerrainChunk FindChunk(int index)
@@ -100,8 +108,75 @@ namespace AnimeHillRacing.Terrain
             bool hasBoundary = previous != null;
             chunk.Generate(index, mapProfile, chunkLength, samples, width, pickupPool, hasBoundary,
                 hasBoundary ? previous.EndHeight : 0f, hasBoundary ? previous.EndSlope : 0f);
+            // Rendering remains chunked and recyclable, but separate coplanar MeshColliders produce duplicate
+            // contacts at their shared edge. Physics is rebuilt below as one welded, authoritative surface.
+            chunk.SetChunkColliderEnabled(false);
             SpawnCoins(chunk, index);
             SpawnProgressiveFuel(chunk, index);
+        }
+
+        private void EnsureAuthoritativeTerrainCollider()
+        {
+            if (authoritativeTerrainCollider == null)
+                authoritativeTerrainCollider = GetComponent<MeshCollider>();
+            if (authoritativeTerrainCollider == null)
+                authoritativeTerrainCollider = gameObject.AddComponent<MeshCollider>();
+            if (authoritativeTerrainMesh == null)
+            {
+                authoritativeTerrainMesh = new Mesh { name = "Authoritative Continuous Terrain Collider" };
+                authoritativeTerrainMesh.MarkDynamic();
+            }
+            authoritativeTerrainCollider.sharedMaterial = mapProfile.groundPhysicsMaterial;
+        }
+
+        private void RebuildAuthoritativeTerrainCollider()
+        {
+            EnsureAuthoritativeTerrainCollider();
+            var ordered = new List<TerrainChunk>(chunks != null ? chunks.Length : 0);
+            if (chunks != null)
+                for (int i = 0; i < chunks.Length; i++)
+                    if (chunks[i] != null && chunks[i].IsGenerated) ordered.Add(chunks[i]);
+            ordered.Sort((a, b) => a.Index.CompareTo(b.Index));
+
+            var vertices = new List<Vector3>(ordered.Count * (samples + 1) * 2);
+            var triangles = new List<int>(Mathf.Max(0, ordered.Count * samples * 6));
+            int pairCount = 0;
+            for (int chunkIndex = 0; chunkIndex < ordered.Count; chunkIndex++)
+            {
+                TerrainChunk chunk = ordered[chunkIndex];
+                int sampleCount = chunk.SurfaceSampleCount;
+                for (int sample = chunkIndex > 0 ? 1 : 0; sample < sampleCount; sample++)
+                {
+                    float localX = sample * chunk.ChunkLength / Mathf.Max(1, sampleCount - 1);
+                    float height = chunk.GetSurfaceHeight(sample);
+                    Vector3 leftWorld = chunk.transform.TransformPoint(
+                        new Vector3(localX, height, -chunk.SurfaceWidth * .5f));
+                    Vector3 rightWorld = chunk.transform.TransformPoint(
+                        new Vector3(localX, height, chunk.SurfaceWidth * .5f));
+                    vertices.Add(transform.InverseTransformPoint(leftWorld));
+                    vertices.Add(transform.InverseTransformPoint(rightWorld));
+                    if (pairCount > 0)
+                    {
+                        int previous = (pairCount - 1) * 2;
+                        int current = pairCount * 2;
+                        triangles.Add(previous);
+                        triangles.Add(previous + 1);
+                        triangles.Add(current);
+                        triangles.Add(previous + 1);
+                        triangles.Add(current + 1);
+                        triangles.Add(current);
+                    }
+                    pairCount++;
+                }
+            }
+
+            authoritativeTerrainMesh.Clear();
+            authoritativeTerrainMesh.SetVertices(vertices);
+            authoritativeTerrainMesh.SetTriangles(triangles, 0, true);
+            authoritativeTerrainMesh.RecalculateNormals();
+            authoritativeTerrainMesh.RecalculateBounds();
+            authoritativeTerrainCollider.sharedMesh = null;
+            authoritativeTerrainCollider.sharedMesh = authoritativeTerrainMesh;
         }
 
         private void SpawnCoins(TerrainChunk chunk, int index)
@@ -185,6 +260,13 @@ namespace AnimeHillRacing.Terrain
             mapProfile = profile;
             vehicle = targetVehicle;
             pickupPool = pool;
+        }
+
+        private void OnDestroy()
+        {
+            if (authoritativeTerrainMesh == null) return;
+            if (Application.isPlaying) Destroy(authoritativeTerrainMesh);
+            else DestroyImmediate(authoritativeTerrainMesh);
         }
     }
 }

@@ -4,6 +4,24 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/AnimeHillRacing/Scenes/MainMenu.unity
+    guid: 857dfd4a5155f2044b291c7497f58617
+  - enabled: 1
+    path: Assets/AnimeHillRacing/Scenes/Garage.unity
+    guid: 00c76fa7dc759d24f98fdd67beb2ff10
+  - enabled: 1
+    path: Assets/AnimeHillRacing/Scenes/PreStart.unity
+    guid: d0e35c8d95f2c6f43b3b184797ca136d
+  - enabled: 1
+    path: Assets/AnimeHillRacing/Scenes/Adventure2_5D.unity
+    guid: 364b624e40b70084db96bf401f10cc6f
+  - enabled: 1
+    path: Assets/AnimeHillRacing/Scenes/Adventure3D.unity
+    guid: 2e399cd65dfd63b438eaf77b1003c0d7
+  - enabled: 1
+    path: Assets/AnimeHillRacing/Scenes/TimeTrial3D.unity
+    guid: 371d77d94f37d7940a62d433c4cfab9b
   m_configObjects: {}
   m_UseUCBPForAssetBundles: 0

@@ -22,11 +22,15 @@ namespace AnimeHillRacing.Terrain
         private PickupPool pickupPool;
         private float[] surfaceHeights;
         private float chunkLength;
+        private float surfaceWidth;
 
         public int Index { get; private set; }
         public bool IsGenerated { get; private set; }
         public float EndHeight { get; private set; }
         public float EndSlope { get; private set; }
+        public int SurfaceSampleCount => surfaceHeights != null ? surfaceHeights.Length : 0;
+        public float ChunkLength => chunkLength;
+        public float SurfaceWidth => surfaceWidth;
 
         private void Awake()
         {
@@ -67,6 +71,7 @@ namespace AnimeHillRacing.Terrain
             ReleasePickups();
             Index = index;
             chunkLength = targetChunkLength;
+            surfaceWidth = width;
             pickupPool = pool;
             transform.position = new Vector3(index * targetChunkLength, 0f, 0f);
             TerrainGenerator.BuildMesh(mesh, profile, index * targetChunkLength, targetChunkLength, samples, width,
@@ -87,6 +92,15 @@ namespace AnimeHillRacing.Terrain
             for (int i = 0; i < surfaceHeights.Length; i++)
                 edgeRenderer.SetPosition(i, new Vector3(i * dx, surfaceHeights[i], -width * 0.5f - 0.03f));
             name = $"Terrain Chunk {index}";
+        }
+
+        public float GetSurfaceHeight(int sampleIndex) => surfaceHeights != null && surfaceHeights.Length > 0
+            ? surfaceHeights[Mathf.Clamp(sampleIndex, 0, surfaceHeights.Length - 1)] : 0f;
+
+        public void SetChunkColliderEnabled(bool value)
+        {
+            EnsureComponents();
+            meshCollider.enabled = value;
         }
 
         public bool TrySampleSurface(float worldX, out float height, out float slopeDegrees)

@@ -15,6 +15,10 @@ namespace AnimeHillRacing.Vehicle
         [SerializeField] private Rigidbody wheelBody;
         [SerializeField] private SphereCollider wheelCollider;
         [SerializeField] private ConfigurableJoint suspensionJoint;
+        [Header("Optional anomaly diagnostics")]
+        [SerializeField] private bool logSuspensionAnomalies;
+        [SerializeField, Min(.001f)] private float axisDriftToleranceDegrees = .1f;
+        [SerializeField, Min(.00001f)] private float anchorDriftTolerance = .0005f;
 
         private Rigidbody body;
         private PhysicsMaterial runtimeTireMaterial;
@@ -32,6 +36,9 @@ namespace AnimeHillRacing.Vehicle
         private float supportedMass;
         private float maximumReboundAcceleration;
         private float lastSuspensionForce;
+        private float lastSpringForce;
+        private float lastDamperForce;
+        private float lastAppliedMotorTorque;
         private float lastContactNormalForce;
         private float currentLength;
         private float tractionBlend;
@@ -39,8 +46,12 @@ namespace AnimeHillRacing.Vehicle
         private float slidingGripMultiplier;
         private float tractionRecoveryPerSecond;
         private bool contactSinceLastStep;
+        private bool motionSynchronized;
         private Vector3 contactNormal = Vector3.up;
         private Vector3 contactPoint;
+        private Vector3 expectedJointAnchor;
+        private Vector3 expectedConnectedAnchor;
+        private float nextDiagnosticLogTime;
         private readonly RaycastHit[] groundHits = new RaycastHit[8];
 
         public bool IsGrounded { get; private set; }
@@ -57,6 +68,18 @@ namespace AnimeHillRacing.Vehicle
         public Rigidbody WheelBody => wheelBody;
         public SphereCollider WheelCollider => wheelCollider;
         public ConfigurableJoint SuspensionJoint => suspensionJoint;
+        public Vector3 SuspensionAxisWorld => suspensionJoint != null
+            ? suspensionJoint.transform.TransformDirection(suspensionJoint.secondaryAxis).normalized
+            : body != null ? body.transform.up : Vector3.up;
+        public Vector3 ContactNormal => contactNormal;
+        public Vector3 ContactPoint => contactPoint;
+        public float LastSpringForce => lastSpringForce;
+        public float LastDamperForce => lastDamperForce;
+        public float LastAppliedMotorTorque => lastAppliedMotorTorque;
+        public float JointTranslation => suspensionJoint != null && wheelBody != null
+            ? Vector3.Dot(wheelBody.transform.TransformPoint(suspensionJoint.connectedAnchor) -
+                          suspensionJoint.transform.TransformPoint(suspensionJoint.anchor), SuspensionAxisWorld)
+            : 0f;
 
         public void Initialize(Rigidbody targetBody, VehicleDefinition definition, ResolvedVehicleStats stats,
             int suspensionPointCount = 2)
@@ -83,6 +106,7 @@ namespace AnimeHillRacing.Vehicle
             EnsurePhysicalWheel(definition, stats.grip);
             ConfigureHardTravelLimit();
             currentLength = restLength;
+            motionSynchronized = false;
             contactPoint = wheelBody.position - body.transform.up * wheelRadius;
             SyncVisual();
         }
@@ -96,8 +120,7 @@ namespace AnimeHillRacing.Vehicle
             if (wheelBody == null) wheelBody = gameObject.AddComponent<Rigidbody>();
             if (wheelCollider == null) wheelCollider = GetComponent<SphereCollider>();
             if (wheelCollider == null) wheelCollider = gameObject.AddComponent<SphereCollider>();
-            if (suspensionJoint == null) suspensionJoint = GetComponent<ConfigurableJoint>();
-            if (suspensionJoint == null) suspensionJoint = gameObject.AddComponent<ConfigurableJoint>();
+            EnsureChassisRelativeJoint();
 
             if (wheelBody == null || wheelCollider == null || suspensionJoint == null)
                 throw new MissingComponentException($"{name}: independent wheel components could not be initialized.");
@@ -147,14 +170,48 @@ namespace AnimeHillRacing.Vehicle
                 source.topSpeedMps / Mathf.Max(.05f, source.wheelRadius);
         }
 
+        private void EnsureChassisRelativeJoint()
+        {
+            ConfigurableJoint legacyWheelJoint = suspensionJoint;
+            if (legacyWheelJoint == null) legacyWheelJoint = GetComponent<ConfigurableJoint>();
+
+            suspensionJoint = null;
+            ConfigurableJoint[] chassisJoints = body.GetComponents<ConfigurableJoint>();
+            for (int i = 0; i < chassisJoints.Length; i++)
+                if (chassisJoints[i] != null && chassisJoints[i].connectedBody == wheelBody)
+                {
+                    suspensionJoint = chassisJoints[i];
+                    break;
+                }
+
+            if (suspensionJoint == null)
+                suspensionJoint = body.gameObject.AddComponent<ConfigurableJoint>();
+
+            if (legacyWheelJoint == null || legacyWheelJoint.gameObject == body.gameObject ||
+                legacyWheelJoint == suspensionJoint) return;
+            legacyWheelJoint.connectedBody = null;
+            legacyWheelJoint.xMotion = ConfigurableJointMotion.Free;
+            legacyWheelJoint.yMotion = ConfigurableJointMotion.Free;
+            legacyWheelJoint.zMotion = ConfigurableJointMotion.Free;
+            legacyWheelJoint.angularXMotion = ConfigurableJointMotion.Free;
+            legacyWheelJoint.angularYMotion = ConfigurableJointMotion.Free;
+            legacyWheelJoint.angularZMotion = ConfigurableJointMotion.Free;
+            if (Application.isPlaying) Destroy(legacyWheelJoint);
+            else DestroyImmediate(legacyWheelJoint);
+        }
+
         private void ConfigureHardTravelLimit()
         {
             float travel = maximumCompression + maximumExtension;
             float centerLength = restLength + (maximumExtension - maximumCompression) * .5f;
-            suspensionJoint.connectedBody = body;
+            // ConfigurableJoint axes are expressed in the component transform's local frame. The component
+            // therefore belongs to the non-rolling chassis: mounting it on the rolling wheel made its limited
+            // Y axis rotate on every revolution and created the wandering suspension axis.
+            suspensionJoint.connectedBody = wheelBody;
             suspensionJoint.autoConfigureConnectedAnchor = false;
-            suspensionJoint.anchor = Vector3.zero;
-            suspensionJoint.connectedAnchor = new Vector3(anchorLocalX, -centerLength, 0f);
+            suspensionJoint.configuredInWorldSpace = false;
+            suspensionJoint.anchor = new Vector3(anchorLocalX, -centerLength, 0f);
+            suspensionJoint.connectedAnchor = Vector3.zero;
             suspensionJoint.axis = Vector3.right;
             suspensionJoint.secondaryAxis = Vector3.up;
             suspensionJoint.xMotion = ConfigurableJointMotion.Locked;
@@ -170,7 +227,9 @@ namespace AnimeHillRacing.Vehicle
             suspensionJoint.linearLimit = limit;
             SoftJointLimitSpring limitSpring = suspensionJoint.linearLimitSpring;
             limitSpring.spring = 0f;
-            limitSpring.damper = damping;
+            // The custom force already damps the full travel. A limit damper duplicated that force at the
+            // most solver-sensitive point, so this joint remains a geometric travel constraint only.
+            limitSpring.damper = 0f;
             suspensionJoint.linearLimitSpring = limitSpring;
             suspensionJoint.enableCollision = false;
             suspensionJoint.enablePreprocessing = true;
@@ -179,11 +238,27 @@ namespace AnimeHillRacing.Vehicle
             suspensionJoint.projectionAngle = 2f;
             suspensionJoint.breakForce = Mathf.Infinity;
             suspensionJoint.breakTorque = Mathf.Infinity;
+            expectedJointAnchor = suspensionJoint.anchor;
+            expectedConnectedAnchor = suspensionJoint.connectedAnchor;
         }
 
         public void Simulate()
         {
             if (body == null || wheelBody == null) return;
+
+            // A physical wheel is a separate rigidbody. When a vehicle is spawned or respawned with an
+            // existing chassis velocity, initialize the unsprung mass to the same rigid motion before the
+            // joint and damper solve their first step; otherwise the suspension receives a non-physical
+            // impulse caused solely by mismatched initial states.
+            if (!motionSynchronized)
+            {
+                Vector3 pointVelocity = body.GetPointVelocity(wheelBody.worldCenterOfMass);
+                wheelBody.linearVelocity = pointVelocity;
+                float rollingSpeed = Vector3.Dot(pointVelocity, body.transform.right);
+                wheelBody.angularVelocity = body.angularVelocity +
+                                            Vector3.back * (rollingSpeed / Mathf.Max(.05f, wheelRadius));
+                motionSynchronized = true;
+            }
 
             Vector3 up = body.transform.up;
             Vector3 anchor = body.transform.TransformPoint(new Vector3(anchorLocalX, 0f, 0f));
@@ -192,9 +267,14 @@ namespace AnimeHillRacing.Vehicle
                 maximumExtension, measuredLength);
             float rawCompression = restLength - measuredLength;
             float relativeVelocity = Vector3.Dot(body.GetPointVelocity(anchor) - wheelBody.linearVelocity, up);
-            lastSuspensionForce = SuspensionPhysics.CalculateSuspensionForce(rawCompression, relativeVelocity,
+            lastSpringForce = SuspensionPhysics.CalculateSuspensionForce(rawCompression, 0f,
                 spring, damping, maximumCompression, maximumExtension, bumpStopStart,
                 progressiveSpringMultiplier, hardStopSpringMultiplier, maximumNormalForce);
+            float unboundedCombinedForce = SuspensionPhysics.CalculateSuspensionForce(rawCompression,
+                relativeVelocity, spring, damping, maximumCompression, maximumExtension, bumpStopStart,
+                progressiveSpringMultiplier, hardStopSpringMultiplier, maximumNormalForce);
+            lastDamperForce = unboundedCombinedForce - lastSpringForce;
+            lastSuspensionForce = unboundedCombinedForce;
             lastSuspensionForce = SuspensionPhysics.LimitSuspensionForce(lastSuspensionForce, relativeVelocity,
                 supportedMass, Time.fixedDeltaTime, maximumReboundAcceleration);
 
@@ -223,6 +303,7 @@ namespace AnimeHillRacing.Vehicle
             Compression01 = SuspensionPhysics.CalculateSag01(restLength - currentLength,
                 maximumCompression, maximumExtension);
             UpdateSlip();
+            ValidateConfigurationDrift();
         }
 
         private bool ProbeGround(out RaycastHit nearest)
@@ -252,6 +333,7 @@ namespace AnimeHillRacing.Vehicle
 
         public float ApplyMotorTorque(float requestedTorque, float grip)
         {
+            lastAppliedMotorTorque = 0f;
             if (wheelBody == null || Mathf.Abs(requestedTorque) < .001f) return Slip01;
 
             float appliedTorque = requestedTorque;
@@ -265,6 +347,7 @@ namespace AnimeHillRacing.Vehicle
                 appliedTorque = SuspensionPhysics.SmoothLimit(requestedTorque, tractionLimit);
             }
             wheelBody.AddTorque(Vector3.back * appliedTorque, ForceMode.Force);
+            lastAppliedMotorTorque = appliedTorque;
             return Slip01;
         }
 
@@ -280,6 +363,34 @@ namespace AnimeHillRacing.Vehicle
         }
 
         public void AssignWheelVisual(Transform visual) => wheelVisual = visual;
+
+        public void AssignPhysicalReferences(Rigidbody targetWheelBody, SphereCollider targetWheelCollider,
+            ConfigurableJoint chassisJoint)
+        {
+            wheelBody = targetWheelBody;
+            wheelCollider = targetWheelCollider;
+            suspensionJoint = chassisJoint;
+        }
+
+        private void ValidateConfigurationDrift()
+        {
+            if (!logSuspensionAnomalies || suspensionJoint == null || body == null) return;
+            float axisDelta = Vector3.Angle(SuspensionAxisWorld, body.transform.up);
+            float jointAnchorDelta = Vector3.Distance(suspensionJoint.anchor, expectedJointAnchor);
+            float connectedAnchorDelta = Vector3.Distance(suspensionJoint.connectedAnchor, expectedConnectedAnchor);
+            if (axisDelta <= axisDriftToleranceDegrees && jointAnchorDelta <= anchorDriftTolerance &&
+                connectedAnchorDelta <= anchorDriftTolerance) return;
+            if (Time.unscaledTime < nextDiagnosticLogTime) return;
+            nextDiagnosticLogTime = Time.unscaledTime + 1f;
+            Debug.LogWarning($"{name} suspension configuration drift | axisDelta={axisDelta:0.000}deg, " +
+                             $"anchorDelta={jointAnchorDelta:0.000000}m, " +
+                             $"connectedAnchorDelta={connectedAnchorDelta:0.000000}m, " +
+                             $"translation={JointTranslation:0.0000}m, wheelV={wheelBody.linearVelocity}, " +
+                             $"wheelW={wheelBody.angularVelocity.z:0.000}, chassisV={body.linearVelocity}, " +
+                             $"chassisW={body.angularVelocity.z:0.000}, grounded={IsGrounded}, " +
+                             $"normal={contactNormal}, motor={lastAppliedMotorTorque:0.0}Nm, " +
+                             $"spring={lastSpringForce:0.0}N, damper={lastDamperForce:0.0}N.", this);
+        }
 
         private void LateUpdate() => SyncVisual();
 
@@ -393,8 +504,17 @@ namespace AnimeHillRacing.Vehicle
                          progress * progress;
             }
 
-            float overTravel = Mathf.Max(0f, rawCompression - maximumCompression);
-            force += overTravel * spring * Mathf.Max(0f, hardStopSpringMultiplier);
+            // A bump stop is a progressive spring inside the final part of the valid travel. Once the
+            // limit is reached the joint supplies only the geometric constraint; no second over-travel
+            // spring is allowed to store and return energy after the solver has corrected the wheel.
+            float hardStopStart = Mathf.Max(start, .9f);
+            if (compression01 > hardStopStart)
+            {
+                float hardStopProgress = Mathf.InverseLerp(hardStopStart, 1f, compression01);
+                float hardStopTravel = maximumCompression * (1f - hardStopStart);
+                force += hardStopTravel * spring * Mathf.Max(0f, hardStopSpringMultiplier) *
+                         hardStopProgress * hardStopProgress * hardStopProgress;
+            }
             return Mathf.Clamp(force, -maximumForce * .35f, maximumForce);
         }
 

@@ -39,6 +39,9 @@ namespace AnimeHillRacing.Road
         [SerializeField, Min(0.1f)] private float lateralGripResponse = 7.5f;
         [SerializeField, Min(0f)] private float brakeForce = 14500f;
         [SerializeField, Range(2f, 5f)] private float reverseEngageSpeedThresholdKmh = 4f;
+        [SerializeField] private float initialReverseBoundary = -50f;
+        [SerializeField, Min(1f)] private float maxReverseDistanceFromProgress = 150f;
+        [SerializeField, Min(1f)] private float reverseBoundaryDeceleration = 35f;
         [SerializeField, Range(10f, 60f)] private float maxReverseSpeedKmh = 40f;
         [SerializeField, Range(0.02f, 0.2f)] private float airborneGraceSeconds = 0.08f;
 
@@ -65,6 +68,7 @@ namespace AnimeHillRacing.Road
         private float steeringInput;
         private float actualSteeringAngle;
         private float trackDistance;
+        private float furthestTrackDistance;
         private float gripMultiplier;
         private float currentDownforce;
         private Vector3 previousPosition;
@@ -140,6 +144,8 @@ namespace AnimeHillRacing.Road
             engine.Initialize(definition, stats, fuel);
             transmission.Initialize(definition, GameSession.SelectedTransmission);
             previousPosition = body.position;
+            trackDistance = 0f;
+            furthestTrackDistance = 0f;
         }
 
         private void FixedUpdate()
@@ -248,6 +254,16 @@ namespace AnimeHillRacing.Road
                     if (SpeedMps >= stats.topSpeedMps) driveForce = 0f;
                     break;
             }
+            float reverseBoundary = Mathf.Max(initialReverseBoundary,
+                furthestTrackDistance - maxReverseDistanceFromProgress);
+            bool atReverseBoundary = trackDistance <= reverseBoundary + .5f;
+            if (atReverseBoundary && driveForce < 0f) driveForce = 0f;
+            if (atReverseBoundary && SpeedMps < 0f)
+            {
+                float stopAcceleration = Mathf.Min(reverseBoundaryDeceleration,
+                    -SpeedMps / Mathf.Max(.001f, Time.fixedDeltaTime));
+                body.AddForce(transform.forward * body.mass * stopAcceleration, ForceMode.Force);
+            }
             float drivePerWheel = driveForce / groundedWheels;
             float slipSum = 0f;
 
@@ -339,8 +355,6 @@ namespace AnimeHillRacing.Road
             float speedSquared = velocity.sqrMagnitude;
             currentDownforce = hasWheelContact ? Mathf.Min(maximumDownforce, speedSquared * downforceCoefficient) : 0f;
             if (currentDownforce > 0f) body.AddForce(-transform.up * currentDownforce, ForceMode.Force);
-            if (!hasWheelContact && stats.airborneDownforceAcceleration > 0f)
-                body.AddForce(Vector3.down * body.mass * stats.airborneDownforceAcceleration, ForceMode.Force);
             if (speedSquared < 0.001f) return;
             float drag = definition.grip.aerodynamicDrag * speedSquared;
             float rolling = hasWheelContact ? definition.mass * Physics.gravity.magnitude * definition.grip.rollingResistance : 0f;
@@ -367,7 +381,8 @@ namespace AnimeHillRacing.Road
         private void AccumulateTrackDistance()
         {
             Vector3 delta = body.position - previousPosition;
-            trackDistance += Mathf.Max(0f, Vector3.Dot(delta, transform.forward));
+            trackDistance += Vector3.Dot(delta, transform.forward);
+            furthestTrackDistance = Mathf.Max(furthestTrackDistance, trackDistance);
             previousPosition = body.position;
         }
 

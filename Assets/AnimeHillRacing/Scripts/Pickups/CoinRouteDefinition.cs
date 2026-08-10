@@ -43,6 +43,7 @@ namespace AnimeHillRacing.Pickups
         [Min(1f)] public float sparseEndDistance = 300f;
         [Min(1f)] public float growingEndDistance = 600f;
         [Min(1f)] public float variedEndDistance = 1200f;
+        [Min(1f)] public float allFiveStartDistance = 2600f;
 
         public float MaximumGroupsPer100Meters => 100f / Mathf.Max(1f, cellLength);
         public int MaximumCoinsPerGroup => 7;
@@ -108,37 +109,38 @@ namespace AnimeHillRacing.Pickups
             float distance = centered * 2.15f;
             float height = 0f;
             float lateral = 0f;
-            int value = 1;
+            bool allFive = group.anchorDistance >= allFiveStartDistance;
+            int value = allFive ? 5 : 1;
             switch (group.pattern)
             {
                 case CoinPatternKind.SpecialCenter:
-                    if (index == count / 2) value = 5;
+                    height = index % 2 == 0 ? 0f : .32f;
                     break;
                 case CoinPatternKind.Arc:
                 {
                     float normalized = count <= 1 ? 0f : index / (count - 1f);
                     height = Mathf.Sin(normalized * Mathf.PI) * 1.35f;
                     lateral = Mathf.Sin((normalized - .5f) * Mathf.PI) * .28f;
-                    if (index == count / 2) value = 5;
                     break;
                 }
                 case CoinPatternKind.Ascent:
                     height = index * .38f;
-                    if (index == count - 1) value = 5;
                     break;
                 case CoinPatternKind.Descent:
                     height = (count - 1 - index) * .38f;
-                    if (index == count - 1) value = 5;
                     break;
                 case CoinPatternKind.JumpArc:
                 {
                     float normalized = count <= 1 ? 0f : index / (count - 1f);
                     height = .45f + Mathf.Sin(normalized * Mathf.PI) * 2.15f;
                     lateral = Mathf.Sin(normalized * Mathf.PI * 2f) * .22f;
-                    if (index == count / 2) value = 5;
                     break;
                 }
             }
+            if (group.densityTier >= 2 && !allFive && (index & 1) == 1)
+                height += group.densityTier == 2 ? .55f : .9f;
+            if (!allFive && group.densityTier >= 1 && index == count - 1)
+                value = 5;
             return new CoinRoutePoint
             {
                 distanceOffset = distance,
@@ -203,6 +205,7 @@ namespace AnimeHillRacing.Pickups
             sparseEndDistance = Mathf.Max(firstCoinDistance + cellLength, sparseEndDistance);
             growingEndDistance = Mathf.Max(sparseEndDistance + cellLength, growingEndDistance);
             variedEndDistance = Mathf.Max(growingEndDistance + cellLength, variedEndDistance);
+            allFiveStartDistance = Mathf.Max(variedEndDistance + cellLength, allFiveStartDistance);
         }
     }
 }

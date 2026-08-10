@@ -14,6 +14,14 @@ namespace AnimeHillRacing.Vehicle
         Turbo = 7
     }
 
+    public enum TunePurchaseResult
+    {
+        Success,
+        InvalidConfiguration,
+        MaximumLevel,
+        NotEnoughCoins
+    }
+
     [CreateAssetMenu(menuName = "Anime Hill Racing/Upgrade Economy", fileName = "UpgradeEconomy")]
     public sealed class UpgradeEconomyDefinition : ScriptableObject
     {

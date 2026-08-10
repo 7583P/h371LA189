@@ -9,7 +9,7 @@ namespace AnimeHillRacing.UI
 {
     public sealed class PreStartMenuUI : MonoBehaviour
     {
-        private enum Step { Mode, Map, Vehicle, Setup }
+        private enum Step { Mode, Vehicle }
 
         [SerializeField] private GameCatalog catalog;
         [SerializeField] private Text coinsText;
@@ -22,6 +22,7 @@ namespace AnimeHillRacing.UI
         [SerializeField] private Text mapText;
         [SerializeField] private Text vehicleText;
         [SerializeField] private Image vehiclePreviewImage;
+        [SerializeField] private GaragePreviewRenderer vehiclePreviewRenderer;
         [SerializeField] private GameObject vehiclePreviewFallback;
         [SerializeField] private Text vehicleStatsText;
         [SerializeField] private Text tuningSummaryText;
@@ -46,11 +47,10 @@ namespace AnimeHillRacing.UI
         private void Start()
         {
             mode = GameSession.SelectedGameMode;
-            if (mode == GameModeType.TimeTrial3D)
-                mode = GameSession.SelectedGameMode = GameModeType.Adventure2_5D;
             FindSavedVehicle();
             FindSavedMap();
             GameSession.OpenTuningOnPreStart = false;
+            GameSession.SelectedTransmission = TransmissionMode.Auto;
             ShowStep(Step.Mode);
         }
 
@@ -64,21 +64,21 @@ namespace AnimeHillRacing.UI
         {
             mode = selected;
             GameSession.SelectedGameMode = mode;
-            mapIndex = 0;
+            FindSavedMap();
+            if (CurrentMap == null) mapIndex = 0;
             Refresh();
         }
 
         public void ContinueStep()
         {
-            if (step == Step.Setup) { StartGame(); return; }
-            ShowStep((Step)((int)step + 1));
+            if (step == Step.Vehicle) { StartGame(); return; }
+            ShowStep(Step.Vehicle);
         }
 
         public void BackStep()
         {
-            if (tuningPanel != null && tuningPanel.activeSelf) { CloseTuning(); return; }
             if (step == Step.Mode) { SceneManager.LoadScene("MainMenu"); return; }
-            ShowStep((Step)((int)step - 1));
+            ShowStep(Step.Mode);
         }
 
         public void Back() => BackStep();
@@ -89,21 +89,20 @@ namespace AnimeHillRacing.UI
 
         public void ToggleTransmission()
         {
-            GameSession.SelectedTransmission = GameSession.SelectedTransmission == TransmissionMode.Auto
-                ? TransmissionMode.Manual : TransmissionMode.Auto;
+            GameSession.SelectedTransmission = TransmissionMode.Auto;
             Refresh();
         }
 
         public void OpenTuning()
         {
-            // Legacy UnityEvent compatibility. Editable tuning now belongs exclusively to Garage.
+            GameSession.RequestedGarageSection = GarageSection.Tuning;
             SceneManager.LoadScene("Garage");
         }
 
         public void CloseTuning()
         {
             if (tuningPanel != null) tuningPanel.SetActive(false);
-            ShowStep(Step.Setup);
+            ShowStep(Step.Vehicle);
         }
 
         public void UpgradeEngine() => Purchase(VehicleUpgradeType.Engine);
@@ -155,6 +154,7 @@ namespace AnimeHillRacing.UI
         {
             int count = catalog != null && catalog.vehicles != null ? catalog.vehicles.Length : 0;
             if (count > 0) vehicleIndex = PositiveModulo(vehicleIndex + direction, count);
+            if (CurrentVehicle != null) GameSession.SelectedVehicleId = CurrentVehicle.vehicleId;
             Refresh();
         }
 
@@ -189,32 +189,34 @@ namespace AnimeHillRacing.UI
             }
             if (vehiclePreviewFallback != null)
                 vehiclePreviewFallback.SetActive(vehicle != null && vehicle.previewSprite == null);
-            if (transmissionText != null) transmissionText.text = GameSession.SelectedTransmission.ToString().ToUpperInvariant();
+            if (vehiclePreviewRenderer != null && vehicle != null)
+            {
+                VehicleDefinition.CustomizationOption skin = vehicle.FindSkin(SaveManager.GetSelectedSkinId(vehicle));
+                VehicleDefinition.CustomizationOption wheel = vehicle.FindWheel(SaveManager.GetSelectedWheelId(vehicle));
+                string fallbackDriver = catalog?.drivers != null && catalog.drivers.Length > 0
+                    ? catalog.drivers[0].driverId : string.Empty;
+                DriverDefinition driver = catalog?.FindDriver(SaveManager.GetSelectedDriverId(fallbackDriver));
+                vehiclePreviewRenderer.Apply(vehicle, skin, wheel, driver);
+            }
+            if (transmissionText != null) transmissionText.text = "AUTOMATIC";
             RefreshModeCards();
             if (vehicle != null)
             {
                 VehicleUpgradeState state = SaveManager.LoadUpgrades(vehicle.vehicleId, vehicle);
                 ResolvedVehicleStats stats = vehicle.Resolve(state);
-                string tuneLines = string.Empty;
-                int tuneSlotCount = vehicle.GetTuneSlotCount();
-                for (int i = 0; i < tuneSlotCount; i++)
-                {
-                    VehicleUpgradeType type = vehicle.GetTuneTypeForSlot(i);
-                    tuneLines += $"{vehicle.GetTuneDisplayName(type)}   LEVEL {state.GetTune(type)} / " +
-                                 $"{vehicle.GetMaxTunes(type)}\n";
-                }
+                string tuneLines = $"SPEED   {stats.topSpeedMps * 3.6f:0} KM/H\n" +
+                                   $"ACCELERATION   {stats.zeroToHundredTargetSeconds:0.0} SEC\n" +
+                                   $"SUSPENSION   {stats.suspensionTravel:0.00} M\n" +
+                                   $"GRIP   {stats.gripRating} / {VehicleDefinition.GlobalGripMaximum}\n" +
+                                   $"FUEL   {stats.totalRunFuelDuration:0} SEC";
                 if (vehicleStatsText != null)
-                    vehicleStatsText.text = $"TOP SPEED   {stats.topSpeedMps * 3.6f:0} KM/H\n" +
-                                             $"0-100   {stats.zeroToHundredTargetSeconds:0.0} SEC\n\n" +
-                                             tuneLines +
-                                             $"TOTAL RUN FUEL   {stats.totalRunFuelDuration:0} SEC";
+                    vehicleStatsText.text = tuneLines;
                 if (tuningSummaryText != null)
                     tuningSummaryText.text = $"MODE   {GameModeNames.DisplayName(mode)}\n" +
                                              $"MAP   {(map != null ? map.displayName.ToUpperInvariant() : "-")}\n" +
                                              $"VEHICLE   {vehicle.displayName.ToUpperInvariant()}\n\n" +
                                              tuneLines;
             }
-            RefreshTuning();
         }
 
         private void RefreshModeCards()
@@ -262,7 +264,7 @@ namespace AnimeHillRacing.UI
                     tuningLevelTexts[i].text = $"LEVEL {current} / {maximum}";
                 if (tuningValueTexts != null && i < tuningValueTexts.Length && tuningValueTexts[i] != null)
                     tuningValueTexts[i].text = TuneComparison(vehicle, state, type, atMax);
-                int cost = atMax || catalog?.upgradeEconomy == null ? -1 : catalog.upgradeEconomy.GetCostForNextTune(current - 1);
+                int cost = atMax || catalog?.upgradeEconomy == null ? -1 : catalog.upgradeEconomy.GetCostForNextTune(current);
                 if (tuningCostTexts != null && i < tuningCostTexts.Length && tuningCostTexts[i] != null)
                     tuningCostTexts[i].text = atMax ? "MAX" : $"TUNE\n{cost:N0} COINS";
                 if (tuningButtons != null && i < tuningButtons.Length && tuningButtons[i] != null)
@@ -295,8 +297,8 @@ namespace AnimeHillRacing.UI
                         : $"TRAVEL  {currentStats.suspensionTravel:0.000}{arrow}{nextStats.suspensionTravel:0.000} M\n" +
                           $"SPRING  {currentStats.spring:0}{arrow}{nextStats.spring:0}   DAMPER  {currentStats.damping:0}{arrow}{nextStats.damping:0}";
                 case VehicleUpgradeType.Grip:
-                    return atMax ? $"GRIP  {currentStats.gripRating01 * 100f:0}/100   MAX"
-                        : $"GRIP  {currentStats.gripRating01 * 100f:0}/100{arrow}{nextStats.gripRating01 * 100f:0}/100";
+                    return atMax ? $"GRIP  {currentStats.gripRating}/{VehicleDefinition.GlobalGripMaximum}   MAX"
+                        : $"GRIP  {currentStats.gripRating}/{VehicleDefinition.GlobalGripMaximum}{arrow}{nextStats.gripRating}/{VehicleDefinition.GlobalGripMaximum}";
                 case VehicleUpgradeType.AirControl:
                     return atMax ? $"AIR TORQUE  {currentStats.airControlTorque:0} NM   MAX"
                         : $"AIR TORQUE  {currentStats.airControlTorque:0}{arrow}{nextStats.airControlTorque:0} NM";
@@ -314,7 +316,7 @@ namespace AnimeHillRacing.UI
 
         private string ProgressLabel()
         {
-            string[] labels = { "1 MODE", "2 MAP", "3 VEHICLE", "4 SETUP" };
+            string[] labels = { "1 MODE", "2 VEHICLE" };
             for (int i = 0; i < labels.Length; i++)
                 if (i == (int)step) labels[i] = $"<color=#64D8FF>[{labels[i]}]</color>";
             return string.Join("   >   ", labels);
@@ -350,7 +352,8 @@ namespace AnimeHillRacing.UI
             Image[] cards, RectTransform[] cardRects, Text[] cardStatuses, Text modeLabel, Text mapLabel,
             Text vehicleLabel, Image vehiclePreview, GameObject previewFallback, Text stats, Text summary,
             Text transmission, GameObject tuningRoot,
-            Text[] tuneNames, Text[] tuneLabels, Text[] tuneValues, Text[] tuneCosts, Button[] tuneButtons, Text tuningCoins)
+            Text[] tuneNames, Text[] tuneLabels, Text[] tuneValues, Text[] tuneCosts, Button[] tuneButtons, Text tuningCoins,
+            GaragePreviewRenderer composedPreview = null)
         {
             catalog = gameCatalog; coinsText = coins; progressText = progress; stepPanels = panels;
             modeCards = cards; modeCardRects = cardRects; modeCardStatusTexts = cardStatuses;
@@ -360,6 +363,7 @@ namespace AnimeHillRacing.UI
             tuningSummaryText = summary; transmissionText = transmission; tuningPanel = tuningRoot;
             tuningNameTexts = tuneNames; tuningLevelTexts = tuneLabels; tuningValueTexts = tuneValues; tuningCostTexts = tuneCosts;
             tuningButtons = tuneButtons; tuningCoinsText = tuningCoins;
+            vehiclePreviewRenderer = composedPreview;
         }
     }
 }

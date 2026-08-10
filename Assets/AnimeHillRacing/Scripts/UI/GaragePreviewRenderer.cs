@@ -29,7 +29,11 @@ namespace AnimeHillRacing.UI
 
         private void Awake() => EnsureTexture();
 
-        private void OnEnable() => EnsureTexture();
+        private void OnEnable()
+        {
+            EnsureTexture();
+            if (!Application.isPlaying) RenderNow();
+        }
 
         private void EnsureTexture()
         {

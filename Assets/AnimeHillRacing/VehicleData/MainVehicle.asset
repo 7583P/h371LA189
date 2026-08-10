@@ -172,6 +172,57 @@ MonoBehaviour:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
+    speedTorqueCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 0.55
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 0.82
+        value: 0.68
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 0.96
+        value: 0.22
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1.04
+        value: 0
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
     minTorqueNm: 155
     maxTorqueNm: 230
     drivetrainEfficiency: 0.78
@@ -198,14 +249,14 @@ MonoBehaviour:
   suspension:
     restLength: 0.52
     compressionTravelRatio: 0.9
-    minTravel: 0.44
+    minTravel: 0.28
     maxTravel: 0.44
     springMin: 70000
     springMax: 82000
     dampingMin: 10000
     dampingMax: 12000
     targetSag01: 0.3
-    stiffnessTuneScale: {x: 0.94, y: 1.06}
+    stiffnessTuneScale: {x: 0.82, y: 1.32}
     dampingRatio: {x: 0.8, y: 0.94}
     bumpStopStart: 0.7
     progressiveSpringMultiplier: 2
@@ -260,19 +311,19 @@ MonoBehaviour:
     - 7.2
     - 7
     gripRatings:
-    - 0.68
-    - 0.7
-    - 0.72
-    - 0.74
-    - 0.76
-    - 0.78
-    - 0.8
-    - 0.82
-    - 0.84
-    - 0.85
-    - 0.86
-    - 0.87
-    - 0.88
+    - 50
+    - 83
+    - 117
+    - 150
+    - 183
+    - 217
+    - 250
+    - 283
+    - 317
+    - 333
+    - 350
+    - 367
+    - 383
     airControlTorque:
     - 3200
     airborneDownforceAcceleration:

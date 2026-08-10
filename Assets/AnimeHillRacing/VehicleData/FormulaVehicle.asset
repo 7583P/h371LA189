@@ -99,9 +99,9 @@ MonoBehaviour:
   engineMaxTunes: 20
   accelerationMaxTunes: 20
   suspensionMaxTunes: 20
-  gripMaxTunes: 0
+  gripMaxTunes: 20
   airControlMaxTunes: 0
-  downforceMaxTunes: 20
+  downforceMaxTunes: 0
   fuelMaxTunes: 25
   turboMaxTunes: 0
   damagedBodySprite: {fileID: 0}
@@ -168,6 +168,57 @@ MonoBehaviour:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
+    speedTorqueCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 0.55
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 0.82
+        value: 0.68
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 0.96
+        value: 0.22
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1.04
+        value: 0
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
     minTorqueNm: 300
     maxTorqueNm: 700
     drivetrainEfficiency: 0.88
@@ -194,14 +245,14 @@ MonoBehaviour:
   suspension:
     restLength: 0.38
     compressionTravelRatio: 0.9
-    minTravel: 0.25
+    minTravel: 0.16
     maxTravel: 0.25
     springMin: 82000
     springMax: 96000
     dampingMin: 14000
     dampingMax: 16000
     targetSag01: 0.29
-    stiffnessTuneScale: {x: 0.97, y: 1.1}
+    stiffnessTuneScale: {x: 0.78, y: 1.25}
     dampingRatio: {x: 0.96, y: 1.08}
     bumpStopStart: 0.65
     progressiveSpringMultiplier: 3
@@ -263,11 +314,31 @@ MonoBehaviour:
     - 2.75
     - 2.6
     - 2.4499998
-    - 0.9
+    - 2.3
     - 2.1499999
     - 1.9999999
     gripRatings:
-    - 2.3
+    - 200
+    - 210.85
+    - 221.7
+    - 232.55
+    - 243.4
+    - 254.25
+    - 265.1
+    - 275.95
+    - 286.8
+    - 297.65
+    - 308.5
+    - 319.35
+    - 330.2
+    - 341.05
+    - 351.9
+    - 362.75
+    - 373.6
+    - 384.45
+    - 395.3
+    - 406.15
+    - 417
     airControlTorque:
     - 9000
     airborneDownforceAcceleration:

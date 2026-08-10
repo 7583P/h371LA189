@@ -198,7 +198,20 @@ namespace AnimeHillRacing.Terrain
                 (working[padding + 1] - working[padding]) / dx;
             surfaceHeights[0] = previousHeight;
 
-            for (int i = 1; i < sampleCount; i++)
+            int firstGeneratedSample = 1;
+            if (hasBoundary && sampleCount > 1)
+            {
+                // Preserve both C0 and C1 continuity at a recycled chunk boundary. The former code reused
+                // the exact height but immediately changed the outgoing slope, leaving a hidden normal step
+                // at every seam even though the vertices visually met.
+                float boundaryDelta = Mathf.Clamp(boundarySlope * dx, -maxDelta, maxDelta);
+                surfaceHeights[1] = previousHeight + boundaryDelta;
+                previousHeight = surfaceHeights[1];
+                previousSlope = boundaryDelta / dx;
+                firstGeneratedSample = 2;
+            }
+
+            for (int i = firstGeneratedSample; i < sampleCount; i++)
             {
                 float desiredHeight = working[i + padding];
                 float desiredDelta = Mathf.Clamp(desiredHeight - previousHeight, -maxDelta, maxDelta);

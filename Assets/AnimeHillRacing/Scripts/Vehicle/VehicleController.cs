@@ -11,7 +11,8 @@ namespace AnimeHillRacing.Vehicle
         [SerializeField] private VehicleUpgradeState upgrades = new VehicleUpgradeState();
         [SerializeField] private VehicleInputController input;
         [SerializeField] private SuspensionController[] suspensionPoints;
-        [SerializeField, Min(1f)] private float maxReverseDistanceFromProgress = 250f;
+        [SerializeField] private float initialReverseBoundary = -50f;
+        [SerializeField, Min(1f)] private float maxReverseDistanceFromProgress = 150f;
         [SerializeField, Min(1f)] private float reverseBoundaryDeceleration = 35f;
         [SerializeField, Range(2f, 5f)] private float reverseEngageSpeedThresholdKmh = 4f;
         [SerializeField, Range(10f, 60f)] private float maxReverseSpeedKmh = 40f;
@@ -33,9 +34,10 @@ namespace AnimeHillRacing.Vehicle
         private bool pitchInertiaConfigured;
 
         public override float SpeedMps => body != null ? Vector3.Dot(body.linearVelocity, transform.right) : 0f;
-        public override float ProgressPosition => furthestDistanceReached;
+        public override float ProgressPosition => body != null ? body.position.x : 0f;
         public float FurthestDistanceReached => furthestDistanceReached;
-        public float ReverseBoundaryX => furthestDistanceReached - maxReverseDistanceFromProgress;
+        public float ReverseBoundaryX => Mathf.Max(initialReverseBoundary,
+            furthestDistanceReached - maxReverseDistanceFromProgress);
         public DriveDirection Direction => driveDirection;
         public override float FuelNormalized => fuel != null ? fuel.FuelNormalized : 0f;
         public override float MotorTorque => engine != null ? engine.CurrentTorqueNm : 0f;
@@ -123,7 +125,6 @@ namespace AnimeHillRacing.Vehicle
             ApplyDrive(engineTorque, gas, brake, hasFuel);
             ApplyDrag();
             ApplyAirControl(inputState, rawGrounded);
-            ApplyAirborneDownforce(rawGrounded);
         }
 
         private void ApplyDrive(float engineTorque, float gas, float brake, bool hasFuel)
@@ -235,12 +236,6 @@ namespace AnimeHillRacing.Vehicle
             float acceleration = Mathf.Clamp((target - current) / Mathf.Max(.001f, Time.fixedDeltaTime),
                 -definition.airAngularAcceleration * authority, definition.airAngularAcceleration * authority);
             body.AddTorque(Vector3.forward * acceleration, ForceMode.Acceleration);
-        }
-
-        private void ApplyAirborneDownforce(bool hasWheelContact)
-        {
-            if (hasWheelContact || stats.airborneDownforceAcceleration <= 0f) return;
-            body.AddForce(Vector3.down * body.mass * stats.airborneDownforceAcceleration, ForceMode.Force);
         }
 
         public override void SetTransmissionMode(TransmissionMode mode)

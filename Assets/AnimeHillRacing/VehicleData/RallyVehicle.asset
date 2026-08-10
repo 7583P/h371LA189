@@ -102,7 +102,7 @@ MonoBehaviour:
   gripMaxTunes: 14
   airControlMaxTunes: 0
   downforceMaxTunes: 0
-  fuelMaxTunes: 0
+  fuelMaxTunes: 15
   turboMaxTunes: 20
   damagedBodySprite: {fileID: 21300000, guid: 0c1a72aaa20aa2f4492ccad1f59d7bbc, type: 3}
   detachableRoofSprite: {fileID: 21300000, guid: aa51850b83c841f4a85ff713dca68738, type: 3}
@@ -168,6 +168,57 @@ MonoBehaviour:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
+    speedTorqueCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 0.55
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 0.82
+        value: 0.68
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 0.96
+        value: 0.22
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1.04
+        value: 0
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
     minTorqueNm: 280
     maxTorqueNm: 650
     drivetrainEfficiency: 0.86
@@ -194,14 +245,14 @@ MonoBehaviour:
   suspension:
     restLength: 0.56
     compressionTravelRatio: 0.89
-    minTravel: 0.4
+    minTravel: 0.25
     maxTravel: 0.4
     springMin: 72000
     springMax: 84000
     dampingMin: 12500
     dampingMax: 15000
     targetSag01: 0.3
-    stiffnessTuneScale: {x: 0.94, y: 1.06}
+    stiffnessTuneScale: {x: 0.82, y: 1.33}
     dampingRatio: {x: 0.9, y: 1.02}
     bumpStopStart: 0.62
     progressiveSpringMultiplier: 3.4
@@ -265,23 +316,39 @@ MonoBehaviour:
     - 2.6736844
     - 2.5000002
     gripRatings:
-    - 0.75
-    - 0.7653846
-    - 0.7807692
-    - 0.79615384
-    - 0.81153846
-    - 0.8269231
-    - 0.8423077
-    - 0.8576923
-    - 0.8730769
-    - 0.88846153
-    - 0.90384614
-    - 0.91923076
-    - 0.9346154
-    - 0.95
+    - 167
+    - 190.78572
+    - 214.57143
+    - 238.35715
+    - 262.14285
+    - 285.9286
+    - 309.7143
+    - 333.5
+    - 357.28574
+    - 381.0714
+    - 404.85715
+    - 428.64285
+    - 452.4286
+    - 476.21426
+    - 500
     airControlTorque:
     - 6500
     airborneDownforceAcceleration:
     - 0
     fuelRunDurationSeconds:
+    - 25
+    - 26.666666
+    - 28.333334
+    - 30
+    - 31.666668
+    - 33.333332
+    - 35
+    - 36.666668
+    - 38.333336
+    - 40
+    - 41.666668
+    - 43.333332
+    - 45
+    - 46.666668
+    - 48.333332
     - 50

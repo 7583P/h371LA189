@@ -20,3 +20,4 @@ MonoBehaviour:
   sparseEndDistance: 300
   growingEndDistance: 600
   variedEndDistance: 1200
+  allFiveStartDistance: 2600

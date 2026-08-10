@@ -39,13 +39,13 @@ namespace AnimeHillRacing.Vehicle
         public void Initialize(VehicleDefinition vehicleDefinition, TransmissionMode mode)
         {
             definition = vehicleDefinition;
-            Mode = mode;
+            Mode = TransmissionMode.Auto;
             CurrentGear = 1;
             targetGear = 1;
             shiftRemaining = 0f;
         }
 
-        public void SetMode(TransmissionMode mode) => Mode = mode;
+        public void SetMode(TransmissionMode mode) => Mode = TransmissionMode.Auto;
 
         public void Tick(float deltaTime, float drivenSpeedMps, float throttle, bool grounded, bool manualShiftRequest)
         {
@@ -70,19 +70,12 @@ namespace AnimeHillRacing.Vehicle
             if (IsShifting)
                 return;
 
-            if (Mode == TransmissionMode.Auto)
-                TickAuto(throttle, drivenSpeedMps);
-            else if (manualShiftRequest)
-                RequestManualShift(1);
+            TickAuto(throttle, drivenSpeedMps);
         }
 
         public bool RequestShift(int direction)
         {
-            if (Mode != TransmissionMode.Manual || IsShifting || direction == 0)
-                return false;
-            int oldGear = CurrentGear;
-            RequestManualShift(direction > 0 ? 1 : -1);
-            return targetGear != oldGear;
+            return false;
         }
 
         private void TickAuto(float throttle, float speedMps)

@@ -2,9 +2,20 @@ using AnimeHillRacing.Vehicle;
 
 namespace AnimeHillRacing.Core
 {
+    public enum GarageSection
+    {
+        Vehicle,
+        Tuning,
+        Upgrade,
+        Skins,
+        Store,
+        Settings
+    }
+
     public static class GameSession
     {
         public static bool OpenTuningOnPreStart { get; set; }
+        public static GarageSection RequestedGarageSection { get; set; }
         public static GameModeType SelectedGameMode
         {
             get => SaveManager.SelectedGameMode;

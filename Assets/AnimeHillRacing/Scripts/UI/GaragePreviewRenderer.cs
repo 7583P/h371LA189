@@ -118,7 +118,7 @@ namespace AnimeHillRacing.UI
             renderer.sprite = option != null ? option.sprite : null;
             renderer.transform.localPosition = new Vector3(position.x, position.y, -.02f);
             renderer.sortingOrder = 11;
-            float source = renderer.sprite != null ? Mathf.Max(renderer.sprite.bounds.size.x, renderer.sprite.bounds.size.y) : 1f;
+            float source = VehicleDefinition.WheelSourceDiameter(option);
             renderer.transform.localScale = Vector3.one * (diameter / Mathf.Max(.001f, source));
         }
 

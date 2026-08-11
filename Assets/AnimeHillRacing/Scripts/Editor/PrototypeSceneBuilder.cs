@@ -995,12 +995,48 @@ namespace AnimeHillRacing.Editor
         }
 
         private static VehicleDefinition.CustomizationOption Customization(string id, string name, Sprite sprite,
-            bool unlockedByDefault = true, int gemPrice = 0) =>
+            bool unlockedByDefault = true, int gemPrice = 0, float visibleDiameter = 0f) =>
             new VehicleDefinition.CustomizationOption
             {
                 optionId = id, displayName = name, sprite = sprite,
-                unlockedByDefault = unlockedByDefault, gemPrice = gemPrice
+                unlockedByDefault = unlockedByDefault, gemPrice = gemPrice,
+                visibleDiameter = visibleDiameter
             };
+
+        private static Vector2 VisibleSpriteSize(Sprite sprite)
+        {
+            if (sprite == null) return Vector2.one;
+            string path = AssetDatabase.GetAssetPath(sprite);
+            if (string.IsNullOrEmpty(path) || !File.Exists(path)) return sprite.bounds.size;
+            var texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            if (!ImageConversion.LoadImage(texture, File.ReadAllBytes(path), false))
+            {
+                Object.DestroyImmediate(texture);
+                return sprite.bounds.size;
+            }
+            Color32[] pixels = texture.GetPixels32();
+            int minX = texture.width, minY = texture.height, maxX = -1, maxY = -1;
+            for (int y = 0; y < texture.height; y++)
+                for (int x = 0; x < texture.width; x++)
+                {
+                    // Every non-transparent pixel belongs to the authored visible bounds. A threshold
+                    // would incorrectly discard the Sport Bike's faint antialiased silhouette.
+                    if (pixels[y * texture.width + x].a == 0) continue;
+                    minX = Mathf.Min(minX, x); minY = Mathf.Min(minY, y);
+                    maxX = Mathf.Max(maxX, x); maxY = Mathf.Max(maxY, y);
+                }
+            Object.DestroyImmediate(texture);
+            if (maxX < minX || maxY < minY) return sprite.bounds.size;
+            float pixelsPerUnit = Mathf.Max(.001f, sprite.pixelsPerUnit);
+            return new Vector2((maxX - minX + 1) / pixelsPerUnit,
+                (maxY - minY + 1) / pixelsPerUnit);
+        }
+
+        private static float VisibleSpriteDiameter(Sprite sprite)
+        {
+            Vector2 size = VisibleSpriteSize(sprite);
+            return Mathf.Max(size.x, size.y);
+        }
 
         private static void ValidateCustomizationContract(BuiltAssets assets)
         {
@@ -1042,6 +1078,11 @@ namespace AnimeHillRacing.Editor
         private static void ValidateNeonCityContract(BuiltAssets assets)
         {
             MapProfile profile = assets.neonCity;
+            if (assets.catalog.CountMaps(GameModeType.Adventure2_5D) != 2 ||
+                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 0)?.mapId != "countryside" ||
+                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 1)?.mapId != "neon-city")
+                throw new System.InvalidOperationException(
+                    "Adventure track selector requires exactly Countryside and Neon City profiles.");
             if (profile == null || !profile.supportsLiquidExposure || profile.liquidChallenges == null ||
                 profile.liquidChallenges.cycleLength != 6000f ||
                 profile.liquidChallenges.challengesPerCycle != 8 ||
@@ -1058,6 +1099,7 @@ namespace AnimeHillRacing.Editor
                 liquidTerminalSpeed * (settings.exposureLimitSeconds - .7f) < settings.maximumPoolLength)
                 throw new System.InvalidOperationException(
                     "Neon Liquid slowdown, alpha, or Level-1 escape envelope is invalid.");
+            float[] repeatedRunUps = new float[LiquidChallengeSettings.RequiredChallengesPerCycle];
             for (int cycle = 0; cycle < 4; cycle++)
             {
                 int detected = 0;
@@ -1069,6 +1111,11 @@ namespace AnimeHillRacing.Editor
                     if (Mathf.Abs(layout.poolStart - repeat.poolStart) > .0001f ||
                         Mathf.Abs(layout.poolLength - repeat.poolLength) > .0001f)
                         throw new System.InvalidOperationException("Neon City generation is not deterministic.");
+                    float localRunUp = layout.runUpStart - cycle * LiquidChallengeSettings.RequiredCycleLength;
+                    if (cycle == 0) repeatedRunUps[slot] = localRunUp;
+                    else if (Mathf.Abs(localRunUp - repeatedRunUps[slot]) > .001f)
+                        throw new System.InvalidOperationException(
+                            $"Neon City challenge {slot + 1} changed logical position in cycle {cycle}.");
                     if (layout.runUpStart < previousRecoveryEnd || layout.transitionStart <= layout.runUpStart ||
                         layout.rampStart <= layout.transitionStart || layout.poolStart <= layout.rampStart ||
                         layout.poolEnd <= layout.poolStart || layout.landingEnd <= layout.poolEnd ||
@@ -1086,6 +1133,38 @@ namespace AnimeHillRacing.Editor
                     throw new System.InvalidOperationException($"Neon City cycle {cycle}: {detected}/8 liquid challenges.");
                 Debug.Log($"NEON_LIQUID_COUNT Cycle {cycle}: 8/8");
             }
+
+            float minimumHeight = float.PositiveInfinity;
+            float maximumHeight = float.NegativeInfinity;
+            float maximumSlope = 0f;
+            const float terrainAuditStep = 2f;
+            float previousHeight = TerrainGenerator.SampleNeonTemplateHeight(profile, 6000f);
+            for (float distance = 6000f + terrainAuditStep; distance <= 24000f; distance += terrainAuditStep)
+            {
+                float height = TerrainGenerator.SampleNeonTemplateHeight(profile, distance);
+                minimumHeight = Mathf.Min(minimumHeight, height);
+                maximumHeight = Mathf.Max(maximumHeight, height);
+                maximumSlope = Mathf.Max(maximumSlope,
+                    Mathf.Atan2(Mathf.Abs(height - previousHeight), terrainAuditStep) * Mathf.Rad2Deg);
+                previousHeight = height;
+            }
+            for (float local = 200f; local < 6000f; local += 25f)
+            {
+                float cycle0 = (TerrainGenerator.SampleNeonTemplateHeight(profile, local) - profile.baseHeight) /
+                               Mathf.Max(.001f, TerrainGenerator.EvaluateNeonAmplitude(profile, local));
+                float cycle1 = (TerrainGenerator.SampleNeonTemplateHeight(profile, local + 6000f) - profile.baseHeight) /
+                               Mathf.Max(.001f, TerrainGenerator.EvaluateNeonAmplitude(profile, local + 6000f));
+                if (Mathf.Abs(cycle0 - cycle1) > .0001f)
+                    throw new System.InvalidOperationException("Neon City cycle template does not repeat.");
+            }
+            if (TerrainGenerator.NeonTemplatePeakCount != 16 || TerrainGenerator.NeonTemplateValleyCount != 16 ||
+                maximumSlope > profile.maxSlopeAngle + .25f || maximumHeight - minimumHeight < 30f)
+                throw new System.InvalidOperationException(
+                    $"Neon terrain grammar invalid: peaks={TerrainGenerator.NeonTemplatePeakCount}, " +
+                    $"valleys={TerrainGenerator.NeonTemplateValleyCount}, slope={maximumSlope:0.0}, " +
+                    $"range={minimumHeight:0.0}..{maximumHeight:0.0}m.");
+            Debug.Log($"NEON_TERRAIN_PATTERN: 16 peaks, 16 valleys, repeated cycle shape, " +
+                      $"height {minimumHeight:0.0}..{maximumHeight:0.0}m, max slope {maximumSlope:0.0} degrees.");
 
             var exposure = new LiquidExposureTracker();
             exposure.Reset(10f);
@@ -1340,9 +1419,13 @@ namespace AnimeHillRacing.Editor
                                  $"{maximumRideHeight - minimumRideHeight:0.000}m > 0.040m");
                 float visualRadius = Mathf.Max(definition.RearWheelDiameter,
                     definition.FrontWheelDiameter) * .5f;
-                if (Mathf.Abs(visualRadius - definition.wheelRadius) > .005f)
+                if (definition.archetype != VehicleArchetype.SportBike &&
+                    Mathf.Abs(visualRadius - definition.wheelRadius) > .005f)
                     failures.Add($"{definition.displayName} ALL LEVELS: wheel sprite radius {visualRadius:0.000}m " +
                                  $"!= physical radius {definition.wheelRadius:0.000}m");
+                if (definition.archetype == VehicleArchetype.SportBike &&
+                    Mathf.Abs(definition.wheelRadius - .38f) > .001f)
+                    failures.Add("SPORT BIKE: visual wheel enlargement changed the physical wheel radius");
                 totalPassed += vehiclePassed;
                 totalLevels += levelCount;
                 summaries.Add($"{definition.displayName} {vehiclePassed}/{levelCount}");
@@ -1521,15 +1604,42 @@ namespace AnimeHillRacing.Editor
                 !formulaHead.enabled || formulaTorso.enabled || formulaLeftThigh.enabled || formulaRightThigh.enabled)
                 throw new System.InvalidOperationException("Rally garage must stay intact, use both Rally wheels, and show only the driver head.");
             preview.Apply(assets.sportBike, assets.sportBike.skins[0], assets.sportBike.wheels[0], assets.stickmanBlack);
-            if (body.sprite != assets.sportBikeBody || rear.sprite != assets.sportBikeWheel01 ||
-                front.sprite != assets.sportBikeWheel01 || !body.flipX ||
-                Mathf.Abs(rear.bounds.size.y - assets.sportBike.RearWheelDiameter) > .08f ||
-                Mathf.Abs(front.bounds.size.y - assets.sportBike.FrontWheelDiameter) > .08f)
-                throw new System.InvalidOperationException("Sport Bike preview size, mount orientation or wheel normalization is invalid.");
+            Vector2 bodyVisibleSize = VisibleSpriteSize(assets.sportBikeBody);
+            float bodyVisibleHeight = bodyVisibleSize.y * body.transform.localScale.y;
+            float frontPercent = assets.sportBike.FrontWheelDiameter / Mathf.Max(.001f, bodyVisibleHeight);
+            float rearPercent = assets.sportBike.RearWheelDiameter / Mathf.Max(.001f, bodyVisibleHeight);
+            bool sportCompositionValid = body.sprite == assets.sportBikeBody &&
+                rear.sprite == assets.sportBikeWheel01 && front.sprite == assets.sportBikeWheel01 && body.flipX;
+            bool sportProportionsValid = frontPercent >= .31f && frontPercent <= .34f &&
+                                         rearPercent >= .33f && rearPercent <= .36f;
+            bool sportMountsValid = (Vector2)front.transform.localPosition ==
+                                    assets.sportBike.frontWheelVisualPosition &&
+                                    (Vector2)rear.transform.localPosition ==
+                                    assets.sportBike.rearWheelVisualPosition;
+            if (!sportCompositionValid || !sportProportionsValid || !sportMountsValid)
+                throw new System.InvalidOperationException(
+                    $"Sport Bike preview invalid: composition={sportCompositionValid}, " +
+                    $"front={frontPercent:P2}, rear={rearPercent:P2}, mounts={sportMountsValid}, " +
+                    $"visibleBodyHeight={bodyVisibleHeight:0.000}m.");
+            for (int wheelIndex = 0; wheelIndex < assets.sportBike.wheels.Length; wheelIndex++)
+            {
+                VehicleDefinition.CustomizationOption wheelOption = assets.sportBike.wheels[wheelIndex];
+                preview.Apply(assets.sportBike, assets.sportBike.skins[0], wheelOption, assets.stickmanBlack);
+                float apparentFront = front.transform.localScale.x * wheelOption.visibleDiameter;
+                float apparentRear = rear.transform.localScale.x * wheelOption.visibleDiameter;
+                if (wheelOption.visibleDiameter <= 0f ||
+                    Mathf.Abs(apparentFront - assets.sportBike.FrontWheelDiameter) > .001f ||
+                    Mathf.Abs(apparentRear - assets.sportBike.RearWheelDiameter) > .001f ||
+                    front.sortingOrder <= body.sortingOrder || rear.sortingOrder <= body.sortingOrder)
+                    throw new System.InvalidOperationException(
+                        $"Sport Bike wheel option {wheelOption.displayName} is not visibly normalized.");
+            }
             preview.Apply(assets.jeep, assets.jeep.skins[0], assets.jeep.wheels[0], assets.stickmanBlack);
             if (!formulaLeftThigh.enabled || !formulaRightThigh.enabled)
                 throw new System.InvalidOperationException("Jeep driver pose must restore partially visible legs.");
-            Debug.Log("Garage live composition validation: Formula Wheel 02 and compact Sport Bike composition are correct.");
+            Debug.Log($"Garage live composition validation: Formula Wheel 02 correct; Sport Bike front " +
+                      $"{assets.sportBike.FrontWheelDiameter:0.00}m ({frontPercent:P1}), rear " +
+                      $"{assets.sportBike.RearWheelDiameter:0.00}m ({rearPercent:P1}), all three wheel skins normalized.");
         }
 
         private static VehicleDefinition.DriverPose CreateJeepDriverPose()
@@ -2880,18 +2990,21 @@ namespace AnimeHillRacing.Editor
             };
             assets.sportBike.wheels = new[]
             {
-                Customization("sport-bike-wheel-01", "BIKE WHEEL 01", assets.sportBikeWheel01),
-                Customization("sport-bike-wheel-02", "BIKE WHEEL 02", assets.sportBikeWheel02),
-                Customization("sport-bike-gold-wheel", "GOLD WHEEL", assets.sportBikeGoldWheel, false, 500)
+                Customization("sport-bike-wheel-01", "BIKE WHEEL 01", assets.sportBikeWheel01, true, 0,
+                    VisibleSpriteDiameter(assets.sportBikeWheel01)),
+                Customization("sport-bike-wheel-02", "BIKE WHEEL 02", assets.sportBikeWheel02, true, 0,
+                    VisibleSpriteDiameter(assets.sportBikeWheel02)),
+                Customization("sport-bike-gold-wheel", "GOLD WHEEL", assets.sportBikeGoldWheel, false, 500,
+                    VisibleSpriteDiameter(assets.sportBikeGoldWheel))
             };
             assets.sportBike.visualWidth = 3.75f;
             assets.sportBike.flipBodyX = true;
             assets.sportBike.bodyVisualOffset = new Vector2(0f, .10f);
             assets.sportBike.rearWheelVisualPosition = new Vector2(-1.59f, -.48f);
             assets.sportBike.frontWheelVisualPosition = new Vector2(1.56f, -.49f);
-            assets.sportBike.wheelVisualDiameter = .74f;
-            assets.sportBike.rearWheelVisualDiameter = .76f;
-            assets.sportBike.frontWheelVisualDiameter = .71f;
+            assets.sportBike.wheelVisualDiameter = .85f;
+            assets.sportBike.rearWheelVisualDiameter = .88f;
+            assets.sportBike.frontWheelVisualDiameter = .82f;
             assets.sportBike.driverPose = CreateSportBikeDriverPose();
             EditorUtility.SetDirty(assets.sportBike);
 
@@ -2995,7 +3108,9 @@ namespace AnimeHillRacing.Editor
             assets.neonCity.coinRoute = assets.countrysideCoinRoute;
             assets.neonCity.elevationProfile = null;
             assets.neonCity.baseHeight = 0f;
-            assets.neonCity.amplitude = 6f;
+            assets.neonCity.amplitude = 22f;
+            assets.neonCity.neonMaximumAmplitude = 28f;
+            assets.neonCity.neonAmplitudeSaturationCycles = 3f;
             assets.neonCity.frequency = .0105f;
             assets.neonCity.introductoryAmplitude = .45f;
             assets.neonCity.introEndDistance = 500f;
@@ -3485,14 +3600,22 @@ namespace AnimeHillRacing.Editor
             CreateModeCard(gridRoot.transform, "Time Trial", "PROCEDURAL CIRCUIT",
                 "ONE LAP\nBEST TIME\nCHASE CAMERA", menu.SelectTimeTrial3D,
                 out cards[2], out cardRects[2], out statuses[2]);
-            Text mode = CreateText("Selected Mode", panels[0].transform, "ADVENTURE", 24,
-                TextAnchor.MiddleCenter, new Vector2(.25f, 0f), new Vector2(.50f, 0f),
-                new Vector2(0f, 74f), Vector2.zero);
-            Text map = CreateText("Selected Map", panels[0].transform, "COUNTRYSIDE", 22,
-                TextAnchor.MiddleCenter, new Vector2(.50f, 0f), new Vector2(.75f, 0f),
-                new Vector2(0f, 74f), Vector2.zero);
+            Text mode = CreateText("Selected Mode", panels[0].transform, "ADVENTURE", 22,
+                TextAnchor.MiddleCenter, new Vector2(.5f, .5f), new Vector2(.5f, .5f),
+                new Vector2(-555f, -300f), new Vector2(250f, 90f));
+            GameObject trackSelector = UIObject("Adventure Track Selector", panels[0].transform,
+                Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            Button previousTrack = CreateButton("Previous Adventure Track", trackSelector.transform, "<",
+                new Vector2(-315f, -300f), new Vector2(76f, 68f));
+            Text map = CreateText("Selected Adventure Track", trackSelector.transform,
+                "TRACK\nCOUNTRYSIDE", 23, TextAnchor.MiddleCenter,
+                new Vector2(.5f, .5f), new Vector2(.5f, .5f), new Vector2(0f, -300f),
+                new Vector2(470f, 100f));
+            Button nextTrack = CreateButton("Next Adventure Track", trackSelector.transform, ">",
+                new Vector2(315f, -300f), new Vector2(76f, 68f));
             Button continueMode = CreateButton("Continue", panels[0].transform, "CONTINUE",
-                new Vector2(0f, -356f), new Vector2(310f, 72f));
+                new Vector2(0f, -395f), new Vector2(310f, 72f));
+            Bind(previousTrack, menu.PreviousMap); Bind(nextTrack, menu.NextMap);
             Bind(home, menu.BackStep); Bind(continueMode, menu.ContinueStep);
 
             CreateText("Title", panels[1].transform, "SELECT VEHICLE", 45, TextAnchor.MiddleCenter,
@@ -3522,7 +3645,7 @@ namespace AnimeHillRacing.Editor
             Bind(back, menu.BackStep); Bind(start, menu.ContinueStep);
             GaragePreviewRenderer preview = CreateGarageVehiclePreview(assets, previewImage, "PreStart");
             menu.Assign(assets.catalog, coins, progress, panels, cards, cardRects, statuses, mode, map, vehicle,
-                null, null, stats, null, null, null, null, null, null, null, null, null, preview);
+                null, null, stats, null, null, null, null, null, null, null, null, null, preview, trackSelector);
             CreateEventSystem();
             EditorSceneManager.SaveScene(scene, PreStartPath);
         }
@@ -3867,7 +3990,8 @@ namespace AnimeHillRacing.Editor
                 Vector2 wheelPosition = front ? definition.frontWheelVisualPosition : definition.rearWheelVisualPosition;
                 Transform wheel = CreateWheelVisual(front ? "Front Wheel" : "Rear Wheel", visual, wheelSprite,
                     new Vector3(xs[x], wheelPosition.y, wheelPosition.x),
-                    front ? definition.FrontWheelDiameter : definition.RearWheelDiameter, 11);
+                    front ? definition.FrontWheelDiameter : definition.RearWheelDiameter, 11,
+                    VehicleDefinition.WheelSourceDiameter(definition.wheels[0]));
                 wheel.localRotation = Quaternion.Euler(0f, x == 0 ? -90f : 90f, 0f);
                 wheelRenderers[wheelIndex] = wheel.GetComponent<SpriteRenderer>();
                 if (x == 1) wheelRenderers[wheelIndex].flipX = true;
@@ -3896,10 +4020,12 @@ namespace AnimeHillRacing.Editor
             body.GetComponent<SpriteRenderer>().flipX = definition.flipBodyX;
             Transform rearWheel = CreateWheelVisual("Rear Wheel", visual, wheelSprite,
                 new Vector3(definition.rearWheelVisualPosition.x, definition.rearWheelVisualPosition.y, -.04f),
-                definition.RearWheelDiameter, 11);
+                definition.RearWheelDiameter, 11,
+                VehicleDefinition.WheelSourceDiameter(definition.wheels[0]));
             Transform frontWheel = CreateWheelVisual("Front Wheel", visual, wheelSprite,
                 new Vector3(definition.frontWheelVisualPosition.x, definition.frontWheelVisualPosition.y, -.04f),
-                definition.FrontWheelDiameter, 11);
+                definition.FrontWheelDiameter, 11,
+                VehicleDefinition.WheelSourceDiameter(definition.wheels[0]));
             DriverDefinition defaultDriver = AssetDatabase.LoadAssetAtPath<DriverDefinition>(Root + "/VehicleData/StickmanBlack.asset");
             ArticulatedDriver2D articulated = CreateArticulatedDriver(visual, defaultDriver, definition,
                 root.GetComponent<Rigidbody>(), true);
@@ -3941,10 +4067,11 @@ namespace AnimeHillRacing.Editor
         }
 
         private static Transform CreateWheelVisual(string name, Transform parent, Sprite sprite,
-            Vector3 localPosition, float targetDiameter, int sortingOrder)
+            Vector3 localPosition, float targetDiameter, int sortingOrder, float visibleDiameter = 0f)
         {
             Transform wheel = CreateSpriteVisual(name, parent, sprite, localPosition, targetDiameter, sortingOrder);
-            float sourceDiameter = sprite != null ? Mathf.Max(sprite.bounds.size.x, sprite.bounds.size.y) : 1f;
+            float sourceDiameter = visibleDiameter > .001f ? visibleDiameter :
+                sprite != null ? Mathf.Max(sprite.bounds.size.x, sprite.bounds.size.y) : 1f;
             wheel.localScale = Vector3.one * (targetDiameter / Mathf.Max(.001f, sourceDiameter));
             return wheel;
         }

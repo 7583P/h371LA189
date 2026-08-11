@@ -107,6 +107,8 @@ MonoBehaviour:
   terrainEdgeWidth: 0.18
   terrainVisualDepth: 20
   supportsLiquidExposure: 0
+  neonMaximumAmplitude: 28
+  neonAmplitudeSaturationCycles: 3
   liquidChallenges:
     cycleLength: 6000
     challengesPerCycle: 8

@@ -23,7 +23,7 @@ MonoBehaviour:
   hardEndDistance: 24000
   elevationProfile: {fileID: 0}
   baseHeight: 0
-  amplitude: 6
+  amplitude: 22
   frequency: 0.0105
   smoothing: 0.65
   hillSize: 1
@@ -80,6 +80,8 @@ MonoBehaviour:
   terrainEdgeWidth: 0.18
   terrainVisualDepth: 22
   supportsLiquidExposure: 1
+  neonMaximumAmplitude: 28
+  neonAmplitudeSaturationCycles: 3
   liquidChallenges:
     cycleLength: 6000
     challengesPerCycle: 8

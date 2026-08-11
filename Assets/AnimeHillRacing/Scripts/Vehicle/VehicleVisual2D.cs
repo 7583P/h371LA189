@@ -87,8 +87,7 @@ namespace AnimeHillRacing.Vehicle
             if (renderer == null || wheel == null) return;
             renderer.sprite = wheel.sprite;
             renderer.sortingOrder = 11;
-            float sourceDiameter = renderer.sprite != null
-                ? Mathf.Max(renderer.sprite.bounds.size.x, renderer.sprite.bounds.size.y) : 1f;
+            float sourceDiameter = VehicleDefinition.WheelSourceDiameter(wheel);
             renderer.transform.localScale = Vector3.one * (diameter / Mathf.Max(.001f, sourceDiameter));
         }
     }

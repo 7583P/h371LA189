@@ -44,6 +44,19 @@ namespace AnimeHillRacing.Terrain
     public static class TerrainGenerator
     {
         private const float TwoPi = Mathf.PI * 2f;
+        public const int NeonTemplatePeakCount = 16;
+        public const int NeonTemplateValleyCount = 16;
+
+        // A authored, periodic climb/crest/drop/valley grammar. Odd points are crests, even points
+        // are valleys, and the final value closes exactly onto the first at the 6000 m seam.
+        private static readonly float[] NeonCycleTemplate =
+        {
+            -.55f, .62f, -.42f, .86f, -.74f, .54f, -.91f, .96f,
+            -.48f, .78f, -.97f, .66f, -.68f, .91f, -.52f, .73f,
+            -.84f, .58f, -.72f, .88f, -.56f, .69f, -.94f, .82f,
+            -.45f, .76f, -.89f, .61f, -.77f, .93f, -.50f, .67f,
+            -.55f
+        };
 
         public static float SampleHeight(MapProfile profile, float worldX)
         {
@@ -96,9 +109,11 @@ namespace AnimeHillRacing.Terrain
             float slotLength = cycleLength / count;
             float slotStart = safeCycle * cycleLength + safeChallenge * slotLength;
             uint seed = CombinedSeed(profile);
-            int hashBase = safeCycle * 7919 + safeChallenge * 104729;
-            float jitter01 = Hash01(seed, hashBase + 17) * 2f - 1f;
-            float variation01 = Hash01(seed, hashBase + 53) * 2f - 1f;
+            int positionHash = safeChallenge * 104729;
+            int variationHash = safeCycle * 7919 + safeChallenge * 104729;
+            // The eight logical positions repeat every cycle. Pool length may still vary by cycle.
+            float jitter01 = Hash01(seed, positionHash + 17) * 2f - 1f;
+            float variation01 = Hash01(seed, variationHash + 53) * 2f - 1f;
             float growth = settings != null
                 ? 1f + settings.cycleGrowth * safeCycle / (safeCycle + settings.growthSaturation)
                 : 1f;
@@ -217,22 +232,34 @@ namespace AnimeHillRacing.Terrain
             return general;
         }
 
-        private static float SampleNeonBaseHeight(MapProfile profile, float worldX)
+        public static float EvaluateNeonAmplitude(MapProfile profile, float worldX)
         {
+            if (profile == null) return 0f;
             float distance = Mathf.Max(0f, worldX);
             float cycleProgress = distance / LiquidChallengeSettings.RequiredCycleLength;
-            float cycleDifficulty = cycleProgress / (cycleProgress + 3f);
-            float amplitude = profile.amplitude * Mathf.Lerp(.62f, 1f, cycleDifficulty);
-            float frequency = Mathf.Max(.0001f, profile.frequency);
-            uint seed = CombinedSeed(profile);
-            float phaseA = Hash01(seed, 401) * TwoPi;
-            float phaseB = Hash01(seed, 809) * TwoPi;
-            float broad = Mathf.Sin(distance * frequency * .48f + phaseA) * .52f;
-            float rolling = Mathf.Sin(distance * frequency * 1.05f + phaseB) * .23f;
-            float noise = (Mathf.PerlinNoise(seed * .000021f + distance * frequency * .12f, .713f) * 2f - 1f) * .16f;
-            float startFlatten = Smooth01(Mathf.Clamp01(distance / 180f));
-            return profile.baseHeight + (broad + rolling + noise) * amplitude * startFlatten;
+            float saturation = Mathf.Max(.1f, profile.neonAmplitudeSaturationCycles);
+            float difficulty = cycleProgress / (cycleProgress + saturation);
+            return Mathf.Lerp(profile.amplitude, Mathf.Max(profile.amplitude, profile.neonMaximumAmplitude),
+                difficulty);
         }
+
+        public static float SampleNeonTemplateHeight(MapProfile profile, float worldX)
+        {
+            if (profile == null) return 0f;
+            float distance = Mathf.Max(0f, worldX);
+            float localDistance = Mathf.Repeat(distance, LiquidChallengeSettings.RequiredCycleLength);
+            float segmentLength = LiquidChallengeSettings.RequiredCycleLength /
+                                  (NeonCycleTemplate.Length - 1);
+            int segment = Mathf.Clamp(Mathf.FloorToInt(localDistance / segmentLength),
+                0, NeonCycleTemplate.Length - 2);
+            float t = Smooth01((localDistance - segment * segmentLength) / segmentLength);
+            float shape = Mathf.Lerp(NeonCycleTemplate[segment], NeonCycleTemplate[segment + 1], t);
+            float startFlatten = Smooth01(Mathf.Clamp01(distance / 180f));
+            return profile.baseHeight + shape * EvaluateNeonAmplitude(profile, distance) * startFlatten;
+        }
+
+        private static float SampleNeonBaseHeight(MapProfile profile, float worldX) =>
+            SampleNeonTemplateHeight(profile, worldX);
 
         private static float Smooth01(float value)
         {

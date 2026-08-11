@@ -20,6 +20,7 @@ namespace AnimeHillRacing.UI
         [SerializeField] private Text[] modeCardStatusTexts;
         [SerializeField] private Text modeText;
         [SerializeField] private Text mapText;
+        [SerializeField] private GameObject adventureTrackSelector;
         [SerializeField] private Text vehicleText;
         [SerializeField] private Image vehiclePreviewImage;
         [SerializeField] private GaragePreviewRenderer vehiclePreviewRenderer;
@@ -147,6 +148,7 @@ namespace AnimeHillRacing.UI
         {
             int count = catalog != null ? catalog.CountMaps(mode) : 0;
             if (count > 0) mapIndex = PositiveModulo(mapIndex + direction, count);
+            if (CurrentMap != null) GameSession.SelectedMapId = CurrentMap.mapId;
             Refresh();
         }
 
@@ -173,12 +175,17 @@ namespace AnimeHillRacing.UI
             if (coinsText != null) coinsText.text = $"COINS  {SaveManager.TotalCoins:N0}";
             if (progressText != null) progressText.text = ProgressLabel();
             if (modeText != null) modeText.text = GameModeNames.DisplayName(mode);
+            if (adventureTrackSelector != null)
+                adventureTrackSelector.SetActive(mode == GameModeType.Adventure2_5D);
             if (mapText != null)
             {
                 string best = mode == GameModeType.TimeTrial3D
                     ? $"BEST  {FormatTime(SaveManager.GetBestTime(map != null ? map.mapId : string.Empty))}"
                     : $"BEST  {SaveManager.GetBestDistance(mode, map != null ? map.mapId : string.Empty):N0} m";
-                mapText.text = map != null ? $"{map.displayName.ToUpperInvariant()}\nDIFFICULTY  NORMAL\n{best}" : "NO COMPATIBLE MAP";
+                mapText.text = map == null ? "NO COMPATIBLE MAP" :
+                    mode == GameModeType.Adventure2_5D
+                        ? $"TRACK\n{map.displayName.ToUpperInvariant()}\n{best}"
+                        : $"{map.displayName.ToUpperInvariant()}\nDIFFICULTY  NORMAL\n{best}";
             }
             if (vehicleText != null) vehicleText.text = vehicle != null ? vehicle.displayName.ToUpperInvariant() : "NO VEHICLE";
             if (vehiclePreviewImage != null)
@@ -354,7 +361,7 @@ namespace AnimeHillRacing.UI
             Text vehicleLabel, Image vehiclePreview, GameObject previewFallback, Text stats, Text summary,
             Text transmission, GameObject tuningRoot,
             Text[] tuneNames, Text[] tuneLabels, Text[] tuneValues, Text[] tuneCosts, Button[] tuneButtons, Text tuningCoins,
-            GaragePreviewRenderer composedPreview = null)
+            GaragePreviewRenderer composedPreview = null, GameObject trackSelector = null)
         {
             catalog = gameCatalog; coinsText = coins; progressText = progress; stepPanels = panels;
             modeCards = cards; modeCardRects = cardRects; modeCardStatusTexts = cardStatuses;
@@ -365,6 +372,7 @@ namespace AnimeHillRacing.UI
             tuningNameTexts = tuneNames; tuningLevelTexts = tuneLabels; tuningValueTexts = tuneValues; tuningCostTexts = tuneCosts;
             tuningButtons = tuneButtons; tuningCoinsText = tuningCoins;
             vehiclePreviewRenderer = composedPreview;
+            adventureTrackSelector = trackSelector;
         }
     }
 }

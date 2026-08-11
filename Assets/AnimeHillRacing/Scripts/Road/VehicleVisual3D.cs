@@ -55,8 +55,7 @@ namespace AnimeHillRacing.Road
                     renderer.sortingOrder = 11;
                     bool front = frontWheels != null && i < frontWheels.Length && frontWheels[i];
                     float diameter = front ? definition.FrontWheelDiameter : definition.RearWheelDiameter;
-                    float sourceDiameter = renderer.sprite != null
-                        ? Mathf.Max(renderer.sprite.bounds.size.x, renderer.sprite.bounds.size.y) : 1f;
+                    float sourceDiameter = VehicleDefinition.WheelSourceDiameter(wheel);
                     renderer.transform.localScale = Vector3.one *
                         (diameter / Mathf.Max(.001f, sourceDiameter));
                 }

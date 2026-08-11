@@ -24,17 +24,20 @@ MonoBehaviour:
     sprite: {fileID: 21300000, guid: a5955445e5683e7409b268573b0b0bdc, type: 3}
     unlockedByDefault: 1
     gemPrice: 0
+    visibleDiameter: 0
   wheels:
   - optionId: jeep-wheel-01
     displayName: JEEP WHEEL 01
     sprite: {fileID: 21300000, guid: 6be7244153b471c40b29f1d49457db3b, type: 3}
     unlockedByDefault: 1
     gemPrice: 0
+    visibleDiameter: 0
   - optionId: jeep-wheel-02
     displayName: JEEP WHEEL 02
     sprite: {fileID: 21300000, guid: 47ef4f3c95d4b1b4eb6eb0575cd73c28, type: 3}
     unlockedByDefault: 1
     gemPrice: 0
+    visibleDiameter: 0
   driverPose:
     rootPosition: {x: -0.38, y: 0.42}
     rootScale: 1

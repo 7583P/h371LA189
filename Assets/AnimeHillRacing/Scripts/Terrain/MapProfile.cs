@@ -109,6 +109,8 @@ namespace AnimeHillRacing.Terrain
 
         [Header("Optional Liquid Challenges")]
         public bool supportsLiquidExposure;
+        [Min(0f)] public float neonMaximumAmplitude = 28f;
+        [Min(.1f)] public float neonAmplitudeSaturationCycles = 3f;
         public LiquidChallengeSettings liquidChallenges = new LiquidChallengeSettings();
 
         public float EvaluateDifficulty(float distance)
@@ -128,6 +130,8 @@ namespace AnimeHillRacing.Terrain
             liquidChallenges ??= new LiquidChallengeSettings();
             if (supportsLiquidExposure)
             {
+                neonMaximumAmplitude = Mathf.Max(amplitude, neonMaximumAmplitude);
+                neonAmplitudeSaturationCycles = Mathf.Max(.1f, neonAmplitudeSaturationCycles);
                 liquidChallenges.cycleLength = LiquidChallengeSettings.RequiredCycleLength;
                 liquidChallenges.challengesPerCycle = LiquidChallengeSettings.RequiredChallengesPerCycle;
                 liquidChallenges.rampAngleDegrees = Mathf.Clamp(liquidChallenges.rampAngleDegrees, 15f, 28f);

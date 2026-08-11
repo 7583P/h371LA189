@@ -26,6 +26,7 @@ namespace AnimeHillRacing.Vehicle
             public Sprite sprite;
             public bool unlockedByDefault = true;
             [Min(0)] public int gemPrice;
+            [Min(0f)] public float visibleDiameter;
         }
 
         [Serializable]
@@ -240,6 +241,13 @@ namespace AnimeHillRacing.Vehicle
             ? rearWheelVisualDiameter : wheelVisualDiameter;
         public float FrontWheelDiameter => frontWheelVisualDiameter > .001f
             ? frontWheelVisualDiameter : wheelVisualDiameter;
+
+        public static float WheelSourceDiameter(CustomizationOption option)
+        {
+            if (option != null && option.visibleDiameter > .001f) return option.visibleDiameter;
+            Sprite sprite = option != null ? option.sprite : null;
+            return sprite != null ? Mathf.Max(sprite.bounds.size.x, sprite.bounds.size.y) : 1f;
+        }
 
         public ResolvedVehicleStats Resolve(VehicleUpgradeState upgrades)
         {

@@ -11,10 +11,12 @@ namespace AnimeHillRacing.UI
         [SerializeField] private GameCatalog catalog;
         [SerializeField] private GaragePreviewRenderer preview;
         [SerializeField] private Text coinsText;
+        [SerializeField] private Text gemsText;
         [SerializeField] private Text vehicleNameText;
 
         private int vehicleIndex;
         private int displayedCoins = int.MinValue;
+        private int displayedGems = int.MinValue;
 
         private VehicleDefinition CurrentVehicle => catalog != null && catalog.vehicles != null &&
             catalog.vehicles.Length > 0
@@ -29,7 +31,7 @@ namespace AnimeHillRacing.UI
 
         private void Update()
         {
-            if (displayedCoins != SaveManager.TotalCoins)
+            if (displayedCoins != SaveManager.TotalCoins || displayedGems != SaveManager.TotalGems)
                 RefreshCoins();
         }
 
@@ -100,7 +102,9 @@ namespace AnimeHillRacing.UI
         private void RefreshCoins()
         {
             displayedCoins = SaveManager.TotalCoins;
+            displayedGems = SaveManager.TotalGems;
             if (coinsText != null) coinsText.text = $"COINS  {displayedCoins:N0}";
+            if (gemsText != null) gemsText.text = $"GEMS  {displayedGems:N0}";
         }
 
         private void FindSavedVehicle()
@@ -113,11 +117,12 @@ namespace AnimeHillRacing.UI
         }
 
         public void Assign(GameCatalog gameCatalog, GaragePreviewRenderer previewRenderer, Text totalCoins,
-            Text vehicleLabel)
+            Text vehicleLabel, Text totalGems = null)
         {
             catalog = gameCatalog;
             preview = previewRenderer;
             coinsText = totalCoins;
+            gemsText = totalGems;
             vehicleNameText = vehicleLabel;
             FindSavedVehicle();
             Refresh();

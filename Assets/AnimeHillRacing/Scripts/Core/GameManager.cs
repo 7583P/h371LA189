@@ -1,4 +1,6 @@
 using System.Collections;
+using System.Collections.Generic;
+using AnimeHillRacing.Terrain;
 using AnimeHillRacing.UI;
 using AnimeHillRacing.Vehicle;
 using UnityEngine;
@@ -6,6 +8,53 @@ using UnityEngine.SceneManagement;
 
 namespace AnimeHillRacing.Core
 {
+    public sealed class LiquidExposureTracker
+    {
+        private readonly HashSet<int> contacts = new HashSet<int>();
+        public float TotalSeconds { get; private set; }
+        public float LimitSeconds { get; private set; } = 10f;
+        public bool IsInside => contacts.Count > 0;
+        public bool LimitReached => TotalSeconds >= LimitSeconds;
+
+        public void Reset(float limitSeconds)
+        {
+            contacts.Clear();
+            TotalSeconds = 0f;
+            LimitSeconds = Mathf.Max(.01f, limitSeconds);
+        }
+
+        public void SetContact(int contactId, bool inside)
+        {
+            if (inside) contacts.Add(contactId);
+            else contacts.Remove(contactId);
+        }
+
+        public void Tick(float deltaTime)
+        {
+            if (!IsInside || LimitReached) return;
+            TotalSeconds = Mathf.Min(LimitSeconds, TotalSeconds + Mathf.Max(0f, deltaTime));
+        }
+    }
+
+    public sealed class GemMilestoneTracker
+    {
+        public const float MilestoneDistance = 1000f;
+        public float NextDistance { get; private set; } = MilestoneDistance;
+
+        public void Reset() => NextDistance = MilestoneDistance;
+
+        public int ClaimThrough(float maximumRunDistance)
+        {
+            int awards = 0;
+            while (maximumRunDistance >= NextDistance)
+            {
+                awards++;
+                NextDistance += MilestoneDistance;
+            }
+            return awards;
+        }
+    }
+
     [DefaultExecutionOrder(-50)]
     public sealed class GameManager : MonoBehaviour
     {
@@ -16,6 +65,7 @@ namespace AnimeHillRacing.Core
         [SerializeField] private ResultCaptureService resultCapture;
         [SerializeField] private CanvasGroup gameplayControls;
         [SerializeField, Min(0f)] private float resultsDelay = 3f;
+        [SerializeField] private MapProfile mapProfile;
 
         private float startProgress;
         private float maxProgress;
@@ -25,6 +75,11 @@ namespace AnimeHillRacing.Core
         private float outOfFuelDeadline;
         private int lastDistanceBonus;
         private float distanceBonusMessageUntil;
+        private readonly LiquidExposureTracker liquidExposure = new LiquidExposureTracker();
+        private readonly GemMilestoneTracker gemMilestones = new GemMilestoneTracker();
+        private bool liquidCrashRequested;
+        private int lastGemAward;
+        private float gemMessageUntil;
 
         public RunState State { get; private set; } = RunState.Ready;
         public RunEndReason EndReason { get; private set; }
@@ -34,10 +89,18 @@ namespace AnimeHillRacing.Core
         public int RunCoins => runCoins;
         public int DisplayCoins => SaveManager.TotalCoins + runCoins;
         public int SavedTotalCoins => SaveManager.TotalCoins;
+        public int TotalGems => SaveManager.TotalGems;
         public int CurrentDistanceBonusValue => SaveManager.CurrentDistanceBonusValue;
         public float NextDistanceBonusThreshold => SaveManager.NextDistanceBonusThreshold;
         public int LastDistanceBonus => lastDistanceBonus;
         public bool ShowDistanceBonus => Time.unscaledTime < distanceBonusMessageUntil;
+        public int LastGemAward => lastGemAward;
+        public bool ShowGemAward => Time.unscaledTime < gemMessageUntil;
+        public bool SupportsLiquidExposure => mapProfile != null && mapProfile.supportsLiquidExposure;
+        public bool IsInsideLiquid => SupportsLiquidExposure && liquidExposure.IsInside;
+        public float TotalLiquidExposureThisRun => liquidExposure.TotalSeconds;
+        public float LiquidExposureLimit => SupportsLiquidExposure
+            ? mapProfile.liquidChallenges.exposureLimitSeconds : 10f;
         public VehicleRuntimeBase Vehicle => vehicle;
         public GameModeType Mode => GameSession.SelectedGameMode;
         public string MapId => GameSession.SelectedMapId;
@@ -49,6 +112,8 @@ namespace AnimeHillRacing.Core
             Time.timeScale = 1f;
             BestDistance = SaveManager.GetBestDistance(Mode, MapId);
             vehicle?.SetTransmissionMode(GameSession.SelectedTransmission);
+            liquidExposure.Reset(LiquidExposureLimit);
+            gemMilestones.Reset();
         }
 
         private void Start()
@@ -72,6 +137,22 @@ namespace AnimeHillRacing.Core
             vehicle.Fuel?.TickRun(Time.deltaTime, State == RunState.Running);
             maxProgress = Mathf.Max(maxProgress, vehicle.ProgressPosition);
             maxSpeedKmh = Mathf.Max(maxSpeedKmh, vehicle.SpeedKmh);
+            int gemAwards = gemMilestones.ClaimThrough(Distance);
+            if (gemAwards > 0)
+            {
+                SaveManager.AddGems(gemAwards);
+                lastGemAward = gemAwards;
+                gemMessageUntil = Time.unscaledTime + 2.5f;
+            }
+            if (SupportsLiquidExposure && (State == RunState.Running || State == RunState.OutOfFuelPending))
+            {
+                liquidExposure.Tick(Time.deltaTime);
+                if (liquidExposure.LimitReached && !liquidCrashRequested)
+                {
+                    liquidCrashRequested = true;
+                    RequestGameOver(RunEndReason.Crashed);
+                }
+            }
             while (Distance >= SaveManager.NextDistanceBonusThreshold)
             {
                 lastDistanceBonus = SaveManager.ClaimDistanceBonus();
@@ -98,6 +179,19 @@ namespace AnimeHillRacing.Core
                 runCoins += Mathf.Max(0, amount);
                 hud?.RefreshImmediate(this);
             }
+        }
+
+        public void NotifyLiquidContact(int poolId, bool inside)
+        {
+            if (!SupportsLiquidExposure) return;
+            liquidExposure.SetContact(poolId, inside);
+        }
+
+        public void ConfigureMap(MapProfile profile)
+        {
+            mapProfile = profile;
+            liquidExposure.Reset(LiquidExposureLimit);
+            liquidCrashRequested = false;
         }
 
         public void RequestGameOver(RunEndReason reason)

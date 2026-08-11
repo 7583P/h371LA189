@@ -82,11 +82,22 @@ namespace AnimeHillRacing.Terrain
             meshCollider.sharedMesh = null;
             meshCollider.sharedMesh = mesh;
             meshCollider.sharedMaterial = profile.groundPhysicsMaterial;
-            meshRenderer.sharedMaterial = profile.terrainMaterial;
+            if (profile.supportsLiquidExposure && profile.terrainEdgeMaterial != null)
+                meshRenderer.sharedMaterials = new[] { profile.terrainMaterial, profile.terrainEdgeMaterial };
+            else
+                meshRenderer.sharedMaterial = profile.terrainMaterial;
             edgeRenderer.sharedMaterial = profile.terrainEdgeMaterial != null
                 ? profile.terrainEdgeMaterial : profile.terrainMaterial;
             edgeRenderer.startWidth = profile.terrainEdgeWidth;
             edgeRenderer.endWidth = profile.terrainEdgeWidth;
+            if (profile.supportsLiquidExposure)
+            {
+                // Neon City's visual mesh is textured and contains real gaps. A single LineRenderer would
+                // bridge those gaps, so it is intentionally omitted for this profile.
+                edgeRenderer.positionCount = 0;
+                name = $"Terrain Chunk {index}";
+                return;
+            }
             edgeRenderer.positionCount = surfaceHeights.Length;
             float dx = targetChunkLength / Mathf.Max(1, surfaceHeights.Length - 1);
             for (int i = 0; i < surfaceHeights.Length; i++)

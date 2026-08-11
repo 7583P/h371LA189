@@ -5,6 +5,56 @@ using AnimeHillRacing.CameraSystem;
 
 namespace AnimeHillRacing.Terrain
 {
+    [System.Serializable]
+    public sealed class LiquidChallengeSettings
+    {
+        public const float RequiredCycleLength = 6000f;
+        public const int RequiredChallengesPerCycle = 8;
+
+        [Header("Deterministic Layout")]
+        public float cycleLength = RequiredCycleLength;
+        public int challengesPerCycle = RequiredChallengesPerCycle;
+        [Min(100f)] public float cycleStartSafetyMargin = 260f;
+        [Min(0f)] public float slotJitter = 120f;
+
+        [Header("Challenge Grammar")]
+        [Min(10f)] public float runUpLength = 42f;
+        [Min(1f)] public float rampTransitionLength = 6f;
+        [Min(4f)] public float rampHorizontalLength = 12f;
+        [Range(15f, 28f)] public float rampAngleDegrees = 20f;
+        [Min(8f)] public float landingLength = 26f;
+        [Min(10f)] public float recoveryLength = 48f;
+
+        [Header("Pool Difficulty")]
+        [Min(1f)] public float basePoolLength = 18f;
+        [Min(1f)] public float minimumPoolLength = 16f;
+        [Min(1f)] public float maximumPoolLength = 34f;
+        [Min(0f)] public float cycleGrowth = .85f;
+        [Min(.1f)] public float growthSaturation = 2.5f;
+        [Range(0f, .5f)] public float deterministicLengthVariation = .12f;
+        [Min(1f)] public float visualDepth = 7f;
+        public float surfaceOffset = .15f;
+
+        [Header("Caution Visual")]
+        public Sprite cautionSprite;
+        [Min(1f)] public float cautionDistanceBeforeRamp = 10f;
+        [Min(.2f)] public float cautionBelowSurface = 1.65f;
+        [Min(.2f)] public float cautionWidth = 3.2f;
+        public int cautionSortingOrder = 4;
+
+        [Header("Liquid Visual / Physics")]
+        public Sprite liquidSprite;
+        public int liquidSortingOrder = 3;
+        [Range(0f, 1f)] public float normalAlpha = 1f;
+        [Range(0f, 1f)] public float submergedAlpha = .65f;
+        [Min(.01f)] public float alphaLerpSpeed = 7f;
+        [Min(.05f)] public float exposureLimitSeconds = 10f;
+        [Range(.01f, .5f)] public float entrySpeedRemaining = .10f;
+        [Min(.05f)] public float entrySlowdownSeconds = .35f;
+        [Min(0f)] public float continuousViscosity = 2.4f;
+        [Min(0f)] public float liquidDriveAcceleration = 9f;
+    }
+
     [CreateAssetMenu(menuName = "Anime Hill Racing/Map Profile", fileName = "MapProfile")]
     public sealed class MapProfile : MapDefinition
     {
@@ -57,6 +107,10 @@ namespace AnimeHillRacing.Terrain
         [Range(0.04f, 0.5f)] public float terrainEdgeWidth = 0.18f;
         [Min(5f)] public float terrainVisualDepth = 20f;
 
+        [Header("Optional Liquid Challenges")]
+        public bool supportsLiquidExposure;
+        public LiquidChallengeSettings liquidChallenges = new LiquidChallengeSettings();
+
         public float EvaluateDifficulty(float distance)
         {
             float bandProgress = EvaluateDifficultyBands(distance);
@@ -71,6 +125,15 @@ namespace AnimeHillRacing.Terrain
             sectionLength = Mathf.Max(sectionLength, minimumLandingLength * 2f, minimumValleyWidth * 2f);
             fuelPlacementSearchStep = Mathf.Max(0.5f, fuelPlacementSearchStep);
             initialFuelGap = Mathf.Max(1f, initialFuelGap);
+            liquidChallenges ??= new LiquidChallengeSettings();
+            if (supportsLiquidExposure)
+            {
+                liquidChallenges.cycleLength = LiquidChallengeSettings.RequiredCycleLength;
+                liquidChallenges.challengesPerCycle = LiquidChallengeSettings.RequiredChallengesPerCycle;
+                liquidChallenges.rampAngleDegrees = Mathf.Clamp(liquidChallenges.rampAngleDegrees, 15f, 28f);
+                liquidChallenges.maximumPoolLength = Mathf.Max(liquidChallenges.minimumPoolLength,
+                    liquidChallenges.maximumPoolLength);
+            }
         }
     }
 }

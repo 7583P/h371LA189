@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace AnimeHillRacing.Terrain
@@ -23,12 +24,31 @@ namespace AnimeHillRacing.Terrain
         JumpableCrest
     }
 
+    public struct LiquidChallengeLayout
+    {
+        public int cycleIndex;
+        public int challengeIndex;
+        public float runUpStart;
+        public float transitionStart;
+        public float rampStart;
+        public float poolStart;
+        public float poolEnd;
+        public float landingEnd;
+        public float recoveryEnd;
+        public float baselineHeight;
+        public float rampHeight;
+        public float poolLength;
+        public float liquidSurfaceY;
+    }
+
     public static class TerrainGenerator
     {
         private const float TwoPi = Mathf.PI * 2f;
 
         public static float SampleHeight(MapProfile profile, float worldX)
         {
+            if (profile != null && profile.supportsLiquidExposure)
+                return SampleNeonHeight(profile, worldX);
             return profile != null && profile.elevationProfile != null
                 ? profile.elevationProfile.GetHeightAtDistance(worldX)
                 : SampleProfileHeight(profile, worldX);
@@ -37,6 +57,7 @@ namespace AnimeHillRacing.Terrain
         public static float SampleProfileHeight(MapProfile profile, float worldX)
         {
             if (profile == null) return 0f;
+            if (profile.supportsLiquidExposure) return SampleNeonHeight(profile, worldX);
             float distance = Mathf.Max(0f, worldX);
             float difficulty = profile.EvaluateDifficulty(distance);
             float amplitudeProgress = profile.introductoryAmplitude +
@@ -59,6 +80,164 @@ namespace AnimeHillRacing.Terrain
             float startFlatten = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((worldX + 20f) / 120f));
             return profile.baseHeight + (featureShape + broadVariation + perlinVariation) *
                    profile.amplitude * amplitudeProgress * startFlatten;
+        }
+
+        public static int GetCycleIndex(float distance) => Mathf.FloorToInt(
+            Mathf.Max(distance, 0f) / LiquidChallengeSettings.RequiredCycleLength);
+
+        public static LiquidChallengeLayout GetLiquidChallenge(MapProfile profile, int cycleIndex,
+            int challengeIndex)
+        {
+            LiquidChallengeSettings settings = profile != null ? profile.liquidChallenges : null;
+            float cycleLength = LiquidChallengeSettings.RequiredCycleLength;
+            int count = LiquidChallengeSettings.RequiredChallengesPerCycle;
+            int safeCycle = Mathf.Max(0, cycleIndex);
+            int safeChallenge = Mathf.Clamp(challengeIndex, 0, count - 1);
+            float slotLength = cycleLength / count;
+            float slotStart = safeCycle * cycleLength + safeChallenge * slotLength;
+            uint seed = CombinedSeed(profile);
+            int hashBase = safeCycle * 7919 + safeChallenge * 104729;
+            float jitter01 = Hash01(seed, hashBase + 17) * 2f - 1f;
+            float variation01 = Hash01(seed, hashBase + 53) * 2f - 1f;
+            float growth = settings != null
+                ? 1f + settings.cycleGrowth * safeCycle / (safeCycle + settings.growthSaturation)
+                : 1f;
+            float baseLength = settings != null ? settings.basePoolLength : 18f;
+            float variation = 1f + variation01 * (settings != null ? settings.deterministicLengthVariation : .12f);
+            float minimumLength = settings != null ? settings.minimumPoolLength : 16f;
+            float maximumLength = settings != null ? settings.maximumPoolLength : 34f;
+            float poolLength = Mathf.Clamp(baseLength * growth * variation, minimumLength, maximumLength);
+            float runUpLength = settings != null ? settings.runUpLength : 42f;
+            float transitionLength = settings != null ? settings.rampTransitionLength : 6f;
+            float rampLength = settings != null ? settings.rampHorizontalLength : 12f;
+            float landingLength = settings != null ? settings.landingLength : 26f;
+            float recoveryLength = settings != null ? settings.recoveryLength : 48f;
+            float startMargin = safeChallenge == 0 && safeCycle == 0
+                ? (settings != null ? settings.cycleStartSafetyMargin : 260f) : 130f;
+            float jitter = jitter01 * (settings != null ? settings.slotJitter : 120f);
+            float latestRunUp = slotStart + slotLength -
+                                (runUpLength + transitionLength + rampLength + poolLength + landingLength +
+                                 recoveryLength + 70f);
+            float runUpStart = Mathf.Clamp(slotStart + 260f + jitter, slotStart + startMargin,
+                Mathf.Max(slotStart + startMargin, latestRunUp));
+            float transitionStart = runUpStart + runUpLength;
+            float rampStart = transitionStart + transitionLength;
+            float poolStart = rampStart + rampLength;
+            float poolEnd = poolStart + poolLength;
+            float landingEnd = poolEnd + landingLength;
+            float recoveryEnd = landingEnd + recoveryLength;
+            float baseline = SampleNeonBaseHeight(profile, runUpStart);
+            float slope = Mathf.Tan((settings != null ? settings.rampAngleDegrees : 20f) * Mathf.Deg2Rad);
+            float rampHeight = slope * (rampLength + transitionLength * .5f);
+            return new LiquidChallengeLayout
+            {
+                cycleIndex = safeCycle,
+                challengeIndex = safeChallenge,
+                runUpStart = runUpStart,
+                transitionStart = transitionStart,
+                rampStart = rampStart,
+                poolStart = poolStart,
+                poolEnd = poolEnd,
+                landingEnd = landingEnd,
+                recoveryEnd = recoveryEnd,
+                baselineHeight = baseline,
+                rampHeight = rampHeight,
+                poolLength = poolLength,
+                liquidSurfaceY = baseline + (settings != null ? settings.surfaceOffset : .15f)
+            };
+        }
+
+        public static bool TryGetLiquidChallengeAtDistance(MapProfile profile, float distance,
+            out LiquidChallengeLayout challenge)
+        {
+            challenge = default;
+            if (profile == null || !profile.supportsLiquidExposure || distance < 0f) return false;
+            int cycle = GetCycleIndex(distance);
+            for (int i = 0; i < LiquidChallengeSettings.RequiredChallengesPerCycle; i++)
+            {
+                LiquidChallengeLayout candidate = GetLiquidChallenge(profile, cycle, i);
+                if (distance < candidate.poolStart || distance >= candidate.poolEnd) continue;
+                challenge = candidate;
+                return true;
+            }
+            return false;
+        }
+
+        public static bool IsLiquidGap(MapProfile profile, float worldX) =>
+            TryGetLiquidChallengeAtDistance(profile, worldX, out _);
+
+        private static float SampleNeonHeight(MapProfile profile, float worldX)
+        {
+            if (profile == null) return 0f;
+            float distance = Mathf.Max(0f, worldX);
+            int cycle = GetCycleIndex(distance);
+            float general = SampleNeonBaseHeight(profile, distance);
+            for (int i = 0; i < LiquidChallengeSettings.RequiredChallengesPerCycle; i++)
+            {
+                LiquidChallengeLayout challenge = GetLiquidChallenge(profile, cycle, i);
+                float blendStart = challenge.runUpStart - 18f;
+                if (distance < blendStart || distance > challenge.recoveryEnd) continue;
+                float baseline = challenge.baselineHeight;
+                if (distance < challenge.runUpStart)
+                {
+                    float t = Smooth01(Mathf.InverseLerp(blendStart, challenge.runUpStart, distance));
+                    return Mathf.Lerp(general, baseline, t);
+                }
+                if (distance < challenge.transitionStart)
+                {
+                    float t = Mathf.InverseLerp(challenge.runUpStart, challenge.transitionStart, distance);
+                    return baseline + Mathf.Sin(t * Mathf.PI) * .06f;
+                }
+                LiquidChallengeSettings settings = profile.liquidChallenges;
+                float slope = Mathf.Tan(settings.rampAngleDegrees * Mathf.Deg2Rad);
+                if (distance < challenge.rampStart)
+                {
+                    float transitionDistance = distance - challenge.transitionStart;
+                    float transitionT = transitionDistance / Mathf.Max(.001f, settings.rampTransitionLength);
+                    return baseline + .5f * slope * settings.rampTransitionLength * transitionT * transitionT;
+                }
+                if (distance < challenge.poolStart)
+                {
+                    float transitionRise = .5f * slope * settings.rampTransitionLength;
+                    return baseline + transitionRise + slope * (distance - challenge.rampStart);
+                }
+                if (distance < challenge.poolEnd)
+                    return challenge.liquidSurfaceY;
+                if (distance < challenge.landingEnd)
+                {
+                    float t = Smooth01(Mathf.InverseLerp(challenge.poolEnd, challenge.landingEnd, distance));
+                    float landingStart = baseline + .9f;
+                    float landingEnd = SampleNeonBaseHeight(profile, challenge.landingEnd);
+                    return Mathf.Lerp(landingStart, landingEnd, t);
+                }
+                float recoveryT = Smooth01(Mathf.InverseLerp(challenge.landingEnd, challenge.recoveryEnd, distance));
+                float recoveryStart = SampleNeonBaseHeight(profile, challenge.landingEnd);
+                return Mathf.Lerp(recoveryStart, general, recoveryT);
+            }
+            return general;
+        }
+
+        private static float SampleNeonBaseHeight(MapProfile profile, float worldX)
+        {
+            float distance = Mathf.Max(0f, worldX);
+            float cycleProgress = distance / LiquidChallengeSettings.RequiredCycleLength;
+            float cycleDifficulty = cycleProgress / (cycleProgress + 3f);
+            float amplitude = profile.amplitude * Mathf.Lerp(.62f, 1f, cycleDifficulty);
+            float frequency = Mathf.Max(.0001f, profile.frequency);
+            uint seed = CombinedSeed(profile);
+            float phaseA = Hash01(seed, 401) * TwoPi;
+            float phaseB = Hash01(seed, 809) * TwoPi;
+            float broad = Mathf.Sin(distance * frequency * .48f + phaseA) * .52f;
+            float rolling = Mathf.Sin(distance * frequency * 1.05f + phaseB) * .23f;
+            float noise = (Mathf.PerlinNoise(seed * .000021f + distance * frequency * .12f, .713f) * 2f - 1f) * .16f;
+            float startFlatten = Smooth01(Mathf.Clamp01(distance / 180f));
+            return profile.baseHeight + (broad + rolling + noise) * amplitude * startFlatten;
+        }
+
+        private static float Smooth01(float value)
+        {
+            float t = Mathf.Clamp01(value);
+            return t * t * (3f - 2f * t);
         }
 
         public static TerrainSectionKind GetSectionKind(MapProfile profile, int sectionIndex)
@@ -193,37 +372,43 @@ namespace AnimeHillRacing.Terrain
             surfaceHeights = new float[sampleCount];
             float maxSlopeDelta = Mathf.Tan(profile.maxSlopeAngle * Mathf.Deg2Rad) * dx;
             float maxDelta = Mathf.Min(maxSlopeDelta, profile.maxHeightDeltaPerSample);
-            float previousHeight = hasBoundary ? boundaryHeight : working[padding];
-            float previousSlope = hasBoundary ? boundarySlope :
-                (working[padding + 1] - working[padding]) / dx;
-            surfaceHeights[0] = previousHeight;
-
-            int firstGeneratedSample = 1;
-            if (hasBoundary && sampleCount > 1)
+            float previousHeight;
+            float previousSlope;
+            if (profile.supportsLiquidExposure)
             {
-                // Preserve both C0 and C1 continuity at a recycled chunk boundary. The former code reused
-                // the exact height but immediately changed the outgoing slope, leaving a hidden normal step
-                // at every seam even though the vertices visually met.
-                float boundaryDelta = Mathf.Clamp(boundarySlope * dx, -maxDelta, maxDelta);
-                surfaceHeights[1] = previousHeight + boundaryDelta;
-                previousHeight = surfaceHeights[1];
-                previousSlope = boundaryDelta / dx;
-                firstGeneratedSample = 2;
+                for (int i = 0; i < sampleCount; i++) surfaceHeights[i] = working[i + padding];
+                previousHeight = surfaceHeights[sampleCount - 1];
+                previousSlope = (surfaceHeights[sampleCount - 1] - surfaceHeights[sampleCount - 2]) / dx;
             }
-
-            for (int i = firstGeneratedSample; i < sampleCount; i++)
+            else
             {
-                float desiredHeight = working[i + padding];
-                float desiredDelta = Mathf.Clamp(desiredHeight - previousHeight, -maxDelta, maxDelta);
-                float desiredSlope = desiredDelta / dx;
-                float previousAngle = Mathf.Atan(previousSlope) * Mathf.Rad2Deg;
-                float desiredAngle = Mathf.Atan(desiredSlope) * Mathf.Rad2Deg;
-                float safeAngle = Mathf.MoveTowards(previousAngle, desiredAngle, profile.maximumCrestSharpness);
-                float safeSlope = Mathf.Tan(safeAngle * Mathf.Deg2Rad);
-                float height = previousHeight + safeSlope * dx;
-                surfaceHeights[i] = height;
-                previousHeight = height;
-                previousSlope = safeSlope;
+                previousHeight = hasBoundary ? boundaryHeight : working[padding];
+                previousSlope = hasBoundary ? boundarySlope :
+                    (working[padding + 1] - working[padding]) / dx;
+                surfaceHeights[0] = previousHeight;
+                int firstGeneratedSample = 1;
+                if (hasBoundary && sampleCount > 1)
+                {
+                    float boundaryDelta = Mathf.Clamp(boundarySlope * dx, -maxDelta, maxDelta);
+                    surfaceHeights[1] = previousHeight + boundaryDelta;
+                    previousHeight = surfaceHeights[1];
+                    previousSlope = boundaryDelta / dx;
+                    firstGeneratedSample = 2;
+                }
+                for (int i = firstGeneratedSample; i < sampleCount; i++)
+                {
+                    float desiredHeight = working[i + padding];
+                    float desiredDelta = Mathf.Clamp(desiredHeight - previousHeight, -maxDelta, maxDelta);
+                    float desiredSlope = desiredDelta / dx;
+                    float previousAngle = Mathf.Atan(previousSlope) * Mathf.Rad2Deg;
+                    float desiredAngle = Mathf.Atan(desiredSlope) * Mathf.Rad2Deg;
+                    float safeAngle = Mathf.MoveTowards(previousAngle, desiredAngle, profile.maximumCrestSharpness);
+                    float safeSlope = Mathf.Tan(safeAngle * Mathf.Deg2Rad);
+                    float height = previousHeight + safeSlope * dx;
+                    surfaceHeights[i] = height;
+                    previousHeight = height;
+                    previousSlope = safeSlope;
+                }
             }
 
             endHeight = previousHeight;
@@ -232,7 +417,8 @@ namespace AnimeHillRacing.Terrain
                 (Mathf.Max(1f, profile.maximumDifficulty) + 0.5f) - profile.terrainVisualDepth;
             Vector3[] vertices = new Vector3[sampleCount * 3];
             Vector2[] uvs = new Vector2[vertices.Length];
-            int[] triangles = new int[(sampleCount - 1) * 12];
+            var surfaceTriangles = new List<int>((sampleCount - 1) * 6);
+            var skirtTriangles = new List<int>((sampleCount - 1) * 6);
             for (int i = 0; i < sampleCount; i++)
             {
                 float localX = i * dx;
@@ -245,29 +431,43 @@ namespace AnimeHillRacing.Terrain
                 uvs[vertex + 2] = new Vector2(localX * 0.1f, Mathf.Abs(surfaceHeights[i] - skirtBottom) * 0.1f);
             }
 
-            int triangle = 0;
             for (int i = 0; i < sampleCount - 1; i++)
             {
+                float segmentWorldX = chunkStartX + (i + .5f) * dx;
+                if (IsLiquidGap(profile, segmentWorldX)) continue;
                 int vertex = i * 3;
                 int next = vertex + 3;
-                triangles[triangle++] = vertex;
-                triangles[triangle++] = vertex + 1;
-                triangles[triangle++] = next;
-                triangles[triangle++] = vertex + 1;
-                triangles[triangle++] = next + 1;
-                triangles[triangle++] = next;
-                triangles[triangle++] = vertex;
-                triangles[triangle++] = next;
-                triangles[triangle++] = vertex + 2;
-                triangles[triangle++] = next;
-                triangles[triangle++] = next + 2;
-                triangles[triangle++] = vertex + 2;
+                surfaceTriangles.Add(vertex);
+                surfaceTriangles.Add(vertex + 1);
+                surfaceTriangles.Add(next);
+                surfaceTriangles.Add(vertex + 1);
+                surfaceTriangles.Add(next + 1);
+                surfaceTriangles.Add(next);
+                skirtTriangles.Add(vertex);
+                skirtTriangles.Add(next);
+                skirtTriangles.Add(vertex + 2);
+                skirtTriangles.Add(next);
+                skirtTriangles.Add(next + 2);
+                skirtTriangles.Add(vertex + 2);
             }
 
             mesh.Clear();
             mesh.vertices = vertices;
             mesh.uv = uvs;
-            mesh.triangles = triangles;
+            if (profile.supportsLiquidExposure && profile.terrainEdgeMaterial != null)
+            {
+                // Neon uses Terrain.png for the visible wall and Ground.png for the driveable top.
+                // Both visual submeshes share the same vertices and the one authoritative collider.
+                mesh.subMeshCount = 2;
+                mesh.SetTriangles(skirtTriangles, 0);
+                mesh.SetTriangles(surfaceTriangles, 1);
+            }
+            else
+            {
+                skirtTriangles.AddRange(surfaceTriangles);
+                mesh.subMeshCount = 1;
+                mesh.SetTriangles(skirtTriangles, 0);
+            }
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
         }
@@ -282,6 +482,7 @@ namespace AnimeHillRacing.Terrain
         private static uint CombinedSeed(MapProfile profile)
         {
             uint hash = 2166136261u;
+            if (profile == null) return hash;
             string id = profile.mapId ?? string.Empty;
             for (int i = 0; i < id.Length; i++)
                 hash = (hash ^ id[i]) * 16777619u;

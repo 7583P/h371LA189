@@ -46,6 +46,12 @@ namespace AnimeHillRacing.Vehicle
         {
             ActiveDefinition = catalog != null ? catalog.FindVehicle(GameSession.SelectedVehicleId) : null;
             if (ActiveDefinition == null) { enabled = false; return; }
+            if (mode == GameModeType.Adventure2_5D)
+            {
+                MapProfile selectedProfile = catalog?.FindMap(GameSession.SelectedMapId,
+                    GameModeType.Adventure2_5D) as MapProfile;
+                if (selectedProfile != null) terrainProfile = selectedProfile;
+            }
             GameObject prefab = mode == GameModeType.Adventure2_5D
                 ? ActiveDefinition.gameplayPrefab2D : ActiveDefinition.gameplayPrefab3D;
             if (prefab == null) { Debug.LogError($"{ActiveDefinition.displayName}: gameplay prefab missing."); enabled = false; return; }
@@ -74,7 +80,11 @@ namespace AnimeHillRacing.Vehicle
             gameplayHud?.AssignPickupPool(pickupPool);
 
             if (mode == GameModeType.Adventure2_5D)
-                terrain?.AssignRuntimeReferences(terrainProfile, SpawnedVehicle, pickupPool);
+            {
+                terrain?.AssignRuntimeReferences(terrainProfile, SpawnedVehicle, pickupPool, gameManager);
+                gameManager?.ConfigureMap(terrainProfile);
+                FindFirstObjectByType<MountainBackground>()?.ApplyEnvironment(terrainProfile?.environment);
+            }
             else if (mode == GameModeType.Adventure3D)
                 road?.Assign(roadProfile, SpawnedVehicle, pickupPool);
 

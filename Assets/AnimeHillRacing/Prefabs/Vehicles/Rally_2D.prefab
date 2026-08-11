@@ -717,14 +717,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AnimeHillRacing.Vehicle.VehicleController
   definition: {fileID: 11400000, guid: 032dd7dff06b0d94897f8be09f3b6083, type: 2}
   upgrades:
-    engineTune: 0
-    accelerationTune: 0
-    suspensionTune: 0
-    gripTune: 0
-    airControlTune: 0
-    downforceTune: 0
-    fuelTune: 0
-    turboTune: 0
+    engineTune: 1
+    accelerationTune: 1
+    suspensionTune: 1
+    gripTune: 1
+    airControlTune: 1
+    downforceTune: 1
+    fuelTune: 1
+    turboTune: 1
   input: {fileID: 0}
   suspensionPoints:
   - {fileID: 17321207355802352}
@@ -1058,7 +1058,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 1.34, y: -0.49, z: -0.04}
-  m_LocalScale: {x: 0.07058824, y: 0.07058824, z: 0.07058824}
+  m_LocalScale: {x: 0.07024793, y: 0.07024793, z: 0.07024793}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 6657497803075097857}
@@ -1994,7 +1994,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -1.32, y: -0.49, z: -0.04}
-  m_LocalScale: {x: 0.07058824, y: 0.07058824, z: 0.07058824}
+  m_LocalScale: {x: 0.07024793, y: 0.07024793, z: 0.07024793}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 6657497803075097857}

@@ -32,9 +32,17 @@ namespace AnimeHillRacing.Vehicle
             if (definition == null) return;
             VehicleDefinition.CustomizationOption skin = definition.FindSkin(SaveManager.GetSelectedSkinId(definition));
             VehicleDefinition.CustomizationOption wheel = definition.FindWheel(SaveManager.GetSelectedWheelId(definition));
-            if (bodyRenderer != null && skin != null) bodyRenderer.sprite = skin.sprite;
-            if (frontWheelRenderer != null && wheel != null) frontWheelRenderer.sprite = wheel.sprite;
-            if (rearWheelRenderer != null && wheel != null) rearWheelRenderer.sprite = wheel.sprite;
+            if (bodyRenderer != null && skin != null)
+            {
+                bodyRenderer.sprite = skin.sprite;
+                bodyRenderer.flipX = definition.flipBodyX;
+                bodyRenderer.sortingOrder = 10;
+                float sourceWidth = bodyRenderer.sprite != null ? bodyRenderer.sprite.bounds.size.x : 1f;
+                bodyRenderer.transform.localScale = Vector3.one *
+                    (definition.visualWidth / Mathf.Max(.001f, sourceWidth));
+            }
+            ApplyWheel(frontWheelRenderer, wheel, definition.FrontWheelDiameter);
+            ApplyWheel(rearWheelRenderer, wheel, definition.RearWheelDiameter);
             if (articulatedDriver != null && fallbackDriver != null)
                 articulatedDriver.Apply(fallbackDriver, definition.driverPose,
                     vehicle != null ? vehicle.GetComponent<Rigidbody>() : GetComponentInParent<Rigidbody>(), true);
@@ -71,6 +79,17 @@ namespace AnimeHillRacing.Vehicle
             frontWheelRenderer = frontWheelImage; rearWheelRenderer = rearWheelImage;
             articulatedDriver = driver; fallbackDriver = defaultDriver;
             ApplySavedCustomization();
+        }
+
+        private static void ApplyWheel(SpriteRenderer renderer, VehicleDefinition.CustomizationOption wheel,
+            float diameter)
+        {
+            if (renderer == null || wheel == null) return;
+            renderer.sprite = wheel.sprite;
+            renderer.sortingOrder = 11;
+            float sourceDiameter = renderer.sprite != null
+                ? Mathf.Max(renderer.sprite.bounds.size.x, renderer.sprite.bounds.size.y) : 1f;
+            renderer.transform.localScale = Vector3.one * (diameter / Mathf.Max(.001f, sourceDiameter));
         }
     }
 }

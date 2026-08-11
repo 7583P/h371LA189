@@ -7,17 +7,20 @@ namespace AnimeHillRacing.Core
     {
         [SerializeField] private GameModeType mode;
         [SerializeField] private string mapId;
+        [SerializeField] private bool preserveSelectedMap;
 
         private void Awake()
         {
             GameSession.SelectedGameMode = mode;
-            GameSession.SelectedMapId = mapId;
+            if (!preserveSelectedMap || string.IsNullOrEmpty(GameSession.SelectedMapId))
+                GameSession.SelectedMapId = mapId;
         }
 
-        public void Configure(GameModeType gameMode, string selectedMapId)
+        public void Configure(GameModeType gameMode, string selectedMapId, bool preserveMapSelection = false)
         {
             mode = gameMode;
             mapId = selectedMapId;
+            preserveSelectedMap = preserveMapSelection;
         }
     }
 }

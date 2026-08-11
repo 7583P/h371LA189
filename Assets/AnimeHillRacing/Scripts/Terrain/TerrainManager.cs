@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using AnimeHillRacing.Core;
 using AnimeHillRacing.Pickups;
 using AnimeHillRacing.Vehicle;
 using UnityEngine;
@@ -10,6 +11,7 @@ namespace AnimeHillRacing.Terrain
         [SerializeField] private MapProfile mapProfile;
         [SerializeField] private VehicleRuntimeBase vehicle;
         [SerializeField] private PickupPool pickupPool;
+        [SerializeField] private GameManager gameManager;
         [SerializeField, Min(20f)] private float chunkLength = 80f;
         [SerializeField, Range(8, 96)] private int samples = 48;
         [SerializeField, Min(2f)] private float width = 10f;
@@ -23,6 +25,11 @@ namespace AnimeHillRacing.Terrain
         private readonly ProgressiveFuelSequence fuelSequence = new ProgressiveFuelSequence();
         private MeshCollider authoritativeTerrainCollider;
         private Mesh authoritativeTerrainMesh;
+        private readonly List<NeonLiquidHazard> liquidHazardPool = new List<NeonLiquidHazard>(12);
+        private readonly Dictionary<long, NeonLiquidHazard> activeLiquidHazards =
+            new Dictionary<long, NeonLiquidHazard>();
+        private readonly HashSet<long> requiredLiquidHazards = new HashSet<long>();
+        private readonly List<long> liquidKeyBuffer = new List<long>(12);
 
         public int CurrentChunkIndex => currentChunkIndex;
         public MapProfile ActiveProfile => mapProfile;
@@ -61,6 +68,8 @@ namespace AnimeHillRacing.Terrain
                 GenerateChunk(chunk, minimumLoadedIndex + i);
             }
             RebuildAuthoritativeTerrainCollider();
+            PrewarmLiquidHazards(count + 2);
+            RefreshLiquidHazards();
         }
 
         private void Update()
@@ -68,12 +77,15 @@ namespace AnimeHillRacing.Terrain
             if (chunks == null)
                 return;
             int newIndex = Mathf.FloorToInt(vehicle.transform.position.x / chunkLength);
-            if (newIndex <= currentChunkIndex)
-                return;
             while (currentChunkIndex < newIndex)
             {
                 currentChunkIndex++;
                 RecycleOneForward();
+            }
+            while (currentChunkIndex > newIndex)
+            {
+                currentChunkIndex--;
+                RecycleOneBackward();
             }
         }
 
@@ -86,7 +98,19 @@ namespace AnimeHillRacing.Terrain
             {
                 GenerateChunk(oldest, maximumLoadedIndex);
                 RebuildAuthoritativeTerrainCollider();
+                RefreshLiquidHazards();
             }
+        }
+
+        private void RecycleOneBackward()
+        {
+            TerrainChunk newest = FindChunk(maximumLoadedIndex);
+            maximumLoadedIndex--;
+            minimumLoadedIndex--;
+            if (newest == null) return;
+            GenerateChunk(newest, minimumLoadedIndex);
+            RebuildAuthoritativeTerrainCollider();
+            RefreshLiquidHazards();
         }
 
         private TerrainChunk FindChunk(int index)
@@ -141,6 +165,7 @@ namespace AnimeHillRacing.Terrain
             var vertices = new List<Vector3>(ordered.Count * (samples + 1) * 2);
             var triangles = new List<int>(Mathf.Max(0, ordered.Count * samples * 6));
             int pairCount = 0;
+            float previousWorldX = 0f;
             for (int chunkIndex = 0; chunkIndex < ordered.Count; chunkIndex++)
             {
                 TerrainChunk chunk = ordered[chunkIndex];
@@ -159,13 +184,18 @@ namespace AnimeHillRacing.Terrain
                     {
                         int previous = (pairCount - 1) * 2;
                         int current = pairCount * 2;
-                        triangles.Add(previous);
-                        triangles.Add(previous + 1);
-                        triangles.Add(current);
-                        triangles.Add(previous + 1);
-                        triangles.Add(current + 1);
-                        triangles.Add(current);
+                        float segmentX = (previousWorldX + leftWorld.x) * .5f;
+                        if (!TerrainGenerator.IsLiquidGap(mapProfile, segmentX))
+                        {
+                            triangles.Add(previous);
+                            triangles.Add(previous + 1);
+                            triangles.Add(current);
+                            triangles.Add(previous + 1);
+                            triangles.Add(current + 1);
+                            triangles.Add(current);
+                        }
                     }
+                    previousWorldX = leftWorld.x;
                     pairCount++;
                 }
             }
@@ -195,7 +225,8 @@ namespace AnimeHillRacing.Terrain
                 {
                     CoinRoutePoint point = route.GetPoint(group, pointIndex);
                     float x = group.anchorDistance + point.distanceOffset;
-                    if (x < start || x >= end || !chunk.TrySampleSurface(x, out float y, out _)) continue;
+                    if (x < start || x >= end || TerrainGenerator.IsLiquidGap(mapProfile, x) ||
+                        !chunk.TrySampleSurface(x, out float y, out _)) continue;
                     CoinPickup pickup = pickupPool.SpawnCoin(point.value,
                         new Vector3(x, y + route.surfaceOffset + point.heightOffset, 0f), x,
                         route.GetStableCoinId(group, pointIndex));
@@ -237,6 +268,7 @@ namespace AnimeHillRacing.Terrain
                 {
                     float offset = i == 0 ? 0f : i * step * side;
                     float candidateX = Mathf.Clamp(targetDistance + offset, chunkStart + 2f, chunkEnd - 2f);
+                    if (TerrainGenerator.IsLiquidGap(mapProfile, candidateX)) continue;
                     if (!chunk.TrySampleSurface(candidateX, out float candidateY, out float slope))
                         continue;
                     float absoluteSlope = Mathf.Abs(slope);
@@ -260,6 +292,75 @@ namespace AnimeHillRacing.Terrain
             mapProfile = profile;
             vehicle = targetVehicle;
             pickupPool = pool;
+        }
+
+        public void AssignRuntimeReferences(MapProfile profile, VehicleRuntimeBase targetVehicle, PickupPool pool,
+            GameManager manager)
+        {
+            mapProfile = profile;
+            vehicle = targetVehicle;
+            pickupPool = pool;
+            gameManager = manager;
+        }
+
+        private void PrewarmLiquidHazards(int count)
+        {
+            if (mapProfile == null || !mapProfile.supportsLiquidExposure) return;
+            while (liquidHazardPool.Count < count)
+            {
+                GameObject hazardObject = new GameObject("Neon Liquid - Available Pooled Instance");
+                hazardObject.transform.SetParent(transform, false);
+                NeonLiquidHazard hazard = hazardObject.AddComponent<NeonLiquidHazard>();
+                hazardObject.SetActive(false);
+                liquidHazardPool.Add(hazard);
+            }
+        }
+
+        private void RefreshLiquidHazards()
+        {
+            if (mapProfile == null || !mapProfile.supportsLiquidExposure)
+            {
+                for (int i = 0; i < liquidHazardPool.Count; i++) liquidHazardPool[i]?.Deactivate();
+                activeLiquidHazards.Clear();
+                return;
+            }
+            float loadedStart = minimumLoadedIndex * chunkLength;
+            float loadedEnd = (maximumLoadedIndex + 1) * chunkLength;
+            int firstCycle = TerrainGenerator.GetCycleIndex(Mathf.Max(0f, loadedStart - 200f));
+            int lastCycle = TerrainGenerator.GetCycleIndex(Mathf.Max(0f, loadedEnd + 200f));
+            requiredLiquidHazards.Clear();
+            for (int cycle = firstCycle; cycle <= lastCycle; cycle++)
+            {
+                for (int slot = 0; slot < LiquidChallengeSettings.RequiredChallengesPerCycle; slot++)
+                {
+                    LiquidChallengeLayout layout = TerrainGenerator.GetLiquidChallenge(mapProfile, cycle, slot);
+                    if (layout.recoveryEnd < loadedStart || layout.runUpStart > loadedEnd) continue;
+                    long key = ((long)cycle << 32) | (uint)slot;
+                    requiredLiquidHazards.Add(key);
+                    if (activeLiquidHazards.ContainsKey(key)) continue;
+                    NeonLiquidHazard hazard = GetAvailableLiquidHazard();
+                    hazard.Configure(mapProfile, layout, width, gameManager);
+                    activeLiquidHazards.Add(key, hazard);
+                }
+            }
+            liquidKeyBuffer.Clear();
+            foreach (KeyValuePair<long, NeonLiquidHazard> pair in activeLiquidHazards)
+                if (!requiredLiquidHazards.Contains(pair.Key)) liquidKeyBuffer.Add(pair.Key);
+            for (int i = 0; i < liquidKeyBuffer.Count; i++)
+            {
+                long key = liquidKeyBuffer[i];
+                activeLiquidHazards[key].Deactivate();
+                activeLiquidHazards.Remove(key);
+            }
+        }
+
+        private NeonLiquidHazard GetAvailableLiquidHazard()
+        {
+            for (int i = 0; i < liquidHazardPool.Count; i++)
+                if (liquidHazardPool[i] != null && !liquidHazardPool[i].gameObject.activeSelf)
+                    return liquidHazardPool[i];
+            PrewarmLiquidHazards(liquidHazardPool.Count + 1);
+            return liquidHazardPool[liquidHazardPool.Count - 1];
         }
 
         private void OnDestroy()

@@ -106,3 +106,38 @@ MonoBehaviour:
   groundPhysicsMaterial: {fileID: 13400000, guid: 4dfb87f232532b24aafe44e9c5c97f50, type: 2}
   terrainEdgeWidth: 0.18
   terrainVisualDepth: 20
+  supportsLiquidExposure: 0
+  liquidChallenges:
+    cycleLength: 6000
+    challengesPerCycle: 8
+    cycleStartSafetyMargin: 260
+    slotJitter: 120
+    runUpLength: 42
+    rampTransitionLength: 6
+    rampHorizontalLength: 12
+    rampAngleDegrees: 20
+    landingLength: 26
+    recoveryLength: 48
+    basePoolLength: 18
+    minimumPoolLength: 16
+    maximumPoolLength: 34
+    cycleGrowth: 0.85
+    growthSaturation: 2.5
+    deterministicLengthVariation: 0.12
+    visualDepth: 7
+    surfaceOffset: 0.15
+    cautionSprite: {fileID: 0}
+    cautionDistanceBeforeRamp: 10
+    cautionBelowSurface: 1.65
+    cautionWidth: 3.2
+    cautionSortingOrder: 4
+    liquidSprite: {fileID: 0}
+    liquidSortingOrder: 3
+    normalAlpha: 1
+    submergedAlpha: 0.65
+    alphaLerpSpeed: 7
+    exposureLimitSeconds: 10
+    entrySpeedRemaining: 0.1
+    entrySlowdownSeconds: 0.35
+    continuousViscosity: 2.4
+    liquidDriveAcceleration: 9

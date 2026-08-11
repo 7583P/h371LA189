@@ -8,13 +8,14 @@ namespace AnimeHillRacing.Vehicle
     {
         Jeep,
         Formula,
-        Rally
+        Rally,
+        SportBike
     }
 
     [CreateAssetMenu(menuName = "Anime Hill Racing/Vehicle Definition", fileName = "MainVehicle")]
     public sealed class VehicleDefinition : ScriptableObject
     {
-        public const int GlobalGripMaximum = 500;
+        public const int GlobalGripMaximum = 1000;
         public const float UpgradeCurveK = 2.5f;
 
         [Serializable]
@@ -24,6 +25,7 @@ namespace AnimeHillRacing.Vehicle
             public string displayName;
             public Sprite sprite;
             public bool unlockedByDefault = true;
+            [Min(0)] public int gemPrice;
         }
 
         [Serializable]
@@ -76,10 +78,13 @@ namespace AnimeHillRacing.Vehicle
         public CustomizationOption[] wheels;
         public DriverPose driverPose = new DriverPose();
         [Min(.1f)] public float visualWidth = 3.2f;
+        public bool flipBodyX;
         public Vector2 bodyVisualOffset = new Vector2(0f, .1f);
         public Vector2 rearWheelVisualPosition = new Vector2(-1.05f, -.42f);
         public Vector2 frontWheelVisualPosition = new Vector2(1.05f, -.42f);
         [Min(.05f)] public float wheelVisualDiameter = .86f;
+        [Min(0f)] public float rearWheelVisualDiameter;
+        [Min(0f)] public float frontWheelVisualDiameter;
 
         [Header("Per-Vehicle Tune Limits")]
         [Min(0)] public int engineMaxTunes = 14;
@@ -231,6 +236,10 @@ namespace AnimeHillRacing.Vehicle
 
         public float RearWheelAnchor => rearWheelVisualPosition.x;
         public float FrontWheelAnchor => frontWheelVisualPosition.x;
+        public float RearWheelDiameter => rearWheelVisualDiameter > .001f
+            ? rearWheelVisualDiameter : wheelVisualDiameter;
+        public float FrontWheelDiameter => frontWheelVisualDiameter > .001f
+            ? frontWheelVisualDiameter : wheelVisualDiameter;
 
         public ResolvedVehicleStats Resolve(VehicleUpgradeState upgrades)
         {
@@ -346,9 +355,9 @@ namespace AnimeHillRacing.Vehicle
 
         public static float UpgradeProgress(int level, int maximum)
         {
-            if (maximum <= 0 || level <= 0) return 0f;
+            if (maximum <= 1 || level <= 1) return 0f;
             if (level >= maximum) return 1f;
-            float t = Mathf.Clamp01(level / (float)maximum);
+            float t = Mathf.Clamp01((level - 1f) / (maximum - 1f));
             float denominator = 1f - Mathf.Exp(-UpgradeCurveK);
             return denominator <= Mathf.Epsilon ? t : (1f - Mathf.Exp(-UpgradeCurveK * t)) / denominator;
         }
@@ -384,6 +393,8 @@ namespace AnimeHillRacing.Vehicle
             turboMaxTunes = Mathf.Max(0, turboMaxTunes);
             visualWidth = Mathf.Max(.1f, visualWidth);
             wheelVisualDiameter = Mathf.Max(.05f, wheelVisualDiameter);
+            rearWheelVisualDiameter = Mathf.Max(0f, rearWheelVisualDiameter);
+            frontWheelVisualDiameter = Mathf.Max(0f, frontWheelVisualDiameter);
             wheelMass = Mathf.Max(1f, wheelMass);
             collisionPitchInertiaMultiplier = Mathf.Clamp(collisionPitchInertiaMultiplier, 1f, 6f);
             suspension.compressionTravelRatio = Mathf.Clamp(suspension.compressionTravelRatio, .6f, .95f);

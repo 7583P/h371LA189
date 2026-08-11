@@ -10,6 +10,7 @@ namespace AnimeHillRacing.UI
     public sealed class GarageUI : MonoBehaviour
     {
         private enum Category { Skin, Wheels, Driver, Tuning }
+        private enum PurchaseKind { None, Tune, Customization }
 
         [SerializeField] private GameCatalog catalog;
         [SerializeField] private GaragePreviewRenderer preview;
@@ -29,6 +30,7 @@ namespace AnimeHillRacing.UI
         [SerializeField] private Text[] tuningCosts;
         [SerializeField] private Button[] tuningButtons;
         [SerializeField] private Text tuningCoins;
+        [SerializeField] private Text gemsBalance;
         [SerializeField] private Text sectionTitle;
         [SerializeField] private Text upgradeSummary;
         [SerializeField] private GameObject vehiclePanel;
@@ -47,6 +49,10 @@ namespace AnimeHillRacing.UI
         private Category category;
         private GarageSection section;
         private VehicleUpgradeType pendingType;
+        private PurchaseKind pendingPurchaseKind;
+        private Category pendingCategory;
+        private string pendingOptionId;
+        private int pendingGemPrice;
         private bool purchaseInFlight;
 
         private VehicleDefinition CurrentVehicle => catalog != null && catalog.vehicles != null && catalog.vehicles.Length > 0
@@ -99,6 +105,7 @@ namespace AnimeHillRacing.UI
             VehicleDefinition vehicle = CurrentVehicle;
             if (vehicle == null || slot < 0 || slot >= vehicle.GetTuneSlotCount() || catalog?.upgradeEconomy == null) return;
             pendingType = vehicle.GetTuneTypeForSlot(slot);
+            pendingPurchaseKind = PurchaseKind.Tune;
             VehicleUpgradeState state = SaveManager.LoadUpgrades(vehicle.vehicleId, vehicle);
             int current = state.GetTune(pendingType);
             int maximum = vehicle.GetMaxTunes(pendingType);
@@ -120,9 +127,35 @@ namespace AnimeHillRacing.UI
 
         public void ConfirmPurchase()
         {
-            if (purchaseInFlight || CurrentVehicle == null || catalog?.upgradeEconomy == null) return;
+            if (purchaseInFlight || CurrentVehicle == null) return;
             purchaseInFlight = true;
             if (confirmationYes != null) confirmationYes.interactable = false;
+            if (pendingPurchaseKind == PurchaseKind.Customization)
+            {
+                bool cosmeticPurchased = SaveManager.TryPurchaseCustomization(CurrentVehicle.vehicleId,
+                    pendingCategory.ToString(), pendingOptionId, pendingGemPrice,
+                    out CustomizationPurchaseResult cosmeticResult);
+                purchaseInFlight = false;
+                if (cosmeticPurchased || cosmeticResult == CustomizationPurchaseResult.AlreadyUnlocked)
+                {
+                    SetSelectedOption(CurrentVehicle, pendingCategory, pendingOptionId);
+                    pendingPurchaseKind = PurchaseKind.None;
+                    if (confirmationModal != null) confirmationModal.SetActive(false);
+                    Refresh();
+                    return;
+                }
+                if (confirmationStatus != null)
+                    confirmationStatus.text = cosmeticResult == CustomizationPurchaseResult.NotEnoughGems
+                        ? "NOT ENOUGH GEMS" : "UNAVAILABLE";
+                if (confirmationYes != null) confirmationYes.interactable = true;
+                Refresh();
+                return;
+            }
+            if (catalog?.upgradeEconomy == null)
+            {
+                purchaseInFlight = false;
+                return;
+            }
             bool purchased = SaveManager.TryPurchaseTune(CurrentVehicle, pendingType, catalog.upgradeEconomy,
                 out _, out TunePurchaseResult result);
             purchaseInFlight = false;
@@ -149,10 +182,24 @@ namespace AnimeHillRacing.UI
         private void SelectOption(int index)
         {
             VehicleDefinition vehicle = CurrentVehicle;
-            if (category == Category.Tuning || vehicle == null || !TryGetOption(index, out string id, out _, out bool unlocked) || !unlocked) return;
-            if (category == Category.Skin) SaveManager.SetSelectedSkinId(vehicle, id);
-            else if (category == Category.Wheels) SaveManager.SetSelectedWheelId(vehicle, id);
-            else SaveManager.SetSelectedDriverId(id);
+            if (category == Category.Tuning || vehicle == null ||
+                !TryGetOption(index, out string id, out _, out bool unlocked, out int gemPrice)) return;
+            if (!unlocked)
+            {
+                if (gemPrice <= 0 || category == Category.Driver) return;
+                pendingPurchaseKind = PurchaseKind.Customization;
+                pendingCategory = category;
+                pendingOptionId = id;
+                pendingGemPrice = gemPrice;
+                if (confirmationTitle != null) confirmationTitle.text = $"BUY {OptionName(index).ToUpperInvariant()}?";
+                if (confirmationValues != null) confirmationValues.text = "PERMANENT COSMETIC UNLOCK";
+                if (confirmationCost != null) confirmationCost.text = $"COST  {gemPrice:N0} GEMS";
+                if (confirmationStatus != null) confirmationStatus.text = string.Empty;
+                if (confirmationYes != null) confirmationYes.interactable = true;
+                if (confirmationModal != null) confirmationModal.SetActive(true);
+                return;
+            }
+            SetSelectedOption(vehicle, category, id);
             Refresh();
         }
 
@@ -160,6 +207,7 @@ namespace AnimeHillRacing.UI
         {
             VehicleDefinition vehicle = CurrentVehicle;
             if (vehicle == null) return;
+            if (gemsBalance != null) gemsBalance.text = $"GEMS  {SaveManager.TotalGems:N0}";
             if (vehicleName != null) vehicleName.text = vehicle.displayName.ToUpperInvariant();
             if (sectionTitle != null) sectionTitle.text = section.ToString().ToUpperInvariant();
             if (categoryName != null) categoryName.text = category == Category.Skin ? "VEHICLE SKIN" :
@@ -183,9 +231,9 @@ namespace AnimeHillRacing.UI
                 bool visible = i < count;
                 optionButtons[i].gameObject.SetActive(visible);
                 if (!visible) continue;
-                TryGetOption(i, out string id, out Sprite icon, out bool unlocked);
+                TryGetOption(i, out string id, out Sprite icon, out bool unlocked, out int gemPrice);
                 bool isSelected = id == selected;
-                optionButtons[i].interactable = unlocked;
+                optionButtons[i].interactable = unlocked || gemPrice > 0;
                 optionButtons[i].image.color = isSelected ? new Color(.18f, .60f, .82f, 1f) :
                     unlocked ? new Color(.10f, .20f, .32f, 1f) : new Color(.12f, .12f, .14f, .78f);
                 if (optionImages != null && i < optionImages.Length && optionImages[i] != null)
@@ -194,7 +242,8 @@ namespace AnimeHillRacing.UI
                     optionImages[i].preserveAspect = true;
                 }
                 if (optionLabels != null && i < optionLabels.Length && optionLabels[i] != null)
-                    optionLabels[i].text = OptionName(i) + (isSelected ? "\nSELECTED" : unlocked ? "\nSELECT" : "\nLOCKED");
+                    optionLabels[i].text = OptionName(i) + (isSelected ? "\nSELECTED" : unlocked
+                        ? "\nSELECT" : gemPrice > 0 ? $"\n{gemPrice:N0} GEMS" : "\nLOCKED");
             }
 
             DriverDefinition driver = SelectedDriver();
@@ -281,9 +330,9 @@ namespace AnimeHillRacing.UI
                 ? catalog.drivers[0].driverId : string.Empty);
         }
 
-        private bool TryGetOption(int index, out string id, out Sprite icon, out bool unlocked)
+        private bool TryGetOption(int index, out string id, out Sprite icon, out bool unlocked, out int gemPrice)
         {
-            id = string.Empty; icon = null; unlocked = false;
+            id = string.Empty; icon = null; unlocked = false; gemPrice = 0;
             VehicleDefinition vehicle = CurrentVehicle;
             if (vehicle == null || index < 0 || index >= OptionCount()) return false;
             if (category == Category.Driver)
@@ -297,8 +346,16 @@ namespace AnimeHillRacing.UI
             VehicleDefinition.CustomizationOption item = category == Category.Skin ? vehicle.skins[index] : vehicle.wheels[index];
             if (item == null) return false;
             id = item.optionId; icon = item.sprite;
+            gemPrice = item.gemPrice;
             unlocked = SaveManager.IsCustomizationUnlocked(vehicle.vehicleId, category.ToString(), id, item.unlockedByDefault);
             return true;
+        }
+
+        private static void SetSelectedOption(VehicleDefinition vehicle, Category selectedCategory, string id)
+        {
+            if (selectedCategory == Category.Skin) SaveManager.SetSelectedSkinId(vehicle, id);
+            else if (selectedCategory == Category.Wheels) SaveManager.SetSelectedWheelId(vehicle, id);
+            else if (selectedCategory == Category.Driver) SaveManager.SetSelectedDriverId(id);
         }
 
         private string OptionName(int index)
@@ -340,7 +397,8 @@ namespace AnimeHillRacing.UI
             GameObject targetStorePanel = null, GameObject targetSettingsPanel = null,
             GameObject targetConfirmationModal = null, Text targetConfirmationTitle = null,
             Text targetConfirmationValues = null, Text targetConfirmationCost = null,
-            Text targetConfirmationStatus = null, Button targetConfirmationYes = null)
+            Text targetConfirmationStatus = null, Button targetConfirmationYes = null,
+            Text targetGemsBalance = null)
         {
             catalog = gameCatalog; preview = previewRenderer; vehicleName = vehicleLabel; categoryName = categoryLabel;
             skinSummary = skinLabel; wheelSummary = wheelLabel; driverSummary = driverLabel;
@@ -353,6 +411,7 @@ namespace AnimeHillRacing.UI
             confirmationModal = targetConfirmationModal; confirmationTitle = targetConfirmationTitle;
             confirmationValues = targetConfirmationValues; confirmationCost = targetConfirmationCost;
             confirmationStatus = targetConfirmationStatus; confirmationYes = targetConfirmationYes;
+            gemsBalance = targetGemsBalance;
             FindSavedVehicle();
             Refresh();
         }

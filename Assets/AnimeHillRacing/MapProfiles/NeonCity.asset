@@ -1,0 +1,116 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1276f9d865d95324183cc1cdbf2fbc9c, type: 3}
+  m_Name: NeonCity
+  m_EditorClassIdentifier: Assembly-CSharp::AnimeHillRacing.Terrain.MapProfile
+  mapId: neon-city
+  displayName: NEON CITY
+  supportedGameMode: 0
+  seed: 620031
+  coinRoute: {fileID: 11400000, guid: 2d8f01a9a8d293943a19b887710af661, type: 2}
+  introEndDistance: 500
+  easyEndDistance: 6000
+  normalEndDistance: 12000
+  hardEndDistance: 24000
+  elevationProfile: {fileID: 0}
+  baseHeight: 0
+  amplitude: 6
+  frequency: 0.0105
+  smoothing: 0.65
+  hillSize: 1
+  difficultyCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 1
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 1
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  maximumDifficulty: 1
+  introductoryAmplitude: 0.45
+  sectionLength: 92
+  recoveryEverySections: 4
+  technicalSectionChance: 0.2
+  technicalDetailStrength: 0.34
+  flatFeatureWeight: 0.24
+  hillFeatureWeight: 0.48
+  valleyFeatureWeight: 0.16
+  technicalFeatureWeight: 0.12
+  maxSlopeAngle: 28
+  maxHeightDeltaPerSample: 0.88618237
+  minimumValleyWidth: 38
+  minimumLandingLength: 26
+  maximumCrestSharpness: 4
+  smoothingPasses: 2
+  coinDensityPer100m: 9
+  initialFuelGap: 55
+  fuelGapIncrease: 10
+  fuelPlacementSearchRadius: 28
+  fuelPlacementSearchStep: 2
+  fuelMaximumPlacementSlope: 14
+  environment: {fileID: 11400000, guid: 50ca357af0d4c3143a2b04dd533d16fb, type: 2}
+  terrainMaterial: {fileID: 2100000, guid: 7043dd200b281904596c462a90255258, type: 2}
+  terrainEdgeMaterial: {fileID: 2100000, guid: e83010baac6ec3c45b5519746056b616, type: 2}
+  groundPhysicsMaterial: {fileID: 13400000, guid: 4dfb87f232532b24aafe44e9c5c97f50, type: 2}
+  terrainEdgeWidth: 0.18
+  terrainVisualDepth: 22
+  supportsLiquidExposure: 1
+  liquidChallenges:
+    cycleLength: 6000
+    challengesPerCycle: 8
+    cycleStartSafetyMargin: 260
+    slotJitter: 120
+    runUpLength: 42
+    rampTransitionLength: 6
+    rampHorizontalLength: 12
+    rampAngleDegrees: 20
+    landingLength: 26
+    recoveryLength: 48
+    basePoolLength: 18
+    minimumPoolLength: 16
+    maximumPoolLength: 34
+    cycleGrowth: 0.85
+    growthSaturation: 2.5
+    deterministicLengthVariation: 0.12
+    visualDepth: 7
+    surfaceOffset: 0.15
+    cautionSprite: {fileID: 21300000, guid: a00d18b1fabcb6143a42b08e727ff1f4, type: 3}
+    cautionDistanceBeforeRamp: 10
+    cautionBelowSurface: 1.65
+    cautionWidth: 3.2
+    cautionSortingOrder: 4
+    liquidSprite: {fileID: 21300000, guid: aaddef7dee358294d9ce6265671e2cd4, type: 3}
+    liquidSortingOrder: 3
+    normalAlpha: 1
+    submergedAlpha: 0.65
+    alphaLerpSpeed: 7
+    exposureLimitSeconds: 10
+    entrySpeedRemaining: 0.1
+    entrySlowdownSeconds: 0.35
+    continuousViscosity: 2.4
+    liquidDriveAcceleration: 9

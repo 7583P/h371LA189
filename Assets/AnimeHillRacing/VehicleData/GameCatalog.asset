@@ -14,12 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AnimeHillRacing.Core.GameCatalog
   maps:
   - {fileID: 11400000, guid: 734abd4148b9f954695b05ff7baeb5f3, type: 2}
+  - {fileID: 11400000, guid: 2fac8165a6689da43a42017727a28c6c, type: 2}
   - {fileID: 11400000, guid: 27bfdf3c2b4455d40bb5ab70cdc6c598, type: 2}
   - {fileID: 11400000, guid: d9d4cd6695315c14e84bc68003b8a284, type: 2}
   vehicles:
   - {fileID: 11400000, guid: 340e0c4e2683f9749ba26de83aa837be, type: 2}
   - {fileID: 11400000, guid: 4a22c28e33e32ad4783466ebedc3cc15, type: 2}
   - {fileID: 11400000, guid: 032dd7dff06b0d94897f8be09f3b6083, type: 2}
+  - {fileID: 11400000, guid: 6a6a36dc97149804cb97aa36e859f14a, type: 2}
   drivers:
   - {fileID: 11400000, guid: 993719216a499e44792c2cf9c86449ad, type: 2}
   upgradeEconomy: {fileID: 11400000, guid: 61951021c4546264c940b3e45f86b8ea, type: 2}

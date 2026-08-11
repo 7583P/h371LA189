@@ -23,11 +23,18 @@ MonoBehaviour:
     displayName: FORMULA DEFAULT
     sprite: {fileID: 21300000, guid: f1c3d179f9b0f854b8643ac778fbc4fa, type: 3}
     unlockedByDefault: 1
+    gemPrice: 0
   wheels:
-  - optionId: formula-wheel-01
-    displayName: FORMULA WHEEL 01
-    sprite: {fileID: 21300000, guid: aca3fba5216593a40975e31bd6558040, type: 3}
+  - optionId: formula-wheel-02
+    displayName: FORMULA WHEEL 02
+    sprite: {fileID: 21300000, guid: 0effc5efe71db0748aa1b5d5cadea74a, type: 3}
     unlockedByDefault: 1
+    gemPrice: 0
+  - optionId: formula-wheel-01
+    displayName: GHOSTY WHEELS
+    sprite: {fileID: 21300000, guid: aca3fba5216593a40975e31bd6558040, type: 3}
+    unlockedByDefault: 0
+    gemPrice: 500
   driverPose:
     rootPosition: {x: -0.3, y: 0.26}
     rootScale: 0.82
@@ -92,10 +99,13 @@ MonoBehaviour:
       visible: 0
       sortingOrder: 1
   visualWidth: 4.8
+  flipBodyX: 0
   bodyVisualOffset: {x: 0, y: 0.1}
   rearWheelVisualPosition: {x: -1.46, y: -0.33}
   frontWheelVisualPosition: {x: 1.46, y: -0.33}
   wheelVisualDiameter: 0.96
+  rearWheelVisualDiameter: 0
+  frontWheelVisualDiameter: 0
   engineMaxTunes: 20
   accelerationMaxTunes: 20
   suspensionMaxTunes: 20
@@ -319,26 +329,26 @@ MonoBehaviour:
     - 1.9999999
     gripRatings:
     - 200
-    - 210.85
-    - 221.7
-    - 232.55
-    - 243.4
-    - 254.25
-    - 265.1
-    - 275.95
-    - 286.8
-    - 297.65
-    - 308.5
-    - 319.35
-    - 330.2
-    - 341.05
-    - 351.9
-    - 362.75
-    - 373.6
-    - 384.45
-    - 395.3
-    - 406.15
-    - 417
+    - 216
+    - 232
+    - 248
+    - 264
+    - 280
+    - 296
+    - 312
+    - 328
+    - 344
+    - 360
+    - 376
+    - 392
+    - 408
+    - 424
+    - 440
+    - 456
+    - 472
+    - 488
+    - 504
+    - 520
     airControlTorque:
     - 9000
     airborneDownforceAcceleration:

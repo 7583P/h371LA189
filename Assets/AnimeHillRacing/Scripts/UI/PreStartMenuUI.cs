@@ -184,11 +184,12 @@ namespace AnimeHillRacing.UI
             if (vehiclePreviewImage != null)
             {
                 vehiclePreviewImage.sprite = vehicle != null ? vehicle.previewSprite : null;
-                vehiclePreviewImage.enabled = vehiclePreviewImage.sprite != null;
+                vehiclePreviewImage.enabled = vehiclePreviewRenderer == null && vehiclePreviewImage.sprite != null;
                 vehiclePreviewImage.preserveAspect = true;
             }
             if (vehiclePreviewFallback != null)
-                vehiclePreviewFallback.SetActive(vehicle != null && vehicle.previewSprite == null);
+                vehiclePreviewFallback.SetActive(vehiclePreviewRenderer == null && vehicle != null &&
+                                                 vehicle.previewSprite == null);
             if (vehiclePreviewRenderer != null && vehicle != null)
             {
                 VehicleDefinition.CustomizationOption skin = vehicle.FindSkin(SaveManager.GetSelectedSkinId(vehicle));

@@ -42,9 +42,24 @@ namespace AnimeHillRacing.Road
             VehicleDefinition.CustomizationOption skin = definition.FindSkin(SaveManager.GetSelectedSkinId(definition));
             VehicleDefinition.CustomizationOption wheel = definition.FindWheel(SaveManager.GetSelectedWheelId(definition));
             if (bodyRenderers != null && skin != null)
-                for (int i = 0; i < bodyRenderers.Length; i++) if (bodyRenderers[i] != null) bodyRenderers[i].sprite = skin.sprite;
+                for (int i = 0; i < bodyRenderers.Length; i++) if (bodyRenderers[i] != null)
+                {
+                    bodyRenderers[i].sprite = skin.sprite;
+                    bodyRenderers[i].flipX = definition.flipBodyX ^ (i == 1);
+                }
             if (wheelRenderers != null && wheel != null)
-                for (int i = 0; i < wheelRenderers.Length; i++) if (wheelRenderers[i] != null) wheelRenderers[i].sprite = wheel.sprite;
+                for (int i = 0; i < wheelRenderers.Length; i++) if (wheelRenderers[i] != null)
+                {
+                    SpriteRenderer renderer = wheelRenderers[i];
+                    renderer.sprite = wheel.sprite;
+                    renderer.sortingOrder = 11;
+                    bool front = frontWheels != null && i < frontWheels.Length && frontWheels[i];
+                    float diameter = front ? definition.FrontWheelDiameter : definition.RearWheelDiameter;
+                    float sourceDiameter = renderer.sprite != null
+                        ? Mathf.Max(renderer.sprite.bounds.size.x, renderer.sprite.bounds.size.y) : 1f;
+                    renderer.transform.localScale = Vector3.one *
+                        (diameter / Mathf.Max(.001f, sourceDiameter));
+                }
             if (articulatedDriver != null && fallbackDriver != null)
                 articulatedDriver.Apply(fallbackDriver, definition.driverPose, GetComponentInParent<Rigidbody>(), true);
         }

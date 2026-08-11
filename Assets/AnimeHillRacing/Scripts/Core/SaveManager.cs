@@ -3,9 +3,18 @@ using UnityEngine;
 
 namespace AnimeHillRacing.Core
 {
+    public enum CustomizationPurchaseResult
+    {
+        Success,
+        AlreadyUnlocked,
+        NotEnoughGems,
+        InvalidConfiguration
+    }
+
     public static class SaveManager
     {
         private const string TotalCoinsKey = "AHR.TotalCoins";
+        private const string TotalGemsKey = "AHR.TotalGems";
         private const string SelectedModeKey = "AHR.SelectedMode";
         private const string SelectedMapKey = "AHR.SelectedMap";
         private const string SelectedCircuitKey = "AHR.SelectedCircuit";
@@ -14,8 +23,10 @@ namespace AnimeHillRacing.Core
         private const string SelectedDriverKey = "AHR.Customize.Driver";
         private const string DistanceBonusValueKey = "AHR.DistanceBonus.CurrentValue";
         private const string DistanceBonusThresholdKey = "AHR.DistanceBonus.NextThreshold";
+        private const string FormulaWheelMigrationKey = "AHR.Migration.FormulaDefaultWheel02.V1";
 
         public static int TotalCoins => PlayerPrefs.GetInt(TotalCoinsKey, 0);
+        public static int TotalGems => Mathf.Max(0, PlayerPrefs.GetInt(TotalGemsKey, 0));
         public static int CurrentDistanceBonusValue => Mathf.Clamp(PlayerPrefs.GetInt(DistanceBonusValueKey, 20), 20, 250);
         public static float NextDistanceBonusThreshold => Mathf.Max(300f,
             PlayerPrefs.GetFloat(DistanceBonusThresholdKey, 300f));
@@ -63,8 +74,24 @@ namespace AnimeHillRacing.Core
         public static string GetSelectedSkinId(VehicleDefinition vehicle) => GetVehicleCustomization(
             vehicle, "Skin", vehicle != null ? vehicle.DefaultSkinId : string.Empty);
 
-        public static string GetSelectedWheelId(VehicleDefinition vehicle) => GetVehicleCustomization(
-            vehicle, "Wheel", vehicle != null ? vehicle.DefaultWheelId : string.Empty);
+        public static string GetSelectedWheelId(VehicleDefinition vehicle)
+        {
+            if (vehicle == null) return string.Empty;
+            string selected = GetVehicleCustomization(vehicle, "Wheel", vehicle.DefaultWheelId);
+            if (vehicle.vehicleId == "formula-01" && !PlayerPrefs.HasKey(FormulaWheelMigrationKey))
+            {
+                bool ghostyWasExplicitlyUnlocked = IsCustomizationUnlocked(vehicle.vehicleId, "Wheels",
+                    "formula-wheel-01", false);
+                if (selected == "formula-wheel-01" && !ghostyWasExplicitlyUnlocked)
+                {
+                    selected = vehicle.DefaultWheelId;
+                    PlayerPrefs.SetString($"AHR.Customize.{vehicle.vehicleId}.Wheel", selected);
+                }
+                PlayerPrefs.SetInt(FormulaWheelMigrationKey, 1);
+                PlayerPrefs.Save();
+            }
+            return selected;
+        }
 
         public static void SetSelectedSkinId(VehicleDefinition vehicle, string optionId) =>
             SetVehicleCustomization(vehicle, "Skin", optionId);
@@ -92,6 +119,44 @@ namespace AnimeHillRacing.Core
         {
             PlayerPrefs.SetInt($"AHR.Customize.Unlock.{scopeId}.{category}.{optionId}", 1);
             PlayerPrefs.Save();
+        }
+
+        public static void AddGems(int amount)
+        {
+            int award = Mathf.Max(0, amount);
+            if (award == 0) return;
+            PlayerPrefs.SetInt(TotalGemsKey, TotalGems + award);
+            PlayerPrefs.Save();
+        }
+
+        public static bool CanAffordGems(int availableGems, int gemPrice) =>
+            gemPrice > 0 && Mathf.Max(0, availableGems) >= gemPrice;
+
+        public static bool TryPurchaseCustomization(string scopeId, string category, string optionId, int gemPrice,
+            out CustomizationPurchaseResult result)
+        {
+            if (string.IsNullOrEmpty(scopeId) || string.IsNullOrEmpty(category) || string.IsNullOrEmpty(optionId) ||
+                gemPrice <= 0)
+            {
+                result = CustomizationPurchaseResult.InvalidConfiguration;
+                return false;
+            }
+            string unlockKey = $"AHR.Customize.Unlock.{scopeId}.{category}.{optionId}";
+            if (PlayerPrefs.GetInt(unlockKey, 0) != 0)
+            {
+                result = CustomizationPurchaseResult.AlreadyUnlocked;
+                return false;
+            }
+            if (!CanAffordGems(TotalGems, gemPrice))
+            {
+                result = CustomizationPurchaseResult.NotEnoughGems;
+                return false;
+            }
+            PlayerPrefs.SetInt(TotalGemsKey, TotalGems - gemPrice);
+            PlayerPrefs.SetInt(unlockKey, 1);
+            PlayerPrefs.Save();
+            result = CustomizationPurchaseResult.Success;
+            return true;
         }
 
         public static float GetBestDistance(GameModeType mode, string mapId)
@@ -164,7 +229,7 @@ namespace AnimeHillRacing.Core
         {
             if (definition == null || economy == null)
             {
-                resultingTune = 0;
+                resultingTune = 1;
                 result = TunePurchaseResult.InvalidConfiguration;
                 return false;
             }
@@ -190,7 +255,7 @@ namespace AnimeHillRacing.Core
             PlayerPrefs.SetInt(TotalCoinsKey, TotalCoins - cost);
             resultingTune = current + 1;
             PlayerPrefs.SetInt(UpgradeLevelKey(definition.vehicleId, type), resultingTune);
-            PlayerPrefs.SetInt(ZeroBasedSchemaKey(definition.vehicleId, type), 1);
+            PlayerPrefs.SetInt(OneBasedSchemaKey(definition.vehicleId, type), 1);
             PlayerPrefs.Save();
             result = TunePurchaseResult.Success;
             return true;
@@ -205,39 +270,48 @@ namespace AnimeHillRacing.Core
         {
             if (maximum <= 0) return 0;
             string levelKey = UpgradeLevelKey(vehicleId, type);
+            string oneBasedKey = OneBasedSchemaKey(vehicleId, type);
             string zeroBasedKey = ZeroBasedSchemaKey(vehicleId, type);
-            if (PlayerPrefs.HasKey(zeroBasedKey))
-                return Mathf.Clamp(PlayerPrefs.GetInt(levelKey, 0), 0, maximum);
+            if (PlayerPrefs.HasKey(oneBasedKey))
+                return Mathf.Clamp(PlayerPrefs.GetInt(levelKey, 1), 1, maximum);
 
-            string tuneKey = TuneKey(vehicleId, type);
-            string oldUpgradeKey = UpgradeKey(vehicleId, type);
-            int level = 0;
-            if (PlayerPrefs.HasKey(TuneSchemaKey(vehicleId, type)))
+            int level = 1;
+            if (PlayerPrefs.HasKey(zeroBasedKey))
             {
-                level = Mathf.Max(0, PlayerPrefs.GetInt(tuneKey, 1) - 1);
-            }
-            else if (PlayerPrefs.HasKey(tuneKey))
-            {
-                level = Mathf.Max(0, PlayerPrefs.GetInt(tuneKey, 0));
-            }
-            else if (PlayerPrefs.HasKey(oldUpgradeKey))
-            {
-                level = Mathf.Max(0, PlayerPrefs.GetInt(oldUpgradeKey, 1) - 1);
+                level = PlayerPrefs.GetInt(levelKey, 0) + 1;
             }
             else
             {
-                string stat = type.ToString();
-                string[] legacyKeys = { stat + "Level", "AHR." + stat + "Level", "AHR." + vehicleId + "." + stat + "Level" };
-                for (int i = 0; i < legacyKeys.Length; i++)
+                string tuneKey = TuneKey(vehicleId, type);
+                string oldUpgradeKey = UpgradeKey(vehicleId, type);
+                if (PlayerPrefs.HasKey(TuneSchemaKey(vehicleId, type)))
                 {
-                    if (!PlayerPrefs.HasKey(legacyKeys[i])) continue;
-                    level = Mathf.Max(0, PlayerPrefs.GetInt(legacyKeys[i], 1) - 1);
-                    break;
+                    level = Mathf.Max(1, PlayerPrefs.GetInt(tuneKey, 1));
+                }
+                else if (PlayerPrefs.HasKey(tuneKey))
+                {
+                    level = Mathf.Max(1, PlayerPrefs.GetInt(tuneKey, 0) + 1);
+                }
+                else if (PlayerPrefs.HasKey(oldUpgradeKey))
+                {
+                    level = Mathf.Max(1, PlayerPrefs.GetInt(oldUpgradeKey, 1));
+                }
+                else
+                {
+                    string stat = type.ToString();
+                    string[] legacyKeys = { stat + "Level", "AHR." + stat + "Level", "AHR." + vehicleId + "." + stat + "Level" };
+                    for (int i = 0; i < legacyKeys.Length; i++)
+                    {
+                        if (!PlayerPrefs.HasKey(legacyKeys[i])) continue;
+                        level = Mathf.Max(1, PlayerPrefs.GetInt(legacyKeys[i], 1));
+                        break;
+                    }
                 }
             }
-            level = Mathf.Clamp(level, 0, maximum);
+
+            level = Mathf.Clamp(level, 1, maximum);
             PlayerPrefs.SetInt(levelKey, level);
-            PlayerPrefs.SetInt(zeroBasedKey, 1);
+            PlayerPrefs.SetInt(oneBasedKey, 1);
             PlayerPrefs.Save();
             return level;
         }
@@ -259,6 +333,9 @@ namespace AnimeHillRacing.Core
 
         private static string ZeroBasedSchemaKey(string vehicleId, VehicleUpgradeType type) =>
             $"AHR.UpgradeSchema.ZeroBasedV2.{vehicleId}.{(int)type}";
+
+        private static string OneBasedSchemaKey(string vehicleId, VehicleUpgradeType type) =>
+            $"AHR.UpgradeSchema.OneBasedV3.{vehicleId}.{(int)type}";
 
         private static string TimeKey(string circuitId) => $"AHR.BestTime.{circuitId}";
         private static string LapKey(string circuitId) => $"AHR.BestLap.{circuitId}";

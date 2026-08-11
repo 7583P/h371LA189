@@ -20,6 +20,9 @@ namespace AnimeHillRacing.UI
         [SerializeField] private Text fuelText;
         [SerializeField] private Image fuelIcon;
         [SerializeField] private Image fuelFill;
+        [SerializeField] private GameObject liquidExposurePanel;
+        [SerializeField] private Text liquidExposureText;
+        [SerializeField] private Image liquidExposureFill;
         [SerializeField] private Gradient fuelGradient = new Gradient();
         [SerializeField] private bool useDefaultFuelGradient = true;
         [SerializeField] private RectTransform speedNeedle;
@@ -109,6 +112,17 @@ namespace AnimeHillRacing.UI
                     fuelFillRect.offsetMax = Vector2.Lerp(fuelEmptyOffsetMax, fuelFullOffsetMax, normalizedFuel);
                 }
             }
+            if (liquidExposurePanel != null)
+                liquidExposurePanel.SetActive(gameManager.SupportsLiquidExposure);
+            if (gameManager.SupportsLiquidExposure)
+            {
+                float exposure = gameManager.TotalLiquidExposureThisRun;
+                float limit = gameManager.LiquidExposureLimit;
+                if (liquidExposureText != null)
+                    liquidExposureText.text = $"LIQUID  {exposure:0.0} / {limit:0.0}s";
+                if (liquidExposureFill != null)
+                    liquidExposureFill.fillAmount = Mathf.Clamp01(exposure / Mathf.Max(.01f, limit));
+            }
             SetNeedle(speedNeedle, Mathf.Abs(vehicle.SpeedKmh) / 400f,
                 speedNeedleZeroAngle, speedNeedleFullAngle);
             SetNeedle(rpmNeedle, vehicle.EngineRpm / 10000f,
@@ -117,6 +131,8 @@ namespace AnimeHillRacing.UI
             {
                 if (gameManager.State == RunState.CrashPending)
                     statusText.text = "CRASHED";
+                else if (gameManager.ShowGemAward)
+                    statusText.text = gameManager.LastGemAward == 1 ? "+1 GEM" : $"+{gameManager.LastGemAward} GEMS";
                 else if (gameManager.ShowDistanceBonus)
                     statusText.text = $"DISTANCE BONUS  +{gameManager.LastDistanceBonus}  |  NEXT {gameManager.NextDistanceBonusThreshold:0} m";
                 else if (gameManager.State == RunState.OutOfFuelPending)
@@ -186,6 +202,13 @@ namespace AnimeHillRacing.UI
             debugPanel = targetDebugPanel;
             debugText = targetDebugText;
             input = targetInput;
+        }
+
+        public void AssignLiquidExposure(GameObject panel, Text label, Image fill)
+        {
+            liquidExposurePanel = panel;
+            liquidExposureText = label;
+            liquidExposureFill = fill;
         }
 
         private static void SetNeedle(RectTransform needle, float normalized, float zeroAngle, float fullAngle)

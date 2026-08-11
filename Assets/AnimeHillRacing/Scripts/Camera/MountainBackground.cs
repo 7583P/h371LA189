@@ -82,5 +82,13 @@ namespace AnimeHillRacing.CameraSystem
         {
             displayCamera = camera; environment = definition; skyRenderer = sky; mountainSegments = segments;
         }
+
+        public void ApplyEnvironment(EnvironmentDefinition definition)
+        {
+            if (definition == null) return;
+            environment = definition;
+            ApplyAssetsAndScale();
+            UpdatePositions();
+        }
     }
 }

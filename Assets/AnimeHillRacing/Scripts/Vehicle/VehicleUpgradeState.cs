@@ -6,14 +6,14 @@ namespace AnimeHillRacing.Vehicle
     [Serializable]
     public sealed class VehicleUpgradeState
     {
-        [Min(0)] public int engineTune;
-        [Min(0)] public int accelerationTune;
-        [Min(0)] public int suspensionTune;
-        [Min(0)] public int gripTune;
-        [Min(0)] public int airControlTune;
-        [Min(0)] public int downforceTune;
-        [Min(0)] public int fuelTune;
-        [Min(0)] public int turboTune;
+        [Min(1)] public int engineTune = 1;
+        [Min(1)] public int accelerationTune = 1;
+        [Min(1)] public int suspensionTune = 1;
+        [Min(1)] public int gripTune = 1;
+        [Min(1)] public int airControlTune = 1;
+        [Min(1)] public int downforceTune = 1;
+        [Min(1)] public int fuelTune = 1;
+        [Min(1)] public int turboTune = 1;
 
         public int GetTune(VehicleUpgradeType type)
         {
@@ -59,7 +59,7 @@ namespace AnimeHillRacing.Vehicle
         }
 
         private static int ClampLevel(int level, int maximum) =>
-            maximum <= 0 ? 0 : Mathf.Clamp(level, 0, maximum);
+            maximum <= 0 ? 0 : Mathf.Clamp(level, 1, maximum);
 
         public void CopyFrom(VehicleUpgradeState other)
         {

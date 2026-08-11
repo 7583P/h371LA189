@@ -25,6 +25,13 @@ namespace AnimeHillRacing.Vehicle
 
         private void FixedUpdate()
         {
+            // Liquid has its own cumulative 10-second failure rule. While the chassis is inside a pool,
+            // neither the generic world-height fallback nor an inverted pose may bypass that rule.
+            if (gameManager != null && gameManager.IsInsideLiquid)
+            {
+                invalidTimer = 0f;
+                return;
+            }
             if (transform.position.y < minimumWorldHeight)
             {
                 gameManager?.RequestGameOver(RunEndReason.Crashed);

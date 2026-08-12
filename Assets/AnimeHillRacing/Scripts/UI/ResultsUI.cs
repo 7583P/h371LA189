@@ -21,7 +21,6 @@ namespace AnimeHillRacing.UI
             gameManager = manager;
             root.SetActive(true);
             root.transform.SetAsLastSibling();
-            string transmission = manager.Vehicle.Transmission.Mode.ToString().ToUpperInvariant();
             string reason = manager.EndReason == RunEndReason.DriverDown ? "DRIVER DOWN" :
                 manager.EndReason == RunEndReason.Crashed ? "CRASHED" : "OUT OF FUEL";
             if (titleText != null) titleText.text = reason;
@@ -33,7 +32,6 @@ namespace AnimeHillRacing.UI
                                $"BACKFLIPS   {manager.RunBackflips}\n" +
                                $"STUNT BONUS   {manager.StuntBonus}\n\n" +
                                $"MAX SPEED   {manager.MaxSpeedKmh:0} km/h\n" +
-                               $"TRANSMISSION   {transmission}\n" +
                                $"{GameModeNames.DisplayName(manager.Mode)}   -   {manager.MapId.ToUpperInvariant()}";
         }
 
@@ -42,12 +40,10 @@ namespace AnimeHillRacing.UI
             timeTrialManager = manager;
             root.SetActive(true);
             root.transform.SetAsLastSibling();
-            string transmission = manager.Vehicle.Transmission.Mode.ToString().ToUpperInvariant();
             if (titleText != null) titleText.text = $"FINISHED - {manager.CircuitName}";
             resultsText.text = $"TOTAL TIME\n<size=34>{TimeTrialManager.FormatTime(manager.ElapsedTime)}</size>\n\n" +
                                $"BEST LAP   {TimeTrialManager.FormatTime(manager.BestLap)}\n" +
-                               $"MAX SPEED   {manager.MaxSpeedKmh:0} km/h\n" +
-                               $"TRANSMISSION   {transmission}";
+                               $"MAX SPEED   {manager.MaxSpeedKmh:0} km/h";
         }
 
         public void HideImmediate()

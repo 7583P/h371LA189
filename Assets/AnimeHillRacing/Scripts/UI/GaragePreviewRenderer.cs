@@ -21,6 +21,7 @@ namespace AnimeHillRacing.UI
         private Sprite appliedSkin;
         private Sprite appliedWheel;
         private DriverDefinition appliedDriver;
+        private Vector2 lastTargetSize;
 
         public SpriteRenderer BodyRenderer => body;
         public SpriteRenderer RearWheelRenderer => rearWheel;
@@ -35,19 +36,30 @@ namespace AnimeHillRacing.UI
             if (!Application.isPlaying) RenderNow();
         }
 
+        private void LateUpdate()
+        {
+            if (targetImage == null) return;
+            Vector2 targetSize = targetImage.rectTransform.rect.size;
+            if ((targetSize - lastTargetSize).sqrMagnitude < 1f) return;
+            lastTargetSize = targetSize;
+            RenderNow();
+        }
+
         private void EnsureTexture()
         {
             if (previewCamera == null || targetImage == null) return;
-            if (texture != null && texture.IsCreated())
+            Vector2Int targetSize = GetRenderTextureSize();
+            if (texture != null && texture.IsCreated() && texture.width == targetSize.x &&
+                texture.height == targetSize.y)
             {
                 previewCamera.targetTexture = texture;
                 previewCamera.enabled = false;
                 targetImage.texture = texture;
                 return;
             }
-            int width = Mathf.Max(256, Mathf.RoundToInt(renderSize.x));
-            int height = Mathf.Max(128, Mathf.RoundToInt(renderSize.y));
-            texture = new RenderTexture(width, height, 16, RenderTextureFormat.ARGB32)
+
+            ReleaseTexture();
+            texture = new RenderTexture(targetSize.x, targetSize.y, 16, RenderTextureFormat.ARGB32)
             {
                 name = "Garage Preview (Reusable)", antiAliasing = 2,
                 hideFlags = HideFlags.DontSave
@@ -60,12 +72,42 @@ namespace AnimeHillRacing.UI
 
         private void OnDestroy()
         {
-            if (previewCamera != null) previewCamera.targetTexture = null;
+            ReleaseTexture();
+        }
+
+        private void ReleaseTexture()
+        {
+            if (previewCamera != null && previewCamera.targetTexture == texture)
+                previewCamera.targetTexture = null;
             if (texture == null) return;
             texture.Release();
             if (Application.isPlaying) Destroy(texture);
             else DestroyImmediate(texture);
             texture = null;
+        }
+
+        private Vector2Int GetRenderTextureSize()
+        {
+            int maximumWidth = Mathf.Max(256, Mathf.RoundToInt(renderSize.x));
+            int maximumHeight = Mathf.Max(128, Mathf.RoundToInt(renderSize.y));
+            Rect rect = targetImage.rectTransform.rect;
+            float aspect = rect.height > 1f && rect.width > 1f
+                ? rect.width / rect.height
+                : maximumWidth / (float)maximumHeight;
+            float maximumAspect = maximumWidth / (float)maximumHeight;
+            int width;
+            int height;
+            if (aspect >= maximumAspect)
+            {
+                width = maximumWidth;
+                height = Mathf.Max(64, Mathf.RoundToInt(width / aspect));
+            }
+            else
+            {
+                height = maximumHeight;
+                width = Mathf.Max(64, Mathf.RoundToInt(height * aspect));
+            }
+            return new Vector2Int(width, height);
         }
 
         public void Apply(VehicleDefinition vehicle, VehicleDefinition.CustomizationOption skin,

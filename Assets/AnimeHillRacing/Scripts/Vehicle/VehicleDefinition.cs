@@ -16,7 +16,9 @@ namespace AnimeHillRacing.Vehicle
     public sealed class VehicleDefinition : ScriptableObject
     {
         public const int GlobalGripMaximum = 1000;
-        public const float UpgradeCurveK = 2.5f;
+        // Shared by every vehicle: the first upgrades deliver the largest gains and each
+        // following level contributes less while still reaching the authored maximum exactly.
+        public const float UpgradeCurveK = 3.5f;
 
         [Serializable]
         public sealed class CustomizationOption

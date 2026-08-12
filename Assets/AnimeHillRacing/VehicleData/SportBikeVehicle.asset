@@ -113,14 +113,14 @@ MonoBehaviour:
       scale: {x: 0.02, y: 0.02}
       visible: 1
       sortingOrder: 2
-  visualWidth: 3.75
+  visualWidth: 3.3
   flipBodyX: 1
   bodyVisualOffset: {x: 0, y: 0.1}
-  rearWheelVisualPosition: {x: -1.59, y: -0.48}
-  frontWheelVisualPosition: {x: 1.56, y: -0.49}
-  wheelVisualDiameter: 0.85
-  rearWheelVisualDiameter: 0.88
-  frontWheelVisualDiameter: 0.82
+  rearWheelVisualPosition: {x: -1.4, y: -0.48}
+  frontWheelVisualPosition: {x: 1.37, y: -0.49}
+  wheelVisualDiameter: 0.93
+  rearWheelVisualDiameter: 0.96
+  frontWheelVisualDiameter: 0.9
   engineMaxTunes: 20
   accelerationMaxTunes: 20
   suspensionMaxTunes: 15
@@ -134,12 +134,14 @@ MonoBehaviour:
   mass: 260
   wheelMass: 15
   wheelRadius: 0.38
-  halfWheelbase: 1.58
+  halfWheelbase: 1.39
   halfTrack: 0.46
   topSpeedMps: 100
   brakeForce: 9800
   reverseForce: 3300
   airControlTorque: 7600
+  downforceReferenceSpeedMps: 30
+  maximumDownforceAcceleration: 14
   collisionPitchInertiaMultiplier: 4.1
   maximumDepenetrationVelocity: 2.8
   maxAirAngularVelocity: 3.2
@@ -270,14 +272,14 @@ MonoBehaviour:
   suspension:
     restLength: 0.4
     compressionTravelRatio: 0.88
-    minTravel: 0.15
+    minTravel: 0.165
     maxTravel: 0.27
     springMin: 18000
     springMax: 26000
     dampingMin: 2500
     dampingMax: 3900
     targetSag01: 0.29
-    stiffnessTuneScale: {x: 0.88, y: 1.12}
+    stiffnessTuneScale: {x: 0.78, y: 1.3}
     dampingRatio: {x: 0.94, y: 1.08}
     bumpStopStart: 0.68
     progressiveSpringMultiplier: 3
@@ -285,11 +287,11 @@ MonoBehaviour:
     maximumAcceleration: 24
     maximumReboundAcceleration: 1.2
   grip:
-    minGrip: 1.02
-    maxGrip: 1.65
-    slipThreshold: 0.15
-    slidingGripMultiplier: 0.72
-    tractionRecoveryPerSecond: 6.8
+    minGrip: 0.14
+    maxGrip: 2.2
+    slipThreshold: 0.14
+    slidingGripMultiplier: 0.44
+    tractionRecoveryPerSecond: 4.3
     rollingResistance: 0.01
     aerodynamicDrag: 0.2
   fuel:

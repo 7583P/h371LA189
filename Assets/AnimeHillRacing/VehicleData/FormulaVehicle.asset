@@ -114,7 +114,7 @@ MonoBehaviour:
   suspensionMaxTunes: 20
   gripMaxTunes: 20
   airControlMaxTunes: 0
-  downforceMaxTunes: 0
+  downforceMaxTunes: 20
   fuelMaxTunes: 25
   turboMaxTunes: 0
   damagedBodySprite: {fileID: 0}
@@ -128,6 +128,8 @@ MonoBehaviour:
   brakeForce: 18000
   reverseForce: 6000
   airControlTorque: 9000
+  downforceReferenceSpeedMps: 30
+  maximumDownforceAcceleration: 14
   collisionPitchInertiaMultiplier: 4.25
   maximumDepenetrationVelocity: 3
   maxAirAngularVelocity: 3.5
@@ -273,11 +275,11 @@ MonoBehaviour:
     maximumAcceleration: 20
     maximumReboundAcceleration: 0.5
   grip:
-    minGrip: 1.9
-    maxGrip: 1.9
-    slipThreshold: 0.14
-    slidingGripMultiplier: 0.74
-    tractionRecoveryPerSecond: 7
+    minGrip: 0.14
+    maxGrip: 2.2
+    slipThreshold: 0.13
+    slidingGripMultiplier: 0.46
+    tractionRecoveryPerSecond: 4.2
     rollingResistance: 0.012
     aerodynamicDrag: 0.28
   fuel:

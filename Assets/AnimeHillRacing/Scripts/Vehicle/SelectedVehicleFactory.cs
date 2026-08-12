@@ -71,7 +71,8 @@ namespace AnimeHillRacing.Vehicle
                 climb.AssignRuntimeReferences(ActiveDefinition, input, instance.GetComponentsInChildren<SuspensionController>(true));
             RoadVehicleController roadVehicle = SpawnedVehicle as RoadVehicleController;
             if (roadVehicle != null) roadVehicle.Assign(ActiveDefinition, input);
-            instance.GetComponent<CrashDetector>()?.AssignGameManager(gameManager);
+            instance.GetComponent<CrashDetector>()?.AssignGameManager(gameManager,
+                mode == GameModeType.Adventure2_5D ? terrainProfile : null);
 
             sideCamera?.AssignTarget(SpawnedVehicle);
             roadCamera?.Assign(SpawnedVehicle);

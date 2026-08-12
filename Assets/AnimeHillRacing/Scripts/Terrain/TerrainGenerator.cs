@@ -44,19 +44,84 @@ namespace AnimeHillRacing.Terrain
     public static class TerrainGenerator
     {
         private const float TwoPi = Mathf.PI * 2f;
-        public const int NeonTemplatePeakCount = 16;
-        public const int NeonTemplateValleyCount = 16;
+        public const int NeonTemplateSectionCount = 9;
 
-        // A authored, periodic climb/crest/drop/valley grammar. Odd points are crests, even points
-        // are valleys, and the final value closes exactly onto the first at the 6000 m seam.
+        // Authored 6000 m macro grammar with variable-length climbs, shelves, technical drops and
+        // valley floors. Meso features below add suspension work without turning this into a sine wave.
+        private static readonly float[] NeonCycleDistances =
+        {
+            0f, 200f, 320f, 450f, 600f, 750f, 900f, 1050f, 1200f, 1400f,
+            1550f, 1700f, 1810f, 1950f, 2160f, 2300f, 2440f, 2580f, 2750f,
+            2890f, 3020f, 3150f, 3300f, 3400f, 3520f, 3750f, 3900f, 4050f,
+            4200f, 4330f, 4460f, 4600f, 4740f, 4880f, 5100f, 5240f, 5380f,
+            5520f, 5660f, 5800f, 6000f
+        };
+
         private static readonly float[] NeonCycleTemplate =
         {
-            -.55f, .62f, -.42f, .86f, -.74f, .54f, -.91f, .96f,
-            -.48f, .78f, -.97f, .66f, -.68f, .91f, -.52f, .73f,
-            -.84f, .58f, -.72f, .88f, -.56f, .69f, -.94f, .82f,
-            -.45f, .76f, -.89f, .61f, -.77f, .93f, -.50f, .67f,
-            -.55f
+            -.20f, -.20f, .25f, -.05f, .40f, .10f, .15f, .45f, .75f, .78f,
+            .78f, .65f, -.35f, -.85f, -.85f, -.45f, .20f, .55f, .55f,
+            .10f, .52f, 0f, .65f, .55f, -.55f, -.90f, -.90f, -.45f,
+            .15f, -.10f, .40f, .05f, .35f, .80f, .80f, .35f, -.30f,
+            -.50f, -.50f, -.25f, -.20f
         };
+
+        private enum NeonMesoKind { Bump, DoubleBump, Alternating, SoftStep }
+
+        private readonly struct NeonMesoFeature
+        {
+            public readonly float start;
+            public readonly float length;
+            public readonly float normalizedHeight;
+            public readonly NeonMesoKind kind;
+
+            public NeonMesoFeature(float featureStart, float featureLength, float height,
+                NeonMesoKind featureKind)
+            {
+                start = featureStart;
+                length = featureLength;
+                normalizedHeight = height;
+                kind = featureKind;
+            }
+        }
+
+        // 82-230 m C1-continuous obstacles. Heights scale with the cycle amplitude, producing
+        // roughly 1.6-5.1 m features over the audited difficulty range.
+        private static readonly NeonMesoFeature[] NeonMesoFeatures =
+        {
+            new NeonMesoFeature(240f, 96f, .055f, NeonMesoKind.DoubleBump),
+            new NeonMesoFeature(390f, 82f, -.045f, NeonMesoKind.Bump),
+            new NeonMesoFeature(525f, 150f, .075f, NeonMesoKind.Alternating),
+            new NeonMesoFeature(720f, 118f, .065f, NeonMesoKind.DoubleBump),
+            new NeonMesoFeature(890f, 210f, .090f, NeonMesoKind.SoftStep),
+            new NeonMesoFeature(1110f, 96f, -.055f, NeonMesoKind.Bump),
+            new NeonMesoFeature(1260f, 170f, .075f, NeonMesoKind.Alternating),
+            new NeonMesoFeature(1490f, 105f, .080f, NeonMesoKind.DoubleBump),
+            new NeonMesoFeature(1650f, 135f, -.070f, NeonMesoKind.Bump),
+            new NeonMesoFeature(1850f, 190f, .110f, NeonMesoKind.Alternating),
+            new NeonMesoFeature(2110f, 88f, .060f, NeonMesoKind.Bump),
+            new NeonMesoFeature(2260f, 150f, .080f, NeonMesoKind.DoubleBump),
+            new NeonMesoFeature(2470f, 210f, -.100f, NeonMesoKind.SoftStep),
+            new NeonMesoFeature(2730f, 95f, .070f, NeonMesoKind.DoubleBump),
+            new NeonMesoFeature(2870f, 160f, .080f, NeonMesoKind.Alternating),
+            new NeonMesoFeature(3110f, 120f, -.075f, NeonMesoKind.Bump),
+            new NeonMesoFeature(3280f, 220f, .120f, NeonMesoKind.SoftStep),
+            new NeonMesoFeature(3560f, 90f, .075f, NeonMesoKind.DoubleBump),
+            new NeonMesoFeature(3700f, 180f, .100f, NeonMesoKind.Alternating),
+            new NeonMesoFeature(3950f, 110f, -.070f, NeonMesoKind.Bump),
+            new NeonMesoFeature(4140f, 230f, .130f, NeonMesoKind.SoftStep),
+            new NeonMesoFeature(4440f, 100f, .080f, NeonMesoKind.DoubleBump),
+            new NeonMesoFeature(4600f, 170f, -.090f, NeonMesoKind.Alternating),
+            new NeonMesoFeature(4850f, 140f, .100f, NeonMesoKind.DoubleBump),
+            new NeonMesoFeature(5110f, 220f, -.120f, NeonMesoKind.SoftStep),
+            new NeonMesoFeature(5400f, 90f, .070f, NeonMesoKind.Bump),
+            new NeonMesoFeature(5530f, 170f, .090f, NeonMesoKind.Alternating),
+            new NeonMesoFeature(5770f, 95f, -.050f, NeonMesoKind.Bump)
+        };
+
+        public static int NeonMesoFeatureCount => NeonMesoFeatures.Length;
+        public const float NeonMesoMinimumLength = 82f;
+        public const float NeonMesoMaximumLength = 230f;
 
         public static float SampleHeight(MapProfile profile, float worldX)
         {
@@ -191,7 +256,9 @@ namespace AnimeHillRacing.Terrain
             {
                 LiquidChallengeLayout challenge = GetLiquidChallenge(profile, cycle, i);
                 float blendStart = challenge.runUpStart - 18f;
-                if (distance < blendStart || distance > challenge.recoveryEnd) continue;
+                LiquidChallengeSettings settings = profile.liquidChallenges;
+                float rejoinEnd = challenge.recoveryEnd + settings.postRecoveryBlendLength;
+                if (distance < blendStart || distance > rejoinEnd) continue;
                 float baseline = challenge.baselineHeight;
                 if (distance < challenge.runUpStart)
                 {
@@ -203,7 +270,6 @@ namespace AnimeHillRacing.Terrain
                     float t = Mathf.InverseLerp(challenge.runUpStart, challenge.transitionStart, distance);
                     return baseline + Mathf.Sin(t * Mathf.PI) * .06f;
                 }
-                LiquidChallengeSettings settings = profile.liquidChallenges;
                 float slope = Mathf.Tan(settings.rampAngleDegrees * Mathf.Deg2Rad);
                 if (distance < challenge.rampStart)
                 {
@@ -221,13 +287,17 @@ namespace AnimeHillRacing.Terrain
                 if (distance < challenge.landingEnd)
                 {
                     float t = Smooth01(Mathf.InverseLerp(challenge.poolEnd, challenge.landingEnd, distance));
-                    float landingStart = baseline + .9f;
-                    float landingEnd = SampleNeonBaseHeight(profile, challenge.landingEnd);
-                    return Mathf.Lerp(landingStart, landingEnd, t);
+                    return Mathf.Lerp(baseline + .70f, baseline - .35f, t);
                 }
-                float recoveryT = Smooth01(Mathf.InverseLerp(challenge.landingEnd, challenge.recoveryEnd, distance));
-                float recoveryStart = SampleNeonBaseHeight(profile, challenge.landingEnd);
-                return Mathf.Lerp(recoveryStart, general, recoveryT);
+                if (distance < challenge.recoveryEnd)
+                {
+                    float recoveryT = Smooth01(Mathf.InverseLerp(challenge.landingEnd,
+                        challenge.recoveryEnd, distance));
+                    return Mathf.Lerp(baseline - .35f, baseline - .55f, recoveryT);
+                }
+                float rejoinT = Smooth01(Mathf.InverseLerp(challenge.recoveryEnd, rejoinEnd, distance));
+                float rejoinTarget = SampleNeonBaseHeight(profile, rejoinEnd);
+                return Mathf.Lerp(baseline - .55f, rejoinTarget, rejoinT);
             }
             return general;
         }
@@ -248,14 +318,50 @@ namespace AnimeHillRacing.Terrain
             if (profile == null) return 0f;
             float distance = Mathf.Max(0f, worldX);
             float localDistance = Mathf.Repeat(distance, LiquidChallengeSettings.RequiredCycleLength);
-            float segmentLength = LiquidChallengeSettings.RequiredCycleLength /
-                                  (NeonCycleTemplate.Length - 1);
-            int segment = Mathf.Clamp(Mathf.FloorToInt(localDistance / segmentLength),
-                0, NeonCycleTemplate.Length - 2);
-            float t = Smooth01((localDistance - segment * segmentLength) / segmentLength);
-            float shape = Mathf.Lerp(NeonCycleTemplate[segment], NeonCycleTemplate[segment + 1], t);
+            int segment = 0;
+            while (segment < NeonCycleDistances.Length - 2 &&
+                   localDistance >= NeonCycleDistances[segment + 1])
+                segment++;
+            float t = Smooth01(Mathf.InverseLerp(NeonCycleDistances[segment],
+                NeonCycleDistances[segment + 1], localDistance));
+            float shape = Mathf.Lerp(NeonCycleTemplate[segment], NeonCycleTemplate[segment + 1], t) +
+                          EvaluateNeonMesoOffset(localDistance);
             float startFlatten = Smooth01(Mathf.Clamp01(distance / 180f));
             return profile.baseHeight + shape * EvaluateNeonAmplitude(profile, distance) * startFlatten;
+        }
+
+        private static float EvaluateNeonMesoOffset(float localDistance)
+        {
+            float result = 0f;
+            for (int i = 0; i < NeonMesoFeatures.Length; i++)
+            {
+                NeonMesoFeature feature = NeonMesoFeatures[i];
+                if (localDistance < feature.start || localDistance > feature.start + feature.length) continue;
+                float t = Mathf.InverseLerp(feature.start, feature.start + feature.length, localDistance);
+                float envelope = Mathf.Sin(t * Mathf.PI);
+                envelope *= envelope;
+                float shape;
+                switch (feature.kind)
+                {
+                    case NeonMesoKind.DoubleBump:
+                        shape = Mathf.Sin(t * Mathf.PI * 2f);
+                        shape *= shape;
+                        break;
+                    case NeonMesoKind.Alternating:
+                        shape = Mathf.Sin(t * Mathf.PI * 2f) * envelope;
+                        break;
+                    case NeonMesoKind.SoftStep:
+                        float rise = Smooth01(Mathf.InverseLerp(0f, .22f, t));
+                        float fall = 1f - Smooth01(Mathf.InverseLerp(.78f, 1f, t));
+                        shape = rise * fall;
+                        break;
+                    default:
+                        shape = envelope;
+                        break;
+                }
+                result += shape * feature.normalizedHeight;
+            }
+            return result;
         }
 
         private static float SampleNeonBaseHeight(MapProfile profile, float worldX) =>

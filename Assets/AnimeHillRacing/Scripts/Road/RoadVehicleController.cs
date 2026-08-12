@@ -281,11 +281,18 @@ namespace AnimeHillRacing.Road
                 float lateralSpeed = Vector3.Dot(pointVelocity, tireRight);
 
                 float longitudinal = drivePerWheel;
-
-                float longitudinalLimit = Mathf.Max(500f, wheel.normalForce * stats.grip * forwardFriction);
+                PhysicsMaterial surfaceMaterial = wheel.hit.collider != null
+                    ? wheel.hit.collider.sharedMaterial : null;
+                float surfaceFriction = surfaceMaterial != null
+                    ? Mathf.Max(0f, surfaceMaterial.dynamicFriction) : 1f;
+                // The same tire coefficient and terrain coefficient used by the physical 2D wheels
+                // define the virtual 3D tire budget. Fixed force floors used to mask low Grip ratings.
+                float longitudinalLimit = Mathf.Max(1f,
+                    wheel.normalForce * stats.grip * surfaceFriction * forwardFriction);
                 float appliedLongitudinal = Mathf.Clamp(longitudinal, -longitudinalLimit, longitudinalLimit);
                 float requestedLateral = -lateralSpeed * (body.mass / 4f) * lateralGripResponse;
-                float lateralLimit = Mathf.Max(600f, wheel.normalForce * stats.grip * sidewaysFriction);
+                float lateralLimit = Mathf.Max(1f,
+                    wheel.normalForce * stats.grip * surfaceFriction * sidewaysFriction);
                 float appliedLateral = Mathf.Clamp(requestedLateral, -lateralLimit, lateralLimit);
                 // Virtual-wheel propulsion must not add a false pitch/roll lever at high speed. Keep lateral tire
                 // response at the contact patch, but apply the longitudinal component through the chassis.
@@ -353,8 +360,16 @@ namespace AnimeHillRacing.Road
         {
             Vector3 velocity = body.linearVelocity;
             float speedSquared = velocity.sqrMagnitude;
-            currentDownforce = hasWheelContact ? Mathf.Min(maximumDownforce, speedSquared * downforceCoefficient) : 0f;
-            if (currentDownforce > 0f) body.AddForce(-transform.up * currentDownforce, ForceMode.Force);
+            float contactDownforce = hasWheelContact
+                ? Mathf.Min(maximumDownforce, speedSquared * downforceCoefficient) : 0f;
+            float tunedAcceleration = VehicleController.EvaluateAerodynamicDownforceAcceleration(
+                definition, stats, velocity.magnitude);
+            float tunedDownforce = body.mass * tunedAcceleration;
+            currentDownforce = contactDownforce + tunedDownforce;
+            if (contactDownforce > 0f)
+                body.AddForce(-transform.up * contactDownforce, ForceMode.Force);
+            if (tunedAcceleration > 0f)
+                body.AddForce(Vector3.down * tunedAcceleration, ForceMode.Acceleration);
             if (speedSquared < 0.001f) return;
             float drag = definition.grip.aerodynamicDrag * speedSquared;
             float rolling = hasWheelContact ? definition.mass * Physics.gravity.magnitude * definition.grip.rollingResistance : 0f;

@@ -128,6 +128,8 @@ MonoBehaviour:
   brakeForce: 12500
   reverseForce: 4500
   airControlTorque: 3200
+  downforceReferenceSpeedMps: 30
+  maximumDownforceAcceleration: 14
   collisionPitchInertiaMultiplier: 1.55
   maximumDepenetrationVelocity: 3
   maxAirAngularVelocity: 2.5
@@ -273,11 +275,11 @@ MonoBehaviour:
     maximumAcceleration: 24
     maximumReboundAcceleration: 3
   grip:
-    minGrip: 1.05
-    maxGrip: 1.4
-    slipThreshold: 0.2
-    slidingGripMultiplier: 0.68
-    tractionRecoveryPerSecond: 4.5
+    minGrip: 0.14
+    maxGrip: 2.2
+    slipThreshold: 0.16
+    slidingGripMultiplier: 0.38
+    tractionRecoveryPerSecond: 3.2
     rollingResistance: 0.018
     aerodynamicDrag: 0.46
   fuel:

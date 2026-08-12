@@ -217,6 +217,9 @@ namespace AnimeHillRacing.Vehicle
         [Min(0f)] public float brakeForce = 12500f;
         [Min(0f)] public float reverseForce = 4500f;
         [Min(0f)] public float airControlTorque = 3200f;
+        [Header("Aerodynamics (Formula)")]
+        [Min(1f)] public float downforceReferenceSpeedMps = 30f;
+        [Min(0f)] public float maximumDownforceAcceleration = 14f;
         [Range(1f, 6f)] public float collisionPitchInertiaMultiplier = 1.55f;
         [Tooltip("Caps PhysX penetration correction so a chassis contact cannot catapult the vehicle.")]
         [Min(.5f)] public float maximumDepenetrationVelocity = 3f;
@@ -260,8 +263,7 @@ namespace AnimeHillRacing.Vehicle
             float gripProgress = UpgradeProgress(upgrades.gripTune, gripMaxTunes);
             float airControl = TargetValue(tuneTargets?.airControlTorque,
                 UpgradeProgress(upgrades.airControlTune, airControlMaxTunes), airControlTorque);
-            float downforceProgress = archetype == VehicleArchetype.Formula
-                ? gripProgress : UpgradeProgress(upgrades.downforceTune, downforceMaxTunes);
+            float downforceProgress = UpgradeProgress(upgrades.downforceTune, downforceMaxTunes);
             float airborneDownforce = TargetValue(tuneTargets?.airborneDownforceAcceleration,
                 downforceProgress, 0f);
             float topSpeed = TargetValue(tuneTargets?.engineTopSpeedKmh, engineLevel, 135f) / 3.6f;
@@ -282,7 +284,8 @@ namespace AnimeHillRacing.Vehicle
             float resolvedDamping = 2f * Mathf.Sqrt(resolvedSpring * sprungMassPerWheel) * dampingRatio;
             float gripRating = GripPointValue(tuneTargets?.gripRatings, gripProgress);
             float normalizedGrip = Mathf.Clamp01(gripRating / GlobalGripMaximum);
-            float physicalGrip = Mathf.Lerp(grip.minGrip, grip.maxGrip, normalizedGrip);
+            float physicalGrip = Mathf.Lerp(grip.minGrip, grip.maxGrip,
+                PhysicalGripAuthority(normalizedGrip));
             float fuelDuration = TargetValue(tuneTargets?.fuelRunDurationSeconds,
                 UpgradeProgress(upgrades.fuelTune, fuelMaxTunes), 45f);
             float accelerationAuthority = archetype == VehicleArchetype.Rally ? turboLevel : accelerationLevel;
@@ -341,10 +344,11 @@ namespace AnimeHillRacing.Vehicle
                 ? VehicleUpgradeType.Turbo : VehicleUpgradeType.Acceleration;
             if (slot == 2) return VehicleUpgradeType.Suspension;
             if (slot == 3) return VehicleUpgradeType.Grip;
+            if (slot == 5 && archetype == VehicleArchetype.Formula) return VehicleUpgradeType.Downforce;
             return VehicleUpgradeType.Fuel;
         }
 
-        public int GetTuneSlotCount() => 5;
+        public int GetTuneSlotCount() => archetype == VehicleArchetype.Formula ? 6 : 5;
 
         public string GetTuneDisplayName(VehicleUpgradeType type)
         {
@@ -386,6 +390,25 @@ namespace AnimeHillRacing.Vehicle
             return Mathf.Clamp(value, 0f, GlobalGripMaximum);
         }
 
+        private static float PhysicalGripAuthority(float normalizedRating)
+        {
+            // The 0-1000 rating remains global, while this authored response leaves Grip 200 weak
+            // and gives the finite vehicle-specific caps enough authority to reach their top speed.
+            float n = Mathf.Clamp01(normalizedRating);
+            const float a200 = .11747573f; // .382 coefficient when min/max are .14/2.20
+            const float a300 = .6116505f;  // 1.40
+            const float a500 = .8543689f;  // 1.90
+            const float a750 = .9757282f;  // 2.15
+            if (n <= .2f) return Mathf.Lerp(0f, a200, n / .2f);
+            if (n <= .3f) return Mathf.Lerp(a200, a300,
+                Mathf.SmoothStep(0f, 1f, (n - .2f) / .1f));
+            if (n <= .5f) return Mathf.Lerp(a300, a500,
+                Mathf.SmoothStep(0f, 1f, (n - .3f) / .2f));
+            if (n <= .75f) return Mathf.Lerp(a500, a750,
+                Mathf.SmoothStep(0f, 1f, (n - .5f) / .25f));
+            return Mathf.Lerp(a750, 1f, Mathf.SmoothStep(0f, 1f, (n - .75f) / .25f));
+        }
+
         private void OnValidate()
         {
             if (transmission.forwardGearRatios == null || transmission.forwardGearRatios.Length != 7)
@@ -413,6 +436,8 @@ namespace AnimeHillRacing.Vehicle
             suspension.dampingRatio.x = Mathf.Clamp(suspension.dampingRatio.x, .55f, 1.25f);
             suspension.dampingRatio.y = Mathf.Clamp(suspension.dampingRatio.y, .55f, 1.35f);
             maximumDepenetrationVelocity = Mathf.Max(.5f, maximumDepenetrationVelocity);
+            downforceReferenceSpeedMps = Mathf.Max(1f, downforceReferenceSpeedMps);
+            maximumDownforceAcceleration = Mathf.Max(0f, maximumDownforceAcceleration);
             suspension.bumpStopStart = Mathf.Clamp(suspension.bumpStopStart, .5f, .9f);
             suspension.progressiveSpringMultiplier = Mathf.Max(0f, suspension.progressiveSpringMultiplier);
             suspension.hardStopSpringMultiplier = Mathf.Max(0f, suspension.hardStopSpringMultiplier);

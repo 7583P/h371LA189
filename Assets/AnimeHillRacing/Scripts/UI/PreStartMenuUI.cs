@@ -256,7 +256,8 @@ namespace AnimeHillRacing.UI
             if (vehicle == null) return;
             VehicleUpgradeState state = SaveManager.LoadUpgrades(vehicle.vehicleId, vehicle);
             int visibleSlots = vehicle.GetTuneSlotCount();
-            for (int i = 0; i < 5; i++)
+            int rowCount = tuningNameTexts != null ? tuningNameTexts.Length : 0;
+            for (int i = 0; i < rowCount; i++)
             {
                 bool visible = i < visibleSlots;
                 if (tuningNameTexts != null && i < tuningNameTexts.Length && tuningNameTexts[i] != null)
@@ -272,7 +273,8 @@ namespace AnimeHillRacing.UI
                     tuningLevelTexts[i].text = $"LEVEL {current} / {maximum}";
                 if (tuningValueTexts != null && i < tuningValueTexts.Length && tuningValueTexts[i] != null)
                     tuningValueTexts[i].text = TuneComparison(vehicle, state, type, atMax);
-                int cost = atMax || catalog?.upgradeEconomy == null ? -1 : catalog.upgradeEconomy.GetCostForNextTune(current);
+                int cost = atMax || catalog?.upgradeEconomy == null ? -1 :
+                    catalog.upgradeEconomy.GetCostForNextTune(vehicle, type, current);
                 if (tuningCostTexts != null && i < tuningCostTexts.Length && tuningCostTexts[i] != null)
                     tuningCostTexts[i].text = atMax ? "MAX" : $"TUNE\n{cost:N0} COINS";
                 if (tuningButtons != null && i < tuningButtons.Length && tuningButtons[i] != null)

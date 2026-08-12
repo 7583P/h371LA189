@@ -17,6 +17,7 @@ MonoBehaviour:
   mountains: {fileID: 21300000, guid: 0c2d76222afe6794e87545d574166876, type: 3}
   mountainParallaxX: 0.18
   mountainParallaxY: 0.035
+  lockVerticalToCamera: 1
   mountainVisualHeight: 15.5
   mountainBaseY: -3.2
   pooledMountainSegments: 5

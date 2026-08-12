@@ -1,4 +1,5 @@
 using AnimeHillRacing.Core;
+using AnimeHillRacing.Terrain;
 using UnityEngine;
 
 namespace AnimeHillRacing.Vehicle
@@ -10,7 +11,9 @@ namespace AnimeHillRacing.Vehicle
         [SerializeField, Min(0.1f)] private float confirmationTime = 1f;
         [SerializeField, Min(0f)] private float maximumVerticalSpeed = 4f;
         [SerializeField] private float minimumWorldHeight = -8f;
+        [SerializeField, Min(2f)] private float maximumDistanceBelowTerrain = 14f;
         [SerializeField] private GameManager gameManager;
+        [SerializeField] private MapProfile terrainProfile;
 
         private VehicleRuntimeBase vehicle;
         private Rigidbody body;
@@ -32,7 +35,10 @@ namespace AnimeHillRacing.Vehicle
                 invalidTimer = 0f;
                 return;
             }
-            if (transform.position.y < minimumWorldHeight)
+            float safetyFloor = terrainProfile != null
+                ? TerrainGenerator.SampleHeight(terrainProfile, transform.position.x) - maximumDistanceBelowTerrain
+                : minimumWorldHeight;
+            if (transform.position.y < safetyFloor)
             {
                 gameManager?.RequestGameOver(RunEndReason.Crashed);
                 enabled = false;
@@ -59,7 +65,11 @@ namespace AnimeHillRacing.Vehicle
             return false;
         }
 
-        public void AssignGameManager(GameManager manager) => gameManager = manager;
+        public void AssignGameManager(GameManager manager, MapProfile profile = null)
+        {
+            gameManager = manager;
+            terrainProfile = profile;
+        }
 
         public void NotifyDriverHeadGroundImpact()
         {

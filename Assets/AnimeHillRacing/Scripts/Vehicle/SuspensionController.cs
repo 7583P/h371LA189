@@ -161,7 +161,9 @@ namespace AnimeHillRacing.Vehicle
             runtimeTireMaterial.dynamicFriction = physicalGrip;
             runtimeTireMaterial.staticFriction = physicalGrip * 1.04f;
             runtimeTireMaterial.bounciness = 0f;
-            runtimeTireMaterial.frictionCombine = PhysicsMaterialCombine.Maximum;
+            // Multiply preserves the global 0-1000 Grip scale. Maximum imposed the terrain's .72
+            // coefficient as a hidden floor, making even a 200-rated tire feel glued down.
+            runtimeTireMaterial.frictionCombine = PhysicsMaterialCombine.Multiply;
             runtimeTireMaterial.bounceCombine = PhysicsMaterialCombine.Minimum;
             runtimeTireMaterial.hideFlags = HideFlags.DontSave;
             wheelCollider.sharedMaterial = runtimeTireMaterial;

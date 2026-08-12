@@ -241,7 +241,7 @@ namespace AnimeHillRacing.Core
                 result = TunePurchaseResult.MaximumLevel;
                 return false;
             }
-            int cost = economy.GetCostForNextTune(current);
+            int cost = economy.GetCostForNextTune(definition, type, current);
             if (cost < 0)
             {
                 result = TunePurchaseResult.InvalidConfiguration;

@@ -61,6 +61,7 @@ namespace AnimeHillRacing.UI
         private void OnEnable()
         {
             if (catalog == null) return;
+            EnsureRuntimeTuningRows();
             FindSavedVehicle();
             section = GameSession.RequestedGarageSection;
             if (confirmationModal != null) confirmationModal.SetActive(false);
@@ -89,6 +90,7 @@ namespace AnimeHillRacing.UI
         public void UpgradeTune2() => PurchaseTune(2);
         public void UpgradeTune3() => PurchaseTune(3);
         public void UpgradeTune4() => PurchaseTune(4);
+        public void UpgradeTune5() => PurchaseTune(5);
 
         private void CycleVehicle(int direction)
         {
@@ -110,7 +112,7 @@ namespace AnimeHillRacing.UI
             int current = state.GetTune(pendingType);
             int maximum = vehicle.GetMaxTunes(pendingType);
             if (current >= maximum) return;
-            int cost = catalog.upgradeEconomy.GetCostForNextTune(current);
+            int cost = catalog.upgradeEconomy.GetCostForNextTune(vehicle, pendingType, current);
             var next = new VehicleUpgradeState();
             next.CopyFrom(state);
             next.SetTune(pendingType, current + 1);
@@ -203,6 +205,50 @@ namespace AnimeHillRacing.UI
             Refresh();
         }
 
+        // Keeps previously generated Garage scenes forward-compatible. Newly rebuilt scenes already
+        // serialize six rows; an older five-row scene receives the Formula-only Downforce row at runtime.
+        private void EnsureRuntimeTuningRows()
+        {
+            const int requiredRows = 6;
+            if (!Application.isPlaying || tuningPanel == null || tuningButtons == null ||
+                tuningButtons.Length >= requiredRows || tuningButtons.Length == 0) return;
+            Button templateButton = tuningButtons[tuningButtons.Length - 1];
+            if (templateButton == null || templateButton.transform.parent == null) return;
+            GameObject templateRow = templateButton.transform.parent.gameObject;
+            GameObject row = Instantiate(templateRow, templateRow.transform.parent);
+            row.name = "Tune Row 6";
+            Button button = row.transform.Find("Upgrade")?.GetComponent<Button>();
+            Text name = row.transform.Find("Name")?.GetComponent<Text>();
+            Text level = row.transform.Find("Level")?.GetComponent<Text>();
+            Text value = row.transform.Find("Value")?.GetComponent<Text>();
+            Text cost = button != null ? button.GetComponentInChildren<Text>(true) : null;
+            if (button == null || name == null || level == null || value == null || cost == null)
+            {
+                Destroy(row);
+                return;
+            }
+            button.onClick = new Button.ButtonClickedEvent();
+            button.onClick.AddListener(UpgradeTune5);
+            System.Array.Resize(ref tuningNames, requiredRows);
+            System.Array.Resize(ref tuningLevels, requiredRows);
+            System.Array.Resize(ref tuningValues, requiredRows);
+            System.Array.Resize(ref tuningCosts, requiredRows);
+            System.Array.Resize(ref tuningButtons, requiredRows);
+            tuningNames[5] = name;
+            tuningLevels[5] = level;
+            tuningValues[5] = value;
+            tuningCosts[5] = cost;
+            tuningButtons[5] = button;
+            for (int i = 0; i < requiredRows; i++)
+            {
+                RectTransform rect = tuningButtons[i] != null
+                    ? tuningButtons[i].transform.parent as RectTransform : null;
+                if (rect == null) continue;
+                rect.anchoredPosition = new Vector2(0f, 260f - i * 104f);
+                rect.sizeDelta = new Vector2(rect.sizeDelta.x, 92f);
+            }
+        }
+
         private void Refresh()
         {
             VehicleDefinition vehicle = CurrentVehicle;
@@ -282,7 +328,8 @@ namespace AnimeHillRacing.UI
                 int current = state.GetTune(type);
                 int maximum = vehicle.GetMaxTunes(type);
                 bool atMax = current >= maximum;
-                int cost = atMax || catalog?.upgradeEconomy == null ? -1 : catalog.upgradeEconomy.GetCostForNextTune(current);
+                int cost = atMax || catalog?.upgradeEconomy == null ? -1 :
+                    catalog.upgradeEconomy.GetCostForNextTune(vehicle, type, current);
                 if (tuningNames != null && i < tuningNames.Length) tuningNames[i].text = vehicle.GetTuneDisplayName(type);
                 if (tuningLevels != null && i < tuningLevels.Length) tuningLevels[i].text = $"LEVEL {current} / {maximum}";
                 var next = new VehicleUpgradeState();

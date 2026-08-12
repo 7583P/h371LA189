@@ -24,6 +24,7 @@ namespace AnimeHillRacing.Terrain
         [Range(15f, 28f)] public float rampAngleDegrees = 20f;
         [Min(8f)] public float landingLength = 26f;
         [Min(10f)] public float recoveryLength = 48f;
+        [Min(10f)] public float postRecoveryBlendLength = 50f;
 
         [Header("Pool Difficulty")]
         [Min(1f)] public float basePoolLength = 18f;
@@ -137,6 +138,9 @@ namespace AnimeHillRacing.Terrain
                 liquidChallenges.rampAngleDegrees = Mathf.Clamp(liquidChallenges.rampAngleDegrees, 15f, 28f);
                 liquidChallenges.maximumPoolLength = Mathf.Max(liquidChallenges.minimumPoolLength,
                     liquidChallenges.maximumPoolLength);
+                liquidChallenges.recoveryLength = Mathf.Clamp(liquidChallenges.recoveryLength, 30f, 70f);
+                liquidChallenges.postRecoveryBlendLength = Mathf.Max(10f,
+                    liquidChallenges.postRecoveryBlendLength);
             }
         }
     }

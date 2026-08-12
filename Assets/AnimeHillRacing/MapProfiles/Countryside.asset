@@ -23,7 +23,7 @@ MonoBehaviour:
   hardEndDistance: 10000
   elevationProfile: {fileID: 11400000, guid: 384dbc7f85eef824598e4c7fdebae8e3, type: 2}
   baseHeight: 0
-  amplitude: 15.5
+  amplitude: 20
   frequency: 0.019
   smoothing: 0.65
   hillSize: 1
@@ -80,14 +80,14 @@ MonoBehaviour:
     m_RotationOrder: 4
   maximumDifficulty: 1
   introductoryAmplitude: 0.12
-  sectionLength: 64
+  sectionLength: 52
   recoveryEverySections: 5
-  technicalSectionChance: 0.42
-  technicalDetailStrength: 0.7
-  flatFeatureWeight: 0.06
-  hillFeatureWeight: 0.47
-  valleyFeatureWeight: 0.25
-  technicalFeatureWeight: 0.22
+  technicalSectionChance: 0.48
+  technicalDetailStrength: 0.78
+  flatFeatureWeight: 0.03
+  hillFeatureWeight: 0.49
+  valleyFeatureWeight: 0.29
+  technicalFeatureWeight: 0.19
   maxSlopeAngle: 32
   maxHeightDeltaPerSample: 1.0414488
   minimumValleyWidth: 20
@@ -120,6 +120,7 @@ MonoBehaviour:
     rampAngleDegrees: 20
     landingLength: 26
     recoveryLength: 48
+    postRecoveryBlendLength: 50
     basePoolLength: 18
     minimumPoolLength: 16
     maximumPoolLength: 34

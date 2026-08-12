@@ -66,7 +66,9 @@ namespace AnimeHillRacing.CameraSystem
 
             float parallaxOriginX = cameraPosition.x * environment.mountainParallaxX;
             int centerIndex = Mathf.RoundToInt((cameraPosition.x - parallaxOriginX) / tileWidth);
-            float y = environment.mountainBaseY + (cameraPosition.y - initialCameraY) * environment.mountainParallaxY;
+            // A camera-space lock must move the renderer with the camera in world space. This makes
+            // its vertical position visually constant while horizontal parallax continues normally.
+            float y = CalculateVerticalPosition(environment, cameraPosition.y, initialCameraY);
             int count = mountainSegments != null ? mountainSegments.Length : 0;
             int half = count / 2;
             for (int i = 0; i < count; i++)
@@ -75,6 +77,15 @@ namespace AnimeHillRacing.CameraSystem
                 float x = parallaxOriginX + (centerIndex + i - half) * tileWidth;
                 mountainSegments[i].transform.position = new Vector3(x, y, 10f);
             }
+        }
+
+        public static float CalculateVerticalPosition(EnvironmentDefinition definition,
+            float cameraY, float cameraStartY)
+        {
+            if (definition == null) return 0f;
+            float cameraDelta = cameraY - cameraStartY;
+            return definition.mountainBaseY + cameraDelta *
+                   (definition.lockVerticalToCamera ? 1f : definition.mountainParallaxY);
         }
 
         public void Assign(Camera camera, EnvironmentDefinition definition, SpriteRenderer sky,

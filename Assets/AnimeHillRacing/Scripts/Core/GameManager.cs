@@ -80,6 +80,9 @@ namespace AnimeHillRacing.Core
         private bool liquidCrashRequested;
         private int lastGemAward;
         private float gemMessageUntil;
+        private readonly StuntRotationTracker stuntRotation = new StuntRotationTracker();
+        private Quaternion previousStuntRotation;
+        private bool stuntRotationInitialized;
 
         public RunState State { get; private set; } = RunState.Ready;
         public RunEndReason EndReason { get; private set; }
@@ -87,6 +90,9 @@ namespace AnimeHillRacing.Core
         public float BestDistance { get; private set; }
         public float MaxSpeedKmh => maxSpeedKmh;
         public int RunCoins => runCoins;
+        public int RunFlips => stuntRotation.Flips;
+        public int RunBackflips => stuntRotation.Backflips;
+        public int StuntBonus => stuntRotation.StuntBonus;
         public int DisplayCoins => SaveManager.TotalCoins + runCoins;
         public int SavedTotalCoins => SaveManager.TotalCoins;
         public int TotalGems => SaveManager.TotalGems;
@@ -125,9 +131,60 @@ namespace AnimeHillRacing.Core
             }
             startProgress = vehicle.ProgressPosition;
             maxProgress = startProgress;
+            ResetRunStunts();
             State = RunState.Running;
             vehicle.SetDriveEnabled(true);
             resultsUI?.HideImmediate();
+        }
+
+        private void FixedUpdate()
+        {
+            Rigidbody body = vehicle != null ? vehicle.Body : null;
+            if (body == null) return;
+            bool runActive = State == RunState.Running;
+            bool airborne = runActive && !vehicle.AnyGrounded;
+            if (Mode == GameModeType.Adventure2_5D)
+            {
+                stuntRotation.SampleAngle(body.rotation.eulerAngles.z, airborne, runActive);
+                previousStuntRotation = body.rotation;
+                stuntRotationInitialized = true;
+                return;
+            }
+
+            Quaternion current = body.rotation;
+            if (!stuntRotationInitialized)
+            {
+                previousStuntRotation = current;
+                stuntRotationInitialized = true;
+                return;
+            }
+            float pitchDelta = SignedPitchDeltaDegrees(previousStuntRotation, current,
+                -body.transform.right);
+            previousStuntRotation = current;
+            stuntRotation.SampleDelta(pitchDelta, airborne, runActive);
+        }
+
+        private void ResetRunStunts()
+        {
+            Rigidbody body = vehicle != null ? vehicle.Body : null;
+            float initialAngle = body != null ? body.rotation.eulerAngles.z : 0f;
+            stuntRotation.Reset(initialAngle);
+            previousStuntRotation = body != null ? body.rotation : Quaternion.identity;
+            stuntRotationInitialized = body != null;
+        }
+
+        private static float SignedPitchDeltaDegrees(Quaternion previous, Quaternion current,
+            Vector3 pitchAxis)
+        {
+            Quaternion delta = current * Quaternion.Inverse(previous);
+            delta.ToAngleAxis(out float angle, out Vector3 axis);
+            if (!float.IsFinite(angle) || axis.sqrMagnitude < .000001f) return 0f;
+            if (angle > 180f)
+            {
+                angle = 360f - angle;
+                axis = -axis;
+            }
+            return angle * Mathf.Clamp(Vector3.Dot(axis.normalized, pitchAxis.normalized), -1f, 1f);
         }
 
         private void Update()

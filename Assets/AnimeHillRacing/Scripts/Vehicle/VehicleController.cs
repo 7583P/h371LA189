@@ -124,7 +124,28 @@ namespace AnimeHillRacing.Vehicle
 
             ApplyDrive(engineTorque, gas, brake, hasFuel);
             ApplyDrag();
+            ApplyAerodynamicDownforce();
             ApplyAirControl(inputState, rawGrounded);
+        }
+
+        private void ApplyAerodynamicDownforce()
+        {
+            if (definition.archetype != VehicleArchetype.Formula ||
+                stats.airborneDownforceAcceleration <= .001f) return;
+            float acceleration = EvaluateAerodynamicDownforceAcceleration(definition, stats,
+                body.linearVelocity.magnitude);
+            if (acceleration > .001f)
+                body.AddForce(Vector3.down * acceleration, ForceMode.Acceleration);
+        }
+
+        public static float EvaluateAerodynamicDownforceAcceleration(VehicleDefinition source,
+            ResolvedVehicleStats resolved, float speedMps)
+        {
+            if (source == null || source.archetype != VehicleArchetype.Formula) return 0f;
+            float speed01 = Mathf.Clamp01(Mathf.Max(0f, speedMps) /
+                                          Mathf.Max(1f, source.downforceReferenceSpeedMps));
+            return Mathf.Min(source.maximumDownforceAcceleration,
+                       Mathf.Max(0f, resolved.airborneDownforceAcceleration)) * speed01 * speed01;
         }
 
         private void ApplyDrive(float engineTorque, float gas, float brake, bool hasFuel)

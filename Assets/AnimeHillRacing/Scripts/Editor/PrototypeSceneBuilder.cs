@@ -197,9 +197,11 @@ namespace AnimeHillRacing.Editor
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
             BuiltAssets assets = CreateAssets();
             ValidateCustomizationContract(assets);
+            ValidateCountrysideTerrainContract(assets.countryside);
             ValidateNeonCityContract(assets);
             ValidateVehiclePhysicsContract(assets);
             ValidateTuningContract(assets);
+            ValidateStuntRotationContract();
             ValidateVehiclePerformance(assets);
             ValidateSuspensionContract(assets);
             ValidateFuelSequenceContract(assets);
@@ -220,7 +222,10 @@ namespace AnimeHillRacing.Editor
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
             BuiltAssets assets = CreateAssets();
             ValidateCustomizationContract(assets);
+            ValidateCountrysideTerrainContract(assets.countryside);
+            ValidateNeonCityContract(assets);
             ValidateVehiclePhysicsContract(assets);
+            ValidateStuntRotationContract();
             ValidateFuelSequenceContract(assets);
             ValidateCoinRouteContract(assets);
             BuildGarageModern(assets);
@@ -555,9 +560,20 @@ namespace AnimeHillRacing.Editor
                             Debug.LogError($"{scene.name}: ResultCaptureCamera must use the wide 2D orthographic setup.");
                             valid = false;
                         }
-                        if (resultImage == null || resultImage.rectTransform.sizeDelta.x < 560f)
+                        Canvas.ForceUpdateCanvases();
+                        RectTransform photoFrame = resultImage != null
+                            ? resultImage.transform.parent as RectTransform : null;
+                        AspectRatioFitter photoAspect = resultImage != null
+                            ? resultImage.GetComponent<AspectRatioFitter>() : null;
+                        RectTransform statsRect = results.Length == 1 && results[0].StatsText != null
+                            ? results[0].StatsText.rectTransform : null;
+                        if (resultImage == null || resultImage.rectTransform.rect.width < 560f ||
+                            photoFrame == null || photoFrame.anchoredPosition.x > -250f ||
+                            photoAspect == null || Mathf.Abs(photoAspect.aspectRatio - 1f) > .001f ||
+                            statsRect == null || statsRect.anchoredPosition.x < 250f)
                         {
-                            Debug.LogError($"{scene.name}: Results photo must be at least 560 px wide.");
+                            Debug.LogError($"{scene.name}: Results must keep an aspect-safe photo on the left " +
+                                           "and race stats on the right.");
                             valid = false;
                         }
                     }
@@ -1068,16 +1084,73 @@ namespace AnimeHillRacing.Editor
                 assets.countrysideEnvironment.mountainParallaxX < .15f ||
                 assets.countrysideEnvironment.mountainParallaxX > .25f ||
                 assets.countrysideEnvironment.mountainParallaxY < .03f ||
-                assets.countrysideEnvironment.mountainParallaxY > .06f)
+                assets.countrysideEnvironment.mountainParallaxY > .06f ||
+                assets.countrysideEnvironment.lockVerticalToCamera)
                 throw new System.InvalidOperationException("Countryside environment assets or parallax bounds are invalid.");
             if (AssetDatabase.LoadAssetAtPath<Sprite>(FormulaReferencePath) == assets.formula.previewSprite)
                 throw new System.InvalidOperationException("Formula_Reference must never be used as the selectable vehicle skin.");
             Debug.Log("Garage validation: real vehicle/driver/environment assets, independent options and poses are connected.");
         }
 
+        private static void ValidateStuntRotationContract()
+        {
+            var tracker = new StuntRotationTracker();
+            tracker.Reset(0f);
+            for (int angle = 1; angle <= 359; angle++) tracker.SampleAngle(angle, true, true);
+            if (tracker.Flips != 0 || tracker.Backflips != 0 || tracker.StuntBonus != 0)
+                throw new System.InvalidOperationException("A 0-359 degree rotation was counted as a stunt.");
+            tracker.SampleAngle(0f, true, true);
+            if (tracker.Flips != 0 || tracker.Backflips != 1 || tracker.StuntBonus != 5)
+                throw new System.InvalidOperationException("A positive 360 degree Backflip was not counted once.");
+            for (int rotation = 0; rotation < 720; rotation++)
+                tracker.SampleDelta(1f, true, true);
+            if (tracker.Backflips != 3 || tracker.StuntBonus != 15)
+                throw new System.InvalidOperationException("A 720 degree Backflip was not counted twice.");
+
+            tracker.Reset(0f);
+            for (int rotation = 0; rotation < 1080; rotation++)
+                tracker.SampleDelta(-1f, true, true);
+            if (tracker.Flips != 3 || tracker.Backflips != 0 || tracker.StuntBonus != 15)
+                throw new System.InvalidOperationException("A 1080 degree Flip was not counted three times.");
+
+            tracker.Reset(0f);
+            for (int rotation = 0; rotation < 720; rotation++)
+                tracker.SampleDelta(-1f, true, true);
+            for (int rotation = 0; rotation < 1080; rotation++)
+                tracker.SampleDelta(1f, true, true);
+            if (tracker.Flips != 2 || tracker.Backflips != 3 || tracker.StuntBonus != 25)
+                throw new System.InvalidOperationException(
+                    "Two Flips plus three Backflips must produce exactly 25 Stunt Bonus.");
+
+            tracker.Reset(0f);
+            for (int rotation = 0; rotation < 270; rotation++)
+                tracker.SampleDelta(-1f, true, true);
+            tracker.SampleDelta(0f, false, true);
+            for (int rotation = 0; rotation < 90; rotation++)
+                tracker.SampleDelta(-1f, true, true);
+            tracker.SampleDelta(360f, true, false);
+            if (tracker.Flips != 0 || tracker.Backflips != 0 || tracker.StuntBonus != 0)
+                throw new System.InvalidOperationException(
+                    "Partial rotations crossed a landing/game-over boundary or a teleport was counted.");
+            tracker.Reset();
+            if (tracker.Flips != 0 || tracker.Backflips != 0 || tracker.StuntBonus != 0)
+                throw new System.InvalidOperationException("Fresh-run stunt counters did not reset to zero.");
+            Debug.Log("STUNT_ROTATION_TEST: 0-359=0, +360 Backflip=1, +720=2, " +
+                      "-1080 Flip=3, 2 Flips + 3 Backflips = 25, landing/game-over reset PASS; " +
+                      "bonus=(Flips+Backflips)*5 only.");
+        }
+
         private static void ValidateNeonCityContract(BuiltAssets assets)
         {
             MapProfile profile = assets.neonCity;
+            EnvironmentDefinition neonEnvironment = profile != null ? profile.environment : null;
+            float lockedYLow = MountainBackground.CalculateVerticalPosition(neonEnvironment, -80f, 5f);
+            float lockedYHigh = MountainBackground.CalculateVerticalPosition(neonEnvironment, 120f, 5f);
+            if (neonEnvironment == null || !neonEnvironment.lockVerticalToCamera ||
+                neonEnvironment.mountainParallaxX <= 0f ||
+                Mathf.Abs((lockedYLow + 80f) - (lockedYHigh - 120f)) > .001f)
+                throw new System.InvalidOperationException(
+                    "Neon City background must remain vertically locked to the camera with horizontal parallax enabled.");
             if (assets.catalog.CountMaps(GameModeType.Adventure2_5D) != 2 ||
                 assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 0)?.mapId != "countryside" ||
                 assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 1)?.mapId != "neon-city")
@@ -1126,17 +1199,36 @@ namespace AnimeHillRacing.Editor
                             (layout.poolStart + layout.poolEnd) * .5f, out LiquidChallengeLayout found) ||
                         found.challengeIndex != slot)
                         throw new System.InvalidOperationException("Neon City pool lookup failed.");
-                    previousRecoveryEnd = layout.recoveryEnd;
+                    if (settings.recoveryLength < 30f || settings.recoveryLength > 70f)
+                        throw new System.InvalidOperationException(
+                            "Every Neon liquid recovery must be between 30 and 70 metres.");
+                    float previousRecoveryHeight = TerrainGenerator.SampleHeight(profile, layout.landingEnd);
+                    for (float sample = layout.landingEnd + 1f; sample <= layout.recoveryEnd; sample += 1f)
+                    {
+                        float recoveryHeight = TerrainGenerator.SampleHeight(profile, sample);
+                        if (recoveryHeight > previousRecoveryHeight + .002f)
+                            throw new System.InvalidOperationException(
+                                $"Neon cycle {cycle} challenge {slot + 1} has an uphill post-liquid recovery.");
+                        previousRecoveryHeight = recoveryHeight;
+                    }
+                    previousRecoveryEnd = layout.recoveryEnd + settings.postRecoveryBlendLength;
                     detected++;
                 }
                 if (detected != 8)
                     throw new System.InvalidOperationException($"Neon City cycle {cycle}: {detected}/8 liquid challenges.");
                 Debug.Log($"NEON_LIQUID_COUNT Cycle {cycle}: 8/8");
+                Debug.Log($"NEON_POST_LIQUID Cycle {cycle}: 8/8 clean landings, " +
+                          $"{settings.recoveryLength:0}m gently descending recoveries.");
             }
 
             float minimumHeight = float.PositiveInfinity;
             float maximumHeight = float.NegativeInfinity;
             float maximumSlope = 0f;
+            int terrainDirectionChanges = 0;
+            int previousDirection = 0;
+            float maximumSlopeChange = 0f;
+            float previousSlope = 0f;
+            bool hasPreviousSlope = false;
             const float terrainAuditStep = 2f;
             float previousHeight = TerrainGenerator.SampleNeonTemplateHeight(profile, 6000f);
             for (float distance = 6000f + terrainAuditStep; distance <= 24000f; distance += terrainAuditStep)
@@ -1144,8 +1236,20 @@ namespace AnimeHillRacing.Editor
                 float height = TerrainGenerator.SampleNeonTemplateHeight(profile, distance);
                 minimumHeight = Mathf.Min(minimumHeight, height);
                 maximumHeight = Mathf.Max(maximumHeight, height);
-                maximumSlope = Mathf.Max(maximumSlope,
-                    Mathf.Atan2(Mathf.Abs(height - previousHeight), terrainAuditStep) * Mathf.Rad2Deg);
+                float delta = height - previousHeight;
+                int direction = delta > .01f ? 1 : delta < -.01f ? -1 : 0;
+                if (direction != 0)
+                {
+                    if (previousDirection != 0 && direction != previousDirection) terrainDirectionChanges++;
+                    previousDirection = direction;
+                }
+                float signedSlope = Mathf.Atan2(delta, terrainAuditStep) * Mathf.Rad2Deg;
+                maximumSlope = Mathf.Max(maximumSlope, Mathf.Abs(signedSlope));
+                if (hasPreviousSlope)
+                    maximumSlopeChange = Mathf.Max(maximumSlopeChange,
+                        Mathf.Abs(signedSlope - previousSlope));
+                previousSlope = signedSlope;
+                hasPreviousSlope = true;
                 previousHeight = height;
             }
             for (float local = 200f; local < 6000f; local += 25f)
@@ -1157,14 +1261,25 @@ namespace AnimeHillRacing.Editor
                 if (Mathf.Abs(cycle0 - cycle1) > .0001f)
                     throw new System.InvalidOperationException("Neon City cycle template does not repeat.");
             }
-            if (TerrainGenerator.NeonTemplatePeakCount != 16 || TerrainGenerator.NeonTemplateValleyCount != 16 ||
-                maximumSlope > profile.maxSlopeAngle + .25f || maximumHeight - minimumHeight < 30f)
+            if (TerrainGenerator.NeonTemplateSectionCount != 9 ||
+                TerrainGenerator.NeonMesoFeatureCount != 28 ||
+                TerrainGenerator.NeonMesoMinimumLength < 80f ||
+                TerrainGenerator.NeonMesoMaximumLength > 240f ||
+                maximumSlope > profile.maxSlopeAngle + .25f || maximumSlope < 30f ||
+                maximumSlopeChange > 7.25f || maximumHeight - minimumHeight < 60f ||
+                terrainDirectionChanges < 90)
                 throw new System.InvalidOperationException(
-                    $"Neon terrain grammar invalid: peaks={TerrainGenerator.NeonTemplatePeakCount}, " +
-                    $"valleys={TerrainGenerator.NeonTemplateValleyCount}, slope={maximumSlope:0.0}, " +
-                    $"range={minimumHeight:0.0}..{maximumHeight:0.0}m.");
-            Debug.Log($"NEON_TERRAIN_PATTERN: 16 peaks, 16 valleys, repeated cycle shape, " +
-                      $"height {minimumHeight:0.0}..{maximumHeight:0.0}m, max slope {maximumSlope:0.0} degrees.");
+                    $"Neon terrain grammar invalid: sections={TerrainGenerator.NeonTemplateSectionCount}, " +
+                    $"meso={TerrainGenerator.NeonMesoFeatureCount}, slope={maximumSlope:0.0}, " +
+                    $"slope-step={maximumSlopeChange:0.0}, " +
+                    $"range={minimumHeight:0.0}..{maximumHeight:0.0}m, " +
+                    $"direction-changes={terrainDirectionChanges}.");
+            Debug.Log($"NEON_TERRAIN_PATTERN: 9 varied macro sections plus " +
+                      $"{TerrainGenerator.NeonMesoFeatureCount} authored meso features (isolated/double bumps, " +
+                      $"dips, alternating technical sections and soft steps); repeated 6000m cycle, height " +
+                      $"{minimumHeight:0.0}..{maximumHeight:0.0}m, max slope {maximumSlope:0.0} degrees, " +
+                      $"max 2m slope change={maximumSlopeChange:0.0} degrees, " +
+                      $"direction changes={terrainDirectionChanges}.");
 
             var exposure = new LiquidExposureTracker();
             exposure.Reset(10f);
@@ -1190,6 +1305,54 @@ namespace AnimeHillRacing.Editor
                 SaveManager.CanAffordGems(499, 500) || !SaveManager.CanAffordGems(500, 500))
                 throw new System.InvalidOperationException("Premium cosmetic Gem thresholds are invalid.");
             Debug.Log("Neon validation: cycles 0-3=8/8, grammar complete, exposure 3+4+3=10s, Gems milestones stable.");
+        }
+
+        private static void ValidateCountrysideTerrainContract(MapProfile profile)
+        {
+            if (profile == null || profile.mapId != "countryside" || profile.supportsLiquidExposure)
+                throw new System.InvalidOperationException("Countryside terrain profile is invalid.");
+            var mesh = new Mesh();
+            float endHeight = 0f;
+            float endSlope = 0f;
+            float minimumHeight = float.PositiveInfinity;
+            float maximumHeight = float.NegativeInfinity;
+            float maximumSlope = 0f;
+            int directionChanges = 0;
+            int previousDirection = 0;
+            const float chunkLength = 80f;
+            const int samples = 48;
+            float dx = chunkLength / samples;
+            for (int chunk = 0; chunk <= 125; chunk++)
+            {
+                TerrainGenerator.BuildMesh(mesh, profile, chunk * chunkLength, chunkLength, samples, 10f,
+                    chunk > 0, endHeight, endSlope, out float[] heights, out endHeight, out endSlope);
+                for (int i = 0; i < heights.Length; i++)
+                {
+                    minimumHeight = Mathf.Min(minimumHeight, heights[i]);
+                    maximumHeight = Mathf.Max(maximumHeight, heights[i]);
+                    if (i == 0) continue;
+                    float delta = heights[i] - heights[i - 1];
+                    maximumSlope = Mathf.Max(maximumSlope,
+                        Mathf.Atan2(Mathf.Abs(delta), dx) * Mathf.Rad2Deg);
+                    if (Mathf.Abs(delta) < .05f) continue;
+                    int direction = delta > 0f ? 1 : -1;
+                    if (previousDirection != 0 && direction != previousDirection) directionChanges++;
+                    previousDirection = direction;
+                }
+            }
+            Object.DestroyImmediate(mesh);
+            float difficultyAtPeak = profile.EvaluateDifficulty(10000f);
+            float difficultyAfterPeak = profile.EvaluateDifficulty(11000f);
+            if (maximumSlope > profile.maxSlopeAngle + .25f || maximumHeight - minimumHeight < 25f ||
+                directionChanges < 60 || !Mathf.Approximately(difficultyAtPeak, 1f) ||
+                !Mathf.Approximately(difficultyAtPeak, difficultyAfterPeak))
+                throw new System.InvalidOperationException(
+                    $"Countryside movement invalid: range={minimumHeight:0.0}..{maximumHeight:0.0}m, " +
+                    $"slope={maximumSlope:0.0}, directionChanges={directionChanges}, " +
+                    $"difficulty10km={difficultyAtPeak:0.00}.");
+            Debug.Log($"COUNTRYSIDE_TERRAIN_PATTERN: range {minimumHeight:0.0}..{maximumHeight:0.0}m, " +
+                      $"max slope {maximumSlope:0.0} degrees, {directionChanges} climb/descent changes, " +
+                      "difficulty peaks at 10000m.");
         }
 
         private static void ValidateFuelSequenceContract(BuiltAssets assets)
@@ -1610,8 +1773,8 @@ namespace AnimeHillRacing.Editor
             float rearPercent = assets.sportBike.RearWheelDiameter / Mathf.Max(.001f, bodyVisibleHeight);
             bool sportCompositionValid = body.sprite == assets.sportBikeBody &&
                 rear.sprite == assets.sportBikeWheel01 && front.sprite == assets.sportBikeWheel01 && body.flipX;
-            bool sportProportionsValid = frontPercent >= .31f && frontPercent <= .34f &&
-                                         rearPercent >= .33f && rearPercent <= .36f;
+            bool sportProportionsValid = frontPercent >= .40f && frontPercent <= .42f &&
+                                         rearPercent >= .43f && rearPercent <= .45f;
             bool sportMountsValid = (Vector2)front.transform.localPosition ==
                                     assets.sportBike.frontWheelVisualPosition &&
                                     (Vector2)rear.transform.localPosition ==
@@ -2070,24 +2233,32 @@ namespace AnimeHillRacing.Editor
             VehiclePerformanceResult formula = SimulateFlatPerformance(assets.formula);
             VehiclePerformanceResult rally = SimulateFlatPerformance(assets.rally);
             VehiclePerformanceResult sportBike = SimulateFlatPerformance(assets.sportBike);
-            if (jeep.maximumSpeedKmh < 98f || jeep.maximumSpeedKmh > 103f ||
-                jeep.zeroToHundredSeconds < 6.7f || jeep.zeroToHundredSeconds > 7.3f ||
+            Debug.Log($"TRACTION_LIMITED_FLAT_RAW | " +
+                      $"J={jeep.maximumSpeedKmh:0.0}kmh/{jeep.zeroToHundredSeconds:0.00}s/{jeep.reverseSpeedKmh:0.0}rev/{jeep.groundedRatio:P0} | " +
+                      $"F={formula.maximumSpeedKmh:0.0}/{formula.zeroToHundredSeconds:0.00}/{formula.reverseSpeedKmh:0.0}/{formula.groundedRatio:P0} | " +
+                      $"R={rally.maximumSpeedKmh:0.0}/{rally.zeroToHundredSeconds:0.00}/{rally.reverseSpeedKmh:0.0}/{rally.groundedRatio:P0} | " +
+                      $"S={sportBike.maximumSpeedKmh:0.0}/{sportBike.zeroToHundredSeconds:0.00}/{sportBike.reverseSpeedKmh:0.0}/{sportBike.groundedRatio:P0}.");
+            if (jeep.maximumSpeedKmh < jeep.resolvedTopSpeedKmh * .94f ||
+                jeep.maximumSpeedKmh > jeep.resolvedTopSpeedKmh * 1.03f ||
                 jeep.fuelDurationSeconds < 29.9f || jeep.fuelDurationSeconds > 30.1f || jeep.reverseSpeedKmh > -10f)
-                throw new System.InvalidOperationException("Jeep performance contract failed (100 km/h, 7 s, 30 s fuel, working reverse).");
-            if (formula.maximumSpeedKmh < 295f || formula.maximumSpeedKmh > 305f ||
-                formula.zeroToHundredSeconds < 1.85f || formula.zeroToHundredSeconds > 2.15f ||
+                throw new System.InvalidOperationException("Jeep traction-limited flat performance, fuel or reverse contract failed.");
+            if (formula.maximumSpeedKmh < formula.resolvedTopSpeedKmh * .85f ||
+                formula.maximumSpeedKmh > formula.resolvedTopSpeedKmh * 1.03f ||
+                formula.zeroToHundredSeconds <= 0f || formula.zeroToHundredSeconds > 15f ||
                 formula.fuelDurationSeconds < 44.9f || formula.fuelDurationSeconds > 45.1f || formula.reverseSpeedKmh > -10f)
-                throw new System.InvalidOperationException("Formula performance contract failed (300 km/h, 2 s, 45 s fuel, working reverse).");
-            if (rally.maximumSpeedKmh < 275f || rally.maximumSpeedKmh > 285f ||
-                rally.zeroToHundredSeconds < 2.35f || rally.zeroToHundredSeconds > 2.65f ||
+                throw new System.InvalidOperationException("Formula traction-limited flat performance, fuel or reverse contract failed.");
+            if (rally.maximumSpeedKmh < rally.resolvedTopSpeedKmh * .85f ||
+                rally.maximumSpeedKmh > rally.resolvedTopSpeedKmh * 1.03f ||
+                rally.zeroToHundredSeconds <= 0f || rally.zeroToHundredSeconds > 15f ||
                 rally.fuelDurationSeconds < 49.9f || rally.fuelDurationSeconds > 50.1f || rally.reverseSpeedKmh > -10f)
-                throw new System.InvalidOperationException("Rally performance contract failed (280 km/h, 2.5 s Turbo, 50 s fixed fuel, reverse).");
-            if (sportBike.maximumSpeedKmh < 355f || sportBike.maximumSpeedKmh > 365f ||
-                sportBike.zeroToHundredSeconds < 2.35f || sportBike.zeroToHundredSeconds > 2.65f ||
+                throw new System.InvalidOperationException("Rally traction-limited flat performance, fuel or reverse contract failed.");
+            if (sportBike.maximumSpeedKmh < sportBike.resolvedTopSpeedKmh * .70f ||
+                sportBike.maximumSpeedKmh > sportBike.resolvedTopSpeedKmh * 1.03f ||
+                sportBike.zeroToHundredSeconds <= 0f || sportBike.zeroToHundredSeconds > 15f ||
                 sportBike.fuelDurationSeconds < 44.9f || sportBike.fuelDurationSeconds > 45.1f ||
                 sportBike.reverseSpeedKmh > -10f)
                 throw new System.InvalidOperationException(
-                    "Sport Bike performance contract failed (360 km/h, 2.5 s, 45 s fuel, working reverse).");
+                    "Sport Bike traction-limited flat performance, fuel or reverse contract failed.");
             Debug.Log($"Vehicle flat validation (fixed 0.02 s) | JEEP max={jeep.maximumSpeedKmh:0.0} km/h, " +
                       $"target={jeep.resolvedTopSpeedKmh:0.0}, grounded={jeep.groundedRatio:P0}, " +
                       $"0-100={jeep.zeroToHundredSeconds:0.00} s, fuel={jeep.fuelDurationSeconds:0.00} s, " +
@@ -2443,8 +2614,10 @@ namespace AnimeHillRacing.Editor
         private static void ValidateAirControlContract(BuiltAssets assets)
         {
             ValidateTuningContract(assets);
-            if (assets.formula.airControlMaxTunes != 0 || assets.formula.GetTuneSlotCount() != 5)
-                throw new System.InvalidOperationException("Formula Air Control must be fixed and absent from tuning.");
+            if (assets.formula.airControlMaxTunes != 0 || assets.formula.GetTuneSlotCount() != 6 ||
+                assets.formula.GetTuneTypeForSlot(5) != VehicleUpgradeType.Downforce)
+                throw new System.InvalidOperationException(
+                    "Formula must expose six tunes with Downforce in slot 6 and no Air Control tune.");
             for (int i = 0; i < assets.formula.GetTuneSlotCount(); i++)
                 if (assets.formula.GetTuneTypeForSlot(i) == VehicleUpgradeType.AirControl)
                     throw new System.InvalidOperationException("Formula tuning UI still exposes Air Control.");
@@ -2481,7 +2654,7 @@ namespace AnimeHillRacing.Editor
                       $"FORMULA 2D gasZ={formulaGas2D:0.000}, brakeZ={formulaBrake2D:0.000} | " +
                       $"FORMULA 3D gasPitch={formulaGas3D:0.000}, brakePitch={formulaBrake3D:0.000} | " +
                       $"limits J={jeepLimit.held:0.00}, F2D={formulaLimit2D.held:0.00}, F3D={formulaLimit3D.held:0.00} rad/s | " +
-                      "mapping=OK, damping=OK, fuel-zero rotation=OK, Formula fixed tuning=OK.");
+                      "mapping=OK, damping=OK, fuel-zero rotation=OK, Formula Downforce slot=OK.");
         }
 
         private struct AirLimitResult
@@ -2560,16 +2733,25 @@ namespace AnimeHillRacing.Editor
         private static void ValidateTuningContract(BuiltAssets assets)
         {
             int[] jeepMax = { 14, 15, 12, 12, 15 };
-            int[] formulaMax = { 20, 20, 20, 20, 25 };
+            int[] formulaMax = { 20, 20, 20, 20, 25, 20 };
             var fresh = new VehicleUpgradeState();
-            for (int i = 0; i < 5; i++)
+            if (assets.jeep.GetTuneSlotCount() != jeepMax.Length ||
+                assets.formula.GetTuneSlotCount() != formulaMax.Length)
+                throw new System.InvalidOperationException("Jeep or Formula tune-slot count is invalid.");
+            for (int i = 0; i < jeepMax.Length; i++)
             {
                 VehicleUpgradeType jeepType = assets.jeep.GetTuneTypeForSlot(i);
-                VehicleUpgradeType formulaType = assets.formula.GetTuneTypeForSlot(i);
                 if (assets.jeep.GetMaxTunes(jeepType) != jeepMax[i] ||
-                    assets.formula.GetMaxTunes(formulaType) != formulaMax[i] ||
-                    fresh.GetTune(jeepType) != 1 || fresh.GetTune(formulaType) != 1)
+                    fresh.GetTune(jeepType) != 1)
                     throw new System.InvalidOperationException("Vehicle tuning slots, maxima or fresh Level 1 defaults are invalid.");
+            }
+            for (int i = 0; i < formulaMax.Length; i++)
+            {
+                VehicleUpgradeType formulaType = assets.formula.GetTuneTypeForSlot(i);
+                if (assets.formula.GetMaxTunes(formulaType) != formulaMax[i] ||
+                    fresh.GetTune(formulaType) != 1)
+                    throw new System.InvalidOperationException(
+                        "Formula tuning slots, maxima or fresh Level 1 defaults are invalid.");
             }
             VehicleUpgradeType[] rallyTypes = { VehicleUpgradeType.Engine, VehicleUpgradeType.Turbo,
                 VehicleUpgradeType.Suspension, VehicleUpgradeType.Grip, VehicleUpgradeType.Fuel };
@@ -2591,7 +2773,173 @@ namespace AnimeHillRacing.Editor
                 ResolveMaximumGrip(assets.jeep) != 300 || ResolveMaximumGrip(assets.formula) != 520 ||
                 ResolveMaximumGrip(assets.rally) != 750 || ResolveMaximumGrip(assets.sportBike) != 500)
                 throw new System.InvalidOperationException("Global 0-1000 Grip contract is invalid.");
-            Debug.Log("Tuning validation: all fresh tunes=Level 1; Grip max Jeep/Formula/Rally/Sport=300/520/750/500 over 1000.");
+            ValidateUpgradeCurvesAndCosts(assets);
+            ValidateGripAuthority(assets);
+            ValidateFormulaDownforce(assets.formula);
+            Debug.Log("Tuning validation: all fresh tunes=Level 1; Formula has six tunes; " +
+                      "Grip max Jeep/Formula/Rally/Sport=300/520/750/500 over 1000.");
+        }
+
+        private static void ValidateUpgradeCurvesAndCosts(BuiltAssets assets)
+        {
+            VehicleDefinition[] definitions = { assets.jeep, assets.formula, assets.rally, assets.sportBike };
+            for (int d = 0; d < definitions.Length; d++)
+            {
+                VehicleDefinition definition = definitions[d];
+                for (int slot = 0; slot < definition.GetTuneSlotCount(); slot++)
+                {
+                    VehicleUpgradeType type = definition.GetTuneTypeForSlot(slot);
+                    int maximum = definition.GetMaxTunes(type);
+                    float earlyGain = VehicleDefinition.UpgradeProgress(2, maximum) -
+                                      VehicleDefinition.UpgradeProgress(1, maximum);
+                    int middle = Mathf.Clamp((maximum + 1) / 2, 2, maximum - 1);
+                    float middleGain = VehicleDefinition.UpgradeProgress(middle + 1, maximum) -
+                                       VehicleDefinition.UpgradeProgress(middle, maximum);
+                    float finalGain = VehicleDefinition.UpgradeProgress(maximum, maximum) -
+                                      VehicleDefinition.UpgradeProgress(maximum - 1, maximum);
+                    if (earlyGain <= middleGain || middleGain <= finalGain ||
+                        VehicleDefinition.UpgradeProgress(1, maximum) != 0f ||
+                        VehicleDefinition.UpgradeProgress(maximum, maximum) != 1f)
+                        throw new System.InvalidOperationException(
+                            $"{definition.displayName} {type} does not use exact-endpoint diminishing returns.");
+
+                    int previousCost = -1;
+                    for (int currentLevel = 1; currentLevel < maximum; currentLevel++)
+                    {
+                        int cost = assets.economy.GetCostForNextTune(definition, type, currentLevel);
+                        if (cost <= previousCost)
+                            throw new System.InvalidOperationException(
+                                $"{definition.displayName} {type} cost is not strictly monotonic at Level {currentLevel}.");
+                        previousCost = cost;
+                    }
+                    if (previousCost != assets.economy.FinalCost(definition.archetype))
+                        throw new System.InvalidOperationException(
+                            $"{definition.displayName} final {type} cost is {previousCost}, expected " +
+                            $"{assets.economy.FinalCost(definition.archetype)}.");
+                }
+            }
+            Debug.Log("UPGRADE_CURVES: exact Level 1/max endpoints, diminishing stat gains, strictly " +
+                      "increasing prices, final costs J/F/R/S=5000/15000/10000/20000.");
+        }
+
+        private static void ValidateGripAuthority(BuiltAssets assets)
+        {
+            float groundFriction = assets.groundPhysics.dynamicFriction;
+            if (assets.groundPhysics.frictionCombine != PhysicsMaterialCombine.Multiply ||
+                assets.tirePhysics.frictionCombine != PhysicsMaterialCombine.Multiply)
+                throw new System.InvalidOperationException("Tire and terrain friction must use Multiply.");
+            float low200 = ResolveAtTune(assets.formula, VehicleUpgradeType.Grip, 1).grip * groundFriction;
+            float jeep300 = ResolveAtTune(assets.jeep, VehicleUpgradeType.Grip,
+                assets.jeep.gripMaxTunes).grip * groundFriction;
+            float sport500 = ResolveAtTune(assets.sportBike, VehicleUpgradeType.Grip,
+                assets.sportBike.gripMaxTunes).grip * groundFriction;
+            float formula520 = ResolveAtTune(assets.formula, VehicleUpgradeType.Grip,
+                assets.formula.gripMaxTunes).grip * groundFriction;
+            float rally750 = ResolveAtTune(assets.rally, VehicleUpgradeType.Grip,
+                assets.rally.gripMaxTunes).grip * groundFriction;
+            float testSlopeDemand = Mathf.Tan(22f * Mathf.Deg2Rad);
+            if (low200 >= testSlopeDemand || !(low200 < jeep300 && jeep300 < sport500 &&
+                sport500 < formula520 && formula520 < rally750) || rally750 >= 2f)
+                throw new System.InvalidOperationException(
+                    "Grip physics does not preserve low-level slip, ordered improvement and a finite maximum.");
+            float lowSlide = SimulatePassiveSlopeSlide(ResolveAtTune(assets.formula,
+                VehicleUpgradeType.Grip, 1).grip, groundFriction, 30f);
+            float mediumSlide = SimulatePassiveSlopeSlide(ResolveAtTune(assets.formula,
+                VehicleUpgradeType.Grip, assets.formula.gripMaxTunes).grip, groundFriction, 30f);
+            if (lowSlide < .25f || mediumSlide > .15f)
+                throw new System.InvalidOperationException(
+                    $"Real 30-degree PhysX slope test failed: Grip200 slide={lowSlide:0.00}m, " +
+                    $"Grip520 slide={mediumSlide:0.00}m.");
+            Debug.Log($"GRIP_SLOPE_TEST 22deg: Grip200 mu={low200:0.000} < demand={testSlopeDemand:0.000} " +
+                      $"(analytical slip); real 30deg slide Grip200={lowSlide:0.00}m, " +
+                      $"Grip520={mediumSlide:0.00}m; " +
+                      $"maxima J300={jeep300:0.000}, S500={sport500:0.000}, " +
+                      $"F520={formula520:0.000}, R750={rally750:0.000}; no hidden friction floor.");
+        }
+
+        private static float SimulatePassiveSlopeSlide(float tireGrip, float groundGrip,
+            float slopeDegrees)
+        {
+            NewScene();
+            SimulationMode previousMode = Physics.simulationMode;
+            Physics.simulationMode = SimulationMode.Script;
+            PhysicsMaterial groundMaterial = new PhysicsMaterial("Slope Audit Ground")
+            {
+                dynamicFriction = groundGrip,
+                staticFriction = groundGrip,
+                frictionCombine = PhysicsMaterialCombine.Multiply,
+                bounciness = 0f
+            };
+            PhysicsMaterial tireMaterial = new PhysicsMaterial("Slope Audit Tire")
+            {
+                dynamicFriction = tireGrip,
+                staticFriction = tireGrip * 1.04f,
+                frictionCombine = PhysicsMaterialCombine.Multiply,
+                bounciness = 0f
+            };
+            GameObject slope = new GameObject($"{slopeDegrees:0} Degree Grip Audit Slope");
+            slope.transform.rotation = Quaternion.Euler(0f, 0f, slopeDegrees);
+            BoxCollider slopeCollider = slope.AddComponent<BoxCollider>();
+            slopeCollider.size = new Vector3(30f, 1f, 8f);
+            slopeCollider.sharedMaterial = groundMaterial;
+            GameObject bodyObject = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            bodyObject.name = "Grip Audit Body";
+            bodyObject.transform.rotation = slope.transform.rotation;
+            bodyObject.transform.position = slope.transform.TransformPoint(Vector3.up * 1.01f);
+            BoxCollider bodyCollider = bodyObject.GetComponent<BoxCollider>();
+            bodyCollider.sharedMaterial = tireMaterial;
+            Rigidbody auditBody = bodyObject.AddComponent<Rigidbody>();
+            auditBody.mass = 100f;
+            auditBody.constraints = RigidbodyConstraints.FreezeRotation |
+                                    RigidbodyConstraints.FreezePositionZ;
+            auditBody.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+            auditBody.sleepThreshold = 0f;
+            Physics.SyncTransforms();
+            Vector3 start = auditBody.position;
+            Vector3 uphill = slope.transform.right;
+            // Start in the dynamic-friction regime so the audit cannot be hidden by an initial
+            // sleeping/static-contact island before gravity has resolved the slope tangent.
+            auditBody.linearVelocity = -uphill * .05f;
+            auditBody.WakeUp();
+            for (int i = 0; i < 150; i++) Physics.Simulate(.02f);
+            float downhillDistance = Mathf.Max(0f, -Vector3.Dot(auditBody.position - start, uphill));
+            Object.DestroyImmediate(bodyObject);
+            Object.DestroyImmediate(slope);
+            Object.DestroyImmediate(groundMaterial);
+            Object.DestroyImmediate(tireMaterial);
+            Physics.simulationMode = previousMode;
+            return downhillDistance;
+        }
+
+        private static void ValidateFormulaDownforce(VehicleDefinition formula)
+        {
+            const float auditSpeed = 25f;
+            int middleLevel = 10;
+            ResolvedVehicleStats level1 = ResolveAtTune(formula, VehicleUpgradeType.Downforce, 1);
+            ResolvedVehicleStats level10 = ResolveAtTune(formula, VehicleUpgradeType.Downforce, middleLevel);
+            ResolvedVehicleStats level20 = ResolveAtTune(formula, VehicleUpgradeType.Downforce,
+                formula.downforceMaxTunes);
+            float a1 = VehicleController.EvaluateAerodynamicDownforceAcceleration(formula, level1, auditSpeed);
+            float a10 = VehicleController.EvaluateAerodynamicDownforceAcceleration(formula, level10, auditSpeed);
+            float a20 = VehicleController.EvaluateAerodynamicDownforceAcceleration(formula, level20, auditSpeed);
+            float airtime1 = 16f / (Physics.gravity.magnitude + a1);
+            float airtime10 = 16f / (Physics.gravity.magnitude + a10);
+            float airtime20 = 16f / (Physics.gravity.magnitude + a20);
+            if (!(a1 < a10 && a10 < a20) || !(airtime1 > airtime10 && airtime10 > airtime20) ||
+                a20 > formula.maximumDownforceAcceleration + .001f)
+                throw new System.InvalidOperationException(
+                    "Formula Downforce Levels 1/10/20 do not reduce airtime monotonically.");
+            Debug.Log($"FORMULA_DOWNFORCE_TEST @ {auditSpeed:0}m/s: L1={a1:0.00}m/s2/" +
+                      $"{airtime1:0.000}s, L10={a10:0.00}/{airtime10:0.000}s, " +
+                      $"L20={a20:0.00}/{airtime20:0.000}s; applied downward on ground and in air.");
+        }
+
+        private static ResolvedVehicleStats ResolveAtTune(VehicleDefinition definition,
+            VehicleUpgradeType type, int level)
+        {
+            var state = new VehicleUpgradeState();
+            state.SetTune(type, level);
+            return definition.Resolve(state);
         }
 
         private static int ResolveMaximumGrip(VehicleDefinition definition)
@@ -2744,8 +3092,10 @@ namespace AnimeHillRacing.Editor
             // when the rounded body skims terrain during a hard landing, so keep the body frictionless.
             assets.chassisPhysics = PhysicsMaterialAsset("VehicleBodyLowBounce", 0f, 0f);
             assets.groundPhysics = PhysicsMaterialAsset("TerrainStable", .72f, 0f);
+            assets.groundPhysics.frictionCombine = PhysicsMaterialCombine.Multiply;
+            EditorUtility.SetDirty(assets.groundPhysics);
             assets.tirePhysics = PhysicsMaterialAsset("VehicleTireArcade", 1f, 0f);
-            assets.tirePhysics.frictionCombine = PhysicsMaterialCombine.Maximum;
+            assets.tirePhysics.frictionCombine = PhysicsMaterialCombine.Multiply;
             EditorUtility.SetDirty(assets.tirePhysics);
 
             assets.jeep = LoadOrCreate<VehicleDefinition>(Root + "/VehicleData/MainVehicle.asset");
@@ -2776,9 +3126,9 @@ namespace AnimeHillRacing.Editor
             assets.jeep.suspension.hardStopSpringMultiplier = 8f;
             assets.jeep.suspension.maximumAcceleration = 24f;
             assets.jeep.suspension.maximumReboundAcceleration = 3f;
-            assets.jeep.grip.minGrip = 1.05f; assets.jeep.grip.maxGrip = 1.40f;
-            assets.jeep.grip.slipThreshold = .20f; assets.jeep.grip.slidingGripMultiplier = .68f;
-            assets.jeep.grip.tractionRecoveryPerSecond = 4.5f;
+            assets.jeep.grip.minGrip = .14f; assets.jeep.grip.maxGrip = 2.20f;
+            assets.jeep.grip.slipThreshold = .16f; assets.jeep.grip.slidingGripMultiplier = .38f;
+            assets.jeep.grip.tractionRecoveryPerSecond = 3.2f;
             assets.jeep.engine.minTorqueNm = 155f; assets.jeep.engine.maxTorqueNm = 230f;
             assets.jeep.fuel.capacityUnits = 100f; assets.jeep.fuel.minimumRunDurationSeconds = 15f;
             assets.jeep.fuel.maximumRunDurationSeconds = 30f; assets.jeep.fuel.referenceRunDurationSeconds = 30f;
@@ -2815,7 +3165,7 @@ namespace AnimeHillRacing.Editor
             assets.formula.archetype = VehicleArchetype.Formula; assets.formula.previewSprite = assets.formulaBody;
             assets.formula.engineMaxTunes = 20; assets.formula.accelerationMaxTunes = 20;
             assets.formula.suspensionMaxTunes = 20; assets.formula.gripMaxTunes = 20;
-            assets.formula.airControlMaxTunes = 0; assets.formula.downforceMaxTunes = 0; assets.formula.fuelMaxTunes = 25;
+            assets.formula.airControlMaxTunes = 0; assets.formula.downforceMaxTunes = 20; assets.formula.fuelMaxTunes = 25;
             assets.formula.tuneTargets = CreateFormulaTuneTargets();
             assets.formula.mass = 780f; assets.formula.wheelMass = 28f; assets.formula.wheelRadius = .48f;
             assets.formula.engine.speedTorqueCurve = ArcadeSpeedTorqueCurve();
@@ -2826,6 +3176,8 @@ namespace AnimeHillRacing.Editor
             assets.formula.brakeForce = 18000f; assets.formula.reverseForce = 6000f;
             assets.formula.accelerationForceCalibration = 1.01f;
             assets.formula.airControlTorque = 9000f;
+            assets.formula.downforceReferenceSpeedMps = 30f;
+            assets.formula.maximumDownforceAcceleration = 14f;
             assets.formula.maxAirAngularVelocity = 3.5f; assets.formula.airAngularAcceleration = 24f;
             assets.formula.airAngularDamping = 1.5f; assets.formula.centerOfMass = new Vector3(0f, -.30f, 0f);
             assets.formula.engine.minTorqueNm = 300f; assets.formula.engine.maxTorqueNm = 700f;
@@ -2843,9 +3195,9 @@ namespace AnimeHillRacing.Editor
             assets.formula.suspension.hardStopSpringMultiplier = 10f;
             assets.formula.suspension.maximumAcceleration = 20f;
             assets.formula.suspension.maximumReboundAcceleration = .5f;
-            assets.formula.grip.minGrip = 1.90f; assets.formula.grip.maxGrip = 1.90f;
-            assets.formula.grip.slipThreshold = .14f; assets.formula.grip.slidingGripMultiplier = .74f;
-            assets.formula.grip.tractionRecoveryPerSecond = 7f;
+            assets.formula.grip.minGrip = .14f; assets.formula.grip.maxGrip = 2.20f;
+            assets.formula.grip.slipThreshold = .13f; assets.formula.grip.slidingGripMultiplier = .46f;
+            assets.formula.grip.tractionRecoveryPerSecond = 4.2f;
             assets.formula.grip.rollingResistance = .012f; assets.formula.grip.aerodynamicDrag = .28f;
             assets.formula.fuel.capacityUnits = 100f; assets.formula.fuel.minimumRunDurationSeconds = 20f;
             assets.formula.fuel.maximumRunDurationSeconds = 45f; assets.formula.fuel.referenceRunDurationSeconds = 45f;
@@ -2899,9 +3251,9 @@ namespace AnimeHillRacing.Editor
             assets.rally.suspension.hardStopSpringMultiplier = 9f;
             assets.rally.suspension.maximumAcceleration = 26f;
             assets.rally.suspension.maximumReboundAcceleration = .5f;
-            assets.rally.grip.minGrip = 1.25f; assets.rally.grip.maxGrip = 1.70f;
-            assets.rally.grip.slipThreshold = .17f; assets.rally.grip.slidingGripMultiplier = .75f;
-            assets.rally.grip.tractionRecoveryPerSecond = 6.5f;
+            assets.rally.grip.minGrip = .14f; assets.rally.grip.maxGrip = 2.20f;
+            assets.rally.grip.slipThreshold = .15f; assets.rally.grip.slidingGripMultiplier = .52f;
+            assets.rally.grip.tractionRecoveryPerSecond = 5f;
             assets.rally.grip.rollingResistance = .014f; assets.rally.grip.aerodynamicDrag = .34f;
             assets.rally.fuel.capacityUnits = 100f; assets.rally.fuel.minimumRunDurationSeconds = 50f;
             assets.rally.fuel.maximumRunDurationSeconds = 50f; assets.rally.fuel.referenceRunDurationSeconds = 50f;
@@ -2936,7 +3288,7 @@ namespace AnimeHillRacing.Editor
             assets.sportBike.mass = 260f;
             assets.sportBike.wheelMass = 15f;
             assets.sportBike.wheelRadius = .38f;
-            assets.sportBike.halfWheelbase = 1.58f;
+            assets.sportBike.halfWheelbase = 1.39f;
             assets.sportBike.halfTrack = .46f;
             assets.sportBike.topSpeedMps = 360f / 3.6f;
             assets.sportBike.brakeForce = 9800f;
@@ -2957,11 +3309,11 @@ namespace AnimeHillRacing.Editor
                 new[] { 3.60f, 2.65f, 2.08f, 1.70f, 1.44f, 1.25f, 1.10f };
             assets.sportBike.transmission.finalDrive = 3.05f;
             assets.sportBike.suspension.restLength = .40f;
-            assets.sportBike.suspension.minTravel = .15f;
+            assets.sportBike.suspension.minTravel = .165f;
             assets.sportBike.suspension.maxTravel = .27f;
             assets.sportBike.suspension.compressionTravelRatio = .88f;
             assets.sportBike.suspension.targetSag01 = .29f;
-            assets.sportBike.suspension.stiffnessTuneScale = new Vector2(.88f, 1.12f);
+            assets.sportBike.suspension.stiffnessTuneScale = new Vector2(.78f, 1.30f);
             assets.sportBike.suspension.dampingRatio = new Vector2(.94f, 1.08f);
             assets.sportBike.suspension.springMin = 18000f;
             assets.sportBike.suspension.springMax = 26000f;
@@ -2972,11 +3324,11 @@ namespace AnimeHillRacing.Editor
             assets.sportBike.suspension.hardStopSpringMultiplier = 9f;
             assets.sportBike.suspension.maximumAcceleration = 24f;
             assets.sportBike.suspension.maximumReboundAcceleration = 1.2f;
-            assets.sportBike.grip.minGrip = 1.02f;
-            assets.sportBike.grip.maxGrip = 1.65f;
-            assets.sportBike.grip.slipThreshold = .15f;
-            assets.sportBike.grip.slidingGripMultiplier = .72f;
-            assets.sportBike.grip.tractionRecoveryPerSecond = 6.8f;
+            assets.sportBike.grip.minGrip = .14f;
+            assets.sportBike.grip.maxGrip = 2.20f;
+            assets.sportBike.grip.slipThreshold = .14f;
+            assets.sportBike.grip.slidingGripMultiplier = .44f;
+            assets.sportBike.grip.tractionRecoveryPerSecond = 4.3f;
             assets.sportBike.grip.rollingResistance = .010f;
             assets.sportBike.grip.aerodynamicDrag = .20f;
             assets.sportBike.fuel.capacityUnits = 100f;
@@ -2997,14 +3349,16 @@ namespace AnimeHillRacing.Editor
                 Customization("sport-bike-gold-wheel", "GOLD WHEEL", assets.sportBikeGoldWheel, false, 500,
                     VisibleSpriteDiameter(assets.sportBikeGoldWheel))
             };
-            assets.sportBike.visualWidth = 3.75f;
+            assets.sportBike.visualWidth = 3.30f;
+            // Both raw bike skins point left. Flip only their renderer so the bike faces the
+            // rightward direction of travel while physics, wheel mounts and drivetrain stay unchanged.
             assets.sportBike.flipBodyX = true;
             assets.sportBike.bodyVisualOffset = new Vector2(0f, .10f);
-            assets.sportBike.rearWheelVisualPosition = new Vector2(-1.59f, -.48f);
-            assets.sportBike.frontWheelVisualPosition = new Vector2(1.56f, -.49f);
-            assets.sportBike.wheelVisualDiameter = .85f;
-            assets.sportBike.rearWheelVisualDiameter = .88f;
-            assets.sportBike.frontWheelVisualDiameter = .82f;
+            assets.sportBike.rearWheelVisualPosition = new Vector2(-1.40f, -.48f);
+            assets.sportBike.frontWheelVisualPosition = new Vector2(1.37f, -.49f);
+            assets.sportBike.wheelVisualDiameter = .93f;
+            assets.sportBike.rearWheelVisualDiameter = .96f;
+            assets.sportBike.frontWheelVisualDiameter = .90f;
             assets.sportBike.driverPose = CreateSportBikeDriverPose();
             EditorUtility.SetDirty(assets.sportBike);
 
@@ -3042,7 +3396,7 @@ namespace AnimeHillRacing.Editor
             assets.countryside.supportedGameMode = GameModeType.Adventure2_5D;
             assets.countryside.seed = 18472;
             assets.countryside.coinRoute = assets.countrysideCoinRoute;
-            assets.countryside.amplitude = 15.5f;
+            assets.countryside.amplitude = 20f;
             assets.countryside.frequency = 0.019f;
             assets.countryside.introductoryAmplitude = 0.12f;
             assets.countryside.introEndDistance = 500f;
@@ -3053,13 +3407,13 @@ namespace AnimeHillRacing.Editor
                 new Keyframe(0f, 0f), new Keyframe(0.25f, 0.22f), new Keyframe(0.60f, 0.55f),
                 new Keyframe(0.80f, 0.82f), new Keyframe(1f, 1f));
             assets.countryside.maximumDifficulty = 1f;
-            assets.countryside.sectionLength = 64f;
-            assets.countryside.technicalSectionChance = 0.42f;
-            assets.countryside.technicalDetailStrength = 0.70f;
-            assets.countryside.flatFeatureWeight = 0.06f;
-            assets.countryside.hillFeatureWeight = 0.47f;
-            assets.countryside.valleyFeatureWeight = 0.25f;
-            assets.countryside.technicalFeatureWeight = 0.22f;
+            assets.countryside.sectionLength = 52f;
+            assets.countryside.technicalSectionChance = 0.48f;
+            assets.countryside.technicalDetailStrength = 0.78f;
+            assets.countryside.flatFeatureWeight = 0.03f;
+            assets.countryside.hillFeatureWeight = 0.49f;
+            assets.countryside.valleyFeatureWeight = 0.29f;
+            assets.countryside.technicalFeatureWeight = 0.19f;
             assets.countryside.maxSlopeAngle = 32f;
             assets.countryside.maxHeightDeltaPerSample = Mathf.Tan(32f * Mathf.Deg2Rad) * (80f / 48f);
             assets.countryside.minimumValleyWidth = 20f;
@@ -3080,6 +3434,7 @@ namespace AnimeHillRacing.Editor
             assets.countrysideEnvironment.mountains = AssetDatabase.LoadAssetAtPath<Sprite>(CountrysideMountainsPath);
             assets.countrysideEnvironment.mountainParallaxX = .20f;
             assets.countrysideEnvironment.mountainParallaxY = .04f;
+            assets.countrysideEnvironment.lockVerticalToCamera = false;
             assets.countrysideEnvironment.mountainVisualHeight = 17f;
             assets.countrysideEnvironment.mountainBaseY = -4f;
             assets.countrysideEnvironment.pooledMountainSegments = 5;
@@ -3094,6 +3449,7 @@ namespace AnimeHillRacing.Editor
             assets.neonCityEnvironment.mountains = assets.neonBackground;
             assets.neonCityEnvironment.mountainParallaxX = .18f;
             assets.neonCityEnvironment.mountainParallaxY = .035f;
+            assets.neonCityEnvironment.lockVerticalToCamera = true;
             assets.neonCityEnvironment.mountainVisualHeight = 15.5f;
             assets.neonCityEnvironment.mountainBaseY = -3.2f;
             assets.neonCityEnvironment.pooledMountainSegments = 5;
@@ -3108,9 +3464,9 @@ namespace AnimeHillRacing.Editor
             assets.neonCity.coinRoute = assets.countrysideCoinRoute;
             assets.neonCity.elevationProfile = null;
             assets.neonCity.baseHeight = 0f;
-            assets.neonCity.amplitude = 22f;
-            assets.neonCity.neonMaximumAmplitude = 28f;
-            assets.neonCity.neonAmplitudeSaturationCycles = 3f;
+            assets.neonCity.amplitude = 32f;
+            assets.neonCity.neonMaximumAmplitude = 42f;
+            assets.neonCity.neonAmplitudeSaturationCycles = 2f;
             assets.neonCity.frequency = .0105f;
             assets.neonCity.introductoryAmplitude = .45f;
             assets.neonCity.introEndDistance = 500f;
@@ -3118,20 +3474,20 @@ namespace AnimeHillRacing.Editor
             assets.neonCity.normalEndDistance = 12000f;
             assets.neonCity.hardEndDistance = 24000f;
             assets.neonCity.maximumDifficulty = 1f;
-            assets.neonCity.sectionLength = 92f;
+            assets.neonCity.sectionLength = 70f;
             assets.neonCity.recoveryEverySections = 4;
-            assets.neonCity.technicalSectionChance = .20f;
-            assets.neonCity.technicalDetailStrength = .34f;
-            assets.neonCity.flatFeatureWeight = .24f;
-            assets.neonCity.hillFeatureWeight = .48f;
-            assets.neonCity.valleyFeatureWeight = .16f;
-            assets.neonCity.technicalFeatureWeight = .12f;
-            assets.neonCity.maxSlopeAngle = 28f;
-            assets.neonCity.maxHeightDeltaPerSample = Mathf.Tan(28f * Mathf.Deg2Rad) * (80f / 48f);
-            assets.neonCity.minimumValleyWidth = 38f;
+            assets.neonCity.technicalSectionChance = .58f;
+            assets.neonCity.technicalDetailStrength = .85f;
+            assets.neonCity.flatFeatureWeight = .03f;
+            assets.neonCity.hillFeatureWeight = .54f;
+            assets.neonCity.valleyFeatureWeight = .25f;
+            assets.neonCity.technicalFeatureWeight = .18f;
+            assets.neonCity.maxSlopeAngle = 38f;
+            assets.neonCity.maxHeightDeltaPerSample = Mathf.Tan(38f * Mathf.Deg2Rad) * (80f / 48f);
+            assets.neonCity.minimumValleyWidth = 24f;
             assets.neonCity.minimumLandingLength = 26f;
-            assets.neonCity.maximumCrestSharpness = 4f;
-            assets.neonCity.smoothingPasses = 2;
+            assets.neonCity.maximumCrestSharpness = 7f;
+            assets.neonCity.smoothingPasses = 1;
             assets.neonCity.initialFuelGap = 55f;
             assets.neonCity.fuelGapIncrease = 10f;
             assets.neonCity.fuelPlacementSearchRadius = 28f;
@@ -3156,6 +3512,7 @@ namespace AnimeHillRacing.Editor
                 rampAngleDegrees = 20f,
                 landingLength = 26f,
                 recoveryLength = 48f,
+                postRecoveryBlendLength = 50f,
                 basePoolLength = 18f,
                 minimumPoolLength = 16f,
                 maximumPoolLength = 34f,
@@ -3225,7 +3582,16 @@ namespace AnimeHillRacing.Editor
             EditorUtility.SetDirty(assets.testCircuit);
 
             assets.economy = LoadOrCreate<UpgradeEconomyDefinition>(Root + "/VehicleData/UpgradeEconomy.asset");
-            assets.economy.costs = new[] { 100, 200, 350, 550, 800, 1150, 1550, 2050, 2700, 3500, 4500, 5700, 7200, 9000, 11200, 13800, 16800, 20200, 24000, 28200, 32800, 37800, 43200, 49000, 55200 };
+            assets.economy.jeepFinalUpgradeCost = 5000;
+            assets.economy.formulaFinalUpgradeCost = 15000;
+            assets.economy.rallyFinalUpgradeCost = 10000;
+            assets.economy.sportBikeFinalUpgradeCost = 20000;
+            assets.economy.jeepFirstUpgradeCost = 100;
+            assets.economy.formulaFirstUpgradeCost = 250;
+            assets.economy.rallyFirstUpgradeCost = 180;
+            assets.economy.sportBikeFirstUpgradeCost = 300;
+            assets.economy.costExponent = 1.45f;
+            assets.economy.roundingStep = 25;
             EditorUtility.SetDirty(assets.economy);
             assets.catalog = LoadOrCreate<GameCatalog>(Root + "/VehicleData/GameCatalog.asset");
             assets.catalog.maps = new MapDefinition[]
@@ -3280,14 +3646,15 @@ namespace AnimeHillRacing.Editor
             Button next = CreateButton("Next Vehicle", safe, ">", new Vector2(470f, -45f),
                 new Vector2(88f, 110f));
 
-            Button vehicle = CreateSpriteButton("Vehicle", safe, assets.vehicleButton, new Vector2(0f, 0f),
-                new Vector2(245f, 64f), new Vector2(430f, 150f));
-            Button tuning = CreateSpriteButton("Tuning", safe, assets.tuningButton, new Vector2(0f, 0f),
-                new Vector2(675f, 64f), new Vector2(400f, 150f));
-            Button upgrade = CreateSpriteButton("Upgrade", safe, assets.upgradeButton, new Vector2(1f, 0f),
-                new Vector2(-665f, 64f), new Vector2(400f, 150f));
-            Button race = CreateSpriteButton("Race", safe, assets.raceButton, new Vector2(1f, 0f),
-                new Vector2(-225f, 70f), new Vector2(440f, 164f));
+            // Quarter-width anchors keep the four footer actions separated on both 16:9 and 4:3 canvases.
+            Button vehicle = CreateSpriteButton("Vehicle", safe, assets.vehicleButton, new Vector2(.125f, 0f),
+                new Vector2(0f, 64f), new Vector2(350f, 150f));
+            Button tuning = CreateSpriteButton("Tuning", safe, assets.tuningButton, new Vector2(.375f, 0f),
+                new Vector2(0f, 64f), new Vector2(350f, 150f));
+            Button upgrade = CreateSpriteButton("Upgrade", safe, assets.upgradeButton, new Vector2(.625f, 0f),
+                new Vector2(0f, 64f), new Vector2(350f, 150f));
+            Button race = CreateSpriteButton("Race", safe, assets.raceButton, new Vector2(.875f, 0f),
+                new Vector2(0f, 70f), new Vector2(380f, 164f));
 
             Bind(skins, menu.Skins); Bind(store, menu.Store); Bind(settings, menu.Settings);
             Bind(previous, menu.PreviousVehicle); Bind(next, menu.NextVehicle);
@@ -3367,22 +3734,23 @@ namespace AnimeHillRacing.Editor
                 new Vector2(.97f, .75f), Vector2.zero, Vector2.zero);
             Text tuningCoins = CreateText("Tuning Coins", tuningPanel.transform, "COINS  0", 22, TextAnchor.MiddleRight,
                 new Vector2(.62f, .90f), new Vector2(.98f, .99f), Vector2.zero, Vector2.zero);
-            var tuningNames = new Text[5]; var tuningLevels = new Text[5]; var tuningValues = new Text[5];
-            var tuningCosts = new Text[5]; var tuningButtons = new Button[5];
-            UnityAction[] upgrades = { menu.UpgradeTune0, menu.UpgradeTune1, menu.UpgradeTune2, menu.UpgradeTune3, menu.UpgradeTune4 };
-            for (int i = 0; i < 5; i++)
+            var tuningNames = new Text[6]; var tuningLevels = new Text[6]; var tuningValues = new Text[6];
+            var tuningCosts = new Text[6]; var tuningButtons = new Button[6];
+            UnityAction[] upgrades = { menu.UpgradeTune0, menu.UpgradeTune1, menu.UpgradeTune2,
+                menu.UpgradeTune3, menu.UpgradeTune4, menu.UpgradeTune5 };
+            for (int i = 0; i < tuningNames.Length; i++)
             {
-                float y = 240f - i * 115f;
+                float y = 235f - i * 94f;
                 GameObject row = CreateImage("Tune Row " + (i + 1), tuningPanel.transform,
                     new Color(.065f, .125f, .20f, .98f), new Vector2(.5f, .5f), new Vector2(.5f, .5f),
-                    new Vector2(0f, y), new Vector2(810f, 98f));
+                    new Vector2(0f, y), new Vector2(810f, 82f));
                 tuningNames[i] = CreateText("Name", row.transform, "SPEED", 20, TextAnchor.MiddleLeft,
                     new Vector2(.03f, .50f), new Vector2(.25f, .96f), Vector2.zero, Vector2.zero);
                 tuningLevels[i] = CreateText("Level", row.transform, "LEVEL 1 / 20", 18, TextAnchor.MiddleLeft,
                     new Vector2(.25f, .50f), new Vector2(.48f, .96f), Vector2.zero, Vector2.zero);
                 tuningValues[i] = CreateText("Value", row.transform, "0", 17, TextAnchor.MiddleLeft,
                     new Vector2(.48f, .50f), new Vector2(.69f, .96f), Vector2.zero, Vector2.zero);
-                tuningButtons[i] = CreateButton("Upgrade", row.transform, "UPGRADE", new Vector2(285f, 0f), new Vector2(220f, 64f));
+                tuningButtons[i] = CreateButton("Upgrade", row.transform, "UPGRADE", new Vector2(285f, 0f), new Vector2(220f, 56f));
                 tuningCosts[i] = tuningButtons[i].GetComponentInChildren<Text>(true);
                 Bind(tuningButtons[i], upgrades[i]);
             }
@@ -3497,22 +3865,23 @@ namespace AnimeHillRacing.Editor
 
             GameObject tuningPanel = UIObject("Garage Tuning Panel", safe, new Vector2(.50f, .10f),
                 new Vector2(.98f, .86f), Vector2.zero, Vector2.zero);
-            var tuningNames = new Text[5]; var tuningLevels = new Text[5]; var tuningValues = new Text[5];
-            var tuningCosts = new Text[5]; var tuningButtons = new Button[5];
-            UnityAction[] upgrades = { menu.UpgradeTune0, menu.UpgradeTune1, menu.UpgradeTune2, menu.UpgradeTune3, menu.UpgradeTune4 };
-            for (int i = 0; i < 5; i++)
+            var tuningNames = new Text[6]; var tuningLevels = new Text[6]; var tuningValues = new Text[6];
+            var tuningCosts = new Text[6]; var tuningButtons = new Button[6];
+            UnityAction[] upgrades = { menu.UpgradeTune0, menu.UpgradeTune1, menu.UpgradeTune2,
+                menu.UpgradeTune3, menu.UpgradeTune4, menu.UpgradeTune5 };
+            for (int i = 0; i < tuningNames.Length; i++)
             {
-                float y = 270f - i * 135f;
+                float y = 260f - i * 104f;
                 GameObject row = CreateImage("Tune Row " + (i + 1), tuningPanel.transform,
                     new Color(.065f, .125f, .20f, .98f), new Vector2(.5f, .5f), new Vector2(.5f, .5f),
-                    new Vector2(0f, y), new Vector2(870f, 118f));
-                tuningNames[i] = CreateText("Name", row.transform, "SPEED", 20, TextAnchor.MiddleLeft,
+                    new Vector2(0f, y), new Vector2(870f, 92f));
+                tuningNames[i] = CreateText("Name", row.transform, "SPEED", 19, TextAnchor.MiddleLeft,
                     new Vector2(.02f, .52f), new Vector2(.25f, .96f), Vector2.zero, Vector2.zero);
-                tuningLevels[i] = CreateText("Level", row.transform, "LEVEL 1 / 20", 18, TextAnchor.MiddleLeft,
+                tuningLevels[i] = CreateText("Level", row.transform, "LEVEL 1 / 20", 17, TextAnchor.MiddleLeft,
                     new Vector2(.02f, .06f), new Vector2(.25f, .52f), Vector2.zero, Vector2.zero);
-                tuningValues[i] = CreateText("Value", row.transform, "CURRENT\nNEXT", 16, TextAnchor.MiddleLeft,
+                tuningValues[i] = CreateText("Value", row.transform, "CURRENT\nNEXT", 15, TextAnchor.MiddleLeft,
                     new Vector2(.27f, .05f), new Vector2(.72f, .95f), Vector2.zero, Vector2.zero);
-                tuningButtons[i] = CreateButton("Upgrade", row.transform, "PRICE", new Vector2(330f, 0f), new Vector2(190f, 70f));
+                tuningButtons[i] = CreateButton("Upgrade", row.transform, "PRICE", new Vector2(330f, 0f), new Vector2(190f, 60f));
                 tuningCosts[i] = tuningButtons[i].GetComponentInChildren<Text>(true);
                 Bind(tuningButtons[i], upgrades[i]);
             }
@@ -3606,13 +3975,13 @@ namespace AnimeHillRacing.Editor
             GameObject trackSelector = UIObject("Adventure Track Selector", panels[0].transform,
                 Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             Button previousTrack = CreateButton("Previous Adventure Track", trackSelector.transform, "<",
-                new Vector2(-315f, -300f), new Vector2(76f, 68f));
+                new Vector2(-270f, -300f), new Vector2(76f, 68f));
             Text map = CreateText("Selected Adventure Track", trackSelector.transform,
                 "TRACK\nCOUNTRYSIDE", 23, TextAnchor.MiddleCenter,
                 new Vector2(.5f, .5f), new Vector2(.5f, .5f), new Vector2(0f, -300f),
-                new Vector2(470f, 100f));
+                new Vector2(380f, 100f));
             Button nextTrack = CreateButton("Next Adventure Track", trackSelector.transform, ">",
-                new Vector2(315f, -300f), new Vector2(76f, 68f));
+                new Vector2(270f, -300f), new Vector2(76f, 68f));
             Button continueMode = CreateButton("Continue", panels[0].transform, "CONTINUE",
                 new Vector2(0f, -395f), new Vector2(310f, 72f));
             Bind(previousTrack, menu.PreviousMap); Bind(nextTrack, menu.NextMap);
@@ -3890,7 +4259,7 @@ namespace AnimeHillRacing.Editor
             Transform safe = CreateSafeArea(canvas.transform);
             TimeTrialHUD hud = CreateTimeTrialHud(safe, input);
             ResultsUI results = CreateResults(safe, null, out RawImage resultImage);
-            results.AssignTimeTrial(results.gameObject, results.GetComponentInChildren<Text>(true), manager);
+            results.AssignTimeTrial(manager);
             CanvasGroup controls = CreateRoadControls(safe, input);
             Button respawn = CreateButton("Respawn", controls.transform, "RESPAWN +3s", new Vector2(0f, 310f), new Vector2(270f, 70f));
             Bind(respawn, manager.Respawn);
@@ -3922,7 +4291,7 @@ namespace AnimeHillRacing.Editor
             collider.center = new Vector3(formula ? 0f : rally ? .01f : sportBike ? -.03f : .06f,
                 formula ? .24f : rally ? .33f : sportBike ? .18f : .24f, 0f);
             collider.radius = formula ? .29f : rally ? .38f : sportBike ? .27f : .40f;
-            collider.height = formula ? 4.15f : rally ? 4.05f : sportBike ? 3.35f : 2.90f;
+            collider.height = formula ? 4.15f : rally ? 4.05f : sportBike ? 2.95f : 2.90f;
             collider.sharedMaterial = chassisMaterial;
             root.AddComponent<MovementPlaneConstraint>(); root.AddComponent<FuelSystem>();
             root.AddComponent<EngineController>(); root.AddComponent<TransmissionController>();
@@ -3951,7 +4320,7 @@ namespace AnimeHillRacing.Editor
             collider.direction = 2;
             collider.center = new Vector3(0f, formula ? .38f : rally ? .40f : sportBike ? .30f : .36f, 0f);
             collider.radius = formula ? .62f : rally ? .66f : sportBike ? .48f : .72f;
-            collider.height = formula ? 4.20f : rally ? 4.35f : sportBike ? 3.45f : 3.05f;
+            collider.height = formula ? 4.20f : rally ? 4.35f : sportBike ? 3.05f : 3.05f;
             collider.sharedMaterial = chassisMaterial;
             root.AddComponent<FuelSystem>(); root.AddComponent<EngineController>(); root.AddComponent<TransmissionController>();
             RoadVehicleController controller = root.AddComponent<RoadVehicleController>();
@@ -4262,19 +4631,35 @@ namespace AnimeHillRacing.Editor
         private static ResultsUI CreateResults(Transform safe, GameManager manager, out RawImage resultImage)
         {
             GameObject panel = CreateImage("Results Panel", safe, new Color(0.025f, 0.035f, 0.065f, 0.96f),
-                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1040f, 1000f));
+                new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1540f, 820f));
             Outline resultsOutline = panel.AddComponent<Outline>();
             resultsOutline.effectColor = new Color(.22f, .62f, .94f, .85f);
             resultsOutline.effectDistance = new Vector2(2f, -2f);
-            GameObject photo = UIObject("Result Photo", panel.transform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f),
-                new Vector2(0f, -310f), new Vector2(580f, 580f));
+            Text title = CreateText("Result Title", panel.transform, "DRIVER DOWN", 46,
+                TextAnchor.MiddleCenter, new Vector2(.5f, 1f), new Vector2(.5f, 1f),
+                new Vector2(0f, -62f), new Vector2(1400f, 82f));
+            title.fontStyle = FontStyle.Bold;
+            GameObject photoFrame = CreateImage("Result Photo Frame", panel.transform,
+                new Color(.035f, .08f, .14f, 1f), new Vector2(.5f, .5f), new Vector2(.5f, .5f),
+                new Vector2(-390f, -15f), new Vector2(670f, 650f));
+            Outline photoOutline = photoFrame.AddComponent<Outline>();
+            photoOutline.effectColor = new Color(.18f, .74f, 1f, .9f);
+            photoOutline.effectDistance = new Vector2(2f, -2f);
+            GameObject photo = UIObject("Result Photo", photoFrame.transform, new Vector2(.5f, .5f),
+                new Vector2(.5f, .5f), Vector2.zero, new Vector2(630f, 610f));
             resultImage = photo.AddComponent<RawImage>(); resultImage.color = Color.white;
             resultImage.raycastTarget = false;
-            Text text = CreateText("Results", panel.transform, "RUN OVER", 28, TextAnchor.UpperCenter,
-                new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -730f), new Vector2(940f, 240f));
-            ResultsUI results = panel.AddComponent<ResultsUI>(); results.Assign(panel, text, manager);
-            Button retry = CreateButton("Retry", panel.transform, "RETRY", new Vector2(-230f, -440f), new Vector2(390f, 72f));
-            Button menu = CreateButton("Main Menu", panel.transform, "MAIN MENU", new Vector2(230f, -440f), new Vector2(390f, 72f));
+            AspectRatioFitter photoAspect = photo.AddComponent<AspectRatioFitter>();
+            photoAspect.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
+            photoAspect.aspectRatio = 1f;
+            Text text = CreateText("Result Stats", panel.transform, "DISTANCE", 27, TextAnchor.UpperLeft,
+                new Vector2(.5f, .5f), new Vector2(.5f, .5f), new Vector2(390f, -5f),
+                new Vector2(610f, 590f));
+            text.horizontalOverflow = HorizontalWrapMode.Wrap;
+            text.verticalOverflow = VerticalWrapMode.Overflow;
+            ResultsUI results = panel.AddComponent<ResultsUI>(); results.Assign(panel, title, text, manager);
+            Button retry = CreateButton("Retry", panel.transform, "RETRY", new Vector2(225f, -355f), new Vector2(300f, 72f));
+            Button menu = CreateButton("Main Menu", panel.transform, "HOME", new Vector2(565f, -355f), new Vector2(300f, 72f));
             Bind(retry, results.Retry); Bind(menu, results.Menu); panel.SetActive(false);
             return results;
         }

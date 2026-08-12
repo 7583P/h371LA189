@@ -650,7 +650,9 @@ MonoBehaviour:
   confirmationTime: 1
   maximumVerticalSpeed: 4
   minimumWorldHeight: -8
+  maximumDistanceBelowTerrain: 14
   gameManager: {fileID: 0}
+  terrainProfile: {fileID: 0}
 --- !u!153 &2285177552526559080
 ConfigurableJoint:
   m_ObjectHideFlags: 0

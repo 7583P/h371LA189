@@ -23,7 +23,7 @@ MonoBehaviour:
   hardEndDistance: 24000
   elevationProfile: {fileID: 0}
   baseHeight: 0
-  amplitude: 22
+  amplitude: 32
   frequency: 0.0105
   smoothing: 0.65
   hillSize: 1
@@ -53,20 +53,20 @@ MonoBehaviour:
     m_RotationOrder: 4
   maximumDifficulty: 1
   introductoryAmplitude: 0.45
-  sectionLength: 92
+  sectionLength: 70
   recoveryEverySections: 4
-  technicalSectionChance: 0.2
-  technicalDetailStrength: 0.34
-  flatFeatureWeight: 0.24
-  hillFeatureWeight: 0.48
-  valleyFeatureWeight: 0.16
-  technicalFeatureWeight: 0.12
-  maxSlopeAngle: 28
-  maxHeightDeltaPerSample: 0.88618237
-  minimumValleyWidth: 38
+  technicalSectionChance: 0.58
+  technicalDetailStrength: 0.85
+  flatFeatureWeight: 0.03
+  hillFeatureWeight: 0.54
+  valleyFeatureWeight: 0.25
+  technicalFeatureWeight: 0.18
+  maxSlopeAngle: 38
+  maxHeightDeltaPerSample: 1.3021427
+  minimumValleyWidth: 24
   minimumLandingLength: 26
-  maximumCrestSharpness: 4
-  smoothingPasses: 2
+  maximumCrestSharpness: 7
+  smoothingPasses: 1
   coinDensityPer100m: 9
   initialFuelGap: 55
   fuelGapIncrease: 10
@@ -80,8 +80,8 @@ MonoBehaviour:
   terrainEdgeWidth: 0.18
   terrainVisualDepth: 22
   supportsLiquidExposure: 1
-  neonMaximumAmplitude: 28
-  neonAmplitudeSaturationCycles: 3
+  neonMaximumAmplitude: 42
+  neonAmplitudeSaturationCycles: 2
   liquidChallenges:
     cycleLength: 6000
     challengesPerCycle: 8
@@ -93,6 +93,7 @@ MonoBehaviour:
     rampAngleDegrees: 20
     landingLength: 26
     recoveryLength: 48
+    postRecoveryBlendLength: 50
     basePoolLength: 18
     minimumPoolLength: 16
     maximumPoolLength: 34

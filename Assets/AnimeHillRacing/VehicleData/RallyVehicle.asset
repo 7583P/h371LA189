@@ -32,6 +32,24 @@ MonoBehaviour:
     unlockedByDefault: 1
     gemPrice: 0
     visibleDiameter: 0
+  - optionId: rally-wheel-ghosty
+    displayName: GHOSTY WHEEL
+    sprite: {fileID: 21300000, guid: 1129da19953c42a283655d629a715e93, type: 3}
+    unlockedByDefault: 0
+    gemPrice: 500
+    visibleDiameter: 0
+  - optionId: rally-wheel-sky-blue
+    displayName: SKY BLUE WHEEL
+    sprite: {fileID: 21300000, guid: 28373f10271f4d90ae5f7658cdd7185b, type: 3}
+    unlockedByDefault: 0
+    gemPrice: 500
+    visibleDiameter: 0
+  - optionId: rally-wheel-rainbow
+    displayName: RAINBOW WHEEL
+    sprite: {fileID: 21300000, guid: 1c374a0833864834930fb1c1334142ad, type: 3}
+    unlockedByDefault: 0
+    gemPrice: 500
+    visibleDiameter: 0
   driverPose:
     rootPosition: {x: -0.34, y: 0.28}
     rootScale: 0.9

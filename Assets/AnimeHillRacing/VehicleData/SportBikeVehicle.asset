@@ -50,6 +50,12 @@ MonoBehaviour:
     unlockedByDefault: 0
     gemPrice: 500
     visibleDiameter: 14.08
+  - optionId: sport-bike-wheel-ghosty
+    displayName: GHOSTY WHEEL
+    sprite: {fileID: 21300000, guid: 529eb95340d64bc38e96a34f19afc3be, type: 3}
+    unlockedByDefault: 0
+    gemPrice: 500
+    visibleDiameter: 14.56
   driverPose:
     rootPosition: {x: -0.34, y: 0.39}
     rootScale: 0.82

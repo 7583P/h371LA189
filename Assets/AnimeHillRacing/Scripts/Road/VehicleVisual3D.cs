@@ -46,6 +46,10 @@ namespace AnimeHillRacing.Road
                 {
                     bodyRenderers[i].sprite = skin.sprite;
                     bodyRenderers[i].flipX = definition.flipBodyX ^ (i == 1);
+                    float sourceWidth = bodyRenderers[i].sprite != null
+                        ? bodyRenderers[i].sprite.bounds.size.x : 1f;
+                    bodyRenderers[i].transform.localScale = Vector3.one *
+                        (definition.visualWidth / Mathf.Max(.001f, sourceWidth));
                 }
             if (wheelRenderers != null && wheel != null)
                 for (int i = 0; i < wheelRenderers.Length; i++) if (wheelRenderers[i] != null)

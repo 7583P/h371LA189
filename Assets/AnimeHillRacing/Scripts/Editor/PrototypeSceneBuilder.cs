@@ -278,6 +278,78 @@ namespace AnimeHillRacing.Editor
             Debug.Log("COMPLETE VEHICLE PERFORMANCE AUDIT PASS");
         }
 
+        [MenuItem("Anime Hill Racing/Synchronize Upgrade + Neon Authoritative Data")]
+        public static void SynchronizeUpgradeAndNeonAuthoritativeData()
+        {
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            VehicleDefinition jeep = AssetDatabase.LoadAssetAtPath<VehicleDefinition>(
+                Root + "/VehicleData/MainVehicle.asset");
+            VehicleDefinition formula = AssetDatabase.LoadAssetAtPath<VehicleDefinition>(
+                Root + "/VehicleData/FormulaVehicle.asset");
+            VehicleDefinition rally = AssetDatabase.LoadAssetAtPath<VehicleDefinition>(
+                Root + "/VehicleData/RallyVehicle.asset");
+            VehicleDefinition sportBike = AssetDatabase.LoadAssetAtPath<VehicleDefinition>(
+                Root + "/VehicleData/SportBikeVehicle.asset");
+            MapProfile neon = AssetDatabase.LoadAssetAtPath<MapProfile>(Root + "/MapProfiles/NeonCity.asset");
+            if (jeep == null || formula == null || rally == null || sportBike == null || neon == null)
+                throw new System.InvalidOperationException("Authoritative vehicle or Neon City asset is missing.");
+
+            jeep.tuneTargets = new VehicleDefinition.TuneTargets
+            {
+                engineTopSpeedKmh = CreateProgressionTargets(14, 60f, 100f),
+                accelerationZeroToHundredSeconds = CreateProgressionTargets(15, 12f, 7f),
+                gripRatings = CreateProgressionTargets(12, 50f, 300f),
+                airControlTorque = new[] { 3200f },
+                airborneDownforceAcceleration = new[] { 0f },
+                fuelRunDurationSeconds = CreateProgressionTargets(15, 15f, 30f)
+            };
+            formula.tuneTargets = CreateFormulaTuneTargets();
+            rally.tuneTargets = CreateRallyTuneTargets();
+            sportBike.tuneTargets = CreateSportBikeTuneTargets();
+            neon.liquidChallenges.structuralRunUpPositions =
+                LiquidChallengeSettings.DefaultStructuralRunUpPositions();
+            EditorUtility.SetDirty(jeep);
+            EditorUtility.SetDirty(formula);
+            EditorUtility.SetDirty(rally);
+            EditorUtility.SetDirty(sportBike);
+            EditorUtility.SetDirty(neon);
+            AssetDatabase.SaveAssets();
+            ValidateImplementedUpgradeAndNeonAudit();
+            Debug.Log("AUTHORITATIVE_UPGRADE_NEON_SYNC_OK: exactly four vehicle assets and Neon City data synchronized.");
+        }
+
+        [MenuItem("Anime Hill Racing/Validate Implemented Upgrade + Neon Audit")]
+        public static void ValidateImplementedUpgradeAndNeonAudit()
+        {
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            BuiltAssets assets = LoadImplementedAuditAssets();
+            ValidateTuningContract(assets);
+            ValidateNeonCityContract(assets);
+            ValidateVehiclePerformance(assets);
+            Debug.Log("IMPLEMENTED_UPGRADE_NEON_AUDIT_PASS: curves, physical stats, terrain, seams and liquids validated.");
+        }
+
+        private static BuiltAssets LoadImplementedAuditAssets()
+        {
+            return new BuiltAssets
+            {
+                jeep = AssetDatabase.LoadAssetAtPath<VehicleDefinition>(Root + "/VehicleData/MainVehicle.asset"),
+                formula = AssetDatabase.LoadAssetAtPath<VehicleDefinition>(Root + "/VehicleData/FormulaVehicle.asset"),
+                rally = AssetDatabase.LoadAssetAtPath<VehicleDefinition>(Root + "/VehicleData/RallyVehicle.asset"),
+                sportBike = AssetDatabase.LoadAssetAtPath<VehicleDefinition>(Root + "/VehicleData/SportBikeVehicle.asset"),
+                economy = AssetDatabase.LoadAssetAtPath<UpgradeEconomyDefinition>(
+                    Root + "/VehicleData/UpgradeEconomy.asset"),
+                catalog = AssetDatabase.LoadAssetAtPath<GameCatalog>(Root + "/VehicleData/GameCatalog.asset"),
+                neonCity = AssetDatabase.LoadAssetAtPath<MapProfile>(Root + "/MapProfiles/NeonCity.asset"),
+                neonLiquid = AssetDatabase.LoadAssetAtPath<Sprite>(NeonLiquidPath),
+                neonCaution = AssetDatabase.LoadAssetAtPath<Sprite>(NeonCautionPath),
+                groundPhysics = AssetDatabase.LoadAssetAtPath<PhysicsMaterial>(
+                    Root + "/Materials/TerrainStable.physicMaterial"),
+                tirePhysics = AssetDatabase.LoadAssetAtPath<PhysicsMaterial>(
+                    Root + "/Materials/VehicleTireArcade.physicMaterial")
+            };
+        }
+
         [MenuItem("Anime Hill Racing/Validate Countryside Geometry")]
         public static void ValidateCountrysideGeometry()
         {
@@ -1173,6 +1245,10 @@ namespace AnimeHillRacing.Editor
                 throw new System.InvalidOperationException(
                     "Neon Liquid slowdown, alpha, or Level-1 escape envelope is invalid.");
             float[] repeatedRunUps = new float[LiquidChallengeSettings.RequiredChallengesPerCycle];
+            if (settings.structuralRunUpPositions == null ||
+                settings.structuralRunUpPositions.Length != LiquidChallengeSettings.RequiredChallengesPerCycle)
+                throw new System.InvalidOperationException(
+                    "Neon City requires eight authored structural liquid positions.");
             for (int cycle = 0; cycle < 4; cycle++)
             {
                 int detected = 0;
@@ -1185,6 +1261,11 @@ namespace AnimeHillRacing.Editor
                         Mathf.Abs(layout.poolLength - repeat.poolLength) > .0001f)
                         throw new System.InvalidOperationException("Neon City generation is not deterministic.");
                     float localRunUp = layout.runUpStart - cycle * LiquidChallengeSettings.RequiredCycleLength;
+                    float authoredRunUp = TerrainGenerator.GetNeonLiquidLocalRunUp(profile, slot);
+                    if (Mathf.Abs(localRunUp - authoredRunUp) > .001f ||
+                        TerrainGenerator.GetNeonTemplateSection(localRunUp) != (NeonTemplateSection)slot)
+                        throw new System.InvalidOperationException(
+                            $"Neon City challenge {slot + 1} is not anchored in its authored terrain section.");
                     if (cycle == 0) repeatedRunUps[slot] = localRunUp;
                     else if (Mathf.Abs(localRunUp - repeatedRunUps[slot]) > .001f)
                         throw new System.InvalidOperationException(
@@ -1216,13 +1297,62 @@ namespace AnimeHillRacing.Editor
                 }
                 if (detected != 8)
                     throw new System.InvalidOperationException($"Neon City cycle {cycle}: {detected}/8 liquid challenges.");
-                Debug.Log($"NEON_LIQUID_COUNT Cycle {cycle}: 8/8");
+                Debug.Log($"NEON_LIQUID_COUNT Cycle {cycle}: 8/8 pools + 8/8 Caution markers");
                 Debug.Log($"NEON_POST_LIQUID Cycle {cycle}: 8/8 clean landings, " +
-                          $"{settings.recoveryLength:0}m gently descending recoveries.");
+                          $"{settings.recoveryLength:0}m flat/gently descending recoveries before difficulty resumes.");
             }
 
-            float minimumHeight = float.PositiveInfinity;
-            float maximumHeight = float.NegativeInfinity;
+            float minimumLiquidSpacing = float.PositiveInfinity;
+            float maximumLiquidSpacing = 0f;
+            for (int i = 1; i < repeatedRunUps.Length; i++)
+            {
+                float spacing = repeatedRunUps[i] - repeatedRunUps[i - 1];
+                minimumLiquidSpacing = Mathf.Min(minimumLiquidSpacing, spacing);
+                maximumLiquidSpacing = Mathf.Max(maximumLiquidSpacing, spacing);
+            }
+            if (maximumLiquidSpacing - minimumLiquidSpacing < 200f)
+                throw new System.InvalidOperationException(
+                    "Neon liquid challenges are effectively uniform instead of section-authored.");
+
+            NeonSectionAudit[] sectionAudits = new NeonSectionAudit[TerrainGenerator.NeonTemplateSectionCount];
+            for (int sectionIndex = 0; sectionIndex < sectionAudits.Length; sectionIndex++)
+            {
+                NeonTemplateSection section = (NeonTemplateSection)sectionIndex;
+                sectionAudits[sectionIndex] = AuditNeonSection(profile, section, 2f);
+                NeonSectionAudit audit = sectionAudits[sectionIndex];
+                Debug.Log($"NEON_HEIGHT_PROFILE {sectionIndex + 1}/9 {section} " +
+                          $"{audit.startDistance:0}-{audit.endDistance:0}m | " +
+                          $"height={audit.minimumHeight:0.00}..{audit.maximumHeight:0.00}m | " +
+                          $"net={audit.endHeight - audit.startHeight:+0.00;-0.00;0.00}m | " +
+                          $"turns={audit.directionChanges} | maxSlope={audit.maximumSlope:0.0}deg");
+            }
+            if (sectionAudits[(int)NeonTemplateSection.Warmup].HeightRange < 2f ||
+                sectionAudits[(int)NeonTemplateSection.Warmup].HeightRange > 6f ||
+                sectionAudits[(int)NeonTemplateSection.RollingHills].HeightRange < 30f ||
+                sectionAudits[(int)NeonTemplateSection.RollingHills].directionChanges < 4 ||
+                sectionAudits[(int)NeonTemplateSection.RollingHills].maximumSlope < 24f ||
+                sectionAudits[(int)NeonTemplateSection.GradualDescent].NetHeight > -30f ||
+                sectionAudits[(int)NeonTemplateSection.GradualDescent].directionChanges < 5 ||
+                Mathf.Abs(sectionAudits[(int)NeonTemplateSection.BumpyFlat].NetHeight) > 5f ||
+                sectionAudits[(int)NeonTemplateSection.BumpyFlat].HeightRange < 12f ||
+                sectionAudits[(int)NeonTemplateSection.BumpyFlat].directionChanges < 8 ||
+                sectionAudits[(int)NeonTemplateSection.Staircases].NetHeight < 30f ||
+                sectionAudits[(int)NeonTemplateSection.Staircases].maximumSlope < 20f ||
+                sectionAudits[(int)NeonTemplateSection.RollingDescent].NetHeight > -30f ||
+                sectionAudits[(int)NeonTemplateSection.RollingDescent].directionChanges < 5 ||
+                sectionAudits[(int)NeonTemplateSection.DoubleHill].HeightRange < 35f ||
+                sectionAudits[(int)NeonTemplateSection.DoubleHill].directionChanges < 3 ||
+                sectionAudits[(int)NeonTemplateSection.DoubleHill].maximumSlope < 28f ||
+                sectionAudits[(int)NeonTemplateSection.TechBumps].HeightRange < 24f ||
+                sectionAudits[(int)NeonTemplateSection.TechBumps].directionChanges < 8 ||
+                sectionAudits[(int)NeonTemplateSection.TechBumps].maximumSlope < 32f ||
+                sectionAudits[(int)NeonTemplateSection.Recovery].HeightRange > 6f ||
+                Mathf.Abs(sectionAudits[(int)NeonTemplateSection.Recovery].endHeight - profile.baseHeight) > .01f)
+                throw new System.InvalidOperationException(
+                    "Neon City height profile does not expose the complete authored nine-section grammar.");
+
+            float minimumHeight = TerrainGenerator.SampleNeonTemplateHeight(profile, 0f);
+            float maximumHeight = minimumHeight;
             float maximumSlope = 0f;
             int terrainDirectionChanges = 0;
             int previousDirection = 0;
@@ -1230,8 +1360,8 @@ namespace AnimeHillRacing.Editor
             float previousSlope = 0f;
             bool hasPreviousSlope = false;
             const float terrainAuditStep = 2f;
-            float previousHeight = TerrainGenerator.SampleNeonTemplateHeight(profile, 6000f);
-            for (float distance = 6000f + terrainAuditStep; distance <= 24000f; distance += terrainAuditStep)
+            float previousHeight = TerrainGenerator.SampleNeonTemplateHeight(profile, 0f);
+            for (float distance = terrainAuditStep; distance <= 24000f; distance += terrainAuditStep)
             {
                 float height = TerrainGenerator.SampleNeonTemplateHeight(profile, distance);
                 minimumHeight = Mathf.Min(minimumHeight, height);
@@ -1252,7 +1382,7 @@ namespace AnimeHillRacing.Editor
                 hasPreviousSlope = true;
                 previousHeight = height;
             }
-            for (float local = 200f; local < 6000f; local += 25f)
+            for (float local = 0f; local < 6000f; local += 25f)
             {
                 float cycle0 = (TerrainGenerator.SampleNeonTemplateHeight(profile, local) - profile.baseHeight) /
                                Mathf.Max(.001f, TerrainGenerator.EvaluateNeonAmplitude(profile, local));
@@ -1261,24 +1391,41 @@ namespace AnimeHillRacing.Editor
                 if (Mathf.Abs(cycle0 - cycle1) > .0001f)
                     throw new System.InvalidOperationException("Neon City cycle template does not repeat.");
             }
+            var seamLeftMesh = new Mesh();
+            var seamRightMesh = new Mesh();
+            TerrainGenerator.BuildMesh(seamLeftMesh, profile, 5920f, 80f, 48, 10f, false, 0f, 0f,
+                out _, out float seamLeftHeight, out float seamLeftSlope);
+            TerrainGenerator.BuildMesh(seamRightMesh, profile, 6000f, 80f, 48, 10f, true,
+                seamLeftHeight, seamLeftSlope, out float[] seamRightHeights, out _, out _);
+            float analyticSeamDelta = Mathf.Max(
+                Mathf.Abs(TerrainGenerator.SampleHeight(profile, 5999.9f) -
+                          TerrainGenerator.SampleHeight(profile, 6000f)),
+                Mathf.Abs(TerrainGenerator.SampleHeight(profile, 6000.1f) -
+                          TerrainGenerator.SampleHeight(profile, 6000f)));
+            float meshSeamDelta = Mathf.Abs(seamLeftHeight - seamRightHeights[0]);
+            Object.DestroyImmediate(seamLeftMesh);
+            Object.DestroyImmediate(seamRightMesh);
+
             if (TerrainGenerator.NeonTemplateSectionCount != 9 ||
-                TerrainGenerator.NeonMesoFeatureCount != 28 ||
-                TerrainGenerator.NeonMesoMinimumLength < 80f ||
-                TerrainGenerator.NeonMesoMaximumLength > 240f ||
-                maximumSlope > profile.maxSlopeAngle + .25f || maximumSlope < 30f ||
-                maximumSlopeChange > 7.25f || maximumHeight - minimumHeight < 60f ||
-                terrainDirectionChanges < 90)
+                TerrainGenerator.NeonMesoFeatureCount != 26 ||
+                TerrainGenerator.NeonMesoMinimumLength < 50f ||
+                TerrainGenerator.NeonMesoMaximumLength > 150f ||
+                maximumSlope > profile.maxSlopeAngle + .25f || maximumSlope < 36f ||
+                maximumSlopeChange > 8f || maximumHeight - minimumHeight < 60f ||
+                terrainDirectionChanges < 120 || analyticSeamDelta > .01f || meshSeamDelta > .001f ||
+                TerrainGenerator.IsLiquidGap(profile, 5999f) || TerrainGenerator.IsLiquidGap(profile, 6001f))
                 throw new System.InvalidOperationException(
                     $"Neon terrain grammar invalid: sections={TerrainGenerator.NeonTemplateSectionCount}, " +
                     $"meso={TerrainGenerator.NeonMesoFeatureCount}, slope={maximumSlope:0.0}, " +
                     $"slope-step={maximumSlopeChange:0.0}, " +
                     $"range={minimumHeight:0.0}..{maximumHeight:0.0}m, " +
-                    $"direction-changes={terrainDirectionChanges}.");
-            Debug.Log($"NEON_TERRAIN_PATTERN: 9 varied macro sections plus " +
-                      $"{TerrainGenerator.NeonMesoFeatureCount} authored meso features (isolated/double bumps, " +
-                      $"dips, alternating technical sections and soft steps); repeated 6000m cycle, height " +
-                      $"{minimumHeight:0.0}..{maximumHeight:0.0}m, max slope {maximumSlope:0.0} degrees, " +
-                      $"max 2m slope change={maximumSlopeChange:0.0} degrees, " +
+                    $"direction-changes={terrainDirectionChanges}, seam={meshSeamDelta:0.000000}m.");
+            Debug.Log($"NEON_TERRAIN_PATTERN: Warmup -> Rolling Hills -> Gradual Descent -> Bumpy Flat -> " +
+                      $"Staircases -> Rolling Descent -> Double Hill -> Tech Bumps -> Recovery; " +
+                      $"{TerrainGenerator.NeonMesoFeatureCount} authored 60-150m meso features; repeated " +
+                      $"6000m cycle; height {minimumHeight:0.0}..{maximumHeight:0.0}m; max slope " +
+                      $"{maximumSlope:0.0}deg; max 2m slope change={maximumSlopeChange:0.0}deg; " +
+                      $"5990-6010 seam analytic={analyticSeamDelta:0.000000}m, mesh={meshSeamDelta:0.000000}m; " +
                       $"direction changes={terrainDirectionChanges}.");
 
             var exposure = new LiquidExposureTracker();
@@ -1305,6 +1452,58 @@ namespace AnimeHillRacing.Editor
                 SaveManager.CanAffordGems(499, 500) || !SaveManager.CanAffordGems(500, 500))
                 throw new System.InvalidOperationException("Premium cosmetic Gem thresholds are invalid.");
             Debug.Log("Neon validation: cycles 0-3=8/8, grammar complete, exposure 3+4+3=10s, Gems milestones stable.");
+        }
+
+        private struct NeonSectionAudit
+        {
+            public float startDistance;
+            public float endDistance;
+            public float startHeight;
+            public float endHeight;
+            public float minimumHeight;
+            public float maximumHeight;
+            public float maximumSlope;
+            public int directionChanges;
+            public float HeightRange => maximumHeight - minimumHeight;
+            public float NetHeight => endHeight - startHeight;
+        }
+
+        private static NeonSectionAudit AuditNeonSection(MapProfile profile, NeonTemplateSection section,
+            float step)
+        {
+            Vector2 range = TerrainGenerator.GetNeonSectionRange(section);
+            float sampleStep = Mathf.Max(.25f, step);
+            float startHeight = TerrainGenerator.SampleNeonTemplateHeight(profile, range.x);
+            var result = new NeonSectionAudit
+            {
+                startDistance = range.x,
+                endDistance = range.y,
+                startHeight = startHeight,
+                endHeight = TerrainGenerator.SampleNeonTemplateHeight(profile, range.y),
+                minimumHeight = startHeight,
+                maximumHeight = startHeight
+            };
+            float previousHeight = startHeight;
+            int previousDirection = 0;
+            for (float distance = range.x + sampleStep; distance <= range.y + .001f;
+                 distance += sampleStep)
+            {
+                float clampedDistance = Mathf.Min(distance, range.y);
+                float height = TerrainGenerator.SampleNeonTemplateHeight(profile, clampedDistance);
+                result.minimumHeight = Mathf.Min(result.minimumHeight, height);
+                result.maximumHeight = Mathf.Max(result.maximumHeight, height);
+                float delta = height - previousHeight;
+                int direction = delta > .01f ? 1 : delta < -.01f ? -1 : 0;
+                if (direction != 0)
+                {
+                    if (previousDirection != 0 && direction != previousDirection) result.directionChanges++;
+                    previousDirection = direction;
+                }
+                result.maximumSlope = Mathf.Max(result.maximumSlope,
+                    Mathf.Abs(Mathf.Atan2(delta, sampleStep) * Mathf.Rad2Deg));
+                previousHeight = height;
+            }
+            return result;
         }
 
         private static void ValidateCountrysideTerrainContract(MapProfile profile)
@@ -1885,75 +2084,53 @@ namespace AnimeHillRacing.Editor
             };
         }
 
+        private static float[] CreateProgressionTargets(int maximumLevel, float stockValue, float maximumValue)
+        {
+            float[] values = new float[Mathf.Max(1, maximumLevel)];
+            for (int level = 1; level <= values.Length; level++)
+                values[level - 1] = Mathf.Lerp(stockValue, maximumValue,
+                    VehicleDefinition.UpgradeProgress(level, values.Length));
+            return values;
+        }
+
         private static VehicleDefinition.TuneTargets CreateFormulaTuneTargets()
         {
-            float[] speed = new float[21];
-            float[] acceleration = new float[21];
-            float[] grip = new float[21];
-            float[] downforce = new float[21];
-            float[] fuel = new float[26];
-            for (int i = 0; i < 21; i++)
-            {
-                speed[i] = 160f + i * 7f;
-                acceleration[i] = 5f - i * .15f;
-                grip[i] = Mathf.Lerp(200f, 520f, i / 20f);
-                downforce[i] = 1.5f + i * .6f;
-            }
-            for (int i = 0; i < fuel.Length; i++) fuel[i] = 20f + i;
             return new VehicleDefinition.TuneTargets
             {
-                engineTopSpeedKmh = speed,
-                accelerationZeroToHundredSeconds = acceleration,
-                gripRatings = grip,
+                engineTopSpeedKmh = CreateProgressionTargets(20, 160f, 300f),
+                accelerationZeroToHundredSeconds = CreateProgressionTargets(20, 5f, 2f),
+                gripRatings = CreateProgressionTargets(20, 200f, 520f),
                 airControlTorque = new float[] { 9000f },
-                airborneDownforceAcceleration = downforce,
-                fuelRunDurationSeconds = fuel
+                airborneDownforceAcceleration = CreateProgressionTargets(20, 1.5f, 13.5f),
+                fuelRunDurationSeconds = CreateProgressionTargets(25, 20f, 45f)
             };
         }
 
         private static VehicleDefinition.TuneTargets CreateRallyTuneTargets()
         {
-            float[] speed = new float[20];
-            float[] turbo = new float[20];
-            float[] grip = new float[15];
-            float[] fuel = new float[16];
-            for (int i = 0; i < speed.Length; i++) speed[i] = 145f + i * (135f / 19f);
-            for (int i = 0; i < turbo.Length; i++) turbo[i] = 5.8f - i * (3.3f / 19f);
-            for (int i = 0; i < grip.Length; i++) grip[i] = Mathf.Lerp(167f, 750f, i / 14f);
-            for (int i = 0; i < fuel.Length; i++) fuel[i] = Mathf.Lerp(25f, 50f, i / 15f);
             return new VehicleDefinition.TuneTargets
             {
-                engineTopSpeedKmh = speed,
-                accelerationZeroToHundredSeconds = turbo,
-                gripRatings = grip,
+                engineTopSpeedKmh = CreateProgressionTargets(20, 145f, 280f),
+                accelerationZeroToHundredSeconds = CreateProgressionTargets(20, 5.8f, 2.5f),
+                gripRatings = CreateProgressionTargets(14, 167f, 750f),
                 airControlTorque = new[] { 6500f },
                 airborneDownforceAcceleration = new[] { 0f },
-                fuelRunDurationSeconds = fuel
+                fuelRunDurationSeconds = CreateProgressionTargets(15, 25f, 50f)
             };
         }
 
         private static VehicleDefinition.TuneTargets CreateSportBikeTuneTargets()
         {
-            float[] speed = new float[20];
-            float[] acceleration = new float[20];
-            float[] grip = new float[20];
-            float[] fuel = new float[15];
-            for (int i = 0; i < speed.Length; i++)
-            {
-                float t = i / 19f;
-                speed[i] = Mathf.Lerp(20f, 360f, t);
-                acceleration[i] = Mathf.Lerp(20f, 2.5f, t);
-                grip[i] = Mathf.Lerp(20f, 500f, t);
-            }
-            for (int i = 0; i < fuel.Length; i++) fuel[i] = Mathf.Lerp(15f, 45f, i / 14f);
             return new VehicleDefinition.TuneTargets
             {
-                engineTopSpeedKmh = speed,
-                accelerationZeroToHundredSeconds = acceleration,
-                gripRatings = grip,
+                // Stock must already be usable: it can exceed 100 km/h, has a measurable 0-100,
+                // and retains deliberately weak (but non-zero) traction. Design maxima are unchanged.
+                engineTopSpeedKmh = CreateProgressionTargets(20, 120f, 360f),
+                accelerationZeroToHundredSeconds = CreateProgressionTargets(20, 8f, 2.5f),
+                gripRatings = CreateProgressionTargets(20, 160f, 500f),
                 airControlTorque = new[] { 7600f },
                 airborneDownforceAcceleration = new[] { 0f },
-                fuelRunDurationSeconds = fuel
+                fuelRunDurationSeconds = CreateProgressionTargets(15, 15f, 45f)
             };
         }
 
@@ -2222,6 +2399,7 @@ namespace AnimeHillRacing.Editor
             public float maximumSpeedKmh;
             public float resolvedTopSpeedKmh;
             public float zeroToHundredSeconds;
+            public float targetZeroToHundredSeconds;
             public float fuelDurationSeconds;
             public float reverseSpeedKmh;
             public float groundedRatio;
@@ -2240,36 +2418,37 @@ namespace AnimeHillRacing.Editor
                       $"S={sportBike.maximumSpeedKmh:0.0}/{sportBike.zeroToHundredSeconds:0.00}/{sportBike.reverseSpeedKmh:0.0}/{sportBike.groundedRatio:P0}.");
             if (jeep.maximumSpeedKmh < jeep.resolvedTopSpeedKmh * .94f ||
                 jeep.maximumSpeedKmh > jeep.resolvedTopSpeedKmh * 1.03f ||
+                !AccelerationMatchesDisplayedStat(jeep) ||
                 jeep.fuelDurationSeconds < 29.9f || jeep.fuelDurationSeconds > 30.1f || jeep.reverseSpeedKmh > -10f)
                 throw new System.InvalidOperationException("Jeep traction-limited flat performance, fuel or reverse contract failed.");
             if (formula.maximumSpeedKmh < formula.resolvedTopSpeedKmh * .85f ||
                 formula.maximumSpeedKmh > formula.resolvedTopSpeedKmh * 1.03f ||
-                formula.zeroToHundredSeconds <= 0f || formula.zeroToHundredSeconds > 15f ||
+                !AccelerationMatchesDisplayedStat(formula) ||
                 formula.fuelDurationSeconds < 44.9f || formula.fuelDurationSeconds > 45.1f || formula.reverseSpeedKmh > -10f)
                 throw new System.InvalidOperationException("Formula traction-limited flat performance, fuel or reverse contract failed.");
             if (rally.maximumSpeedKmh < rally.resolvedTopSpeedKmh * .85f ||
                 rally.maximumSpeedKmh > rally.resolvedTopSpeedKmh * 1.03f ||
-                rally.zeroToHundredSeconds <= 0f || rally.zeroToHundredSeconds > 15f ||
+                !AccelerationMatchesDisplayedStat(rally) ||
                 rally.fuelDurationSeconds < 49.9f || rally.fuelDurationSeconds > 50.1f || rally.reverseSpeedKmh > -10f)
                 throw new System.InvalidOperationException("Rally traction-limited flat performance, fuel or reverse contract failed.");
             if (sportBike.maximumSpeedKmh < sportBike.resolvedTopSpeedKmh * .70f ||
                 sportBike.maximumSpeedKmh > sportBike.resolvedTopSpeedKmh * 1.03f ||
-                sportBike.zeroToHundredSeconds <= 0f || sportBike.zeroToHundredSeconds > 15f ||
+                !AccelerationMatchesDisplayedStat(sportBike) ||
                 sportBike.fuelDurationSeconds < 44.9f || sportBike.fuelDurationSeconds > 45.1f ||
                 sportBike.reverseSpeedKmh > -10f)
                 throw new System.InvalidOperationException(
                     "Sport Bike traction-limited flat performance, fuel or reverse contract failed.");
             Debug.Log($"Vehicle flat validation (fixed 0.02 s) | JEEP max={jeep.maximumSpeedKmh:0.0} km/h, " +
                       $"target={jeep.resolvedTopSpeedKmh:0.0}, grounded={jeep.groundedRatio:P0}, " +
-                      $"0-100={jeep.zeroToHundredSeconds:0.00} s, fuel={jeep.fuelDurationSeconds:0.00} s, " +
+                      $"0-100={jeep.zeroToHundredSeconds:0.00}/{jeep.targetZeroToHundredSeconds:0.00} s, fuel={jeep.fuelDurationSeconds:0.00} s, " +
                       $"reverse={jeep.reverseSpeedKmh:0.0} km/h | " +
-                      $"FORMULA max={formula.maximumSpeedKmh:0.0} km/h, 0-100={formula.zeroToHundredSeconds:0.00} s, " +
+                      $"FORMULA max={formula.maximumSpeedKmh:0.0} km/h, 0-100={formula.zeroToHundredSeconds:0.00}/{formula.targetZeroToHundredSeconds:0.00} s, " +
                       $"target={formula.resolvedTopSpeedKmh:0.0}, grounded={formula.groundedRatio:P0}, " +
                        $"fuel={formula.fuelDurationSeconds:0.00} s, reverse={formula.reverseSpeedKmh:0.0} km/h | " +
-                       $"RALLY max={rally.maximumSpeedKmh:0.0} km/h, 0-100={rally.zeroToHundredSeconds:0.00} s, " +
+                       $"RALLY max={rally.maximumSpeedKmh:0.0} km/h, 0-100={rally.zeroToHundredSeconds:0.00}/{rally.targetZeroToHundredSeconds:0.00} s, " +
                        $"fuel={rally.fuelDurationSeconds:0.00} s, reverse={rally.reverseSpeedKmh:0.0} km/h | " +
                        $"SPORT BIKE max={sportBike.maximumSpeedKmh:0.0} km/h, " +
-                       $"0-100={sportBike.zeroToHundredSeconds:0.00} s, " +
+                       $"0-100={sportBike.zeroToHundredSeconds:0.00}/{sportBike.targetZeroToHundredSeconds:0.00} s, " +
                        $"fuel={sportBike.fuelDurationSeconds:0.00} s, reverse={sportBike.reverseSpeedKmh:0.0} km/h.");
         }
 
@@ -2343,6 +2522,7 @@ namespace AnimeHillRacing.Editor
                 fuel.TickRun(step, true);
                 fuelElapsed += step;
             }
+            ResolvedVehicleStats measuredStats = controller.Stats;
 
             Object.DestroyImmediate(instance);
             Object.DestroyImmediate(inputObject);
@@ -2352,8 +2532,9 @@ namespace AnimeHillRacing.Editor
             return new VehiclePerformanceResult
             {
                 maximumSpeedKmh = maximumSpeed,
-                resolvedTopSpeedKmh = controller.Stats.topSpeedMps * 3.6f,
+                resolvedTopSpeedKmh = measuredStats.topSpeedMps * 3.6f,
                 zeroToHundredSeconds = zeroToHundred,
+                targetZeroToHundredSeconds = measuredStats.zeroToHundredTargetSeconds,
                 fuelDurationSeconds = fuelElapsed,
                 reverseSpeedKmh = reverseSpeed,
                 groundedRatio = groundedSteps / 1500f
@@ -2773,11 +2954,28 @@ namespace AnimeHillRacing.Editor
                 ResolveMaximumGrip(assets.jeep) != 300 || ResolveMaximumGrip(assets.formula) != 520 ||
                 ResolveMaximumGrip(assets.rally) != 750 || ResolveMaximumGrip(assets.sportBike) != 500)
                 throw new System.InvalidOperationException("Global 0-1000 Grip contract is invalid.");
+            ResolvedVehicleStats sportStock = assets.sportBike.Resolve(new VehicleUpgradeState());
+            ResolvedVehicleStats sportMaximum = ResolveAllMaximum(assets.sportBike);
+            if (sportStock.topSpeedMps * 3.6f < 100f || sportStock.zeroToHundredTargetSeconds > 10f ||
+                sportStock.gripRating < 100 ||
+                Mathf.Abs(sportMaximum.topSpeedMps * 3.6f - 360f) > .01f ||
+                Mathf.Abs(sportMaximum.zeroToHundredTargetSeconds - 2.5f) > .001f ||
+                Mathf.Abs(sportMaximum.totalRunFuelDuration - 45f) > .001f ||
+                sportMaximum.gripRating != 500)
+                throw new System.InvalidOperationException(
+                    "Sport Bike stock must be playable while preserving 360km/h, 2.5s, 45s and Grip500 maxima.");
             ValidateUpgradeCurvesAndCosts(assets);
             ValidateGripAuthority(assets);
             ValidateFormulaDownforce(assets.formula);
             Debug.Log("Tuning validation: all fresh tunes=Level 1; Formula has six tunes; " +
                       "Grip max Jeep/Formula/Rally/Sport=300/520/750/500 over 1000.");
+        }
+
+        private static bool AccelerationMatchesDisplayedStat(VehiclePerformanceResult result)
+        {
+            float tolerance = Mathf.Max(.35f, result.targetZeroToHundredSeconds * .30f);
+            return result.zeroToHundredSeconds > 0f &&
+                   Mathf.Abs(result.zeroToHundredSeconds - result.targetZeroToHundredSeconds) <= tolerance;
         }
 
         private static void ValidateUpgradeCurvesAndCosts(BuiltAssets assets)
@@ -2790,18 +2988,36 @@ namespace AnimeHillRacing.Editor
                 {
                     VehicleUpgradeType type = definition.GetTuneTypeForSlot(slot);
                     int maximum = definition.GetMaxTunes(type);
-                    float earlyGain = VehicleDefinition.UpgradeProgress(2, maximum) -
-                                      VehicleDefinition.UpgradeProgress(1, maximum);
+                    float earlyGain = VehicleDefinition.UpgradeGain(1, maximum);
                     int middle = Mathf.Clamp((maximum + 1) / 2, 2, maximum - 1);
-                    float middleGain = VehicleDefinition.UpgradeProgress(middle + 1, maximum) -
-                                       VehicleDefinition.UpgradeProgress(middle, maximum);
-                    float finalGain = VehicleDefinition.UpgradeProgress(maximum, maximum) -
-                                      VehicleDefinition.UpgradeProgress(maximum - 1, maximum);
-                    if (earlyGain <= middleGain || middleGain <= finalGain ||
+                    float middleGain = VehicleDefinition.UpgradeGain(middle, maximum);
+                    float lateGain = VehicleDefinition.UpgradeGain(maximum - 3, maximum);
+                    float penultimateGain = VehicleDefinition.UpgradeGain(maximum - 2, maximum);
+                    float finalGain = VehicleDefinition.UpgradeGain(maximum - 1, maximum);
+                    if (!(earlyGain > middleGain && middleGain > lateGain &&
+                          lateGain > penultimateGain && penultimateGain > finalGain) ||
+                        penultimateGain > lateGain * .5f ||
                         VehicleDefinition.UpgradeProgress(1, maximum) != 0f ||
                         VehicleDefinition.UpgradeProgress(maximum, maximum) != 1f)
                         throw new System.InvalidOperationException(
-                            $"{definition.displayName} {type} does not use exact-endpoint diminishing returns.");
+                            $"{definition.displayName} {type} does not reserve its strong taper for the final two upgrades.");
+
+                    float previousValue = GetImprovementScalar(definition, type, 1);
+                    for (int currentLevel = 1; currentLevel < maximum; currentLevel++)
+                    {
+                        float nextValue = GetImprovementScalar(definition, type, currentLevel + 1);
+                        if (nextValue <= previousValue + .000001f)
+                            throw new System.InvalidOperationException(
+                                $"{definition.displayName} {type} Level {currentLevel}->{currentLevel + 1} " +
+                                "does not improve the resolved gameplay stat.");
+                        previousValue = nextValue;
+                    }
+
+                    float[] authoredTargets = GetAuthoredTuneTargets(definition, type);
+                    if (authoredTargets != null && authoredTargets.Length != maximum)
+                        throw new System.InvalidOperationException(
+                            $"{definition.displayName} {type} has {authoredTargets.Length} authored values for " +
+                            $"{maximum} one-based levels (legacy Level-0 entry detected).");
 
                     int previousCost = -1;
                     for (int currentLevel = 1; currentLevel < maximum; currentLevel++)
@@ -2816,10 +3032,79 @@ namespace AnimeHillRacing.Editor
                         throw new System.InvalidOperationException(
                             $"{definition.displayName} final {type} cost is {previousCost}, expected " +
                             $"{assets.economy.FinalCost(definition.archetype)}.");
+                    LogTuneProgression(definition, type, maximum);
                 }
             }
-            Debug.Log("UPGRADE_CURVES: exact Level 1/max endpoints, diminishing stat gains, strictly " +
-                      "increasing prices, final costs J/F/R/S=5000/15000/10000/20000.");
+            Debug.Log("UPGRADE_CURVES: exact one-based Level 1/max endpoints; early/mid/late gains remain " +
+                      "perceptible; only the final two transitions use small weights; every purchase changes " +
+                      "the resolved stat; prices strictly increase to J/F/R/S=5000/15000/10000/20000.");
+        }
+
+        private static float GetImprovementScalar(VehicleDefinition definition, VehicleUpgradeType type, int level)
+        {
+            ResolvedVehicleStats stats = ResolveAtTune(definition, type, level);
+            switch (type)
+            {
+                case VehicleUpgradeType.Engine: return stats.topSpeedMps;
+                case VehicleUpgradeType.Acceleration:
+                case VehicleUpgradeType.Turbo: return -stats.zeroToHundredTargetSeconds;
+                case VehicleUpgradeType.Suspension: return stats.suspensionTravel;
+                case VehicleUpgradeType.Grip: return stats.gripRating;
+                case VehicleUpgradeType.Downforce: return stats.airborneDownforceAcceleration;
+                default: return stats.totalRunFuelDuration;
+            }
+        }
+
+        private static float[] GetAuthoredTuneTargets(VehicleDefinition definition, VehicleUpgradeType type)
+        {
+            VehicleDefinition.TuneTargets targets = definition.tuneTargets;
+            if (targets == null) return null;
+            switch (type)
+            {
+                case VehicleUpgradeType.Engine: return targets.engineTopSpeedKmh;
+                case VehicleUpgradeType.Acceleration:
+                case VehicleUpgradeType.Turbo: return targets.accelerationZeroToHundredSeconds;
+                case VehicleUpgradeType.Grip: return targets.gripRatings;
+                case VehicleUpgradeType.Downforce: return targets.airborneDownforceAcceleration;
+                case VehicleUpgradeType.Fuel: return targets.fuelRunDurationSeconds;
+                default: return null;
+            }
+        }
+
+        private static void LogTuneProgression(VehicleDefinition definition, VehicleUpgradeType type, int maximum)
+        {
+            int[] requested = { 1, 2, 3, Mathf.Max(2, (maximum + 1) / 2),
+                Mathf.Max(1, maximum - 3), Mathf.Max(1, maximum - 2),
+                Mathf.Max(1, maximum - 1), maximum };
+            var levels = new List<int>(requested.Length);
+            for (int i = 0; i < requested.Length; i++)
+            {
+                int level = Mathf.Clamp(requested[i], 1, maximum);
+                if (!levels.Contains(level)) levels.Add(level);
+            }
+            string[] entries = new string[levels.Count];
+            for (int i = 0; i < levels.Count; i++)
+            {
+                int level = levels[i];
+                ResolvedVehicleStats stats = ResolveAtTune(definition, type, level);
+                string value;
+                switch (type)
+                {
+                    case VehicleUpgradeType.Engine: value = $"{stats.topSpeedMps * 3.6f:0.0}km/h"; break;
+                    case VehicleUpgradeType.Acceleration:
+                    case VehicleUpgradeType.Turbo: value = $"{stats.zeroToHundredTargetSeconds:0.00}s"; break;
+                    case VehicleUpgradeType.Suspension:
+                        value = $"{stats.suspensionTravel:0.000}m/{stats.damping:0}Ns/m"; break;
+                    case VehicleUpgradeType.Grip:
+                        value = $"{stats.gripRating}/{VehicleDefinition.GlobalGripMaximum}"; break;
+                    case VehicleUpgradeType.Downforce:
+                        value = $"{stats.airborneDownforceAcceleration:0.00}m/s2"; break;
+                    default: value = $"{stats.totalRunFuelDuration:0.00}s"; break;
+                }
+                entries[i] = $"L{level}={value}";
+            }
+            Debug.Log($"TUNE_TABLE {definition.displayName} {definition.GetTuneDisplayName(type)} | " +
+                      string.Join(" | ", entries));
         }
 
         private static void ValidateGripAuthority(BuiltAssets assets)
@@ -2952,6 +3237,22 @@ namespace AnimeHillRacing.Editor
             state.fuelTune = Mathf.Max(1, definition.fuelMaxTunes);
             state.turboTune = Mathf.Max(1, definition.turboMaxTunes);
             return definition.Resolve(state).gripRating;
+        }
+
+        private static ResolvedVehicleStats ResolveAllMaximum(VehicleDefinition definition)
+        {
+            var state = new VehicleUpgradeState
+            {
+                engineTune = Mathf.Max(1, definition.engineMaxTunes),
+                accelerationTune = Mathf.Max(1, definition.accelerationMaxTunes),
+                suspensionTune = Mathf.Max(1, definition.suspensionMaxTunes),
+                gripTune = Mathf.Max(1, definition.gripMaxTunes),
+                airControlTune = Mathf.Max(1, definition.airControlMaxTunes),
+                downforceTune = Mathf.Max(1, definition.downforceMaxTunes),
+                fuelTune = Mathf.Max(1, definition.fuelMaxTunes),
+                turboTune = Mathf.Max(1, definition.turboMaxTunes)
+            };
+            return definition.Resolve(state);
         }
 
         private static float SimulateAirTorque(VehicleDefinition source, bool roadMode, bool gas,
@@ -3107,11 +3408,11 @@ namespace AnimeHillRacing.Editor
             assets.jeep.airControlMaxTunes = 0; assets.jeep.downforceMaxTunes = 0; assets.jeep.fuelMaxTunes = 15;
             assets.jeep.tuneTargets = new VehicleDefinition.TuneTargets
             {
-                engineTopSpeedKmh = new float[] { 60, 63, 66, 69, 72, 75, 78, 81, 84, 87, 90, 93, 96, 98, 100 },
-                accelerationZeroToHundredSeconds = new float[] { 12f, 11.6f, 11.2f, 10.8f, 10.4f, 10f, 9.6f, 9.2f, 8.8f, 8.5f, 8.2f, 7.9f, 7.6f, 7.4f, 7.2f, 7f },
-                gripRatings = new float[] { 50f, 72f, 94f, 116f, 138f, 160f, 182f, 204f, 226f, 248f, 266f, 284f, 300f },
+                engineTopSpeedKmh = CreateProgressionTargets(14, 60f, 100f),
+                accelerationZeroToHundredSeconds = CreateProgressionTargets(15, 12f, 7f),
+                gripRatings = CreateProgressionTargets(12, 50f, 300f),
                 airControlTorque = new float[] { 3200f }, airborneDownforceAcceleration = new float[] { 0f },
-                fuelRunDurationSeconds = new float[] { 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30 }
+                fuelRunDurationSeconds = CreateProgressionTargets(15, 15f, 30f)
             };
             assets.jeep.suspension.minTravel = .28f; assets.jeep.suspension.maxTravel = .44f;
             assets.jeep.suspension.restLength = .52f;
@@ -3464,8 +3765,8 @@ namespace AnimeHillRacing.Editor
             assets.neonCity.coinRoute = assets.countrysideCoinRoute;
             assets.neonCity.elevationProfile = null;
             assets.neonCity.baseHeight = 0f;
-            assets.neonCity.amplitude = 32f;
-            assets.neonCity.neonMaximumAmplitude = 42f;
+            assets.neonCity.amplitude = 38f;
+            assets.neonCity.neonMaximumAmplitude = 48f;
             assets.neonCity.neonAmplitudeSaturationCycles = 2f;
             assets.neonCity.frequency = .0105f;
             assets.neonCity.introductoryAmplitude = .45f;
@@ -3482,8 +3783,8 @@ namespace AnimeHillRacing.Editor
             assets.neonCity.hillFeatureWeight = .54f;
             assets.neonCity.valleyFeatureWeight = .25f;
             assets.neonCity.technicalFeatureWeight = .18f;
-            assets.neonCity.maxSlopeAngle = 38f;
-            assets.neonCity.maxHeightDeltaPerSample = Mathf.Tan(38f * Mathf.Deg2Rad) * (80f / 48f);
+            assets.neonCity.maxSlopeAngle = 40f;
+            assets.neonCity.maxHeightDeltaPerSample = Mathf.Tan(40f * Mathf.Deg2Rad) * (80f / 48f);
             assets.neonCity.minimumValleyWidth = 24f;
             assets.neonCity.minimumLandingLength = 26f;
             assets.neonCity.maximumCrestSharpness = 7f;
@@ -3505,7 +3806,7 @@ namespace AnimeHillRacing.Editor
                 cycleLength = 6000f,
                 challengesPerCycle = 8,
                 cycleStartSafetyMargin = 260f,
-                slotJitter = 120f,
+                structuralRunUpPositions = LiquidChallengeSettings.DefaultStructuralRunUpPositions(),
                 runUpLength = 42f,
                 rampTransitionLength = 6f,
                 rampHorizontalLength = 12f,

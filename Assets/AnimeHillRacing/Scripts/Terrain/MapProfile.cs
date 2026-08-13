@@ -15,7 +15,9 @@ namespace AnimeHillRacing.Terrain
         public float cycleLength = RequiredCycleLength;
         public int challengesPerCycle = RequiredChallengesPerCycle;
         [Min(100f)] public float cycleStartSafetyMargin = 260f;
-        [Min(0f)] public float slotJitter = 120f;
+        [Tooltip("Run-up starts inside the authored Warmup, Rolling Hills, Gradual Descent, Bumpy Flat, " +
+                 "Staircases, Rolling Descent, Double Hill and Tech Bumps sections, respectively.")]
+        public float[] structuralRunUpPositions = DefaultStructuralRunUpPositions();
 
         [Header("Challenge Grammar")]
         [Min(10f)] public float runUpLength = 42f;
@@ -54,6 +56,9 @@ namespace AnimeHillRacing.Terrain
         [Min(.05f)] public float entrySlowdownSeconds = .35f;
         [Min(0f)] public float continuousViscosity = 2.4f;
         [Min(0f)] public float liquidDriveAcceleration = 9f;
+
+        public static float[] DefaultStructuralRunUpPositions() =>
+            new[] { 430f, 1280f, 2040f, 2770f, 3460f, 4140f, 4980f, 5530f };
     }
 
     [CreateAssetMenu(menuName = "Anime Hill Racing/Map Profile", fileName = "MapProfile")]
@@ -135,6 +140,11 @@ namespace AnimeHillRacing.Terrain
                 neonAmplitudeSaturationCycles = Mathf.Max(.1f, neonAmplitudeSaturationCycles);
                 liquidChallenges.cycleLength = LiquidChallengeSettings.RequiredCycleLength;
                 liquidChallenges.challengesPerCycle = LiquidChallengeSettings.RequiredChallengesPerCycle;
+                if (liquidChallenges.structuralRunUpPositions == null ||
+                    liquidChallenges.structuralRunUpPositions.Length !=
+                    LiquidChallengeSettings.RequiredChallengesPerCycle)
+                    liquidChallenges.structuralRunUpPositions =
+                        LiquidChallengeSettings.DefaultStructuralRunUpPositions();
                 liquidChallenges.rampAngleDegrees = Mathf.Clamp(liquidChallenges.rampAngleDegrees, 15f, 28f);
                 liquidChallenges.maximumPoolLength = Mathf.Max(liquidChallenges.minimumPoolLength,
                     liquidChallenges.maximumPoolLength);

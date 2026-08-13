@@ -113,7 +113,15 @@ MonoBehaviour:
     cycleLength: 6000
     challengesPerCycle: 8
     cycleStartSafetyMargin: 260
-    slotJitter: 120
+    structuralRunUpPositions:
+    - 430
+    - 1280
+    - 1730
+    - 2640
+    - 3250
+    - 3920
+    - 4980
+    - 5530
     runUpLength: 42
     rampTransitionLength: 6
     rampHorizontalLength: 12

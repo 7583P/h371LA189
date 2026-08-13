@@ -351,12 +351,12 @@ namespace AnimeHillRacing.UI
             switch (type)
             {
                 case VehicleUpgradeType.Engine: return $"{stats.topSpeedMps * 3.6f:0} km/h";
-                case VehicleUpgradeType.Acceleration: return $"0-100  {stats.zeroToHundredTargetSeconds:0.0}s";
-                case VehicleUpgradeType.Suspension: return $"TRAVEL  {stats.suspensionTravel:0.00}m";
+                case VehicleUpgradeType.Acceleration: return $"0-100  {stats.zeroToHundredTargetSeconds:0.00}s";
+                case VehicleUpgradeType.Suspension: return $"TRAVEL  {stats.suspensionTravel:0.000}m";
                 case VehicleUpgradeType.Grip: return $"GRIP  {stats.gripRating} / {VehicleDefinition.GlobalGripMaximum}";
                 case VehicleUpgradeType.Downforce: return $"{stats.airborneDownforceAcceleration:0.0} m/s²";
-                case VehicleUpgradeType.Turbo: return $"0-100  {stats.zeroToHundredTargetSeconds:0.0}s";
-                default: return $"RUN TIME  {stats.totalRunFuelDuration:0}s";
+                case VehicleUpgradeType.Turbo: return $"0-100  {stats.zeroToHundredTargetSeconds:0.00}s";
+                default: return $"RUN TIME  {stats.totalRunFuelDuration:0.0}s";
             }
         }
 

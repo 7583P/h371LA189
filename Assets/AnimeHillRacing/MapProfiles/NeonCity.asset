@@ -23,7 +23,7 @@ MonoBehaviour:
   hardEndDistance: 24000
   elevationProfile: {fileID: 0}
   baseHeight: 0
-  amplitude: 32
+  amplitude: 38
   frequency: 0.0105
   smoothing: 0.65
   hillSize: 1
@@ -61,8 +61,8 @@ MonoBehaviour:
   hillFeatureWeight: 0.54
   valleyFeatureWeight: 0.25
   technicalFeatureWeight: 0.18
-  maxSlopeAngle: 38
-  maxHeightDeltaPerSample: 1.3021427
+  maxSlopeAngle: 40
+  maxHeightDeltaPerSample: 1.3984993
   minimumValleyWidth: 24
   minimumLandingLength: 26
   maximumCrestSharpness: 7
@@ -80,13 +80,21 @@ MonoBehaviour:
   terrainEdgeWidth: 0.18
   terrainVisualDepth: 22
   supportsLiquidExposure: 1
-  neonMaximumAmplitude: 42
+  neonMaximumAmplitude: 48
   neonAmplitudeSaturationCycles: 2
   liquidChallenges:
     cycleLength: 6000
     challengesPerCycle: 8
     cycleStartSafetyMargin: 260
-    slotJitter: 120
+    structuralRunUpPositions:
+    - 430
+    - 1280
+    - 2040
+    - 2770
+    - 3460
+    - 4140
+    - 4980
+    - 5530
     runUpLength: 42
     rampTransitionLength: 6
     rampHorizontalLength: 12

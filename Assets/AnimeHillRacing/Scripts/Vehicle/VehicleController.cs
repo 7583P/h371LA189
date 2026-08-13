@@ -119,10 +119,10 @@ namespace AnimeHillRacing.Vehicle
             float engineThrottle = hasFuel && driveDirection == DriveDirection.Forward ? gas : 0f;
             transmission.Tick(Time.fixedDeltaTime, Mathf.Abs(SpeedMps), engineThrottle, AnyGrounded, false);
             float normalizedSpeed = Mathf.Max(0f, SpeedMps) / Mathf.Max(1f, stats.topSpeedMps);
-            float engineTorque = engine.Tick(Time.fixedDeltaTime, engineThrottle, transmission.Rpm,
+            engine.Tick(Time.fixedDeltaTime, engineThrottle, transmission.Rpm,
                 transmission.TorqueScale, normalizedSpeed);
 
-            ApplyDrive(engineTorque, gas, brake, hasFuel);
+            ApplyDrive(gas, brake, hasFuel);
             ApplyDrag();
             ApplyAerodynamicDownforce();
             ApplyAirControl(inputState, rawGrounded);
@@ -148,7 +148,7 @@ namespace AnimeHillRacing.Vehicle
                        Mathf.Max(0f, resolved.airborneDownforceAcceleration)) * speed01 * speed01;
         }
 
-        private void ApplyDrive(float engineTorque, float gas, float brake, bool hasFuel)
+        private void ApplyDrive(float gas, float brake, bool hasFuel)
         {
             float speed = SpeedMps;
             float requestedWheelTorque = 0f;
@@ -168,9 +168,15 @@ namespace AnimeHillRacing.Vehicle
                     requestedBrakeTorque = definition.brakeForce * definition.wheelRadius * gas;
                     break;
                 default:
-                    requestedWheelTorque = engineTorque * transmission.CurrentRatio *
-                                           definition.transmission.finalDrive *
-                                           definition.engine.drivetrainEfficiency;
+                    float forwardSpeed = Mathf.Max(0f, speed);
+                    float resistanceCompensation = definition.grip.aerodynamicDrag *
+                                                   forwardSpeed * forwardSpeed +
+                                                   definition.mass * Physics.gravity.magnitude *
+                                                   definition.grip.rollingResistance;
+                    float requestedDriveForce = (body.mass * stats.targetAccelerationMps2 +
+                                                 resistanceCompensation) * gas;
+                    requestedWheelTorque = speed < stats.topSpeedMps
+                        ? requestedDriveForce * definition.wheelRadius : 0f;
                     break;
             }
 

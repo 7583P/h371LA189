@@ -24,6 +24,19 @@ namespace AnimeHillRacing.Terrain
         JumpableCrest
     }
 
+    public enum NeonTemplateSection
+    {
+        Warmup,
+        RollingHills,
+        GradualDescent,
+        BumpyFlat,
+        Staircases,
+        RollingDescent,
+        DoubleHill,
+        TechBumps,
+        Recovery
+    }
+
     public struct LiquidChallengeLayout
     {
         public int cycleIndex;
@@ -46,24 +59,38 @@ namespace AnimeHillRacing.Terrain
         private const float TwoPi = Mathf.PI * 2f;
         public const int NeonTemplateSectionCount = 9;
 
-        // Authored 6000 m macro grammar with variable-length climbs, shelves, technical drops and
-        // valley floors. Meso features below add suspension work without turning this into a sine wave.
-        private static readonly float[] NeonCycleDistances =
+        // Exact authored order inside every 6000 m cycle:
+        // Warmup -> Rolling Hills -> Gradual Descent -> Bumpy Flat -> Staircases ->
+        // Rolling Descent -> Double Hill -> Tech Bumps -> Recovery.
+        private static readonly float[] NeonSectionBoundaries =
         {
-            0f, 200f, 320f, 450f, 600f, 750f, 900f, 1050f, 1200f, 1400f,
-            1550f, 1700f, 1810f, 1950f, 2160f, 2300f, 2440f, 2580f, 2750f,
-            2890f, 3020f, 3150f, 3300f, 3400f, 3520f, 3750f, 3900f, 4050f,
-            4200f, 4330f, 4460f, 4600f, 4740f, 4880f, 5100f, 5240f, 5380f,
-            5520f, 5660f, 5800f, 6000f
+            0f, 600f, 1400f, 2250f, 3000f, 3700f, 4350f, 5050f, 5700f, 6000f
         };
 
-        private static readonly float[] NeonCycleTemplate =
+        private static readonly float[][] NeonSectionDistances =
         {
-            -.20f, -.20f, .25f, -.05f, .40f, .10f, .15f, .45f, .75f, .78f,
-            .78f, .65f, -.35f, -.85f, -.85f, -.45f, .20f, .55f, .55f,
-            .10f, .52f, 0f, .65f, .55f, -.55f, -.90f, -.90f, -.45f,
-            .15f, -.10f, .40f, .05f, .35f, .80f, .80f, .35f, -.30f,
-            -.50f, -.50f, -.25f, -.20f
+            new[] { 0f, 140f, 260f, 390f, 520f, 600f },
+            new[] { 600f, 700f, 800f, 900f, 1000f, 1110f, 1220f, 1400f },
+            new[] { 1400f, 1510f, 1610f, 1730f, 1850f, 1970f, 2070f, 2250f },
+            new[] { 2250f, 2340f, 2430f, 2520f, 2610f, 2700f, 2790f, 2880f, 3000f },
+            new[] { 3000f, 3070f, 3130f, 3200f, 3260f, 3330f, 3390f, 3460f, 3520f, 3590f, 3650f, 3700f },
+            new[] { 3700f, 3780f, 3870f, 3960f, 4060f, 4160f, 4250f, 4350f },
+            new[] { 4350f, 4430f, 4510f, 4590f, 4670f, 4750f, 4830f, 4910f, 4990f, 5050f },
+            new[] { 5050f, 5120f, 5190f, 5260f, 5330f, 5400f, 5470f, 5540f, 5610f, 5700f },
+            new[] { 5700f, 5780f, 5860f, 5930f, 6000f }
+        };
+
+        private static readonly float[][] NeonSectionHeights =
+        {
+            new[] { 0f, .025f, -.018f, .05f, .025f, .10f },
+            new[] { .10f, .58f, -.08f, .70f, -.16f, .75f, -.22f, .42f },
+            new[] { .42f, .08f, .48f, -.12f, .28f, -.38f, .06f, -.58f },
+            new[] { -.58f, -.34f, -.62f, -.30f, -.66f, -.26f, -.64f, -.28f, -.50f },
+            new[] { -.50f, -.50f, -.17f, -.17f, .18f, .18f, .55f, .55f, .90f, .90f, .90f, .48f },
+            new[] { .48f, .05f, .55f, -.18f, .40f, -.42f, .18f, -.50f },
+            new[] { -.50f, -.32f, .40f, .40f, -.34f, -.34f, .38f, .38f, -.24f, -.18f },
+            new[] { -.18f, .28f, -.32f, .32f, -.34f, .32f, -.36f, .30f, -.28f, -.12f },
+            new[] { -.12f, -.08f, -.03f, .01f, 0f }
         };
 
         private enum NeonMesoKind { Bump, DoubleBump, Alternating, SoftStep }
@@ -85,43 +112,56 @@ namespace AnimeHillRacing.Terrain
             }
         }
 
-        // 82-230 m C1-continuous obstacles. Heights scale with the cycle amplitude, producing
-        // roughly 1.6-5.1 m features over the audited difficulty range.
+        // 60-150 m C1-continuous authored features. They create medium bumps and dips with enough
+        // vertices for stable wheel contact; there is no Perlin/micro noise in the Neon template.
         private static readonly NeonMesoFeature[] NeonMesoFeatures =
         {
-            new NeonMesoFeature(240f, 96f, .055f, NeonMesoKind.DoubleBump),
-            new NeonMesoFeature(390f, 82f, -.045f, NeonMesoKind.Bump),
-            new NeonMesoFeature(525f, 150f, .075f, NeonMesoKind.Alternating),
-            new NeonMesoFeature(720f, 118f, .065f, NeonMesoKind.DoubleBump),
-            new NeonMesoFeature(890f, 210f, .090f, NeonMesoKind.SoftStep),
-            new NeonMesoFeature(1110f, 96f, -.055f, NeonMesoKind.Bump),
-            new NeonMesoFeature(1260f, 170f, .075f, NeonMesoKind.Alternating),
-            new NeonMesoFeature(1490f, 105f, .080f, NeonMesoKind.DoubleBump),
-            new NeonMesoFeature(1650f, 135f, -.070f, NeonMesoKind.Bump),
-            new NeonMesoFeature(1850f, 190f, .110f, NeonMesoKind.Alternating),
-            new NeonMesoFeature(2110f, 88f, .060f, NeonMesoKind.Bump),
-            new NeonMesoFeature(2260f, 150f, .080f, NeonMesoKind.DoubleBump),
-            new NeonMesoFeature(2470f, 210f, -.100f, NeonMesoKind.SoftStep),
-            new NeonMesoFeature(2730f, 95f, .070f, NeonMesoKind.DoubleBump),
-            new NeonMesoFeature(2870f, 160f, .080f, NeonMesoKind.Alternating),
-            new NeonMesoFeature(3110f, 120f, -.075f, NeonMesoKind.Bump),
-            new NeonMesoFeature(3280f, 220f, .120f, NeonMesoKind.SoftStep),
-            new NeonMesoFeature(3560f, 90f, .075f, NeonMesoKind.DoubleBump),
-            new NeonMesoFeature(3700f, 180f, .100f, NeonMesoKind.Alternating),
-            new NeonMesoFeature(3950f, 110f, -.070f, NeonMesoKind.Bump),
-            new NeonMesoFeature(4140f, 230f, .130f, NeonMesoKind.SoftStep),
-            new NeonMesoFeature(4440f, 100f, .080f, NeonMesoKind.DoubleBump),
-            new NeonMesoFeature(4600f, 170f, -.090f, NeonMesoKind.Alternating),
-            new NeonMesoFeature(4850f, 140f, .100f, NeonMesoKind.DoubleBump),
-            new NeonMesoFeature(5110f, 220f, -.120f, NeonMesoKind.SoftStep),
-            new NeonMesoFeature(5400f, 90f, .070f, NeonMesoKind.Bump),
-            new NeonMesoFeature(5530f, 170f, .090f, NeonMesoKind.Alternating),
-            new NeonMesoFeature(5770f, 95f, -.050f, NeonMesoKind.Bump)
+            new NeonMesoFeature(170f, 120f, .015f, NeonMesoKind.Bump),
+            new NeonMesoFeature(410f, 100f, -.018f, NeonMesoKind.Alternating),
+            new NeonMesoFeature(680f, 100f, .035f, NeonMesoKind.DoubleBump),
+            new NeonMesoFeature(980f, 120f, -.025f, NeonMesoKind.Alternating),
+            new NeonMesoFeature(1250f, 100f, .030f, NeonMesoKind.Bump),
+            new NeonMesoFeature(1500f, 130f, .025f, NeonMesoKind.Alternating),
+            new NeonMesoFeature(1820f, 150f, -.030f, NeonMesoKind.DoubleBump),
+            new NeonMesoFeature(2090f, 100f, .025f, NeonMesoKind.Bump),
+            new NeonMesoFeature(2290f, 80f, .045f, NeonMesoKind.DoubleBump),
+            new NeonMesoFeature(2440f, 70f, -.040f, NeonMesoKind.Bump),
+            new NeonMesoFeature(2600f, 95f, .050f, NeonMesoKind.Alternating),
+            new NeonMesoFeature(2780f, 80f, .040f, NeonMesoKind.DoubleBump),
+            new NeonMesoFeature(2900f, 60f, -.035f, NeonMesoKind.Bump),
+            new NeonMesoFeature(3320f, 60f, .025f, NeonMesoKind.Bump),
+            new NeonMesoFeature(3780f, 80f, .040f, NeonMesoKind.Alternating),
+            new NeonMesoFeature(3990f, 90f, -.035f, NeonMesoKind.DoubleBump),
+            new NeonMesoFeature(4200f, 70f, .040f, NeonMesoKind.Bump),
+            new NeonMesoFeature(4630f, 70f, .025f, NeonMesoKind.Bump),
+            new NeonMesoFeature(4820f, 80f, -.030f, NeonMesoKind.Alternating),
+            new NeonMesoFeature(5080f, 80f, .040f, NeonMesoKind.DoubleBump),
+            new NeonMesoFeature(5190f, 80f, -.035f, NeonMesoKind.Bump),
+            new NeonMesoFeature(5300f, 80f, .040f, NeonMesoKind.Alternating),
+            new NeonMesoFeature(5450f, 80f, .040f, NeonMesoKind.DoubleBump),
+            new NeonMesoFeature(5560f, 80f, -.040f, NeonMesoKind.Alternating),
+            new NeonMesoFeature(5620f, 70f, .035f, NeonMesoKind.Bump),
+            new NeonMesoFeature(5760f, 100f, .018f, NeonMesoKind.Alternating)
         };
 
         public static int NeonMesoFeatureCount => NeonMesoFeatures.Length;
-        public const float NeonMesoMinimumLength = 82f;
-        public const float NeonMesoMaximumLength = 230f;
+        public const float NeonMesoMinimumLength = 60f;
+        public const float NeonMesoMaximumLength = 150f;
+
+        public static Vector2 GetNeonSectionRange(NeonTemplateSection section)
+        {
+            int index = Mathf.Clamp((int)section, 0, NeonTemplateSectionCount - 1);
+            return new Vector2(NeonSectionBoundaries[index], NeonSectionBoundaries[index + 1]);
+        }
+
+        public static NeonTemplateSection GetNeonTemplateSection(float localDistance)
+        {
+            float local = Mathf.Clamp(localDistance, 0f,
+                LiquidChallengeSettings.RequiredCycleLength - .001f);
+            for (int section = 0; section < NeonTemplateSectionCount - 1; section++)
+                if (local < NeonSectionBoundaries[section + 1]) return (NeonTemplateSection)section;
+            return NeonTemplateSection.Recovery;
+        }
 
         public static float SampleHeight(MapProfile profile, float worldX)
         {
@@ -163,6 +203,27 @@ namespace AnimeHillRacing.Terrain
         public static int GetCycleIndex(float distance) => Mathf.FloorToInt(
             Mathf.Max(distance, 0f) / LiquidChallengeSettings.RequiredCycleLength);
 
+        public static float GetNeonLiquidLocalRunUp(MapProfile profile, int challengeIndex)
+        {
+            int index = Mathf.Clamp(challengeIndex, 0,
+                LiquidChallengeSettings.RequiredChallengesPerCycle - 1);
+            float[] authored = profile != null && profile.liquidChallenges != null
+                ? profile.liquidChallenges.structuralRunUpPositions : null;
+            if (authored != null && authored.Length == LiquidChallengeSettings.RequiredChallengesPerCycle)
+                return authored[index];
+            switch (index)
+            {
+                case 0: return 430f;
+                case 1: return 1280f;
+                case 2: return 2040f;
+                case 3: return 2770f;
+                case 4: return 3460f;
+                case 5: return 4140f;
+                case 6: return 4980f;
+                default: return 5530f;
+            }
+        }
+
         public static LiquidChallengeLayout GetLiquidChallenge(MapProfile profile, int cycleIndex,
             int challengeIndex)
         {
@@ -171,13 +232,9 @@ namespace AnimeHillRacing.Terrain
             int count = LiquidChallengeSettings.RequiredChallengesPerCycle;
             int safeCycle = Mathf.Max(0, cycleIndex);
             int safeChallenge = Mathf.Clamp(challengeIndex, 0, count - 1);
-            float slotLength = cycleLength / count;
-            float slotStart = safeCycle * cycleLength + safeChallenge * slotLength;
             uint seed = CombinedSeed(profile);
-            int positionHash = safeChallenge * 104729;
             int variationHash = safeCycle * 7919 + safeChallenge * 104729;
-            // The eight logical positions repeat every cycle. Pool length may still vary by cycle.
-            float jitter01 = Hash01(seed, positionHash + 17) * 2f - 1f;
+            // Structural positions repeat exactly. Only pool length varies deterministically by cycle.
             float variation01 = Hash01(seed, variationHash + 53) * 2f - 1f;
             float growth = settings != null
                 ? 1f + settings.cycleGrowth * safeCycle / (safeCycle + settings.growthSaturation)
@@ -194,12 +251,13 @@ namespace AnimeHillRacing.Terrain
             float recoveryLength = settings != null ? settings.recoveryLength : 48f;
             float startMargin = safeChallenge == 0 && safeCycle == 0
                 ? (settings != null ? settings.cycleStartSafetyMargin : 260f) : 130f;
-            float jitter = jitter01 * (settings != null ? settings.slotJitter : 120f);
-            float latestRunUp = slotStart + slotLength -
-                                (runUpLength + transitionLength + rampLength + poolLength + landingLength +
-                                 recoveryLength + 70f);
-            float runUpStart = Mathf.Clamp(slotStart + 260f + jitter, slotStart + startMargin,
-                Mathf.Max(slotStart + startMargin, latestRunUp));
+            float cycleStart = safeCycle * cycleLength;
+            float latestLocalRunUp = cycleLength -
+                                     (runUpLength + transitionLength + rampLength + poolLength + landingLength +
+                                      recoveryLength + 80f);
+            float localRunUp = Mathf.Clamp(GetNeonLiquidLocalRunUp(profile, safeChallenge), startMargin,
+                Mathf.Max(startMargin, latestLocalRunUp));
+            float runUpStart = cycleStart + localRunUp;
             float transitionStart = runUpStart + runUpLength;
             float rampStart = transitionStart + transitionLength;
             float poolStart = rampStart + rampLength;
@@ -318,16 +376,21 @@ namespace AnimeHillRacing.Terrain
             if (profile == null) return 0f;
             float distance = Mathf.Max(0f, worldX);
             float localDistance = Mathf.Repeat(distance, LiquidChallengeSettings.RequiredCycleLength);
-            int segment = 0;
-            while (segment < NeonCycleDistances.Length - 2 &&
-                   localDistance >= NeonCycleDistances[segment + 1])
-                segment++;
-            float t = Smooth01(Mathf.InverseLerp(NeonCycleDistances[segment],
-                NeonCycleDistances[segment + 1], localDistance));
-            float shape = Mathf.Lerp(NeonCycleTemplate[segment], NeonCycleTemplate[segment + 1], t) +
+            NeonTemplateSection section = GetNeonTemplateSection(localDistance);
+            float shape = EvaluateNeonSectionShape(section, localDistance) +
                           EvaluateNeonMesoOffset(localDistance);
-            float startFlatten = Smooth01(Mathf.Clamp01(distance / 180f));
-            return profile.baseHeight + shape * EvaluateNeonAmplitude(profile, distance) * startFlatten;
+            return profile.baseHeight + shape * EvaluateNeonAmplitude(profile, distance);
+        }
+
+        private static float EvaluateNeonSectionShape(NeonTemplateSection section, float localDistance)
+        {
+            int sectionIndex = Mathf.Clamp((int)section, 0, NeonTemplateSectionCount - 1);
+            float[] distances = NeonSectionDistances[sectionIndex];
+            float[] heights = NeonSectionHeights[sectionIndex];
+            int segment = 0;
+            while (segment < distances.Length - 2 && localDistance >= distances[segment + 1]) segment++;
+            float t = Smooth01(Mathf.InverseLerp(distances[segment], distances[segment + 1], localDistance));
+            return Mathf.Lerp(heights[segment], heights[segment + 1], t);
         }
 
         private static float EvaluateNeonMesoOffset(float localDistance)

@@ -300,8 +300,8 @@ namespace AnimeHillRacing.UI
                         : $"MAX SPEED  {currentStats.topSpeedMps * 3.6f:0}{arrow}{nextStats.topSpeedMps * 3.6f:0} KM/H\n" +
                           $"POWER  {currentStats.peakPowerKw:0.0}{arrow}{nextStats.peakPowerKw:0.0} KW";
                 case VehicleUpgradeType.Acceleration:
-                    return atMax ? $"0-100  {currentStats.zeroToHundredTargetSeconds:0.0} SEC   MAX"
-                        : $"0-100  {currentStats.zeroToHundredTargetSeconds:0.0}{arrow}{nextStats.zeroToHundredTargetSeconds:0.0} SEC";
+                    return atMax ? $"0-100  {currentStats.zeroToHundredTargetSeconds:0.00} SEC   MAX"
+                        : $"0-100  {currentStats.zeroToHundredTargetSeconds:0.00}{arrow}{nextStats.zeroToHundredTargetSeconds:0.00} SEC";
                 case VehicleUpgradeType.Suspension:
                     return atMax ? $"TRAVEL  {currentStats.suspensionTravel:0.000} M   MAX"
                         : $"TRAVEL  {currentStats.suspensionTravel:0.000}{arrow}{nextStats.suspensionTravel:0.000} M\n" +
@@ -316,11 +316,11 @@ namespace AnimeHillRacing.UI
                     return atMax ? $"AIR DOWNFORCE  {currentStats.airborneDownforceAcceleration:0.0} M/S²   MAX"
                         : $"AIR DOWNFORCE  {currentStats.airborneDownforceAcceleration:0.0}{arrow}{nextStats.airborneDownforceAcceleration:0.0} M/S²";
                 case VehicleUpgradeType.Turbo:
-                    return atMax ? $"0-100  {currentStats.zeroToHundredTargetSeconds:0.0} SEC   MAX"
-                        : $"0-100  {currentStats.zeroToHundredTargetSeconds:0.0}{arrow}{nextStats.zeroToHundredTargetSeconds:0.0} SEC";
+                    return atMax ? $"0-100  {currentStats.zeroToHundredTargetSeconds:0.00} SEC   MAX"
+                        : $"0-100  {currentStats.zeroToHundredTargetSeconds:0.00}{arrow}{nextStats.zeroToHundredTargetSeconds:0.00} SEC";
                 default:
-                    return atMax ? $"TOTAL RUN  {currentStats.totalRunFuelDuration:0} SEC   MAX"
-                        : $"TOTAL RUN  {currentStats.totalRunFuelDuration:0}{arrow}{nextStats.totalRunFuelDuration:0} SEC";
+                    return atMax ? $"TOTAL RUN  {currentStats.totalRunFuelDuration:0.0} SEC   MAX"
+                        : $"TOTAL RUN  {currentStats.totalRunFuelDuration:0.0}{arrow}{nextStats.totalRunFuelDuration:0.0} SEC";
             }
         }
 

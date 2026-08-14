@@ -271,6 +271,100 @@ namespace AnimeHillRacing.Editor
                       "persistent accessories and vertical shop rebuilt and validated.");
         }
 
+        [MenuItem("Anime Hill Racing/Capture Driver Pose Audit")]
+        public static void CaptureDriverPoseAudit()
+        {
+            Scene scene = EditorSceneManager.OpenScene(GaragePath, OpenSceneMode.Single);
+            GaragePreviewRenderer preview = SceneComponents<GaragePreviewRenderer>(scene).FirstOrDefault();
+            if (preview == null || preview.PreviewCamera == null)
+                throw new System.InvalidOperationException("Garage driver-pose audit camera is missing.");
+
+            DriverDefinition driver = AssetDatabase.LoadAssetAtPath<DriverDefinition>(
+                Root + "/VehicleData/StickmanBlack.asset");
+            VehicleDefinition[] vehicles =
+            {
+                AssetDatabase.LoadAssetAtPath<VehicleDefinition>(Root + "/VehicleData/MainVehicle.asset"),
+                AssetDatabase.LoadAssetAtPath<VehicleDefinition>(Root + "/VehicleData/FormulaVehicle.asset"),
+                AssetDatabase.LoadAssetAtPath<VehicleDefinition>(Root + "/VehicleData/RallyVehicle.asset"),
+                AssetDatabase.LoadAssetAtPath<VehicleDefinition>(Root + "/VehicleData/SportBikeVehicle.asset")
+            };
+            // Unity clears the project Temp folder when a batch editor exits, so keep the
+            // evidence beside the editor logs where it survives long enough to inspect.
+            string outputDirectory = Path.Combine(Directory.GetParent(Application.dataPath).FullName,
+                "Logs", "DriverPoseAudit");
+            Directory.CreateDirectory(outputDirectory);
+
+            const string selectionKey = "AHR.Customize.CharacterAccessory";
+            bool hadSelection = PlayerPrefs.HasKey(selectionKey);
+            string previousSelection = PlayerPrefs.GetString(selectionKey, string.Empty);
+            string[] accessoryIds = { "default", "glasses" };
+            Camera camera = preview.PreviewCamera;
+            RenderTexture previousTarget = camera.targetTexture;
+            RenderTexture previousActive = RenderTexture.active;
+            CameraClearFlags previousClearFlags = camera.clearFlags;
+            Color previousBackgroundColor = camera.backgroundColor;
+            try
+            {
+                // The character is nearly black; a neutral audit background keeps every
+                // limb and accessory readable without altering camera framing or scale.
+                camera.clearFlags = CameraClearFlags.SolidColor;
+                camera.backgroundColor = new Color(.78f, .78f, .78f, 1f);
+                for (int accessoryIndex = 0; accessoryIndex < accessoryIds.Length; accessoryIndex++)
+                {
+                    SaveManager.SetSelectedCharacterAccessoryId(accessoryIds[accessoryIndex]);
+                    for (int vehicleIndex = 0; vehicleIndex < vehicles.Length; vehicleIndex++)
+                    {
+                        VehicleDefinition vehicle = vehicles[vehicleIndex];
+                        if (vehicle == null) continue;
+                        VehicleDefinition.CustomizationOption skin = vehicle.skins != null && vehicle.skins.Length > 0
+                            ? vehicle.skins[0] : null;
+                        VehicleDefinition.CustomizationOption wheel = vehicle.wheels != null && vehicle.wheels.Length > 0
+                            ? vehicle.wheels[0] : null;
+                        preview.Apply(vehicle, skin, wheel, driver);
+
+                        RenderTexture target = new RenderTexture(1280, 640, 24, RenderTextureFormat.ARGB32)
+                        {
+                            antiAliasing = 2
+                        };
+                        Texture2D capture = new Texture2D(1280, 640, TextureFormat.RGBA32, false);
+                        try
+                        {
+                            camera.targetTexture = target;
+                            target.Create();
+                            camera.Render();
+                            RenderTexture.active = target;
+                            capture.ReadPixels(new Rect(0f, 0f, target.width, target.height), 0, 0);
+                            capture.Apply();
+                            string safeVehicleName = vehicle.displayName.Replace(" ", "-").ToLowerInvariant();
+                            string outputPath = Path.Combine(outputDirectory,
+                                safeVehicleName + "-" + accessoryIds[accessoryIndex] + ".png");
+                            File.WriteAllBytes(outputPath, capture.EncodeToPNG());
+                        }
+                        finally
+                        {
+                            camera.targetTexture = previousTarget;
+                            RenderTexture.active = previousActive;
+                            target.Release();
+                            Object.DestroyImmediate(target);
+                            Object.DestroyImmediate(capture);
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                if (hadSelection) PlayerPrefs.SetString(selectionKey, previousSelection);
+                else PlayerPrefs.DeleteKey(selectionKey);
+                PlayerPrefs.Save();
+                camera.targetTexture = previousTarget;
+                RenderTexture.active = previousActive;
+                camera.clearFlags = previousClearFlags;
+                camera.backgroundColor = previousBackgroundColor;
+            }
+            Debug.Log($"DRIVER_POSE_AUDIT_CAPTURE_OK: {vehicles.Length * accessoryIds.Length} renders at " +
+                      outputDirectory);
+        }
+
         private static void BuildAllGameScenesInternal()
         {
             EnsureFolders();
@@ -2620,8 +2714,9 @@ namespace AnimeHillRacing.Editor
                         $"Sport Bike wheel option {wheelOption.displayName} is not visibly normalized.");
             }
             preview.Apply(assets.jeep, assets.jeep.skins[0], assets.jeep.wheels[0], assets.stickmanBlack);
-            if (!formulaLeftThigh.enabled || !formulaRightThigh.enabled)
-                throw new System.InvalidOperationException("Jeep driver pose must restore partially visible legs.");
+            if (!formulaLeftThigh.enabled || formulaRightThigh.enabled)
+                throw new System.InvalidOperationException(
+                    "Jeep driver pose must restore one clean side-view leg without duplicated limb sprites.");
             Debug.Log($"Garage live composition validation: Formula Wheel 02 correct; Sport Bike front " +
                       $"{assets.sportBike.FrontWheelDiameter:0.00}m ({frontPercent:P1}), rear " +
                       $"{assets.sportBike.RearWheelDiameter:0.00}m ({rearPercent:P1}), all three wheel skins normalized.");
@@ -2705,14 +2800,16 @@ namespace AnimeHillRacing.Editor
                 rootPosition = new Vector2(-.42f, .24f), rootScale = .96f,
                 torso = P(-.01f, .25f, -10f, .030f, .032f, true, 3),
                 head = P(-.04f, .68f, -3f, .032f, .034f, true, 5),
-                leftUpperArm = P(.16f, .42f, -34f, .022f, .022f, true, 4),
-                leftForearm = P(.39f, .27f, -58f, .021f, .021f, true, 4),
-                rightUpperArm = P(.11f, .39f, -29f, .022f, .022f, true, 2),
-                rightForearm = P(.35f, .25f, -55f, .021f, .021f, true, 2),
-                leftThigh = P(-.04f, -.03f, -79f, .023f, .023f, true, 2),
-                leftLowerLeg = P(.17f, -.28f, -15f, .021f, .021f, true, 2),
-                rightThigh = P(-.11f, -.02f, -70f, .023f, .023f, true, 1),
-                rightLowerLeg = P(.09f, -.27f, -8f, .021f, .021f, true, 1),
+                // The source arm/leg sprites already contain their complete bent limb.
+                // Render one side silhouette instead of stacking duplicate limb sprites.
+                leftUpperArm = P(.20f, .38f, -4f, .040f, .030f, true, 4),
+                leftForearm = P(.39f, .27f, 0f, .021f, .021f, false, 4),
+                rightUpperArm = P(.11f, .39f, 0f, .022f, .022f, false, 2),
+                rightForearm = P(.35f, .25f, 0f, .021f, .021f, false, 2),
+                leftThigh = P(.16f, .10f, 0f, .032f, .030f, true, 2),
+                leftLowerLeg = P(.17f, -.28f, 0f, .021f, .021f, false, 2),
+                rightThigh = P(-.11f, -.02f, 0f, .023f, .023f, false, 1),
+                rightLowerLeg = P(.09f, -.27f, 0f, .021f, .021f, false, 1),
                 accessory = P(-.34f, .67f, -3f, 1f, 1f, true, 6)
             };
         }
@@ -2725,12 +2822,12 @@ namespace AnimeHillRacing.Editor
             return new VehicleDefinition.DriverPose
             {
                 rootPosition = new Vector2(.16f, .18f), rootScale = .86f,
-                torso = P(-.02f, .12f, -30f, .026f, .029f, true, 12),
+                torso = P(-.02f, .12f, -8f, .026f, .029f, true, 12),
                 head = P(.05f, .45f, -10f, .031f, .034f, true, 15),
-                leftUpperArm = P(.16f, .21f, -58f, .020f, .020f, true, 14),
-                leftForearm = P(.40f, .06f, -70f, .019f, .019f, true, 14),
-                rightUpperArm = P(.11f, .18f, -54f, .020f, .020f, true, 13),
-                rightForearm = P(.36f, .04f, -68f, .019f, .019f, true, 13),
+                leftUpperArm = P(.17f, .22f, -8f, .020f, .020f, false, 14),
+                leftForearm = P(.40f, .06f, 0f, .019f, .019f, false, 14),
+                rightUpperArm = P(.11f, .18f, 0f, .020f, .020f, false, 13),
+                rightForearm = P(.36f, .04f, 0f, .019f, .019f, false, 13),
                 leftThigh = P(0f, 0f, 0f, .02f, .02f, false, 1),
                 leftLowerLeg = P(0f, 0f, 0f, .02f, .02f, false, 1),
                 rightThigh = P(0f, 0f, 0f, .02f, .02f, false, 1),
@@ -2767,14 +2864,15 @@ namespace AnimeHillRacing.Editor
                 rootPosition = new Vector2(-.33f, .42f), rootScale = 1f,
                 torso = P(.14f, .25f, -50f, .026f, true, 13),
                 head = P(.42f, .54f, -24f, .031f, true, 17),
-                leftUpperArm = P(.35f, .34f, -58f, .022f, true, 16),
-                leftForearm = P(.62f, .16f, -70f, .021f, true, 16),
-                rightUpperArm = P(.30f, .31f, -55f, .022f, true, 15),
-                rightForearm = P(.58f, .14f, -68f, .021f, true, 15),
-                leftThigh = P(-.03f, .02f, -68f, .024f, true, 14),
-                leftLowerLeg = P(.20f, -.21f, -18f, .022f, true, 14),
-                rightThigh = P(-.09f, 0f, -64f, .024f, true, 12),
-                rightLowerLeg = P(.14f, -.23f, -14f, .022f, true, 12),
+                leftUpperArm = VehicleDefinition.DriverPartPose.Create(
+                    .57f, .27f, -6f, .047f, .030f, true, 16),
+                leftForearm = P(.62f, .16f, 0f, .021f, false, 16),
+                rightUpperArm = P(.30f, .31f, 0f, .022f, false, 15),
+                rightForearm = P(.58f, .14f, 0f, .021f, false, 15),
+                leftThigh = P(.25f, .05f, -5f, .032f, true, 14),
+                leftLowerLeg = P(.20f, -.21f, 0f, .022f, false, 14),
+                rightThigh = P(-.09f, 0f, 0f, .024f, false, 12),
+                rightLowerLeg = P(.14f, -.23f, 0f, .022f, false, 12),
                 accessory = P(.13f, .53f, -24f, 1f, true, 18)
             };
         }
@@ -4475,14 +4573,14 @@ namespace AnimeHillRacing.Editor
                 {
                     accessoryId = "glasses", displayName = "GLASSES",
                     sprite = assets.driverGlasses, unlockedByDefault = true, gemPrice = 0,
-                    visibleWidth = .62f, anchorOffset = new Vector2(.11f, 0f),
+                    visibleWidth = .50f, anchorOffset = new Vector2(.28f, 0f),
                     allowsBlueprintProgression = true
                 },
                 new DriverDefinition.CharacterAccessoryOption
                 {
                     accessoryId = "fire-glasses", displayName = "FIRE GLASSES",
                     sprite = assets.driverFireGlasses, unlockedByDefault = true, gemPrice = 0,
-                    visibleWidth = .65f, anchorOffset = new Vector2(.11f, 0f),
+                    visibleWidth = .52f, anchorOffset = new Vector2(.28f, 0f),
                     allowsBlueprintProgression = true
                 }
             };

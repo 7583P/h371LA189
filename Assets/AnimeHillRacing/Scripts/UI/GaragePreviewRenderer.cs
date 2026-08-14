@@ -28,6 +28,7 @@ namespace AnimeHillRacing.UI
         public SpriteRenderer RearWheelRenderer => rearWheel;
         public SpriteRenderer FrontWheelRenderer => frontWheel;
         public ArticulatedDriver2D Driver => driver;
+        public Camera PreviewCamera => previewCamera;
 
         private void Awake() => EnsureTexture();
 

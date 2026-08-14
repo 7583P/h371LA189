@@ -87,52 +87,52 @@ MonoBehaviour:
       visible: 1
       sortingOrder: 17
     leftUpperArm:
-      position: {x: 0.35, y: 0.34}
-      rotation: -58
-      scale: {x: 0.022, y: 0.022}
+      position: {x: 0.57, y: 0.27}
+      rotation: -6
+      scale: {x: 0.047, y: 0.03}
       visible: 1
       sortingOrder: 16
     leftForearm:
       position: {x: 0.62, y: 0.16}
-      rotation: -70
+      rotation: 0
       scale: {x: 0.021, y: 0.021}
-      visible: 1
+      visible: 0
       sortingOrder: 16
     rightUpperArm:
       position: {x: 0.3, y: 0.31}
-      rotation: -55
+      rotation: 0
       scale: {x: 0.022, y: 0.022}
-      visible: 1
+      visible: 0
       sortingOrder: 15
     rightForearm:
       position: {x: 0.58, y: 0.14}
-      rotation: -68
+      rotation: 0
       scale: {x: 0.021, y: 0.021}
-      visible: 1
+      visible: 0
       sortingOrder: 15
     leftThigh:
-      position: {x: -0.03, y: 0.02}
-      rotation: -68
-      scale: {x: 0.024, y: 0.024}
+      position: {x: 0.25, y: 0.05}
+      rotation: -5
+      scale: {x: 0.032, y: 0.032}
       visible: 1
       sortingOrder: 14
     leftLowerLeg:
       position: {x: 0.2, y: -0.21}
-      rotation: -18
+      rotation: 0
       scale: {x: 0.022, y: 0.022}
-      visible: 1
+      visible: 0
       sortingOrder: 14
     rightThigh:
       position: {x: -0.09, y: 0}
-      rotation: -64
+      rotation: 0
       scale: {x: 0.024, y: 0.024}
-      visible: 1
+      visible: 0
       sortingOrder: 12
     rightLowerLeg:
       position: {x: 0.14, y: -0.23}
-      rotation: -14
+      rotation: 0
       scale: {x: 0.022, y: 0.022}
-      visible: 1
+      visible: 0
       sortingOrder: 12
     accessory:
       position: {x: 0.13, y: 0.53}

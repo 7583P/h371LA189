@@ -68,7 +68,7 @@ MonoBehaviour:
     rootScale: 0.86
     torso:
       position: {x: -0.02, y: 0.12}
-      rotation: -30
+      rotation: -8
       scale: {x: 0.026, y: 0.029}
       visible: 1
       sortingOrder: 12
@@ -79,28 +79,28 @@ MonoBehaviour:
       visible: 1
       sortingOrder: 15
     leftUpperArm:
-      position: {x: 0.16, y: 0.21}
-      rotation: -58
+      position: {x: 0.17, y: 0.22}
+      rotation: -8
       scale: {x: 0.02, y: 0.02}
-      visible: 1
+      visible: 0
       sortingOrder: 14
     leftForearm:
       position: {x: 0.4, y: 0.06}
-      rotation: -70
+      rotation: 0
       scale: {x: 0.019, y: 0.019}
-      visible: 1
+      visible: 0
       sortingOrder: 14
     rightUpperArm:
       position: {x: 0.11, y: 0.18}
-      rotation: -54
+      rotation: 0
       scale: {x: 0.02, y: 0.02}
-      visible: 1
+      visible: 0
       sortingOrder: 13
     rightForearm:
       position: {x: 0.36, y: 0.04}
-      rotation: -68
+      rotation: 0
       scale: {x: 0.019, y: 0.019}
-      visible: 1
+      visible: 0
       sortingOrder: 13
     leftThigh:
       position: {x: 0, y: 0}

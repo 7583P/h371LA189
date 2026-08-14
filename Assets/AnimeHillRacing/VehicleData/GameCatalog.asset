@@ -25,3 +25,4 @@ MonoBehaviour:
   drivers:
   - {fileID: 11400000, guid: 993719216a499e44792c2cf9c86449ad, type: 2}
   upgradeEconomy: {fileID: 11400000, guid: 61951021c4546264c940b3e45f86b8ea, type: 2}
+  chestCatalog: {fileID: 11400000, guid: 67b5e03b5ed09ca4693cc744c6655958, type: 2}

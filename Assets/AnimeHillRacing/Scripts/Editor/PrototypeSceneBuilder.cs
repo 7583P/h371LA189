@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using AnimeHillRacing.CameraSystem;
+using AnimeHillRacing.Chests;
 using AnimeHillRacing.Core;
 using AnimeHillRacing.Pickups;
 using AnimeHillRacing.Road;
@@ -86,6 +87,19 @@ namespace AnimeHillRacing.Editor
         private const string FuelCanPath = "Assets/Art/Collectibles/Fuel/Fuel_Can_Default.png";
         private const string Coin01Path = "Assets/Art/Collectibles/Coins/Coin_01.png";
         private const string Coin05Path = "Assets/Art/Collectibles/Coins/Coin_05.png";
+        private const string ChestRoot = "Assets/Art/Chests";
+        private const string BronzeChestClosedPath = ChestRoot + "/Bronze_Chest_Closed.png";
+        private const string BronzeChestOpenPath = ChestRoot + "/Bronze_Chest_Open.png";
+        private const string SilverChestClosedPath = ChestRoot + "/Silver_Chest_Closed.png";
+        private const string SilverChestOpenPath = ChestRoot + "/Silver_Chest_Open.png";
+        private const string GoldChestClosedPath = ChestRoot + "/Gold_Chest_Closed.png";
+        private const string GoldChestOpenPath = ChestRoot + "/Gold_Chest_Open.png";
+        private const string MasterChestClosedPath = ChestRoot + "/Master_Chest_Closed.png";
+        private const string MasterChestOpenPath = ChestRoot + "/Master_Chest_Open.png";
+        private const string LegendaryChestClosedPath = ChestRoot + "/Legendary_Chest_Closed.png";
+        private const string LegendaryChestOpenPath = ChestRoot + "/Legendary_Chest_Open.png";
+        private const string CoinsChestPath = ChestRoot + "/Coins_Chest.png";
+        private const string ChestShelfPath = ChestRoot + "/Shelf.png";
         private const string DriverRoot = "Assets/Art/Characters/Stickman_Black";
         private const string DriverPreviewPath = DriverRoot + "/Stickman_Black_Preview.png";
         private const string DriverHeadPath = DriverRoot + "/Head/Stickman_Black_Head.png";
@@ -151,6 +165,9 @@ namespace AnimeHillRacing.Editor
             public Sprite fuelCan;
             public Sprite coin01;
             public Sprite coin05;
+            public Sprite bronzeChestClosed, bronzeChestOpen, silverChestClosed, silverChestOpen;
+            public Sprite goldChestClosed, goldChestOpen, masterChestClosed, masterChestOpen;
+            public Sprite legendaryChestClosed, legendaryChestOpen, coinsChest, chestShelf;
             public DriverDefinition stickmanBlack;
             public EnvironmentDefinition countrysideEnvironment;
             public EnvironmentDefinition neonCityEnvironment;
@@ -163,6 +180,7 @@ namespace AnimeHillRacing.Editor
             public CircuitDefinition testCircuit;
             public UpgradeEconomyDefinition economy;
             public GameCatalog catalog;
+            public ChestCatalog chestCatalog;
             public Material countrysideMaterial;
             public Material countrysideEdgeMaterial;
             public Material neonCityMaterial;
@@ -338,8 +356,129 @@ namespace AnimeHillRacing.Editor
             BuiltAssets assets = LoadImplementedAuditAssets();
             ValidateTuningContract(assets);
             ValidateNeonCityContract(assets);
+            ValidatePedalPriorityContract();
             ValidateVehiclePerformance(assets);
             Debug.Log("IMPLEMENTED_UPGRADE_NEON_AUDIT_PASS: curves, physical stats, terrain, seams and liquids validated.");
+        }
+
+        [MenuItem("Anime Hill Racing/Validate Neon Difficulty + Pedal Priority")]
+        public static void ValidateNeonDifficultyAndPedalPriority()
+        {
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            BuiltAssets assets = LoadImplementedAuditAssets();
+            ValidateNeonCityContract(assets);
+            ValidatePedalPriorityContract();
+            ValidateAirbornePedalPriorityContract(assets.jeep);
+            Debug.Log("NEON_DIFFICULTY_PEDAL_PRIORITY_AUDIT_PASS: harder than Countryside, " +
+                      "6000m/8 liquids/ramps/warnings and ground/air last-pressed pedals validated.");
+        }
+
+        private static void ValidatePedalPriorityContract()
+        {
+            GameObject inputObject = new GameObject("Pedal Priority Audit");
+            VehicleInputController input = inputObject.AddComponent<VehicleInputController>();
+            MethodInfo refreshInput = typeof(VehicleInputController).GetMethod("Update",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            if (refreshInput == null)
+            {
+                Object.DestroyImmediate(inputObject);
+                throw new System.InvalidOperationException("Vehicle input refresh method is unavailable.");
+            }
+
+            input.SetTouchBrake(true);
+            refreshInput.Invoke(input, null);
+            bool brakeStarts = input.State.BrakeRaw > .5f && input.State.Gas < .5f;
+            input.SetTouchGas(true);
+            refreshInput.Invoke(input, null);
+            bool gasOverrides = input.State.Gas > .5f && input.State.BrakeRaw < .5f;
+            input.SetTouchGas(false);
+            refreshInput.Invoke(input, null);
+            bool brakeResumes = input.State.BrakeRaw > .5f && input.State.Gas < .5f;
+
+            input.SetTouchBrake(false);
+            input.SetTouchGas(true);
+            refreshInput.Invoke(input, null);
+            bool gasStarts = input.State.Gas > .5f && input.State.BrakeRaw < .5f;
+            input.SetTouchBrake(true);
+            refreshInput.Invoke(input, null);
+            bool brakeOverrides = input.State.BrakeRaw > .5f && input.State.Gas < .5f;
+            input.SetTouchBrake(false);
+            refreshInput.Invoke(input, null);
+            bool gasResumes = input.State.Gas > .5f && input.State.BrakeRaw < .5f;
+            Object.DestroyImmediate(inputObject);
+
+            if (!brakeStarts || !gasOverrides || !brakeResumes ||
+                !gasStarts || !brakeOverrides || !gasResumes)
+                throw new System.InvalidOperationException(
+                    "Brake/Gas must give exclusive control to the last pedal pressed and resume the held pedal on release.");
+            Debug.Log("PEDAL_LAST_PRESSED_PRIORITY: Brake->Gas and Gas->Brake override/resume PASS.");
+        }
+
+        private static void ValidateAirbornePedalPriorityContract(VehicleDefinition source)
+        {
+            if (source == null || source.gameplayPrefab2D == null)
+                throw new System.InvalidOperationException("Airborne pedal audit requires a 2D vehicle prefab.");
+            string sourcePath = AssetDatabase.GetAssetPath(source);
+            NewScene();
+            source = AssetDatabase.LoadAssetAtPath<VehicleDefinition>(sourcePath);
+            if (source == null || source.gameplayPrefab2D == null)
+                throw new System.InvalidOperationException("Airborne pedal audit could not reload its vehicle prefab.");
+            SimulationMode previousMode = Physics.simulationMode;
+            Physics.simulationMode = SimulationMode.Script;
+            VehicleDefinition testDefinition = CreateMaximumTuneClone(source);
+            GameObject inputObject = new GameObject("Airborne Pedal Priority Input");
+            VehicleInputController input = inputObject.AddComponent<VehicleInputController>();
+            GameObject instance = Object.Instantiate(source.gameplayPrefab2D,
+                new Vector3(0f, 10000f, 0f), Quaternion.identity);
+            VehicleController controller = instance.GetComponent<VehicleController>();
+            controller.AssignRuntimeReferences(testDefinition, input,
+                instance.GetComponentsInChildren<SuspensionController>(true));
+            InvokePrivate(controller, "Awake");
+            MovementPlaneConstraint plane = instance.GetComponent<MovementPlaneConstraint>();
+            if (plane != null) InvokePrivate(plane, "Awake");
+
+            input.SetTouchGas(true);
+            InvokePrivate(input, "Update");
+            for (int step = 0; step < 4; step++)
+            {
+                InvokePrivate(controller, "FixedUpdate");
+                Physics.Simulate(.02f);
+            }
+            float gasRotation = controller.Body.angularVelocity.z;
+
+            input.SetTouchBrake(true);
+            InvokePrivate(input, "Update");
+            InvokePrivate(controller, "FixedUpdate");
+            Physics.Simulate(.02f);
+            float brakeOverrideRotation = controller.Body.angularVelocity.z;
+
+            for (int step = 0; step < 8; step++)
+            {
+                InvokePrivate(controller, "FixedUpdate");
+                Physics.Simulate(.02f);
+            }
+            float brakeHeldRotation = controller.Body.angularVelocity.z;
+
+            input.SetTouchBrake(false);
+            InvokePrivate(input, "Update");
+            InvokePrivate(controller, "FixedUpdate");
+            Physics.Simulate(.02f);
+            float gasResumeRotation = controller.Body.angularVelocity.z;
+
+            Object.DestroyImmediate(instance);
+            Object.DestroyImmediate(inputObject);
+            Object.DestroyImmediate(testDefinition);
+            Physics.simulationMode = previousMode;
+            if (gasRotation <= .1f || brakeOverrideRotation >= gasRotation - .01f ||
+                brakeOverrideRotation <= 0f || brakeHeldRotation >= -.05f ||
+                gasResumeRotation <= brakeHeldRotation + .01f)
+                throw new System.InvalidOperationException(
+                    $"Airborne last-pressed pedal priority failed: gas={gasRotation:0.000}, " +
+                    $"brake first frame={brakeOverrideRotation:0.000}, brake held={brakeHeldRotation:0.000}, " +
+                    $"gas resume={gasResumeRotation:0.000}.");
+            Debug.Log($"AIR_PEDAL_LAST_PRESSED_PRIORITY: gas={gasRotation:0.000}, " +
+                      $"brake first frame={brakeOverrideRotation:0.000} (inertia preserved), " +
+                      $"brake held={brakeHeldRotation:0.000}, gas resume={gasResumeRotation:0.000} PASS.");
         }
 
         private static BuiltAssets LoadImplementedAuditAssets()
@@ -353,6 +492,7 @@ namespace AnimeHillRacing.Editor
                 economy = AssetDatabase.LoadAssetAtPath<UpgradeEconomyDefinition>(
                     Root + "/VehicleData/UpgradeEconomy.asset"),
                 catalog = AssetDatabase.LoadAssetAtPath<GameCatalog>(Root + "/VehicleData/GameCatalog.asset"),
+                countryside = AssetDatabase.LoadAssetAtPath<MapProfile>(Root + "/MapProfiles/Countryside.asset"),
                 neonCity = AssetDatabase.LoadAssetAtPath<MapProfile>(Root + "/MapProfiles/NeonCity.asset"),
                 neonLiquid = AssetDatabase.LoadAssetAtPath<Sprite>(NeonLiquidPath),
                 neonCaution = AssetDatabase.LoadAssetAtPath<Sprite>(NeonCautionPath),
@@ -478,11 +618,13 @@ namespace AnimeHillRacing.Editor
                 {
                     string[] fields = { "catalog", "preview", "vehicleName", "categoryName", "skinSummary",
                         "wheelSummary", "driverSummary", "categoryButtons", "optionButtons", "optionImages",
-                        "optionLabels", "tuningPanel", "tuningNames", "tuningLevels", "tuningValues",
+                        "optionLabels", "optionBlueprintFills", "optionBlueprintTexts", "tuningPanel",
+                        "tuningNames", "tuningLevels", "tuningValues",
                         "tuningCosts", "tuningButtons", "tuningCoins", "sectionTitle", "upgradeSummary",
                         "vehiclePanel", "customizationPanel", "upgradePanel", "storePanel", "settingsPanel",
                         "confirmationModal", "confirmationTitle", "confirmationValues", "confirmationCost",
-                        "confirmationStatus", "confirmationYes" };
+                        "confirmationStatus", "confirmationYes", "blueprintButtons", "blueprintImages",
+                        "blueprintLabels", "blueprintPageText", "blueprintCoinsText", "blueprintPackButtons" };
                     for (int i = 0; i < fields.Length; i++) valid &= RequireReference(scene, garages[0], fields[i]);
                 }
                 valid &= ValidateDisplayCamera(scene, false);
@@ -700,27 +842,38 @@ namespace AnimeHillRacing.Editor
                         HoldButton gas = brake == touchZones[0] ? touchZones[1] : touchZones[0];
                         var brakePointer = new PointerEventData(eventSystems[0]) { pointerId = 101 };
                         var gasPointer = new PointerEventData(eventSystems[0]) { pointerId = 202 };
-                        FieldInfo brakeState = typeof(VehicleInputController).GetField("touchBrake",
+                        MethodInfo refreshInput = typeof(VehicleInputController).GetMethod("Update",
                             BindingFlags.Instance | BindingFlags.NonPublic);
-                        FieldInfo gasState = typeof(VehicleInputController).GetField("touchGas",
-                            BindingFlags.Instance | BindingFlags.NonPublic);
-                        bool hasTouchState = brakeState != null && gasState != null;
+                        VehicleInputController touchInput = touchInputs[0];
+
                         brake.OnPointerDown(brakePointer);
+                        refreshInput?.Invoke(touchInput, null);
+                        bool brakeStarts = touchInput.State.BrakeRaw > .5f && touchInput.State.Gas < .5f;
                         gas.OnPointerDown(gasPointer);
-                        bool simultaneous = hasTouchState &&
-                                            (bool)brakeState.GetValue(touchInputs[0]) &&
-                                            (bool)gasState.GetValue(touchInputs[0]);
-                        brake.OnPointerUp(brakePointer);
-                        bool independentRelease = hasTouchState &&
-                                                  !(bool)brakeState.GetValue(touchInputs[0]) &&
-                                                  (bool)gasState.GetValue(touchInputs[0]);
+                        refreshInput?.Invoke(touchInput, null);
+                        bool gasOverridesBrake = touchInput.State.Gas > .5f && touchInput.State.BrakeRaw < .5f;
                         gas.OnPointerUp(gasPointer);
-                        bool fullyReleased = hasTouchState &&
-                                             !(bool)brakeState.GetValue(touchInputs[0]) &&
-                                             !(bool)gasState.GetValue(touchInputs[0]);
-                        if (!simultaneous || !independentRelease || !fullyReleased)
+                        refreshInput?.Invoke(touchInput, null);
+                        bool brakeResumes = touchInput.State.BrakeRaw > .5f && touchInput.State.Gas < .5f;
+                        brake.OnPointerUp(brakePointer);
+
+                        gas.OnPointerDown(gasPointer);
+                        refreshInput?.Invoke(touchInput, null);
+                        bool gasStarts = touchInput.State.Gas > .5f && touchInput.State.BrakeRaw < .5f;
+                        brake.OnPointerDown(brakePointer);
+                        refreshInput?.Invoke(touchInput, null);
+                        bool brakeOverridesGas = touchInput.State.BrakeRaw > .5f && touchInput.State.Gas < .5f;
+                        brake.OnPointerUp(brakePointer);
+                        refreshInput?.Invoke(touchInput, null);
+                        bool gasResumes = touchInput.State.Gas > .5f && touchInput.State.BrakeRaw < .5f;
+                        gas.OnPointerUp(gasPointer);
+                        touchInput.SetInputEnabled(false);
+                        touchInput.SetInputEnabled(true);
+
+                        if (refreshInput == null || !brakeStarts || !gasOverridesBrake || !brakeResumes ||
+                            !gasStarts || !brakeOverridesGas || !gasResumes)
                         {
-                            Debug.LogError($"{scene.name}: Brake/Gas multitouch independence test failed.");
+                            Debug.LogError($"{scene.name}: last-pressed Brake/Gas priority test failed.");
                             valid = false;
                         }
                     }
@@ -1101,6 +1254,7 @@ namespace AnimeHillRacing.Editor
             {
                 optionId = id, displayName = name, sprite = sprite,
                 unlockedByDefault = unlockedByDefault, gemPrice = gemPrice,
+                bundleType = BundleType.Cosmetic, allowsBlueprintProgression = true,
                 visibleDiameter = visibleDiameter
             };
 
@@ -1264,6 +1418,11 @@ namespace AnimeHillRacing.Editor
                 profile.liquidChallenges.cautionSprite != assets.neonCaution)
                 throw new System.InvalidOperationException("Neon City profile or required artwork is incomplete.");
             LiquidChallengeSettings settings = profile.liquidChallenges;
+            if (settings.rampAngleDegrees < 20f || settings.rampHorizontalLength < 12f ||
+                settings.cautionDistanceBeforeRamp <= settings.rampTransitionLength ||
+                settings.cautionDistanceBeforeRamp >= settings.runUpLength + settings.rampTransitionLength)
+                throw new System.InvalidOperationException(
+                    "Every Neon liquid requires its authored ramp and a caution marker on the stable run-up before it.");
             float damping = -Mathf.Log(settings.entrySpeedRemaining) / settings.entrySlowdownSeconds;
             float measuredRemaining = Mathf.Exp(-damping * settings.entrySlowdownSeconds);
             float liquidTerminalSpeed = settings.liquidDriveAcceleration /
@@ -1274,6 +1433,13 @@ namespace AnimeHillRacing.Editor
                 throw new System.InvalidOperationException(
                     "Neon Liquid slowdown, alpha, or Level-1 escape envelope is invalid.");
             float[] repeatedRunUps = new float[LiquidChallengeSettings.RequiredChallengesPerCycle];
+            NeonTemplateSection[] liquidSections =
+            {
+                NeonTemplateSection.Warmup, NeonTemplateSection.GradualDescent,
+                NeonTemplateSection.BumpyFlat, NeonTemplateSection.Staircases,
+                NeonTemplateSection.BrokenTerrain, NeonTemplateSection.RollingDescent,
+                NeonTemplateSection.DoubleHill, NeonTemplateSection.TechBumps
+            };
             if (settings.structuralRunUpPositions == null ||
                 settings.structuralRunUpPositions.Length != LiquidChallengeSettings.RequiredChallengesPerCycle)
                 throw new System.InvalidOperationException(
@@ -1292,7 +1458,7 @@ namespace AnimeHillRacing.Editor
                     float localRunUp = layout.runUpStart - cycle * LiquidChallengeSettings.RequiredCycleLength;
                     float authoredRunUp = TerrainGenerator.GetNeonLiquidLocalRunUp(profile, slot);
                     if (Mathf.Abs(localRunUp - authoredRunUp) > .001f ||
-                        TerrainGenerator.GetNeonTemplateSection(localRunUp) != (NeonTemplateSection)slot)
+                        TerrainGenerator.GetNeonTemplateSection(localRunUp) != liquidSections[slot])
                         throw new System.InvalidOperationException(
                             $"Neon City challenge {slot + 1} is not anchored in its authored terrain section.");
                     if (cycle == 0) repeatedRunUps[slot] = localRunUp;
@@ -1305,6 +1471,10 @@ namespace AnimeHillRacing.Editor
                         layout.recoveryEnd <= layout.landingEnd)
                         throw new System.InvalidOperationException(
                             $"Neon City cycle {cycle} challenge {slot + 1} grammar/spacing is invalid.");
+                    float cautionX = layout.rampStart - settings.cautionDistanceBeforeRamp;
+                    if (cautionX <= layout.runUpStart || cautionX >= layout.transitionStart)
+                        throw new System.InvalidOperationException(
+                            $"Neon City cycle {cycle} challenge {slot + 1} caution marker is not before its ramp.");
                     if (!TerrainGenerator.TryGetLiquidChallengeAtDistance(profile,
                             (layout.poolStart + layout.poolEnd) * .5f, out LiquidChallengeLayout found) ||
                         found.challengeIndex != slot)
@@ -1349,36 +1519,39 @@ namespace AnimeHillRacing.Editor
                 NeonTemplateSection section = (NeonTemplateSection)sectionIndex;
                 sectionAudits[sectionIndex] = AuditNeonSection(profile, section, 2f);
                 NeonSectionAudit audit = sectionAudits[sectionIndex];
-                Debug.Log($"NEON_HEIGHT_PROFILE {sectionIndex + 1}/9 {section} " +
+                Debug.Log($"NEON_HEIGHT_PROFILE {sectionIndex + 1}/{TerrainGenerator.NeonTemplateSectionCount} {section} " +
                           $"{audit.startDistance:0}-{audit.endDistance:0}m | " +
                           $"height={audit.minimumHeight:0.00}..{audit.maximumHeight:0.00}m | " +
                           $"net={audit.endHeight - audit.startHeight:+0.00;-0.00;0.00}m | " +
                           $"turns={audit.directionChanges} | maxSlope={audit.maximumSlope:0.0}deg");
             }
-            if (sectionAudits[(int)NeonTemplateSection.Warmup].HeightRange < 2f ||
-                sectionAudits[(int)NeonTemplateSection.Warmup].HeightRange > 6f ||
-                sectionAudits[(int)NeonTemplateSection.RollingHills].HeightRange < 30f ||
-                sectionAudits[(int)NeonTemplateSection.RollingHills].directionChanges < 4 ||
-                sectionAudits[(int)NeonTemplateSection.RollingHills].maximumSlope < 24f ||
-                sectionAudits[(int)NeonTemplateSection.GradualDescent].NetHeight > -30f ||
-                sectionAudits[(int)NeonTemplateSection.GradualDescent].directionChanges < 5 ||
-                Mathf.Abs(sectionAudits[(int)NeonTemplateSection.BumpyFlat].NetHeight) > 5f ||
-                sectionAudits[(int)NeonTemplateSection.BumpyFlat].HeightRange < 12f ||
-                sectionAudits[(int)NeonTemplateSection.BumpyFlat].directionChanges < 8 ||
-                sectionAudits[(int)NeonTemplateSection.Staircases].NetHeight < 30f ||
+            if (sectionAudits[(int)NeonTemplateSection.Warmup].HeightRange < 3f ||
+                sectionAudits[(int)NeonTemplateSection.Warmup].HeightRange > 9f ||
+                sectionAudits[(int)NeonTemplateSection.RollingHills].HeightRange < 18f ||
+                sectionAudits[(int)NeonTemplateSection.RollingHills].directionChanges < 15 ||
+                sectionAudits[(int)NeonTemplateSection.RollingHills].maximumSlope < 20f ||
+                sectionAudits[(int)NeonTemplateSection.GradualDescent].NetHeight > -18f ||
+                sectionAudits[(int)NeonTemplateSection.GradualDescent].directionChanges < 12 ||
+                Mathf.Abs(sectionAudits[(int)NeonTemplateSection.BumpyFlat].NetHeight) > 4f ||
+                sectionAudits[(int)NeonTemplateSection.BumpyFlat].HeightRange < 8f ||
+                sectionAudits[(int)NeonTemplateSection.BumpyFlat].directionChanges < 12 ||
+                sectionAudits[(int)NeonTemplateSection.Staircases].NetHeight < 20f ||
+                sectionAudits[(int)NeonTemplateSection.Staircases].directionChanges < 10 ||
                 sectionAudits[(int)NeonTemplateSection.Staircases].maximumSlope < 20f ||
-                sectionAudits[(int)NeonTemplateSection.RollingDescent].NetHeight > -30f ||
-                sectionAudits[(int)NeonTemplateSection.RollingDescent].directionChanges < 5 ||
-                sectionAudits[(int)NeonTemplateSection.DoubleHill].HeightRange < 35f ||
-                sectionAudits[(int)NeonTemplateSection.DoubleHill].directionChanges < 3 ||
-                sectionAudits[(int)NeonTemplateSection.DoubleHill].maximumSlope < 28f ||
-                sectionAudits[(int)NeonTemplateSection.TechBumps].HeightRange < 24f ||
-                sectionAudits[(int)NeonTemplateSection.TechBumps].directionChanges < 8 ||
-                sectionAudits[(int)NeonTemplateSection.TechBumps].maximumSlope < 32f ||
-                sectionAudits[(int)NeonTemplateSection.Recovery].HeightRange > 6f ||
+                sectionAudits[(int)NeonTemplateSection.BrokenTerrain].HeightRange < 25f ||
+                sectionAudits[(int)NeonTemplateSection.BrokenTerrain].directionChanges < 12 ||
+                sectionAudits[(int)NeonTemplateSection.RollingDescent].NetHeight > -10f ||
+                sectionAudits[(int)NeonTemplateSection.RollingDescent].directionChanges < 15 ||
+                sectionAudits[(int)NeonTemplateSection.DoubleHill].HeightRange < 40f ||
+                sectionAudits[(int)NeonTemplateSection.DoubleHill].directionChanges < 12 ||
+                sectionAudits[(int)NeonTemplateSection.DoubleHill].maximumSlope < 30f ||
+                sectionAudits[(int)NeonTemplateSection.TechBumps].HeightRange < 16f ||
+                sectionAudits[(int)NeonTemplateSection.TechBumps].directionChanges < 12 ||
+                sectionAudits[(int)NeonTemplateSection.TechBumps].maximumSlope < 30f ||
+                sectionAudits[(int)NeonTemplateSection.Recovery].HeightRange > 8f ||
                 Mathf.Abs(sectionAudits[(int)NeonTemplateSection.Recovery].endHeight - profile.baseHeight) > .01f)
                 throw new System.InvalidOperationException(
-                    "Neon City height profile does not expose the complete authored nine-section grammar.");
+                    "Neon City height profile does not expose the complete authored ten-section grammar.");
 
             float minimumHeight = TerrainGenerator.SampleNeonTemplateHeight(profile, 0f);
             float maximumHeight = minimumHeight;
@@ -1386,6 +1559,7 @@ namespace AnimeHillRacing.Editor
             int terrainDirectionChanges = 0;
             int previousDirection = 0;
             float maximumSlopeChange = 0f;
+            float maximumSlopeChangeAt = 0f;
             float previousSlope = 0f;
             bool hasPreviousSlope = false;
             const float terrainAuditStep = 2f;
@@ -1405,8 +1579,14 @@ namespace AnimeHillRacing.Editor
                 float signedSlope = Mathf.Atan2(delta, terrainAuditStep) * Mathf.Rad2Deg;
                 maximumSlope = Mathf.Max(maximumSlope, Mathf.Abs(signedSlope));
                 if (hasPreviousSlope)
-                    maximumSlopeChange = Mathf.Max(maximumSlopeChange,
-                        Mathf.Abs(signedSlope - previousSlope));
+                {
+                    float slopeChange = Mathf.Abs(signedSlope - previousSlope);
+                    if (slopeChange > maximumSlopeChange)
+                    {
+                        maximumSlopeChange = slopeChange;
+                        maximumSlopeChangeAt = distance;
+                    }
+                }
                 previousSlope = signedSlope;
                 hasPreviousSlope = true;
                 previousHeight = height;
@@ -1435,27 +1615,109 @@ namespace AnimeHillRacing.Editor
             Object.DestroyImmediate(seamLeftMesh);
             Object.DestroyImmediate(seamRightMesh);
 
-            if (TerrainGenerator.NeonTemplateSectionCount != 9 ||
-                TerrainGenerator.NeonMesoFeatureCount != 26 ||
-                TerrainGenerator.NeonMesoMinimumLength < 50f ||
-                TerrainGenerator.NeonMesoMaximumLength > 150f ||
-                maximumSlope > profile.maxSlopeAngle + .25f || maximumSlope < 36f ||
-                maximumSlopeChange > 8f || maximumHeight - minimumHeight < 60f ||
-                terrainDirectionChanges < 120 || analyticSeamDelta > .01f || meshSeamDelta > .001f ||
+            if (TerrainGenerator.NeonTemplateSectionCount != 10 ||
+                TerrainGenerator.NeonMesoFeatureCount != 66 ||
+                TerrainGenerator.NeonSharpCrestCount != 10 ||
+                TerrainGenerator.NeonPotholeCount != 18 ||
+                TerrainGenerator.NeonWhoopsCount != 4 ||
+                TerrainGenerator.NeonSoftStepCount != 3 ||
+                TerrainGenerator.NeonTripleBumpCount != 4 ||
+                TerrainGenerator.NeonPlateauCount != 3 ||
+                TerrainGenerator.NeonBrokenRhythmCount != 3 ||
+                TerrainGenerator.NeonMesoMinimumLength != 28f ||
+                TerrainGenerator.NeonMesoMaximumLength != 70f ||
+                maximumSlope > profile.maxSlopeAngle + .25f || maximumSlope < 38f ||
+                maximumSlopeChange > 20f || maximumHeight - minimumHeight < 55f ||
+                terrainDirectionChanges < 170 || analyticSeamDelta > .01f || meshSeamDelta > .001f ||
                 TerrainGenerator.IsLiquidGap(profile, 5999f) || TerrainGenerator.IsLiquidGap(profile, 6001f))
                 throw new System.InvalidOperationException(
                     $"Neon terrain grammar invalid: sections={TerrainGenerator.NeonTemplateSectionCount}, " +
                     $"meso={TerrainGenerator.NeonMesoFeatureCount}, slope={maximumSlope:0.0}, " +
-                    $"slope-step={maximumSlopeChange:0.0}, " +
+                    $"slope-step={maximumSlopeChange:0.0}@{maximumSlopeChangeAt:0}m, " +
                     $"range={minimumHeight:0.0}..{maximumHeight:0.0}m, " +
                     $"direction-changes={terrainDirectionChanges}, seam={meshSeamDelta:0.000000}m.");
+
+            TerrainDifficultyAudit neonCycle = AuditDriveableTerrain(profile, 6000f, terrainAuditStep);
+            TerrainDifficultyAudit countrysideCycle = AuditGeneratedTerrain(assets.countryside, 6000f);
+            if (assets.countryside == null || assets.countryside.supportsLiquidExposure ||
+                profile.maxSlopeAngle < assets.countryside.maxSlopeAngle + 12f ||
+                neonCycle.maximumSlope < countrysideCycle.maximumSlope + 8f ||
+                neonCycle.HeightRange < countrysideCycle.HeightRange * 1.70f ||
+                profile.initialFuelGap <= assets.countryside.initialFuelGap ||
+                profile.fuelGapIncrease < assets.countryside.fuelGapIncrease)
+                throw new System.InvalidOperationException(
+                    $"Neon City must remain harder than Countryside over the same 6000m: " +
+                    $"Neon range/slope/turns={neonCycle.HeightRange:0.0}m/{neonCycle.maximumSlope:0.0}deg/" +
+                    $"{neonCycle.directionChanges}; Countryside={countrysideCycle.HeightRange:0.0}m/" +
+                    $"{countrysideCycle.maximumSlope:0.0}deg/{countrysideCycle.directionChanges}.");
+
+            NeonHandlingAudit cycle0Handling = AuditGeneratedNeonHandling(profile, 0f, 6000f);
+            NeonHandlingAudit cycle1Handling = AuditGeneratedNeonHandling(profile, 6000f, 6000f);
+            if (cycle0Handling.maximumSlope > profile.maxSlopeAngle + .25f ||
+                cycle1Handling.maximumSlope > profile.maxSlopeAngle + .25f ||
+                cycle0Handling.maximumSlopeChange > 20f || cycle1Handling.maximumSlopeChange > 20f ||
+                cycle0Handling.maximumSeamGap > .001f || cycle1Handling.maximumSeamGap > .001f ||
+                cycle0Handling.minimumCrestSpeed < 4f || cycle1Handling.minimumCrestSpeed < 4f ||
+                cycle0Handling.extremaSpacingVariation < .35f || cycle1Handling.extremaSpacingVariation < .35f ||
+                cycle0Handling.microExtremaIntervals > 2 || cycle1Handling.microExtremaIntervals > 2)
+                throw new System.InvalidOperationException(
+                    $"Neon smoothed-mesh handling invalid: C0 slope/change/seam/safe/spacingCV/micro=" +
+                    $"{cycle0Handling.maximumSlope:0.0}/{cycle0Handling.maximumSlopeChange:0.0}" +
+                    $"@{cycle0Handling.maximumSlopeChangeAt:0.0}m/" +
+                    $"{cycle0Handling.maximumSeamGap:0.000000}/{cycle0Handling.minimumCrestSpeed:0.0}/" +
+                    $"{cycle0Handling.extremaSpacingVariation:0.00}/{cycle0Handling.microExtremaIntervals}; C1=" +
+                    $"{cycle1Handling.maximumSlope:0.0}/{cycle1Handling.maximumSlopeChange:0.0}" +
+                    $"@{cycle1Handling.maximumSlopeChangeAt:0.0}m/" +
+                    $"{cycle1Handling.maximumSeamGap:0.000000}/{cycle1Handling.minimumCrestSpeed:0.0}/" +
+                    $"{cycle1Handling.extremaSpacingVariation:0.00}/{cycle1Handling.microExtremaIntervals}; " +
+                    $"C0 micro positions={string.Join(",", cycle0Handling.microExtremaPositions.Select(x => x.ToString("0.0")))}.");
+
+            VehicleDefinition[] levelOneVehicles = { assets.jeep, assets.formula, assets.rally, assets.sportBike };
+            for (int i = 0; i < levelOneVehicles.Length; i++)
+            {
+                VehicleDefinition vehicle = levelOneVehicles[i];
+                ResolvedVehicleStats levelOne = vehicle.Resolve(new VehicleUpgradeState());
+                int cycle0OverspeedZones = CountOverspeedZones(cycle0Handling, levelOne.topSpeedMps);
+                int cycle1OverspeedZones = CountOverspeedZones(cycle1Handling, levelOne.topSpeedMps);
+                float minimumReadableLength = vehicle.halfWheelbase * 10f;
+                if (cycle0OverspeedZones < 6 || cycle1OverspeedZones < cycle0OverspeedZones ||
+                    TerrainGenerator.NeonMesoMinimumLength < minimumReadableLength)
+                    throw new System.InvalidOperationException(
+                        $"{vehicle.displayName} Level 1 terrain envelope failed: C0/C1 overspeed zones=" +
+                        $"{cycle0OverspeedZones}/{cycle1OverspeedZones}, minimum feature=" +
+                        $"{TerrainGenerator.NeonMesoMinimumLength:0}m, wheelbase envelope={minimumReadableLength:0.0}m.");
+                Debug.Log($"NEON_LEVEL1 {vehicle.displayName}: top={levelOne.topSpeedMps * 3.6f:0}km/h, " +
+                          $"controlled crest floor C0/C1={cycle0Handling.minimumCrestSpeed * 3.6f:0}/" +
+                          $"{cycle1Handling.minimumCrestSpeed * 3.6f:0}km/h, full-Gas overspeed zones=" +
+                          $"{cycle0OverspeedZones}/{cycle1OverspeedZones}; PASS with braking/momentum.");
+            }
+            Debug.Log($"NEON_WHEEL_JITTER_AUDIT: smoothing={profile.smoothingPasses} passes (1-2-1 kernel), " +
+                      $"C0/C1 max slope={cycle0Handling.maximumSlope:0.0}/{cycle1Handling.maximumSlope:0.0}deg, " +
+                      $"max slope change={cycle0Handling.maximumSlopeChange:0.0}/" +
+                      $"{cycle1Handling.maximumSlopeChange:0.0}deg per 1.67m, seams=" +
+                      $"{cycle0Handling.maximumSeamGap:0.000000}/{cycle1Handling.maximumSeamGap:0.000000}m, " +
+                      $"extrema spacing={cycle0Handling.minimumExtremaSpacing:0.0}-" +
+                      $"{cycle0Handling.maximumExtremaSpacing:0.0}m, CV={cycle0Handling.extremaSpacingVariation:0.00}; PASS.");
             Debug.Log($"NEON_TERRAIN_PATTERN: Warmup -> Rolling Hills -> Gradual Descent -> Bumpy Flat -> " +
-                      $"Staircases -> Rolling Descent -> Double Hill -> Tech Bumps -> Recovery; " +
-                      $"{TerrainGenerator.NeonMesoFeatureCount} authored 60-150m meso features; repeated " +
+                      $"Staircases -> Broken Terrain -> Rolling Descent -> Double Hill -> Tech Bumps -> Recovery; " +
+                      $"{TerrainGenerator.NeonMesoFeatureCount} authored 28-70m medium-scale features; repeated " +
+                      $"distinct obstacles={TerrainGenerator.NeonSharpCrestCount} sharp crests + " +
+                      $"{TerrainGenerator.NeonPotholeCount} potholes + {TerrainGenerator.NeonWhoopsCount} whoops + " +
+                      $"{TerrainGenerator.NeonSoftStepCount} soft steps + {TerrainGenerator.NeonTripleBumpCount} triple bumps + " +
+                      $"{TerrainGenerator.NeonPlateauCount} short plateaus + " +
+                      $"{TerrainGenerator.NeonBrokenRhythmCount} broken-rhythm groups; " +
+                      $"obstacle height approx " +
+                      $"{TerrainGenerator.NeonMesoMinimumNormalizedHeight * TerrainGenerator.EvaluateNeonAmplitude(profile, 0f):0.0}-" +
+                      $"{TerrainGenerator.NeonMesoMaximumNormalizedHeight * TerrainGenerator.EvaluateNeonAmplitude(profile, 6000f):0.0}m; " +
                       $"6000m cycle; height {minimumHeight:0.0}..{maximumHeight:0.0}m; max slope " +
                       $"{maximumSlope:0.0}deg; max 2m slope change={maximumSlopeChange:0.0}deg; " +
                       $"5990-6010 seam analytic={analyticSeamDelta:0.000000}m, mesh={meshSeamDelta:0.000000}m; " +
                       $"direction changes={terrainDirectionChanges}.");
+            Debug.Log($"NEON_HARDER_THAN_COUNTRYSIDE: equal 6000m comparison | " +
+                      $"height range {neonCycle.HeightRange:0.0}>{countrysideCycle.HeightRange:0.0}m | " +
+                      $"max slope {neonCycle.maximumSlope:0.0}>{countrysideCycle.maximumSlope:0.0}deg | " +
+                      $"8 liquids with {settings.rampAngleDegrees:0}deg ramps and " +
+                      $"warnings {settings.cautionDistanceBeforeRamp:0}m before each ramp.");
 
             var exposure = new LiquidExposureTracker();
             exposure.Reset(10f);
@@ -1495,6 +1757,314 @@ namespace AnimeHillRacing.Editor
             public int directionChanges;
             public float HeightRange => maximumHeight - minimumHeight;
             public float NetHeight => endHeight - startHeight;
+        }
+
+        private struct TerrainDifficultyAudit
+        {
+            public float minimumHeight;
+            public float maximumHeight;
+            public float maximumSlope;
+            public int directionChanges;
+            public float HeightRange => maximumHeight - minimumHeight;
+        }
+
+        private sealed class NeonHandlingAudit
+        {
+            public float maximumSlope;
+            public float maximumSlopeChange;
+            public float maximumSlopeChangeAt;
+            public float maximumSeamGap;
+            public float minimumCrestSpeed = float.PositiveInfinity;
+            public float minimumExtremaSpacing = float.PositiveInfinity;
+            public float maximumExtremaSpacing;
+            public float extremaSpacingMean;
+            public float extremaSpacingVariation;
+            public int extremaCount;
+            public int microExtremaIntervals;
+            public readonly List<float> microExtremaPositions = new List<float>();
+            public readonly List<Vector2> crestSpeedSamples = new List<Vector2>();
+        }
+
+        private static NeonHandlingAudit AuditGeneratedNeonHandling(MapProfile profile, float startDistance,
+            float length)
+        {
+            const float chunkLength = 80f;
+            const int samples = 48;
+            float dx = chunkLength / samples;
+            var audit = new NeonHandlingAudit();
+            var extremaSpacings = new List<float>();
+            var mesh = new Mesh();
+            float endHeight = 0f;
+            float endSlope = 0f;
+            float previousChunkEnd = 0f;
+            bool hasPreviousChunk = false;
+            float previousHeight = 0f;
+            float previousPreviousHeight = 0f;
+            float previousSlope = 0f;
+            bool hasPreviousHeight = false;
+            bool hasPreviousPreviousHeight = false;
+            bool hasPreviousSlope = false;
+            int previousDirection = 0;
+            float lastExtremum = float.NegativeInfinity;
+            float lastExtremumHeight = 0f;
+            int chunks = Mathf.CeilToInt(length / chunkLength);
+
+            for (int chunk = 0; chunk < chunks; chunk++)
+            {
+                float chunkStart = startDistance + chunk * chunkLength;
+                TerrainGenerator.BuildMesh(mesh, profile, chunkStart, chunkLength, samples, 10f,
+                    chunk > 0, endHeight, endSlope, out float[] heights, out endHeight, out endSlope);
+                if (hasPreviousChunk)
+                    audit.maximumSeamGap = Mathf.Max(audit.maximumSeamGap,
+                        Mathf.Abs(previousChunkEnd - heights[0]));
+                previousChunkEnd = heights[heights.Length - 1];
+                hasPreviousChunk = true;
+
+                for (int i = chunk == 0 ? 0 : 1; i < heights.Length; i++)
+                {
+                    float x = chunkStart + i * dx;
+                    if (x > startDistance + length + .001f) break;
+                    if (IsNeonLiquidStructure(profile, x))
+                    {
+                        hasPreviousHeight = false;
+                        hasPreviousPreviousHeight = false;
+                        hasPreviousSlope = false;
+                        previousDirection = 0;
+                        continue;
+                    }
+
+                    float height = heights[i];
+                    if (hasPreviousHeight)
+                    {
+                        float rise = height - previousHeight;
+                        float slope = rise / dx;
+                        float slopeAngle = Mathf.Atan(slope) * Mathf.Rad2Deg;
+                        audit.maximumSlope = Mathf.Max(audit.maximumSlope, Mathf.Abs(slopeAngle));
+                        if (hasPreviousSlope)
+                        {
+                            float slopeChange = Mathf.Abs(slopeAngle - previousSlope);
+                            if (slopeChange > audit.maximumSlopeChange)
+                            {
+                                audit.maximumSlopeChange = slopeChange;
+                                audit.maximumSlopeChangeAt = x;
+                            }
+                        }
+
+                        int direction = rise > .015f ? 1 : rise < -.015f ? -1 : 0;
+                        if (direction != 0 && previousDirection != 0 && direction != previousDirection)
+                        {
+                            float extremum = x - dx;
+                            if (float.IsNegativeInfinity(lastExtremum))
+                            {
+                                lastExtremum = extremum;
+                                lastExtremumHeight = previousHeight;
+                                audit.extremaCount++;
+                            }
+                            else if (Mathf.Abs(previousHeight - lastExtremumHeight) >= .25f)
+                            {
+                                float spacing = extremum - lastExtremum;
+                                extremaSpacings.Add(spacing);
+                                audit.minimumExtremaSpacing = Mathf.Min(audit.minimumExtremaSpacing, spacing);
+                                audit.maximumExtremaSpacing = Mathf.Max(audit.maximumExtremaSpacing, spacing);
+                                if (spacing < 6f)
+                                {
+                                    audit.microExtremaIntervals++;
+                                    audit.microExtremaPositions.Add(extremum);
+                                }
+                                lastExtremum = extremum;
+                                lastExtremumHeight = previousHeight;
+                                audit.extremaCount++;
+                            }
+                        }
+                        if (direction != 0) previousDirection = direction;
+
+                        if (hasPreviousPreviousHeight)
+                        {
+                            float secondDerivative = (height - 2f * previousHeight + previousPreviousHeight) /
+                                                     (dx * dx);
+                            if (secondDerivative < -.002f)
+                            {
+                                float curvature = -secondDerivative /
+                                    Mathf.Pow(1f + slope * slope, 1.5f);
+                                float safeSpeed = Mathf.Sqrt(Physics.gravity.magnitude /
+                                    Mathf.Max(.0001f, curvature));
+                                audit.minimumCrestSpeed = Mathf.Min(audit.minimumCrestSpeed, safeSpeed);
+                                audit.crestSpeedSamples.Add(new Vector2(x - dx, safeSpeed));
+                            }
+                        }
+                        previousSlope = slopeAngle;
+                        hasPreviousSlope = true;
+                    }
+                    previousPreviousHeight = previousHeight;
+                    previousHeight = height;
+                    hasPreviousPreviousHeight = hasPreviousHeight;
+                    hasPreviousHeight = true;
+                }
+            }
+            Object.DestroyImmediate(mesh);
+
+            if (extremaSpacings.Count > 0)
+            {
+                float sum = 0f;
+                for (int i = 0; i < extremaSpacings.Count; i++) sum += extremaSpacings[i];
+                audit.extremaSpacingMean = sum / extremaSpacings.Count;
+                float variance = 0f;
+                for (int i = 0; i < extremaSpacings.Count; i++)
+                {
+                    float difference = extremaSpacings[i] - audit.extremaSpacingMean;
+                    variance += difference * difference;
+                }
+                audit.extremaSpacingVariation = Mathf.Sqrt(variance / extremaSpacings.Count) /
+                                                Mathf.Max(.001f, audit.extremaSpacingMean);
+            }
+            if (float.IsPositiveInfinity(audit.minimumCrestSpeed)) audit.minimumCrestSpeed = 0f;
+            if (float.IsPositiveInfinity(audit.minimumExtremaSpacing)) audit.minimumExtremaSpacing = 0f;
+            return audit;
+        }
+
+        private static bool IsNeonLiquidStructure(MapProfile profile, float distance)
+        {
+            int cycle = TerrainGenerator.GetCycleIndex(distance);
+            LiquidChallengeSettings settings = profile.liquidChallenges;
+            for (int i = 0; i < LiquidChallengeSettings.RequiredChallengesPerCycle; i++)
+            {
+                LiquidChallengeLayout layout = TerrainGenerator.GetLiquidChallenge(profile, cycle, i);
+                if (distance >= layout.runUpStart - 18f &&
+                    distance <= layout.recoveryEnd + settings.postRecoveryBlendLength) return true;
+            }
+            return false;
+        }
+
+        private static int CountOverspeedZones(NeonHandlingAudit audit, float fullGasSpeed)
+        {
+            float threshold = fullGasSpeed * .72f;
+            int zones = 0;
+            float lastQualifyingX = float.NegativeInfinity;
+            bool insideZone = false;
+            for (int i = 0; i < audit.crestSpeedSamples.Count; i++)
+            {
+                Vector2 sample = audit.crestSpeedSamples[i];
+                if (sample.y >= threshold)
+                {
+                    insideZone = false;
+                    continue;
+                }
+                if (!insideZone || sample.x - lastQualifyingX > 8f) zones++;
+                insideZone = true;
+                lastQualifyingX = sample.x;
+            }
+            return zones;
+        }
+
+        private static TerrainDifficultyAudit AuditNeonTemplate(MapProfile profile, float distance, float step)
+        {
+            float sampleStep = Mathf.Max(.25f, step);
+            float previousHeight = TerrainGenerator.SampleNeonTemplateHeight(profile, 0f);
+            var audit = new TerrainDifficultyAudit
+            {
+                minimumHeight = previousHeight,
+                maximumHeight = previousHeight
+            };
+            int previousDirection = 0;
+            for (float x = sampleStep; x <= distance + .001f; x += sampleStep)
+            {
+                float clampedX = Mathf.Min(x, distance);
+                float height = TerrainGenerator.SampleNeonTemplateHeight(profile, clampedX);
+                float delta = height - previousHeight;
+                audit.minimumHeight = Mathf.Min(audit.minimumHeight, height);
+                audit.maximumHeight = Mathf.Max(audit.maximumHeight, height);
+                audit.maximumSlope = Mathf.Max(audit.maximumSlope,
+                    Mathf.Abs(Mathf.Atan2(delta, sampleStep) * Mathf.Rad2Deg));
+                int direction = delta > .01f ? 1 : delta < -.01f ? -1 : 0;
+                if (direction != 0)
+                {
+                    if (previousDirection != 0 && direction != previousDirection) audit.directionChanges++;
+                    previousDirection = direction;
+                }
+                previousHeight = height;
+            }
+            return audit;
+        }
+
+        private static TerrainDifficultyAudit AuditDriveableTerrain(MapProfile profile, float distance, float step)
+        {
+            float sampleStep = Mathf.Max(.25f, step);
+            var audit = new TerrainDifficultyAudit
+            {
+                minimumHeight = float.PositiveInfinity,
+                maximumHeight = float.NegativeInfinity
+            };
+            float previousHeight = 0f;
+            bool hasPreviousDriveable = false;
+            int previousDirection = 0;
+            for (float x = 0f; x <= distance + .001f; x += sampleStep)
+            {
+                float clampedX = Mathf.Min(x, distance);
+                if (TerrainGenerator.IsLiquidGap(profile, clampedX))
+                {
+                    hasPreviousDriveable = false;
+                    previousDirection = 0;
+                    continue;
+                }
+                float height = TerrainGenerator.SampleHeight(profile, clampedX);
+                audit.minimumHeight = Mathf.Min(audit.minimumHeight, height);
+                audit.maximumHeight = Mathf.Max(audit.maximumHeight, height);
+                if (hasPreviousDriveable)
+                {
+                    float delta = height - previousHeight;
+                    audit.maximumSlope = Mathf.Max(audit.maximumSlope,
+                        Mathf.Abs(Mathf.Atan2(delta, sampleStep) * Mathf.Rad2Deg));
+                    int direction = delta > .01f ? 1 : delta < -.01f ? -1 : 0;
+                    if (direction != 0)
+                    {
+                        if (previousDirection != 0 && direction != previousDirection) audit.directionChanges++;
+                        previousDirection = direction;
+                    }
+                }
+                previousHeight = height;
+                hasPreviousDriveable = true;
+            }
+            return audit;
+        }
+
+        private static TerrainDifficultyAudit AuditGeneratedTerrain(MapProfile profile, float distance)
+        {
+            if (profile == null) return default;
+            const float chunkLength = 80f;
+            const int samples = 48;
+            float dx = chunkLength / samples;
+            var audit = new TerrainDifficultyAudit
+            {
+                minimumHeight = float.PositiveInfinity,
+                maximumHeight = float.NegativeInfinity
+            };
+            var mesh = new Mesh();
+            float endHeight = 0f;
+            float endSlope = 0f;
+            int previousDirection = 0;
+            int chunks = Mathf.CeilToInt(distance / chunkLength);
+            for (int chunk = 0; chunk < chunks; chunk++)
+            {
+                TerrainGenerator.BuildMesh(mesh, profile, chunk * chunkLength, chunkLength, samples, 10f,
+                    chunk > 0, endHeight, endSlope, out float[] heights, out endHeight, out endSlope);
+                for (int i = 0; i < heights.Length; i++)
+                {
+                    audit.minimumHeight = Mathf.Min(audit.minimumHeight, heights[i]);
+                    audit.maximumHeight = Mathf.Max(audit.maximumHeight, heights[i]);
+                    if (i == 0) continue;
+                    float delta = heights[i] - heights[i - 1];
+                    audit.maximumSlope = Mathf.Max(audit.maximumSlope,
+                        Mathf.Abs(Mathf.Atan2(delta, dx) * Mathf.Rad2Deg));
+                    int direction = delta > .05f ? 1 : delta < -.05f ? -1 : 0;
+                    if (direction != 0)
+                    {
+                        if (previousDirection != 0 && direction != previousDirection) audit.directionChanges++;
+                        previousDirection = direction;
+                    }
+                }
+            }
+            Object.DestroyImmediate(mesh);
+            return audit;
         }
 
         private static NeonSectionAudit AuditNeonSection(MapProfile profile, NeonTemplateSection section,
@@ -3066,7 +3636,7 @@ namespace AnimeHillRacing.Editor
             }
             Debug.Log("UPGRADE_CURVES: exact one-based Level 1/max endpoints; early/mid/late gains remain " +
                       "perceptible; only the final two transitions use small weights; every purchase changes " +
-                      "the resolved stat; prices strictly increase to J/F/R/S=5000/15000/10000/20000.");
+                      "the resolved stat; prices strictly increase to J/F/R/S=50000/150000/100000/200000.");
         }
 
         private static float GetImprovementScalar(VehicleDefinition definition, VehicleUpgradeType type, int level)
@@ -3082,6 +3652,39 @@ namespace AnimeHillRacing.Editor
                 case VehicleUpgradeType.Downforce: return stats.airborneDownforceAcceleration;
                 default: return stats.totalRunFuelDuration;
             }
+        }
+
+        [MenuItem("Anime Hill Racing/Chests/Build Chest + Blueprint Content")]
+        public static void BuildChestBlueprintContent()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+                throw new System.InvalidOperationException("Exit Play Mode before rebuilding Chest content.");
+            EnsureFolders();
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            BuiltAssets assets = CreateAssets();
+            BuildGarageModern(assets);
+            BuildMainMenu(assets);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            ChestDebugTools.ValidateSystem();
+            EditorSceneManager.OpenScene(MainMenuPath, OpenSceneMode.Single);
+            Debug.Log("CHEST_BLUEPRINT_BUILD_OK: GameCatalog, ChestCatalog, MainMenu stand and Garage Shop rebuilt.");
+        }
+
+        [MenuItem("Anime Hill Racing/Chests/Rebuild Embedded Main Menu Stand")]
+        public static void RebuildEmbeddedChestStand()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+                throw new System.InvalidOperationException("Exit Play Mode before rebuilding the embedded Chest stand.");
+            EnsureFolders();
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            BuiltAssets assets = CreateAssets();
+            BuildMainMenu(assets);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            ChestDebugTools.ValidateSystem();
+            EditorSceneManager.OpenScene(MainMenuPath, OpenSceneMode.Single);
+            Debug.Log("EMBEDDED_CHEST_STAND_BUILD_OK: permanent left-side stand rebuilt; no Chest entry button.");
         }
 
         private static float[] GetAuthoredTuneTargets(VehicleDefinition definition, VehicleUpgradeType type)
@@ -3361,13 +3964,17 @@ namespace AnimeHillRacing.Editor
                 RpmGaugePath, RpmNeedlePath, SpeedGaugePath, SpeedNeedlePath,
                 DriverPreviewPath, DriverHeadPath, DriverTorsoPath,
                 DriverUpperArmPath, DriverForearmPath, DriverThighPath, DriverLowerLegPath,
-                CountrysideSkyPath, CountrysideMountainsPath, FuelCanPath, Coin01Path, Coin05Path };
+                CountrysideSkyPath, CountrysideMountainsPath, FuelCanPath, Coin01Path, Coin05Path,
+                BronzeChestClosedPath, BronzeChestOpenPath, SilverChestClosedPath, SilverChestOpenPath,
+                GoldChestClosedPath, GoldChestOpenPath, MasterChestClosedPath, MasterChestOpenPath,
+                LegendaryChestClosedPath, LegendaryChestOpenPath, CoinsChestPath, ChestShelfPath };
             for (int i = 0; i < spritePaths.Length; i++)
                 ConfigureFormulaSprite(spritePaths[i], spritePaths[i] == CountrysideSkyPath ||
                     spritePaths[i] == CountrysideMountainsPath || spritePaths[i].StartsWith(NeonRoot) ||
                     spritePaths[i].StartsWith(ButtonRoot) ||
                     spritePaths[i].StartsWith(GameUiRoot) ? 4096 :
-                    spritePaths[i] == FuelCanPath || spritePaths[i] == Coin01Path || spritePaths[i] == Coin05Path ? 512 : 2048);
+                    spritePaths[i] == FuelCanPath || spritePaths[i] == Coin01Path || spritePaths[i] == Coin05Path ? 512 :
+                    spritePaths[i].StartsWith(ChestRoot) ? 2048 : 2048);
             assets.jeepBody = AssetDatabase.LoadAssetAtPath<Sprite>(JeepBodyPath);
             assets.jeepWheel01 = AssetDatabase.LoadAssetAtPath<Sprite>(JeepWheel01Path);
             assets.jeepWheel02 = AssetDatabase.LoadAssetAtPath<Sprite>(JeepWheel02Path);
@@ -3415,6 +4022,18 @@ namespace AnimeHillRacing.Editor
             assets.fuelCan = AssetDatabase.LoadAssetAtPath<Sprite>(FuelCanPath);
             assets.coin01 = AssetDatabase.LoadAssetAtPath<Sprite>(Coin01Path);
             assets.coin05 = AssetDatabase.LoadAssetAtPath<Sprite>(Coin05Path);
+            assets.bronzeChestClosed = AssetDatabase.LoadAssetAtPath<Sprite>(BronzeChestClosedPath);
+            assets.bronzeChestOpen = AssetDatabase.LoadAssetAtPath<Sprite>(BronzeChestOpenPath);
+            assets.silverChestClosed = AssetDatabase.LoadAssetAtPath<Sprite>(SilverChestClosedPath);
+            assets.silverChestOpen = AssetDatabase.LoadAssetAtPath<Sprite>(SilverChestOpenPath);
+            assets.goldChestClosed = AssetDatabase.LoadAssetAtPath<Sprite>(GoldChestClosedPath);
+            assets.goldChestOpen = AssetDatabase.LoadAssetAtPath<Sprite>(GoldChestOpenPath);
+            assets.masterChestClosed = AssetDatabase.LoadAssetAtPath<Sprite>(MasterChestClosedPath);
+            assets.masterChestOpen = AssetDatabase.LoadAssetAtPath<Sprite>(MasterChestOpenPath);
+            assets.legendaryChestClosed = AssetDatabase.LoadAssetAtPath<Sprite>(LegendaryChestClosedPath);
+            assets.legendaryChestOpen = AssetDatabase.LoadAssetAtPath<Sprite>(LegendaryChestOpenPath);
+            assets.coinsChest = AssetDatabase.LoadAssetAtPath<Sprite>(CoinsChestPath);
+            assets.chestShelf = AssetDatabase.LoadAssetAtPath<Sprite>(ChestShelfPath);
             assets.countrysideMaterial = UnlitMaterialAsset("CountrysideGround", new Color(0.34f, 0.16f, 0.07f));
             assets.countrysideEdgeMaterial = UnlitMaterialAsset("CountrysideEdge", new Color(0.30f, 0.78f, 0.20f));
             assets.neonCityMaterial = UnlitTextureMaterialAsset("NeonCityTerrain", assets.neonTerrain != null
@@ -3438,6 +4057,8 @@ namespace AnimeHillRacing.Editor
 
             assets.jeep = LoadOrCreate<VehicleDefinition>(Root + "/VehicleData/MainVehicle.asset");
             assets.jeep.vehicleId = "car-01";
+            assets.jeep.unlockedByDefault = true; assets.jeep.gemPrice = 0;
+            assets.jeep.allowsBlueprintProgression = true;
             assets.jeep.displayName = "JEEP";
             assets.jeep.archetype = VehicleArchetype.Jeep;
             assets.jeep.engineMaxTunes = 14; assets.jeep.accelerationMaxTunes = 15;
@@ -3500,6 +4121,8 @@ namespace AnimeHillRacing.Editor
 
             assets.formula = LoadOrCreate<VehicleDefinition>(Root + "/VehicleData/FormulaVehicle.asset");
             assets.formula.vehicleId = "formula-01"; assets.formula.displayName = "FORMULA";
+            assets.formula.unlockedByDefault = true; assets.formula.gemPrice = 0;
+            assets.formula.allowsBlueprintProgression = true;
             assets.formula.archetype = VehicleArchetype.Formula; assets.formula.previewSprite = assets.formulaBody;
             assets.formula.engineMaxTunes = 20; assets.formula.accelerationMaxTunes = 20;
             assets.formula.suspensionMaxTunes = 20; assets.formula.gripMaxTunes = 20;
@@ -3547,7 +4170,7 @@ namespace AnimeHillRacing.Editor
             assets.formula.wheels = new[]
             {
                 Customization("formula-wheel-02", "FORMULA WHEEL 02", assets.formulaWheel02),
-                Customization("formula-wheel-01", "GHOSTY WHEELS", assets.formulaWheel01, false, 500),
+                Customization("formula-wheel-01", "FORMULA GHOSTY WHEELS", assets.formulaWheel01, false, 500),
                 Customization("formula-wheel-rainbow", "RAINBOW WHEEL", assets.formulaRainbowWheel, false, 500)
             };
             assets.formula.visualWidth = 4.80f;
@@ -3562,6 +4185,8 @@ namespace AnimeHillRacing.Editor
 
             assets.rally = LoadOrCreate<VehicleDefinition>(Root + "/VehicleData/RallyVehicle.asset");
             assets.rally.vehicleId = "rally-01"; assets.rally.displayName = "RALLY";
+            assets.rally.unlockedByDefault = true; assets.rally.gemPrice = 0;
+            assets.rally.allowsBlueprintProgression = true;
             assets.rally.archetype = VehicleArchetype.Rally; assets.rally.previewSprite = assets.rallyBody;
             assets.rally.engineMaxTunes = 20; assets.rally.accelerationMaxTunes = 0;
             assets.rally.suspensionMaxTunes = 14; assets.rally.gripMaxTunes = 14;
@@ -3604,7 +4229,7 @@ namespace AnimeHillRacing.Editor
             assets.rally.wheels = new[]
             {
                 Customization("rally-wheel-01", "RALLY WHEEL 01", assets.rallyWheel),
-                Customization("rally-wheel-ghosty", "GHOSTY WHEEL", assets.rallyGhostyWheel, false, 500),
+                Customization("rally-wheel-ghosty", "RALLY GHOSTY WHEEL", assets.rallyGhostyWheel, false, 500),
                 Customization("rally-wheel-sky-blue", "SKY BLUE WHEEL", assets.rallySkyBlueWheel, false, 500),
                 Customization("rally-wheel-rainbow", "RAINBOW WHEEL", assets.rallyRainbowWheel, false, 500)
             };
@@ -3622,6 +4247,8 @@ namespace AnimeHillRacing.Editor
 
             assets.sportBike = LoadOrCreate<VehicleDefinition>(Root + "/VehicleData/SportBikeVehicle.asset");
             assets.sportBike.vehicleId = "sport-bike-01";
+            assets.sportBike.unlockedByDefault = true; assets.sportBike.gemPrice = 0;
+            assets.sportBike.allowsBlueprintProgression = true;
             assets.sportBike.displayName = "SPORT BIKE";
             assets.sportBike.archetype = VehicleArchetype.SportBike;
             assets.sportBike.previewSprite = assets.sportBikeBody;
@@ -3697,7 +4324,7 @@ namespace AnimeHillRacing.Editor
                     VisibleSpriteDiameter(assets.sportBikeWheel02)),
                 Customization("sport-bike-gold-wheel", "GOLD WHEEL", assets.sportBikeGoldWheel, false, 500,
                     VisibleSpriteDiameter(assets.sportBikeGoldWheel)),
-                Customization("sport-bike-wheel-ghosty", "GHOSTY WHEEL", assets.sportBikeGhostyWheel, false, 500,
+                Customization("sport-bike-wheel-ghosty", "SPORT BIKE GHOSTY WHEEL", assets.sportBikeGhostyWheel, false, 500,
                     VisibleSpriteDiameter(assets.sportBikeGhostyWheel))
             };
             assets.sportBike.visualWidth = 3.30f;
@@ -3815,8 +4442,8 @@ namespace AnimeHillRacing.Editor
             assets.neonCity.coinRoute = assets.countrysideCoinRoute;
             assets.neonCity.elevationProfile = null;
             assets.neonCity.baseHeight = 0f;
-            assets.neonCity.amplitude = 38f;
-            assets.neonCity.neonMaximumAmplitude = 48f;
+            assets.neonCity.amplitude = 46f;
+            assets.neonCity.neonMaximumAmplitude = 58f;
             assets.neonCity.neonAmplitudeSaturationCycles = 2f;
             assets.neonCity.frequency = .0105f;
             assets.neonCity.introductoryAmplitude = .45f;
@@ -3833,12 +4460,12 @@ namespace AnimeHillRacing.Editor
             assets.neonCity.hillFeatureWeight = .54f;
             assets.neonCity.valleyFeatureWeight = .25f;
             assets.neonCity.technicalFeatureWeight = .18f;
-            assets.neonCity.maxSlopeAngle = 40f;
-            assets.neonCity.maxHeightDeltaPerSample = Mathf.Tan(40f * Mathf.Deg2Rad) * (80f / 48f);
+            assets.neonCity.maxSlopeAngle = 50f;
+            assets.neonCity.maxHeightDeltaPerSample = Mathf.Tan(50f * Mathf.Deg2Rad) * (80f / 48f);
             assets.neonCity.minimumValleyWidth = 24f;
             assets.neonCity.minimumLandingLength = 26f;
             assets.neonCity.maximumCrestSharpness = 7f;
-            assets.neonCity.smoothingPasses = 1;
+            assets.neonCity.smoothingPasses = 2;
             assets.neonCity.initialFuelGap = 55f;
             assets.neonCity.fuelGapIncrease = 10f;
             assets.neonCity.fuelPlacementSearchRadius = 28f;
@@ -3860,20 +4487,20 @@ namespace AnimeHillRacing.Editor
                 runUpLength = 42f,
                 rampTransitionLength = 6f,
                 rampHorizontalLength = 12f,
-                rampAngleDegrees = 20f,
+                rampAngleDegrees = 22f,
                 landingLength = 26f,
                 recoveryLength = 48f,
                 postRecoveryBlendLength = 50f,
-                basePoolLength = 18f,
-                minimumPoolLength = 16f,
+                basePoolLength = 21f,
+                minimumPoolLength = 18f,
                 maximumPoolLength = 34f,
-                cycleGrowth = .85f,
+                cycleGrowth = 1f,
                 growthSaturation = 2.5f,
                 deterministicLengthVariation = .12f,
                 visualDepth = 7f,
                 surfaceOffset = .15f,
                 cautionSprite = assets.neonCaution,
-                cautionDistanceBeforeRamp = 10f,
+                cautionDistanceBeforeRamp = 28f,
                 cautionBelowSurface = 1.65f,
                 cautionWidth = 3.2f,
                 cautionSortingOrder = 4,
@@ -3933,25 +4560,54 @@ namespace AnimeHillRacing.Editor
             EditorUtility.SetDirty(assets.testCircuit);
 
             assets.economy = LoadOrCreate<UpgradeEconomyDefinition>(Root + "/VehicleData/UpgradeEconomy.asset");
-            assets.economy.jeepFinalUpgradeCost = 5000;
-            assets.economy.formulaFinalUpgradeCost = 15000;
-            assets.economy.rallyFinalUpgradeCost = 10000;
-            assets.economy.sportBikeFinalUpgradeCost = 20000;
-            assets.economy.jeepFirstUpgradeCost = 100;
-            assets.economy.formulaFirstUpgradeCost = 250;
-            assets.economy.rallyFirstUpgradeCost = 180;
-            assets.economy.sportBikeFirstUpgradeCost = 300;
+            assets.economy.jeepFinalUpgradeCost = 50000;
+            assets.economy.formulaFinalUpgradeCost = 150000;
+            assets.economy.rallyFinalUpgradeCost = 100000;
+            assets.economy.sportBikeFinalUpgradeCost = 200000;
+            assets.economy.jeepFirstUpgradeCost = 1000;
+            assets.economy.formulaFirstUpgradeCost = 2500;
+            assets.economy.rallyFirstUpgradeCost = 1800;
+            assets.economy.sportBikeFirstUpgradeCost = 3000;
             assets.economy.costExponent = 1.45f;
-            assets.economy.roundingStep = 25;
+            assets.economy.roundingStep = 250;
             EditorUtility.SetDirty(assets.economy);
+            assets.chestCatalog = LoadOrCreate<ChestCatalog>(Root + "/VehicleData/ChestCatalog.asset");
+            assets.chestCatalog.shelfSprite = assets.chestShelf;
+            assets.chestCatalog.coinsChestSprite = assets.coinsChest;
+            assets.chestCatalog.chests = new[]
+            {
+                Chest(ChestType.Bronze, "BRONZE CHEST", 90, 2, 1200, 1500, 0,
+                    assets.bronzeChestClosed, assets.bronzeChestOpen, new Color(.70f, .38f, .15f)),
+                Chest(ChestType.Silver, "SILVER CHEST", 70, 4, 2500, 3700, 0,
+                    assets.silverChestClosed, assets.silverChestOpen, new Color(.75f, .84f, .94f)),
+                Chest(ChestType.Gold, "GOLD CHEST", 50, 6, 5000, 7500, 0,
+                    assets.goldChestClosed, assets.goldChestOpen, new Color(1f, .72f, .12f)),
+                Chest(ChestType.Master, "MASTER CHEST", 10, 12, 15000, 20000, 5,
+                    assets.masterChestClosed, assets.masterChestOpen, new Color(.62f, .20f, 1f)),
+                Chest(ChestType.Legendary, "LEGENDARY CHEST", 1, 24, 30000, 50000, 10,
+                    assets.legendaryChestClosed, assets.legendaryChestOpen, new Color(1f, .20f, .62f))
+            };
+            EditorUtility.SetDirty(assets.chestCatalog);
             assets.catalog = LoadOrCreate<GameCatalog>(Root + "/VehicleData/GameCatalog.asset");
             assets.catalog.maps = new MapDefinition[]
                 { assets.countryside, assets.neonCity, assets.countrysideRoad, assets.testCircuit };
             assets.catalog.vehicles = new[] { assets.jeep, assets.formula, assets.rally, assets.sportBike };
             assets.catalog.drivers = new[] { assets.stickmanBlack };
             assets.catalog.upgradeEconomy = assets.economy;
+            assets.catalog.chestCatalog = assets.chestCatalog;
             EditorUtility.SetDirty(assets.catalog);
             return assets;
+        }
+
+        private static ChestDefinition Chest(ChestType type, string name, int weight, int hours,
+            int minimumCoins, int maximumCoins, int blueprints, Sprite closed, Sprite open, Color accent)
+        {
+            return new ChestDefinition
+            {
+                type = type, displayName = name, rarityWeight = weight, openingSeconds = hours * 60 * 60,
+                minimumCoins = minimumCoins, maximumCoins = maximumCoins, blueprintReward = blueprints,
+                closedSprite = closed, openSprite = open, accentColor = accent
+            };
         }
 
         private static void BuildMainMenu(BuiltAssets assets)
@@ -3992,7 +4648,7 @@ namespace AnimeHillRacing.Editor
                 new Vector2(.5f, .5f), new Vector2(0f, -52f), new Vector2(790f, 390f)).AddComponent<RawImage>();
             previewImage.color = Color.white;
             previewImage.raycastTarget = false;
-            Button previous = CreateButton("Previous Vehicle", safe, "<", new Vector2(-470f, -45f),
+            Button previous = CreateButton("Previous Vehicle", safe, "<", new Vector2(-350f, -45f),
                 new Vector2(88f, 110f));
             Button next = CreateButton("Next Vehicle", safe, ">", new Vector2(470f, -45f),
                 new Vector2(88f, 110f));
@@ -4011,6 +4667,53 @@ namespace AnimeHillRacing.Editor
             Bind(previous, menu.PreviousVehicle); Bind(next, menu.NextVehicle);
             Bind(vehicle, menu.Vehicle); Bind(tuning, menu.Tuning); Bind(upgrade, menu.Upgrade); Bind(race, menu.Race);
             GaragePreviewRenderer preview = CreateGarageVehiclePreview(assets, previewImage, "Home");
+            GameObject chestPanel = CreateImage("Chest Stand", safe, Color.clear,
+                new Vector2(.01f, .12f), new Vector2(.32f, .88f), Vector2.zero, Vector2.zero);
+            chestPanel.GetComponent<Image>().raycastTarget = false;
+            CreateText("Chest Title", chestPanel.transform, "CHESTS", 30, TextAnchor.MiddleCenter,
+                new Vector2(.28f, .93f), new Vector2(.72f, .995f), Vector2.zero, Vector2.zero).fontStyle = FontStyle.Bold;
+            Image shelf = CreateImage("Chest Shelf", chestPanel.transform, Color.white,
+                new Vector2(.02f, .12f), new Vector2(.98f, .94f), Vector2.zero, Vector2.zero).GetComponent<Image>();
+            shelf.sprite = assets.chestShelf; shelf.preserveAspect = true; shelf.raycastTarget = false;
+            ChestPanelUI chestUi = chestPanel.AddComponent<ChestPanelUI>();
+            var chestSlots = new Button[3]; var chestImages = new Image[3]; var chestLabels = new Text[3];
+            UnityAction[] chestActions = { chestUi.SelectSlot0, chestUi.SelectSlot1, chestUi.SelectSlot2 };
+            // Shelf.png contains three authored vertical platforms. These centers map directly to
+            // the top, middle and bottom pedestals; no extra empty slot frames are drawn.
+            float[] shelfSlotY = { 155f, -15f, -185f };
+            for (int i = 0; i < chestSlots.Length; i++)
+            {
+                chestSlots[i] = CreateButton("Chest Slot " + (i + 1), chestPanel.transform, "",
+                    new Vector2(0f, shelfSlotY[i]), new Vector2(250f, 172f));
+                chestSlots[i].image.color = Color.clear;
+                chestSlots[i].transition = Selectable.Transition.None;
+                chestImages[i] = CreateImage("Chest", chestSlots[i].transform, Color.white,
+                    new Vector2(.10f, .14f), new Vector2(.90f, .98f), Vector2.zero, Vector2.zero).GetComponent<Image>();
+                chestImages[i].raycastTarget = false; chestImages[i].preserveAspect = true;
+                chestImages[i].enabled = false;
+                chestLabels[i] = CreateText("Status", chestSlots[i].transform, "", 13, TextAnchor.LowerCenter,
+                    new Vector2(.02f, .01f), new Vector2(.98f, .18f), Vector2.zero, Vector2.zero);
+                Bind(chestSlots[i], chestActions[i]);
+                chestSlots[i].gameObject.SetActive(false);
+            }
+            GameObject progressBack = CreateImage("Next Chest Progress", chestPanel.transform,
+                new Color(.05f, .08f, .13f, .88f), new Vector2(.10f, .045f), new Vector2(.90f, .075f),
+                Vector2.zero, Vector2.zero);
+            Image progressFill = CreateImage("Fill", progressBack.transform, new Color(.20f, .82f, 1f, 1f),
+                Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero).GetComponent<Image>();
+            progressFill.type = Image.Type.Filled; progressFill.fillMethod = Image.FillMethod.Horizontal;
+            progressFill.fillOrigin = 0; progressFill.fillAmount = 0f;
+            Text progressText = CreateText("Next Chest Text", chestPanel.transform, "NEXT CHEST  30:00", 16,
+                TextAnchor.MiddleCenter, new Vector2(.04f, .075f), new Vector2(.96f, .115f), Vector2.zero, Vector2.zero);
+            Text pageText = CreateText("Inventory Count", chestPanel.transform, "INVENTORY  0", 13, TextAnchor.MiddleCenter,
+                new Vector2(.34f, .005f), new Vector2(.66f, .04f), Vector2.zero, Vector2.zero);
+            Text chestFeedback = CreateText("Chest Feedback", chestPanel.transform, "", 13, TextAnchor.MiddleLeft,
+                new Vector2(.22f, .84f), new Vector2(.98f, .925f), Vector2.zero, Vector2.zero);
+            Image bundleRewardImage = CreateImage("Bundle Reward Thumbnail", chestPanel.transform, Color.white,
+                new Vector2(.02f, .82f), new Vector2(.20f, .925f), Vector2.zero, Vector2.zero).GetComponent<Image>();
+            bundleRewardImage.enabled = false; bundleRewardImage.preserveAspect = true;
+            chestUi.Assign(assets.catalog, chestSlots, chestImages, chestLabels, progressFill, progressText,
+                pageText, chestFeedback, bundleRewardImage);
             menu.Assign(assets.catalog, preview, coins, vehicleName, gems);
             VehicleDefinition.CustomizationOption initialSkin = assets.jeep.skins != null && assets.jeep.skins.Length > 0
                 ? assets.jeep.skins[0] : null;
@@ -4199,6 +4902,7 @@ namespace AnimeHillRacing.Editor
             Text categoryName = CreateText("Category Name", customizationPanel.transform, "VEHICLE SKIN", 28,
                 TextAnchor.MiddleCenter, new Vector2(.15f, .69f), new Vector2(.85f, .80f), Vector2.zero, Vector2.zero);
             var optionButtons = new Button[6]; var optionImages = new Image[6]; var optionLabels = new Text[6];
+            var optionBlueprintFills = new Image[6]; var optionBlueprintTexts = new Text[6];
             UnityAction[] selections = { menu.SelectOption0, menu.SelectOption1, menu.SelectOption2,
                 menu.SelectOption3, menu.SelectOption4, menu.SelectOption5 };
             for (int i = 0; i < optionButtons.Length; i++)
@@ -4207,10 +4911,23 @@ namespace AnimeHillRacing.Editor
                 float x = -260f + column * 260f; float y = 65f - rowIndex * 235f;
                 optionButtons[i] = CreateButton("Option " + (i + 1), customizationPanel.transform, "", new Vector2(x, y), new Vector2(235f, 210f));
                 optionImages[i] = CreateImage("Icon", optionButtons[i].transform, Color.white,
-                    new Vector2(.12f, .30f), new Vector2(.88f, .92f), Vector2.zero, Vector2.zero).GetComponent<Image>();
+                    new Vector2(.12f, .34f), new Vector2(.88f, .92f), Vector2.zero, Vector2.zero).GetComponent<Image>();
                 optionImages[i].raycastTarget = false; optionImages[i].preserveAspect = true;
                 optionLabels[i] = CreateText("Status", optionButtons[i].transform, "OPTION", 19, TextAnchor.MiddleCenter,
-                    new Vector2(.04f, .02f), new Vector2(.96f, .28f), Vector2.zero, Vector2.zero);
+                    new Vector2(.04f, .10f), new Vector2(.96f, .32f), Vector2.zero, Vector2.zero);
+                GameObject blueprintProgress = CreateImage("Blueprint Progress", optionButtons[i].transform,
+                    new Color(.025f, .055f, .09f, .98f), new Vector2(.07f, .025f), new Vector2(.93f, .105f),
+                    Vector2.zero, Vector2.zero);
+                optionBlueprintFills[i] = CreateImage("Fill", blueprintProgress.transform,
+                    new Color(.20f, .82f, 1f, 1f), Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero).GetComponent<Image>();
+                optionBlueprintFills[i].type = Image.Type.Filled;
+                optionBlueprintFills[i].fillMethod = Image.FillMethod.Horizontal;
+                optionBlueprintFills[i].fillOrigin = 0;
+                optionBlueprintFills[i].fillAmount = 0f;
+                optionBlueprintFills[i].raycastTarget = false;
+                optionBlueprintTexts[i] = CreateText("Progress", blueprintProgress.transform, "BLUEPRINTS  0 / 100",
+                    13, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+                blueprintProgress.SetActive(false);
                 Bind(optionButtons[i], selections[i]);
             }
 
@@ -4243,8 +4960,46 @@ namespace AnimeHillRacing.Editor
                 TextAnchor.UpperLeft, new Vector2(.10f, .12f), new Vector2(.90f, .88f), Vector2.zero, Vector2.zero);
             GameObject storePanel = CreateImage("Store Panel", safe, new Color(.025f, .06f, .12f, .90f),
                 new Vector2(.52f, .16f), new Vector2(.97f, .84f), Vector2.zero, Vector2.zero);
-            CreateText("Store Placeholder", storePanel.transform, "STORE\n\nCOMING SOON\nNO IAP IS CONFIGURED", 34,
-                TextAnchor.MiddleCenter, new Vector2(.08f, .12f), new Vector2(.92f, .88f), Vector2.zero, Vector2.zero);
+            CreateText("Blueprint Shop Title", storePanel.transform, "BLUEPRINTS", 32,
+                TextAnchor.MiddleLeft, new Vector2(.04f, .88f), new Vector2(.48f, .98f), Vector2.zero, Vector2.zero).fontStyle = FontStyle.Bold;
+            Text blueprintCoins = CreateText("Blueprint Coins", storePanel.transform, "COINS  0", 22,
+                TextAnchor.MiddleRight, new Vector2(.48f, .88f), new Vector2(.96f, .98f), Vector2.zero, Vector2.zero);
+            CreateText("Pack Selector Title", storePanel.transform, "SELECT BLUEPRINT PACK", 16,
+                TextAnchor.MiddleCenter, new Vector2(.22f, .79f), new Vector2(.78f, .87f), Vector2.zero, Vector2.zero);
+            var blueprintPackButtons = new Button[BlueprintPackCatalog.Count];
+            UnityAction[] blueprintPackActions = { menu.SelectBlueprintPack1, menu.SelectBlueprintPack5,
+                menu.SelectBlueprintPack10, menu.SelectBlueprintPack100 };
+            for (int i = 0; i < blueprintPackButtons.Length; i++)
+            {
+                BlueprintPackTier tier = (BlueprintPackTier)i;
+                int amount = BlueprintPackCatalog.GetBlueprintAmount(tier);
+                int price = BlueprintPackCatalog.GetCoinPrice(tier);
+                blueprintPackButtons[i] = CreateButton("Blueprint Pack " + amount, storePanel.transform,
+                    $"+{amount} BP\n{(price >= 1000000 ? "1M" : (price / 1000) + "K")}",
+                    new Vector2(-300f + i * 200f, 245f), new Vector2(185f, 62f));
+                Bind(blueprintPackButtons[i], blueprintPackActions[i]);
+            }
+            var blueprintButtons = new Button[6]; var blueprintImages = new Image[6]; var blueprintLabels = new Text[6];
+            UnityAction[] blueprintActions = { menu.SelectBlueprint0, menu.SelectBlueprint1, menu.SelectBlueprint2,
+                menu.SelectBlueprint3, menu.SelectBlueprint4, menu.SelectBlueprint5 };
+            for (int i = 0; i < blueprintButtons.Length; i++)
+            {
+                int column = i % 3; int rowIndex = i / 3;
+                float x = -280f + column * 280f; float y = 95f - rowIndex * 225f;
+                blueprintButtons[i] = CreateButton("Blueprint Bundle " + (i + 1), storePanel.transform, "",
+                    new Vector2(x, y), new Vector2(255f, 205f));
+                blueprintImages[i] = CreateImage("Thumbnail", blueprintButtons[i].transform, Color.white,
+                    new Vector2(.10f, .39f), new Vector2(.90f, .95f), Vector2.zero, Vector2.zero).GetComponent<Image>();
+                blueprintImages[i].raycastTarget = false; blueprintImages[i].preserveAspect = true;
+                blueprintLabels[i] = CreateText("Details", blueprintButtons[i].transform, "BUNDLE", 14,
+                    TextAnchor.MiddleCenter, new Vector2(.03f, .01f), new Vector2(.97f, .40f), Vector2.zero, Vector2.zero);
+                Bind(blueprintButtons[i], blueprintActions[i]);
+            }
+            Text blueprintPage = CreateText("Blueprint Page", storePanel.transform, "PAGE 1 / 1", 18,
+                TextAnchor.MiddleCenter, new Vector2(.37f, .01f), new Vector2(.63f, .09f), Vector2.zero, Vector2.zero);
+            Button blueprintPrev = CreateButton("Previous Blueprint Page", storePanel.transform, "<", new Vector2(-180f, -315f), new Vector2(90f, 52f));
+            Button blueprintNext = CreateButton("Next Blueprint Page", storePanel.transform, ">", new Vector2(180f, -315f), new Vector2(90f, 52f));
+            Bind(blueprintPrev, menu.PreviousBlueprintPage); Bind(blueprintNext, menu.NextBlueprintPage);
             GameObject settingsPanel = CreateImage("Settings Panel", safe, new Color(.025f, .06f, .12f, .90f),
                 new Vector2(.52f, .16f), new Vector2(.97f, .84f), Vector2.zero, Vector2.zero);
             CreateText("Settings Placeholder", settingsPanel.transform, "SETTINGS", 42, TextAnchor.MiddleCenter,
@@ -4273,7 +5028,8 @@ namespace AnimeHillRacing.Editor
                 categories, optionButtons, optionImages, optionLabels, tuningPanel, tuningNames, tuningLevels,
                 tuningValues, tuningCosts, tuningButtons, tuningCoins, sectionTitle, upgradeSummary, vehiclePanel,
                 customizationPanel, upgradePanel, storePanel, settingsPanel, modal, modalTitle, modalValues,
-                modalCost, modalStatus, yes, gemsBalance);
+                modalCost, modalStatus, yes, gemsBalance, blueprintButtons, blueprintImages, blueprintLabels,
+                blueprintPage, blueprintCoins, optionBlueprintFills, optionBlueprintTexts, blueprintPackButtons);
             CreateEventSystem();
             ValidateGarageComposition(assets);
             EditorSceneManager.SaveScene(scene, GaragePath);

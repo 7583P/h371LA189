@@ -23,6 +23,9 @@ namespace AnimeHillRacing.Vehicle
         private bool touchBrake;
         private bool touchLeft;
         private bool touchRight;
+        private ulong touchPedalPressSequence;
+        private ulong touchGasPressedOrder;
+        private ulong touchBrakePressedOrder;
         private bool previousBrake;
         private float brakePressedAt;
         private bool brakeTapPending;
@@ -52,12 +55,16 @@ namespace AnimeHillRacing.Vehicle
                 ? (keyboard.dKey.isPressed || keyboard.rightArrowKey.isPressed ? 1f : 0f) -
                   (keyboard.aKey.isPressed || keyboard.leftArrowKey.isPressed ? 1f : 0f)
                 : 0f;
-            bool gas = inputEnabled && (touchGas || keyboardGas);
-            bool brake = inputEnabled && (touchBrake || keyboardBrake);
+            ResolveTouchPedals(out bool resolvedTouchGas, out bool resolvedTouchBrake);
+            bool hasTouchPedal = touchGas || touchBrake;
+            bool gas = inputEnabled && (hasTouchPedal ? resolvedTouchGas : keyboardGas);
+            bool brake = inputEnabled && (hasTouchPedal ? resolvedTouchBrake : keyboardBrake);
+            bool brakePhysicallyPressed = inputEnabled && (touchBrake || keyboardBrake);
 
             if (brake && !previousBrake)
                 brakePressedAt = Time.unscaledTime;
-            else if (!brake && previousBrake && Time.unscaledTime - brakePressedAt <= tapThreshold)
+            else if (!brake && previousBrake && !brakePhysicallyPressed &&
+                     Time.unscaledTime - brakePressedAt <= tapThreshold)
             {
                 brakeTapPending = true;
             }
@@ -78,17 +85,39 @@ namespace AnimeHillRacing.Vehicle
             previousBrake = brake;
         }
 
-        public void SetTouchGas(bool pressed) => touchGas = pressed;
-        public void SetTouchBrake(bool pressed) => touchBrake = pressed;
+        public void SetTouchGas(bool pressed)
+        {
+            if (pressed && !touchGas) touchGasPressedOrder = ++touchPedalPressSequence;
+            touchGas = pressed;
+        }
+
+        public void SetTouchBrake(bool pressed)
+        {
+            if (pressed && !touchBrake) touchBrakePressedOrder = ++touchPedalPressSequence;
+            touchBrake = pressed;
+        }
+
         public void SetTouchLeft(bool pressed) => touchLeft = pressed;
         public void SetTouchRight(bool pressed) => touchRight = pressed;
         public void SetInputMode(GameModeType mode) => inputMode = mode;
+
+        private void ResolveTouchPedals(out bool gas, out bool brake)
+        {
+            gas = touchGas;
+            brake = touchBrake;
+            if (!gas || !brake) return;
+            gas = touchGasPressedOrder > touchBrakePressedOrder;
+            brake = !gas;
+        }
 
         public void SetInputEnabled(bool value)
         {
             inputEnabled = value;
             if (value) return;
             touchGas = touchBrake = touchLeft = touchRight = false;
+            touchGasPressedOrder = touchBrakePressedOrder = touchPedalPressSequence = 0;
+            previousBrake = false;
+            brakePressedAt = 0f;
             brakeTapPending = false;
             State = default;
         }

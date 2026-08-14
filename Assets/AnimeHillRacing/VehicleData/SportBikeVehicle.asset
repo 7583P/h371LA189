@@ -18,18 +18,25 @@ MonoBehaviour:
   gameplayPrefab2D: {fileID: 4000248710856391276, guid: 7cee6dd59b5de0949abb831aa2d73eef, type: 3}
   gameplayPrefab3D: {fileID: 419169221601464924, guid: 20e0fdbd4800cb64da057318c6a04cb1, type: 3}
   previewSprite: {fileID: 21300000, guid: 6099276ba1a7a944fbcc9f946e5ff2c4, type: 3}
+  unlockedByDefault: 1
+  gemPrice: 0
+  allowsBlueprintProgression: 1
   skins:
   - optionId: sport-bike-default
     displayName: SPORT BIKE DEFAULT
     sprite: {fileID: 21300000, guid: 6099276ba1a7a944fbcc9f946e5ff2c4, type: 3}
     unlockedByDefault: 1
     gemPrice: 0
+    bundleType: 0
+    allowsBlueprintProgression: 1
     visibleDiameter: 0
   - optionId: sport-bike-retro
     displayName: BIKE RETRO
     sprite: {fileID: 21300000, guid: 0e7562ba344fa6d4799299e109ffa29f, type: 3}
     unlockedByDefault: 0
     gemPrice: 1000
+    bundleType: 0
+    allowsBlueprintProgression: 1
     visibleDiameter: 0
   wheels:
   - optionId: sport-bike-wheel-01
@@ -37,24 +44,32 @@ MonoBehaviour:
     sprite: {fileID: 21300000, guid: 64f1868895c2c5a4db3ad493639e6eb9, type: 3}
     unlockedByDefault: 1
     gemPrice: 0
+    bundleType: 0
+    allowsBlueprintProgression: 1
     visibleDiameter: 9.94
   - optionId: sport-bike-wheel-02
     displayName: BIKE WHEEL 02
     sprite: {fileID: 21300000, guid: af538f9d995160d4694bb0730040cc10, type: 3}
     unlockedByDefault: 1
     gemPrice: 0
+    bundleType: 0
+    allowsBlueprintProgression: 1
     visibleDiameter: 10.1
   - optionId: sport-bike-gold-wheel
     displayName: GOLD WHEEL
     sprite: {fileID: 21300000, guid: 3cc7d30b0562aa14086730a762a3630c, type: 3}
     unlockedByDefault: 0
     gemPrice: 500
+    bundleType: 0
+    allowsBlueprintProgression: 1
     visibleDiameter: 14.08
   - optionId: sport-bike-wheel-ghosty
-    displayName: GHOSTY WHEEL
+    displayName: SPORT BIKE GHOSTY WHEEL
     sprite: {fileID: 21300000, guid: 529eb95340d64bc38e96a34f19afc3be, type: 3}
     unlockedByDefault: 0
     gemPrice: 500
+    bundleType: 0
+    allowsBlueprintProgression: 1
     visibleDiameter: 14.56
   driverPose:
     rootPosition: {x: -0.34, y: 0.39}

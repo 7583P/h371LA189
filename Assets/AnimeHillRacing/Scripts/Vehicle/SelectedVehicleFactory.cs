@@ -79,6 +79,8 @@ namespace AnimeHillRacing.Vehicle
             capture?.SetTarget(SpawnedVehicle.transform);
             shifter?.SetVehicle(SpawnedVehicle);
             gameplayHud?.AssignPickupPool(pickupPool);
+            gameManager?.ConfigureChestCatalog(catalog);
+            timeTrialManager?.ConfigureChestCatalog(catalog);
 
             if (mode == GameModeType.Adventure2_5D)
             {

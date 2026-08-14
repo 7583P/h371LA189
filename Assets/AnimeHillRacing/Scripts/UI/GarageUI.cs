@@ -1,5 +1,6 @@
 using AnimeHillRacing.Core;
 using AnimeHillRacing.Vehicle;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -10,7 +11,7 @@ namespace AnimeHillRacing.UI
     public sealed class GarageUI : MonoBehaviour
     {
         private enum Category { Skin, Wheels, Driver, Tuning }
-        private enum PurchaseKind { None, Tune, Customization }
+        private enum PurchaseKind { None, Tune, Customization, Blueprints }
 
         [SerializeField] private GameCatalog catalog;
         [SerializeField] private GaragePreviewRenderer preview;
@@ -23,6 +24,8 @@ namespace AnimeHillRacing.UI
         [SerializeField] private Button[] optionButtons;
         [SerializeField] private Image[] optionImages;
         [SerializeField] private Text[] optionLabels;
+        [SerializeField] private Image[] optionBlueprintFills;
+        [SerializeField] private Text[] optionBlueprintTexts;
         [SerializeField] private GameObject tuningPanel;
         [SerializeField] private Text[] tuningNames;
         [SerializeField] private Text[] tuningLevels;
@@ -44,6 +47,12 @@ namespace AnimeHillRacing.UI
         [SerializeField] private Text confirmationCost;
         [SerializeField] private Text confirmationStatus;
         [SerializeField] private Button confirmationYes;
+        [SerializeField] private Button[] blueprintButtons;
+        [SerializeField] private Image[] blueprintImages;
+        [SerializeField] private Text[] blueprintLabels;
+        [SerializeField] private Text blueprintPageText;
+        [SerializeField] private Text blueprintCoinsText;
+        [SerializeField] private Button[] blueprintPackButtons;
 
         private int vehicleIndex;
         private Category category;
@@ -53,6 +62,10 @@ namespace AnimeHillRacing.UI
         private Category pendingCategory;
         private string pendingOptionId;
         private int pendingGemPrice;
+        private string pendingBundleId;
+        private int blueprintPage;
+        private BlueprintPackTier selectedBlueprintTier = BlueprintPackTier.Hundred;
+        private BlueprintPackTier pendingBlueprintTier = BlueprintPackTier.Hundred;
         private bool purchaseInFlight;
 
         private VehicleDefinition CurrentVehicle => catalog != null && catalog.vehicles != null && catalog.vehicles.Length > 0
@@ -91,6 +104,23 @@ namespace AnimeHillRacing.UI
         public void UpgradeTune3() => PurchaseTune(3);
         public void UpgradeTune4() => PurchaseTune(4);
         public void UpgradeTune5() => PurchaseTune(5);
+        public void SelectBlueprint0() => SelectBlueprint(0);
+        public void SelectBlueprint1() => SelectBlueprint(1);
+        public void SelectBlueprint2() => SelectBlueprint(2);
+        public void SelectBlueprint3() => SelectBlueprint(3);
+        public void SelectBlueprint4() => SelectBlueprint(4);
+        public void SelectBlueprint5() => SelectBlueprint(5);
+        public void SelectBlueprintPack1() => SelectBlueprintPack(BlueprintPackTier.One);
+        public void SelectBlueprintPack5() => SelectBlueprintPack(BlueprintPackTier.Five);
+        public void SelectBlueprintPack10() => SelectBlueprintPack(BlueprintPackTier.Ten);
+        public void SelectBlueprintPack100() => SelectBlueprintPack(BlueprintPackTier.Hundred);
+        public void PreviousBlueprintPage() { blueprintPage = Mathf.Max(0, blueprintPage - 1); RefreshBlueprintShop(); }
+        public void NextBlueprintPage()
+        {
+            int pages = Mathf.Max(1, Mathf.CeilToInt(PremiumBundleCatalog.GetAll(catalog).Count / 6f));
+            blueprintPage = Mathf.Min(pages - 1, blueprintPage + 1);
+            RefreshBlueprintShop();
+        }
 
         private void CycleVehicle(int direction)
         {
@@ -99,6 +129,30 @@ namespace AnimeHillRacing.UI
             vehicleIndex = (vehicleIndex + direction + count) % count;
             SaveManager.SelectedVehicleId = CurrentVehicle.vehicleId;
             Refresh();
+        }
+
+        private void SelectBlueprint(int visibleIndex)
+        {
+            if (!Application.isPlaying || catalog == null) return;
+            List<BundleDefinition> bundles = PremiumBundleCatalog.GetAll(catalog);
+            int index = blueprintPage * 6 + visibleIndex;
+            if (index < 0 || index >= bundles.Count) return;
+            BundleDefinition bundle = bundles[index];
+            if (SaveManager.IsBundleUnlocked(bundle)) return;
+            pendingPurchaseKind = PurchaseKind.Blueprints;
+            pendingBundleId = bundle.BundleId;
+            pendingBlueprintTier = selectedBlueprintTier;
+            int amount = BlueprintPackCatalog.GetBlueprintAmount(pendingBlueprintTier);
+            int price = BlueprintPackCatalog.GetCoinPrice(pendingBlueprintTier);
+            if (confirmationTitle != null)
+                confirmationTitle.text = $"BUY {amount} BLUEPRINT{(amount == 1 ? string.Empty : "S")}?";
+            if (confirmationValues != null)
+                confirmationValues.text = $"{bundle.DisplayName.ToUpperInvariant()}\n" +
+                    $"{SaveManager.GetBlueprintCount(bundle.BundleId)} / {bundle.BlueprintRequirement} BLUEPRINTS";
+            if (confirmationCost != null) confirmationCost.text = $"COST  {price:N0} COINS";
+            if (confirmationStatus != null) confirmationStatus.text = string.Empty;
+            if (confirmationYes != null) confirmationYes.interactable = true;
+            if (confirmationModal != null) confirmationModal.SetActive(true);
         }
 
         private void PurchaseTune(int slot)
@@ -129,9 +183,29 @@ namespace AnimeHillRacing.UI
 
         public void ConfirmPurchase()
         {
-            if (purchaseInFlight || CurrentVehicle == null) return;
+            if (purchaseInFlight || CurrentVehicle == null || pendingPurchaseKind == PurchaseKind.None) return;
             purchaseInFlight = true;
             if (confirmationYes != null) confirmationYes.interactable = false;
+            if (pendingPurchaseKind == PurchaseKind.Blueprints)
+            {
+                bool blueprintPurchased = SaveManager.TryPurchaseBlueprints(catalog, pendingBundleId,
+                    pendingBlueprintTier, out BlueprintPurchaseResult blueprintResult);
+                purchaseInFlight = false;
+                if (blueprintPurchased || blueprintResult == BlueprintPurchaseResult.AlreadyUnlocked)
+                {
+                    pendingPurchaseKind = PurchaseKind.None;
+                    pendingBundleId = string.Empty;
+                    if (confirmationModal != null) confirmationModal.SetActive(false);
+                    Refresh();
+                    return;
+                }
+                if (confirmationStatus != null)
+                    confirmationStatus.text = blueprintResult == BlueprintPurchaseResult.NotEnoughCoins
+                        ? "NOT ENOUGH COINS" : "UNAVAILABLE";
+                if (confirmationYes != null) confirmationYes.interactable = true;
+                RefreshBlueprintShop();
+                return;
+            }
             if (pendingPurchaseKind == PurchaseKind.Customization)
             {
                 bool cosmeticPurchased = SaveManager.TryPurchaseCustomization(CurrentVehicle.vehicleId,
@@ -163,6 +237,7 @@ namespace AnimeHillRacing.UI
             purchaseInFlight = false;
             if (purchased)
             {
+                pendingPurchaseKind = PurchaseKind.None;
                 if (confirmationModal != null) confirmationModal.SetActive(false);
                 Refresh();
                 return;
@@ -253,6 +328,7 @@ namespace AnimeHillRacing.UI
         {
             VehicleDefinition vehicle = CurrentVehicle;
             if (vehicle == null) return;
+            if (tuningCoins != null) tuningCoins.text = $"COINS  {SaveManager.TotalCoins:N0}";
             if (gemsBalance != null) gemsBalance.text = $"GEMS  {SaveManager.TotalGems:N0}";
             if (vehicleName != null) vehicleName.text = vehicle.displayName.ToUpperInvariant();
             if (sectionTitle != null) sectionTitle.text = section.ToString().ToUpperInvariant();
@@ -270,6 +346,7 @@ namespace AnimeHillRacing.UI
             if (upgradePanel != null) upgradePanel.SetActive(section == GarageSection.Upgrade);
             if (storePanel != null) storePanel.SetActive(section == GarageSection.Store);
             if (settingsPanel != null) settingsPanel.SetActive(section == GarageSection.Settings);
+            if (section == GarageSection.Store) RefreshBlueprintShop();
             int count = section == GarageSection.Skins ? OptionCount() : 0;
             string selected = section == GarageSection.Skins ? SelectedOptionId() : string.Empty;
             for (int i = 0; i < (optionButtons != null ? optionButtons.Length : 0); i++)
@@ -290,6 +367,7 @@ namespace AnimeHillRacing.UI
                 if (optionLabels != null && i < optionLabels.Length && optionLabels[i] != null)
                     optionLabels[i].text = OptionName(i) + (isSelected ? "\nSELECTED" : unlocked
                         ? "\nSELECT" : gemPrice > 0 ? $"\n{gemPrice:N0} GEMS" : "\nLOCKED");
+                RefreshOptionBlueprintProgress(i, unlocked);
             }
 
             DriverDefinition driver = SelectedDriver();
@@ -311,6 +389,95 @@ namespace AnimeHillRacing.UI
                     $"FUEL  {stats.totalRunFuelDuration:0} SEC";
             }
         }
+
+        private void RefreshBlueprintShop()
+        {
+            if (blueprintCoinsText != null) blueprintCoinsText.text = $"COINS  {SaveManager.TotalCoins:N0}";
+            for (int i = 0; i < (blueprintPackButtons?.Length ?? 0); i++)
+            {
+                Button packButton = blueprintPackButtons[i];
+                if (packButton == null) continue;
+                BlueprintPackTier tier = (BlueprintPackTier)i;
+                int amount = BlueprintPackCatalog.GetBlueprintAmount(tier);
+                int price = BlueprintPackCatalog.GetCoinPrice(tier);
+                packButton.image.color = tier == selectedBlueprintTier
+                    ? new Color(.18f, .62f, .88f, 1f) : new Color(.07f, .20f, .34f, .96f);
+                Text label = packButton.GetComponentInChildren<Text>(true);
+                if (label != null) label.text = $"+{amount} BP\n{CompactCoins(price)}";
+            }
+            List<BundleDefinition> bundles = PremiumBundleCatalog.GetAll(catalog);
+            int pages = Mathf.Max(1, Mathf.CeilToInt(bundles.Count / 6f));
+            blueprintPage = Mathf.Clamp(blueprintPage, 0, pages - 1);
+            if (blueprintPageText != null)
+                blueprintPageText.text = bundles.Count == 0 ? "NO PREMIUM BUNDLES CONFIGURED" :
+                    $"PAGE {blueprintPage + 1} / {pages}";
+            for (int i = 0; i < (blueprintButtons?.Length ?? 0); i++)
+            {
+                int index = blueprintPage * 6 + i;
+                bool visible = index < bundles.Count;
+                blueprintButtons[i].gameObject.SetActive(visible);
+                if (!visible) continue;
+                BundleDefinition bundle = bundles[index];
+                bool unlocked = SaveManager.IsBundleUnlocked(bundle);
+                int progress = Mathf.Min(SaveManager.GetBlueprintCount(bundle.BundleId), bundle.BlueprintRequirement);
+                blueprintButtons[i].interactable = !unlocked;
+                blueprintButtons[i].image.color = unlocked ? new Color(.12f, .42f, .22f, .92f) :
+                    new Color(.055f, .14f, .25f, .96f);
+                if (blueprintImages != null && i < blueprintImages.Length && blueprintImages[i] != null)
+                {
+                    blueprintImages[i].sprite = bundle.Thumbnail;
+                    blueprintImages[i].enabled = bundle.Thumbnail != null;
+                    blueprintImages[i].preserveAspect = true;
+                }
+                if (blueprintLabels != null && i < blueprintLabels.Length && blueprintLabels[i] != null)
+                {
+                    int amount = BlueprintPackCatalog.GetBlueprintAmount(selectedBlueprintTier);
+                    int price = BlueprintPackCatalog.GetCoinPrice(selectedBlueprintTier);
+                    blueprintLabels[i].text = $"{bundle.DisplayName.ToUpperInvariant()}\n" +
+                        $"{bundle.Type.ToString().ToUpperInvariant()}  {progress} / {bundle.BlueprintRequirement}\n" +
+                        (unlocked ? "UNLOCKED" : $"BUY +{amount}  •  {price:N0} COINS");
+                }
+            }
+        }
+
+        private void SelectBlueprintPack(BlueprintPackTier tier)
+        {
+            if (!BlueprintPackCatalog.IsValid(tier)) return;
+            selectedBlueprintTier = tier;
+            RefreshBlueprintShop();
+        }
+
+        private void RefreshOptionBlueprintProgress(int index, bool unlocked)
+        {
+            Image fill = optionBlueprintFills != null && index < optionBlueprintFills.Length
+                ? optionBlueprintFills[index] : null;
+            Text progressText = optionBlueprintTexts != null && index < optionBlueprintTexts.Length
+                ? optionBlueprintTexts[index] : null;
+            GameObject bar = fill != null && fill.transform.parent != null ? fill.transform.parent.gameObject : null;
+            BundleDefinition bundle = GetOptionBundle(index);
+            bool visible = bundle != null && !unlocked;
+            if (bar != null) bar.SetActive(visible);
+            if (!visible) return;
+            int progress = Mathf.Min(SaveManager.GetBlueprintCount(bundle.BundleId), bundle.BlueprintRequirement);
+            if (fill != null) fill.fillAmount = bundle.BlueprintRequirement <= 0
+                ? 0f : progress / (float)bundle.BlueprintRequirement;
+            if (progressText != null)
+                progressText.text = $"BLUEPRINTS  {progress} / {bundle.BlueprintRequirement}";
+        }
+
+        private BundleDefinition GetOptionBundle(int index)
+        {
+            VehicleDefinition vehicle = CurrentVehicle;
+            if (vehicle == null || category == Category.Driver || index < 0 || index >= OptionCount()) return null;
+            VehicleDefinition.CustomizationOption item = category == Category.Skin
+                ? vehicle.skins[index] : vehicle.wheels[index];
+            if (item == null || !item.allowsBlueprintProgression || item.gemPrice <= 0) return null;
+            return PremiumBundleCatalog.Find(catalog, PremiumBundleCatalog.CosmeticBundleId(
+                vehicle.vehicleId, category.ToString(), item.optionId));
+        }
+
+        private static string CompactCoins(int value) => value >= 1000000
+            ? $"{value / 1000000f:0.#}M" : value >= 1000 ? $"{value / 1000f:0.#}K" : value.ToString("N0");
 
         private void RefreshTuning(VehicleDefinition vehicle)
         {
@@ -445,7 +612,11 @@ namespace AnimeHillRacing.UI
             GameObject targetConfirmationModal = null, Text targetConfirmationTitle = null,
             Text targetConfirmationValues = null, Text targetConfirmationCost = null,
             Text targetConfirmationStatus = null, Button targetConfirmationYes = null,
-            Text targetGemsBalance = null)
+            Text targetGemsBalance = null, Button[] targetBlueprintButtons = null,
+            Image[] targetBlueprintImages = null, Text[] targetBlueprintLabels = null,
+            Text targetBlueprintPage = null, Text targetBlueprintCoins = null,
+            Image[] targetOptionBlueprintFills = null, Text[] targetOptionBlueprintTexts = null,
+            Button[] targetBlueprintPackButtons = null)
         {
             catalog = gameCatalog; preview = previewRenderer; vehicleName = vehicleLabel; categoryName = categoryLabel;
             skinSummary = skinLabel; wheelSummary = wheelLabel; driverSummary = driverLabel;
@@ -459,6 +630,12 @@ namespace AnimeHillRacing.UI
             confirmationValues = targetConfirmationValues; confirmationCost = targetConfirmationCost;
             confirmationStatus = targetConfirmationStatus; confirmationYes = targetConfirmationYes;
             gemsBalance = targetGemsBalance;
+            blueprintButtons = targetBlueprintButtons; blueprintImages = targetBlueprintImages;
+            blueprintLabels = targetBlueprintLabels; blueprintPageText = targetBlueprintPage;
+            blueprintCoinsText = targetBlueprintCoins;
+            optionBlueprintFills = targetOptionBlueprintFills;
+            optionBlueprintTexts = targetOptionBlueprintTexts;
+            blueprintPackButtons = targetBlueprintPackButtons;
             FindSavedVehicle();
             Refresh();
         }

@@ -15,8 +15,8 @@ namespace AnimeHillRacing.Terrain
         public float cycleLength = RequiredCycleLength;
         public int challengesPerCycle = RequiredChallengesPerCycle;
         [Min(100f)] public float cycleStartSafetyMargin = 260f;
-        [Tooltip("Run-up starts inside the authored Warmup, Rolling Hills, Gradual Descent, Bumpy Flat, " +
-                 "Staircases, Rolling Descent, Double Hill and Tech Bumps sections, respectively.")]
+        [Tooltip("Run-up starts inside the authored Warmup, Gradual Descent, Bumpy Flat, Staircases, " +
+                 "Broken Terrain, Rolling Descent, Double Hill and Tech Bumps sections, respectively.")]
         public float[] structuralRunUpPositions = DefaultStructuralRunUpPositions();
 
         [Header("Challenge Grammar")]

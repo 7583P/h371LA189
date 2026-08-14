@@ -1,5 +1,6 @@
 using AnimeHillRacing.Terrain;
 using AnimeHillRacing.Vehicle;
+using AnimeHillRacing.Chests;
 using UnityEngine;
 
 namespace AnimeHillRacing.Core
@@ -11,6 +12,7 @@ namespace AnimeHillRacing.Core
         public VehicleDefinition[] vehicles;
         public DriverDefinition[] drivers;
         public UpgradeEconomyDefinition upgradeEconomy;
+        public ChestCatalog chestCatalog;
 
         public int CountMaps(GameModeType mode)
         {

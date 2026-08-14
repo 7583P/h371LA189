@@ -2,6 +2,7 @@ using System.Collections;
 using AnimeHillRacing.Core;
 using AnimeHillRacing.UI;
 using AnimeHillRacing.Vehicle;
+using AnimeHillRacing.Chests;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -17,6 +18,7 @@ namespace AnimeHillRacing.TimeTrial
         [SerializeField] private ResultsUI results;
         [SerializeField] private ResultCaptureService capture;
         [SerializeField] private CanvasGroup controls;
+        [SerializeField] private GameCatalog catalog;
 
         private int currentNode;
         private int lap = 1;
@@ -56,6 +58,12 @@ namespace AnimeHillRacing.TimeTrial
         private void Update()
         {
             if (finished || vehicle == null) return;
+            if (Time.timeScale > 0f && Application.isFocused && catalog != null)
+            {
+                var granted = ChestSystem.AdvanceActiveGameplay(Time.unscaledDeltaTime, catalog);
+                for (int i = 0; i < granted.Count; i++)
+                    ChestGameplayNotification.Show(granted[i], catalog.chestCatalog);
+            }
             elapsed += Time.deltaTime;
             maxSpeed = Mathf.Max(maxSpeed, vehicle.SpeedKmh);
             hud?.Refresh(this);
@@ -145,6 +153,10 @@ namespace AnimeHillRacing.TimeTrial
             hud = targetHud; results = targetResults; capture = targetCapture; controls = targetControls;
         }
 
-        private void OnDestroy() { if (finished) Time.timeScale = 1f; }
+        public void ConfigureChestCatalog(GameCatalog gameCatalog) => catalog = gameCatalog;
+
+        private void OnDestroy() { ChestSystem.Flush(); if (finished) Time.timeScale = 1f; }
+        private void OnApplicationPause(bool paused) { if (paused) ChestSystem.Flush(); }
+        private void OnApplicationQuit() => ChestSystem.Flush();
     }
 }

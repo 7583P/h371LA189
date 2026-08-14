@@ -11,8 +11,20 @@ namespace AnimeHillRacing.Core
         InvalidConfiguration
     }
 
+    public enum BlueprintPurchaseResult
+    {
+        Success,
+        AlreadyUnlocked,
+        NotEnoughCoins,
+        InvalidBundle
+    }
+
     public static class SaveManager
     {
+        public const int DistanceBonusMinimum = 200;
+        public const int DistanceBonusMaximum = 2500;
+        public const int DistanceBonusIncrement = 100;
+
         private const string TotalCoinsKey = "AHR.TotalCoins";
         private const string TotalGemsKey = "AHR.TotalGems";
         private const string SelectedModeKey = "AHR.SelectedMode";
@@ -23,11 +35,20 @@ namespace AnimeHillRacing.Core
         private const string SelectedDriverKey = "AHR.Customize.Driver";
         private const string DistanceBonusValueKey = "AHR.DistanceBonus.CurrentValue";
         private const string DistanceBonusThresholdKey = "AHR.DistanceBonus.NextThreshold";
+        private const string DistanceBonusX10MigrationKey = "AHR.Migration.DistanceBonusX10.V1";
         private const string FormulaWheelMigrationKey = "AHR.Migration.FormulaDefaultWheel02.V1";
 
         public static int TotalCoins => PlayerPrefs.GetInt(TotalCoinsKey, 0);
         public static int TotalGems => Mathf.Max(0, PlayerPrefs.GetInt(TotalGemsKey, 0));
-        public static int CurrentDistanceBonusValue => Mathf.Clamp(PlayerPrefs.GetInt(DistanceBonusValueKey, 20), 20, 250);
+        public static int CurrentDistanceBonusValue
+        {
+            get
+            {
+                EnsureDistanceBonusX10Migration();
+                return Mathf.Clamp(PlayerPrefs.GetInt(DistanceBonusValueKey, DistanceBonusMinimum),
+                    DistanceBonusMinimum, DistanceBonusMaximum);
+            }
+        }
         public static float NextDistanceBonusThreshold => Mathf.Max(300f,
             PlayerPrefs.GetFloat(DistanceBonusThresholdKey, 300f));
 
@@ -35,7 +56,8 @@ namespace AnimeHillRacing.Core
         {
             int award = CurrentDistanceBonusValue;
             PlayerPrefs.SetInt(TotalCoinsKey, TotalCoins + award);
-            PlayerPrefs.SetInt(DistanceBonusValueKey, Mathf.Min(250, award + 10));
+            PlayerPrefs.SetInt(DistanceBonusValueKey, Mathf.Min(DistanceBonusMaximum,
+                award + DistanceBonusIncrement));
             PlayerPrefs.SetFloat(DistanceBonusThresholdKey, NextDistanceBonusThreshold + 300f);
             PlayerPrefs.Save();
             return award;
@@ -127,6 +149,89 @@ namespace AnimeHillRacing.Core
             if (award == 0) return;
             PlayerPrefs.SetInt(TotalGemsKey, TotalGems + award);
             PlayerPrefs.Save();
+        }
+
+        public static void AddCoins(int amount, bool persistImmediately = true)
+        {
+            int award = Mathf.Max(0, amount);
+            if (award == 0) return;
+            long total = (long)TotalCoins + award;
+            PlayerPrefs.SetInt(TotalCoinsKey, (int)System.Math.Min(int.MaxValue, total));
+            if (persistImmediately) PlayerPrefs.Save();
+        }
+
+        public static bool IsVehicleUnlocked(string vehicleId, bool unlockedByDefault)
+        {
+            string key = VehicleUnlockKey(vehicleId);
+            return PlayerPrefs.HasKey(key) ? PlayerPrefs.GetInt(key, 0) != 0 : unlockedByDefault;
+        }
+
+        public static bool IsBundleUnlocked(BundleDefinition bundle)
+        {
+            if (bundle == null) return true;
+            return bundle.Type == BundleType.Vehicle
+                ? IsVehicleUnlocked(bundle.OptionId, bundle.UnlockedByDefault)
+                : IsCustomizationUnlocked(bundle.ScopeId, bundle.Category, bundle.OptionId,
+                    bundle.UnlockedByDefault);
+        }
+
+        public static int GetBlueprintCount(string bundleId)
+        {
+            if (string.IsNullOrEmpty(bundleId)) return 0;
+            return Mathf.Max(0, PlayerPrefs.GetInt(BlueprintKey(bundleId), 0));
+        }
+
+        public static int AddBlueprints(BundleDefinition bundle, int amount, out bool unlocked,
+            bool persistImmediately = true)
+        {
+            unlocked = IsBundleUnlocked(bundle);
+            if (bundle == null || amount <= 0 || unlocked) return bundle == null ? 0 :
+                Mathf.Min(GetBlueprintCount(bundle.BundleId), bundle.BlueprintRequirement);
+            int total = BlueprintProgressMath.Add(GetBlueprintCount(bundle.BundleId), amount,
+                bundle.BlueprintRequirement);
+            PlayerPrefs.SetInt(BlueprintKey(bundle.BundleId), total);
+            if (total >= bundle.BlueprintRequirement)
+            {
+                UnlockBundleWithoutSave(bundle);
+                unlocked = true;
+            }
+            if (persistImmediately) PlayerPrefs.Save();
+            return total;
+        }
+
+        public static bool TryPurchaseBlueprints(GameCatalog catalog, string bundleId,
+            out BlueprintPurchaseResult result)
+        {
+            return TryPurchaseBlueprints(catalog, bundleId, BlueprintPackTier.Hundred, out result);
+        }
+
+        public static bool TryPurchaseBlueprints(GameCatalog catalog, string bundleId,
+            BlueprintPackTier tier, out BlueprintPurchaseResult result)
+        {
+            int blueprintAmount = BlueprintPackCatalog.GetBlueprintAmount(tier);
+            int coinPrice = BlueprintPackCatalog.GetCoinPrice(tier);
+            BundleDefinition bundle = PremiumBundleCatalog.Find(catalog, bundleId);
+            if (bundle == null || !BlueprintPackCatalog.IsValid(tier))
+            {
+                result = BlueprintPurchaseResult.InvalidBundle;
+                return false;
+            }
+            if (IsBundleUnlocked(bundle))
+            {
+                result = BlueprintPurchaseResult.AlreadyUnlocked;
+                return false;
+            }
+            if (!BlueprintProgressMath.CanPurchase(TotalCoins, coinPrice, false))
+            {
+                result = BlueprintPurchaseResult.NotEnoughCoins;
+                return false;
+            }
+
+            PlayerPrefs.SetInt(TotalCoinsKey, TotalCoins - coinPrice);
+            AddBlueprints(bundle, blueprintAmount, out _, false);
+            PlayerPrefs.Save();
+            result = BlueprintPurchaseResult.Success;
+            return true;
         }
 
         public static bool CanAffordGems(int availableGems, int gemPrice) =>
@@ -339,6 +444,29 @@ namespace AnimeHillRacing.Core
 
         private static string TimeKey(string circuitId) => $"AHR.BestTime.{circuitId}";
         private static string LapKey(string circuitId) => $"AHR.BestLap.{circuitId}";
+
+        private static string BlueprintKey(string bundleId) => $"AHR.Blueprints.{bundleId}";
+        private static string VehicleUnlockKey(string vehicleId) => $"AHR.Vehicle.Unlock.{vehicleId}";
+
+        private static void EnsureDistanceBonusX10Migration()
+        {
+            if (PlayerPrefs.GetInt(DistanceBonusX10MigrationKey, 0) != 0) return;
+            int legacyValue = PlayerPrefs.GetInt(DistanceBonusValueKey, 20);
+            PlayerPrefs.SetInt(DistanceBonusValueKey, ScaleLegacyDistanceBonus(legacyValue));
+            PlayerPrefs.SetInt(DistanceBonusX10MigrationKey, 1);
+            PlayerPrefs.Save();
+        }
+
+        public static int ScaleLegacyDistanceBonus(int legacyValue) =>
+            Mathf.Clamp(legacyValue, 20, 250) * 10;
+
+        private static void UnlockBundleWithoutSave(BundleDefinition bundle)
+        {
+            if (bundle.Type == BundleType.Vehicle)
+                PlayerPrefs.SetInt(VehicleUnlockKey(bundle.OptionId), 1);
+            else
+                PlayerPrefs.SetInt($"AHR.Customize.Unlock.{bundle.ScopeId}.{bundle.Category}.{bundle.OptionId}", 1);
+        }
 
         private static string GetVehicleCustomization(VehicleDefinition vehicle, string category, string fallback)
         {

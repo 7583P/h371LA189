@@ -23,7 +23,7 @@ MonoBehaviour:
   hardEndDistance: 24000
   elevationProfile: {fileID: 0}
   baseHeight: 0
-  amplitude: 38
+  amplitude: 46
   frequency: 0.0105
   smoothing: 0.65
   hillSize: 1
@@ -61,12 +61,12 @@ MonoBehaviour:
   hillFeatureWeight: 0.54
   valleyFeatureWeight: 0.25
   technicalFeatureWeight: 0.18
-  maxSlopeAngle: 40
-  maxHeightDeltaPerSample: 1.3984993
+  maxSlopeAngle: 50
+  maxHeightDeltaPerSample: 1.986256
   minimumValleyWidth: 24
   minimumLandingLength: 26
   maximumCrestSharpness: 7
-  smoothingPasses: 1
+  smoothingPasses: 2
   coinDensityPer100m: 9
   initialFuelGap: 55
   fuelGapIncrease: 10
@@ -80,7 +80,7 @@ MonoBehaviour:
   terrainEdgeWidth: 0.18
   terrainVisualDepth: 22
   supportsLiquidExposure: 1
-  neonMaximumAmplitude: 48
+  neonMaximumAmplitude: 58
   neonAmplitudeSaturationCycles: 2
   liquidChallenges:
     cycleLength: 6000
@@ -98,20 +98,20 @@ MonoBehaviour:
     runUpLength: 42
     rampTransitionLength: 6
     rampHorizontalLength: 12
-    rampAngleDegrees: 20
+    rampAngleDegrees: 22
     landingLength: 26
     recoveryLength: 48
     postRecoveryBlendLength: 50
-    basePoolLength: 18
-    minimumPoolLength: 16
+    basePoolLength: 21
+    minimumPoolLength: 18
     maximumPoolLength: 34
-    cycleGrowth: 0.85
+    cycleGrowth: 1
     growthSaturation: 2.5
     deterministicLengthVariation: 0.12
     visualDepth: 7
     surfaceOffset: 0.15
     cautionSprite: {fileID: 21300000, guid: a00d18b1fabcb6143a42b08e727ff1f4, type: 3}
-    cautionDistanceBeforeRamp: 10
+    cautionDistanceBeforeRamp: 28
     cautionBelowSurface: 1.65
     cautionWidth: 3.2
     cautionSortingOrder: 4

@@ -18,12 +18,17 @@ MonoBehaviour:
   gameplayPrefab2D: {fileID: 2616008285295659040, guid: f32340ca01a12bd45a78003be964091a, type: 3}
   gameplayPrefab3D: {fileID: 7086055002561951092, guid: 2ffa48e051bee104abd6fc63787d5f72, type: 3}
   previewSprite: {fileID: 21300000, guid: d4d4611165280484284001211545bc55, type: 3}
+  unlockedByDefault: 1
+  gemPrice: 0
+  allowsBlueprintProgression: 1
   skins:
   - optionId: rally-skin-default
     displayName: RALLY DEFAULT
     sprite: {fileID: 21300000, guid: d4d4611165280484284001211545bc55, type: 3}
     unlockedByDefault: 1
     gemPrice: 0
+    bundleType: 0
+    allowsBlueprintProgression: 1
     visibleDiameter: 0
   wheels:
   - optionId: rally-wheel-01
@@ -31,24 +36,32 @@ MonoBehaviour:
     sprite: {fileID: 21300000, guid: 7d09a7c201f538f46a2c4c0bc536fb87, type: 3}
     unlockedByDefault: 1
     gemPrice: 0
+    bundleType: 0
+    allowsBlueprintProgression: 1
     visibleDiameter: 0
   - optionId: rally-wheel-ghosty
-    displayName: GHOSTY WHEEL
+    displayName: RALLY GHOSTY WHEEL
     sprite: {fileID: 21300000, guid: 1129da19953c42a283655d629a715e93, type: 3}
     unlockedByDefault: 0
     gemPrice: 500
+    bundleType: 0
+    allowsBlueprintProgression: 1
     visibleDiameter: 0
   - optionId: rally-wheel-sky-blue
     displayName: SKY BLUE WHEEL
     sprite: {fileID: 21300000, guid: 28373f10271f4d90ae5f7658cdd7185b, type: 3}
     unlockedByDefault: 0
     gemPrice: 500
+    bundleType: 0
+    allowsBlueprintProgression: 1
     visibleDiameter: 0
   - optionId: rally-wheel-rainbow
     displayName: RAINBOW WHEEL
     sprite: {fileID: 21300000, guid: 1c374a0833864834930fb1c1334142ad, type: 3}
     unlockedByDefault: 0
     gemPrice: 500
+    bundleType: 0
+    allowsBlueprintProgression: 1
     visibleDiameter: 0
   driverPose:
     rootPosition: {x: -0.34, y: 0.28}

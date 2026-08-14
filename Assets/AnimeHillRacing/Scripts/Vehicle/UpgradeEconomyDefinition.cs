@@ -25,16 +25,16 @@ namespace AnimeHillRacing.Vehicle
     [CreateAssetMenu(menuName = "Anime Hill Racing/Upgrade Economy", fileName = "UpgradeEconomy")]
     public sealed class UpgradeEconomyDefinition : ScriptableObject
     {
-        [Min(0)] public int jeepFinalUpgradeCost = 5000;
-        [Min(0)] public int formulaFinalUpgradeCost = 15000;
-        [Min(0)] public int rallyFinalUpgradeCost = 10000;
-        [Min(0)] public int sportBikeFinalUpgradeCost = 20000;
-        [Min(0)] public int jeepFirstUpgradeCost = 100;
-        [Min(0)] public int formulaFirstUpgradeCost = 250;
-        [Min(0)] public int rallyFirstUpgradeCost = 180;
-        [Min(0)] public int sportBikeFirstUpgradeCost = 300;
+        [Min(0)] public int jeepFinalUpgradeCost = 50000;
+        [Min(0)] public int formulaFinalUpgradeCost = 150000;
+        [Min(0)] public int rallyFinalUpgradeCost = 100000;
+        [Min(0)] public int sportBikeFinalUpgradeCost = 200000;
+        [Min(0)] public int jeepFirstUpgradeCost = 1000;
+        [Min(0)] public int formulaFirstUpgradeCost = 2500;
+        [Min(0)] public int rallyFirstUpgradeCost = 1800;
+        [Min(0)] public int sportBikeFirstUpgradeCost = 3000;
         [Range(1f, 3f)] public float costExponent = 1.45f;
-        [Min(1)] public int roundingStep = 25;
+        [Min(1)] public int roundingStep = 250;
 
         public int GetCostForNextTune(VehicleDefinition vehicle, VehicleUpgradeType type, int currentLevel)
         {

@@ -18,18 +18,25 @@ MonoBehaviour:
   gameplayPrefab2D: {fileID: 8203009062753291760, guid: 5f1f57b9eac09ac41adec51341105698, type: 3}
   gameplayPrefab3D: {fileID: 4983932556845216697, guid: 33c6e93613ff7cc4c85253073532930e, type: 3}
   previewSprite: {fileID: 21300000, guid: f1c3d179f9b0f854b8643ac778fbc4fa, type: 3}
+  unlockedByDefault: 1
+  gemPrice: 0
+  allowsBlueprintProgression: 1
   skins:
   - optionId: formula-skin-default
     displayName: FORMULA DEFAULT
     sprite: {fileID: 21300000, guid: f1c3d179f9b0f854b8643ac778fbc4fa, type: 3}
     unlockedByDefault: 1
     gemPrice: 0
+    bundleType: 0
+    allowsBlueprintProgression: 1
     visibleDiameter: 0
   - optionId: formula-skin-neon
     displayName: NEON SKIN
     sprite: {fileID: 21300000, guid: 614393b68a324819adb2dbd1d6509e3c, type: 3}
     unlockedByDefault: 0
     gemPrice: 1000
+    bundleType: 0
+    allowsBlueprintProgression: 1
     visibleDiameter: 0
   wheels:
   - optionId: formula-wheel-02
@@ -37,18 +44,24 @@ MonoBehaviour:
     sprite: {fileID: 21300000, guid: 0effc5efe71db0748aa1b5d5cadea74a, type: 3}
     unlockedByDefault: 1
     gemPrice: 0
+    bundleType: 0
+    allowsBlueprintProgression: 1
     visibleDiameter: 0
   - optionId: formula-wheel-01
-    displayName: GHOSTY WHEELS
+    displayName: FORMULA GHOSTY WHEELS
     sprite: {fileID: 21300000, guid: aca3fba5216593a40975e31bd6558040, type: 3}
     unlockedByDefault: 0
     gemPrice: 500
+    bundleType: 0
+    allowsBlueprintProgression: 1
     visibleDiameter: 0
   - optionId: formula-wheel-rainbow
     displayName: RAINBOW WHEEL
     sprite: {fileID: 21300000, guid: 2a500d5d83da46f8b00460275d612656, type: 3}
     unlockedByDefault: 0
     gemPrice: 500
+    bundleType: 0
+    allowsBlueprintProgression: 1
     visibleDiameter: 0
   driverPose:
     rootPosition: {x: -0.3, y: 0.26}

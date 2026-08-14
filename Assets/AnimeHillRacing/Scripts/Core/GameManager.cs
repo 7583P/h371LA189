@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using AnimeHillRacing.Terrain;
 using AnimeHillRacing.UI;
 using AnimeHillRacing.Vehicle;
+using AnimeHillRacing.Chests;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -66,6 +67,7 @@ namespace AnimeHillRacing.Core
         [SerializeField] private CanvasGroup gameplayControls;
         [SerializeField, Min(0f)] private float resultsDelay = 3f;
         [SerializeField] private MapProfile mapProfile;
+        [SerializeField] private GameCatalog catalog;
 
         private float startProgress;
         private float maxProgress;
@@ -191,6 +193,12 @@ namespace AnimeHillRacing.Core
         {
             if (vehicle == null)
                 return;
+            if (State == RunState.Running && Time.timeScale > 0f && Application.isFocused && catalog != null)
+            {
+                List<ChestRecord> granted = ChestSystem.AdvanceActiveGameplay(Time.unscaledDeltaTime, catalog);
+                for (int i = 0; i < granted.Count; i++)
+                    ChestGameplayNotification.Show(granted[i], catalog.chestCatalog);
+            }
             vehicle.Fuel?.TickRun(Time.deltaTime, State == RunState.Running);
             maxProgress = Mathf.Max(maxProgress, vehicle.ProgressPosition);
             maxSpeedKmh = Mathf.Max(maxSpeedKmh, vehicle.SpeedKmh);
@@ -250,6 +258,8 @@ namespace AnimeHillRacing.Core
             liquidExposure.Reset(LiquidExposureLimit);
             liquidCrashRequested = false;
         }
+
+        public void ConfigureChestCatalog(GameCatalog gameCatalog) => catalog = gameCatalog;
 
         public void RequestGameOver(RunEndReason reason)
         {
@@ -351,7 +361,11 @@ namespace AnimeHillRacing.Core
 
         private void OnDestroy()
         {
+            ChestSystem.Flush();
             if (State == RunState.Results) RestoreTime();
         }
+
+        private void OnApplicationPause(bool paused) { if (paused) ChestSystem.Flush(); }
+        private void OnApplicationQuit() => ChestSystem.Flush();
     }
 }

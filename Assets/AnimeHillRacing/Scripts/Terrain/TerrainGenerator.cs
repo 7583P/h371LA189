@@ -31,6 +31,7 @@ namespace AnimeHillRacing.Terrain
         GradualDescent,
         BumpyFlat,
         Staircases,
+        BrokenTerrain,
         RollingDescent,
         DoubleHill,
         TechBumps,
@@ -57,43 +58,57 @@ namespace AnimeHillRacing.Terrain
     public static class TerrainGenerator
     {
         private const float TwoPi = Mathf.PI * 2f;
-        public const int NeonTemplateSectionCount = 9;
+        public const int NeonTemplateSectionCount = 10;
 
         // Exact authored order inside every 6000 m cycle:
-        // Warmup -> Rolling Hills -> Gradual Descent -> Bumpy Flat -> Staircases ->
+        // Warmup -> Rolling Hills -> Gradual Descent -> Bumpy Flat -> Staircases -> Broken Terrain ->
         // Rolling Descent -> Double Hill -> Tech Bumps -> Recovery.
         private static readonly float[] NeonSectionBoundaries =
         {
-            0f, 600f, 1400f, 2250f, 3000f, 3700f, 4350f, 5050f, 5700f, 6000f
+            0f, 550f, 1250f, 1900f, 2450f, 3100f, 3700f, 4350f, 5050f, 5700f, 6000f
         };
 
         private static readonly float[][] NeonSectionDistances =
         {
-            new[] { 0f, 140f, 260f, 390f, 520f, 600f },
-            new[] { 600f, 700f, 800f, 900f, 1000f, 1110f, 1220f, 1400f },
-            new[] { 1400f, 1510f, 1610f, 1730f, 1850f, 1970f, 2070f, 2250f },
-            new[] { 2250f, 2340f, 2430f, 2520f, 2610f, 2700f, 2790f, 2880f, 3000f },
-            new[] { 3000f, 3070f, 3130f, 3200f, 3260f, 3330f, 3390f, 3460f, 3520f, 3590f, 3650f, 3700f },
-            new[] { 3700f, 3780f, 3870f, 3960f, 4060f, 4160f, 4250f, 4350f },
-            new[] { 4350f, 4430f, 4510f, 4590f, 4670f, 4750f, 4830f, 4910f, 4990f, 5050f },
-            new[] { 5050f, 5120f, 5190f, 5260f, 5330f, 5400f, 5470f, 5540f, 5610f, 5700f },
+            new[] { 0f, 100f, 185f, 270f, 355f, 445f, 550f },
+            new[] { 550f, 635f, 720f, 810f, 900f, 1010f, 1120f, 1250f },
+            new[] { 1250f, 1340f, 1450f, 1540f, 1660f, 1740f, 1830f, 1900f },
+            new[] { 1900f, 1970f, 2045f, 2125f, 2200f, 2280f, 2360f, 2450f },
+            new[] { 2450f, 2520f, 2580f, 2660f, 2720f, 2800f, 2870f, 2950f, 3020f, 3070f, 3100f },
+            new[] { 3100f, 3170f, 3240f, 3320f, 3390f, 3470f, 3540f, 3620f, 3700f },
+            new[] { 3700f, 3780f, 3870f, 3960f, 4050f, 4140f, 4250f, 4350f },
+            new[] { 4350f, 4420f, 4510f, 4590f, 4680f, 4760f, 4850f, 4930f, 5000f, 5050f },
+            new[] { 5050f, 5120f, 5190f, 5260f, 5330f, 5400f, 5470f, 5540f, 5620f, 5700f },
             new[] { 5700f, 5780f, 5860f, 5930f, 6000f }
         };
 
         private static readonly float[][] NeonSectionHeights =
         {
-            new[] { 0f, .025f, -.018f, .05f, .025f, .10f },
-            new[] { .10f, .58f, -.08f, .70f, -.16f, .75f, -.22f, .42f },
-            new[] { .42f, .08f, .48f, -.12f, .28f, -.38f, .06f, -.58f },
-            new[] { -.58f, -.34f, -.62f, -.30f, -.66f, -.26f, -.64f, -.28f, -.50f },
-            new[] { -.50f, -.50f, -.17f, -.17f, .18f, .18f, .55f, .55f, .90f, .90f, .90f, .48f },
-            new[] { .48f, .05f, .55f, -.18f, .40f, -.42f, .18f, -.50f },
-            new[] { -.50f, -.32f, .40f, .40f, -.34f, -.34f, .38f, .38f, -.24f, -.18f },
-            new[] { -.18f, .28f, -.32f, .32f, -.34f, .32f, -.36f, .30f, -.28f, -.12f },
-            new[] { -.12f, -.08f, -.03f, .01f, 0f }
+            new[] { 0f, .015f, -.010f, .035f, .015f, .070f, .10f },
+            new[] { .10f, .18f, .45f, .32f, .58f, .28f, .48f, .36f },
+            new[] { .36f, .40f, .30f, .22f, .26f, .05f, -.08f, -.18f },
+            new[] { -.18f, -.14f, -.22f, -.13f, -.21f, -.16f, -.24f, -.18f },
+            new[] { -.18f, -.18f, .02f, .02f, .24f, .24f, .46f, .46f, .62f, .62f, .38f },
+            new[] { .38f, .15f, .32f, -.08f, .12f, -.24f, .06f, -.32f, -.12f },
+            new[] { -.12f, .16f, .02f, .28f, .05f, -.12f, -.34f, -.42f },
+            new[] { -.42f, -.28f, .42f, .34f, -.30f, -.18f, .55f, .38f, -.26f, -.18f },
+            new[] { -.18f, .08f, -.22f, .14f, -.26f, .12f, -.30f, .10f, -.24f, -.08f },
+            new[] { -.08f, -.06f, -.03f, .01f, 0f }
         };
 
-        private enum NeonMesoKind { Bump, DoubleBump, Alternating, SoftStep }
+        private enum NeonMesoKind
+        {
+            Bump,
+            DoubleBump,
+            Alternating,
+            SoftStep,
+            SharpCrest,
+            Pothole,
+            Whoops,
+            TripleBump,
+            ShortPlateau,
+            BrokenRhythm
+        }
 
         private readonly struct NeonMesoFeature
         {
@@ -112,41 +127,107 @@ namespace AnimeHillRacing.Terrain
             }
         }
 
-        // 60-150 m C1-continuous authored features. They create medium bumps and dips with enough
-        // vertices for stable wheel contact; there is no Perlin/micro noise in the Neon template.
+        // 28-70 m C1-continuous authored obstacles. They are deliberately placed only in normal terrain
+        // windows between the eight liquid structures. There is no Perlin/micro noise: each bump, dip,
+        // plateau and broken-rhythm group is large enough to read visually and affect suspension/momentum.
         private static readonly NeonMesoFeature[] NeonMesoFeatures =
         {
-            new NeonMesoFeature(170f, 120f, .015f, NeonMesoKind.Bump),
-            new NeonMesoFeature(410f, 100f, -.018f, NeonMesoKind.Alternating),
-            new NeonMesoFeature(680f, 100f, .035f, NeonMesoKind.DoubleBump),
-            new NeonMesoFeature(980f, 120f, -.025f, NeonMesoKind.Alternating),
-            new NeonMesoFeature(1250f, 100f, .030f, NeonMesoKind.Bump),
-            new NeonMesoFeature(1500f, 130f, .025f, NeonMesoKind.Alternating),
-            new NeonMesoFeature(1820f, 150f, -.030f, NeonMesoKind.DoubleBump),
-            new NeonMesoFeature(2090f, 100f, .025f, NeonMesoKind.Bump),
-            new NeonMesoFeature(2290f, 80f, .045f, NeonMesoKind.DoubleBump),
-            new NeonMesoFeature(2440f, 70f, -.040f, NeonMesoKind.Bump),
-            new NeonMesoFeature(2600f, 95f, .050f, NeonMesoKind.Alternating),
-            new NeonMesoFeature(2780f, 80f, .040f, NeonMesoKind.DoubleBump),
-            new NeonMesoFeature(2900f, 60f, -.035f, NeonMesoKind.Bump),
-            new NeonMesoFeature(3320f, 60f, .025f, NeonMesoKind.Bump),
-            new NeonMesoFeature(3780f, 80f, .040f, NeonMesoKind.Alternating),
-            new NeonMesoFeature(3990f, 90f, -.035f, NeonMesoKind.DoubleBump),
-            new NeonMesoFeature(4200f, 70f, .040f, NeonMesoKind.Bump),
-            new NeonMesoFeature(4630f, 70f, .025f, NeonMesoKind.Bump),
-            new NeonMesoFeature(4820f, 80f, -.030f, NeonMesoKind.Alternating),
-            new NeonMesoFeature(5080f, 80f, .040f, NeonMesoKind.DoubleBump),
-            new NeonMesoFeature(5190f, 80f, -.035f, NeonMesoKind.Bump),
-            new NeonMesoFeature(5300f, 80f, .040f, NeonMesoKind.Alternating),
-            new NeonMesoFeature(5450f, 80f, .040f, NeonMesoKind.DoubleBump),
-            new NeonMesoFeature(5560f, 80f, -.040f, NeonMesoKind.Alternating),
-            new NeonMesoFeature(5620f, 70f, .035f, NeonMesoKind.Bump),
-            new NeonMesoFeature(5760f, 100f, .018f, NeonMesoKind.Alternating)
+            new NeonMesoFeature(120f, 60f, .035f, NeonMesoKind.Bump),
+            new NeonMesoFeature(205f, 28f, .055f, NeonMesoKind.Pothole),
+            new NeonMesoFeature(265f, 55f, .040f, NeonMesoKind.DoubleBump),
+            new NeonMesoFeature(345f, 38f, .045f, NeonMesoKind.Alternating),
+
+            new NeonMesoFeature(650f, 48f, .050f, NeonMesoKind.Whoops),
+            new NeonMesoFeature(715f, 28f, .065f, NeonMesoKind.SharpCrest),
+            new NeonMesoFeature(760f, 42f, .055f, NeonMesoKind.Pothole),
+            new NeonMesoFeature(825f, 60f, .045f, NeonMesoKind.DoubleBump),
+            new NeonMesoFeature(905f, 34f, .060f, NeonMesoKind.Bump),
+            new NeonMesoFeature(955f, 52f, .050f, NeonMesoKind.Alternating),
+            new NeonMesoFeature(1025f, 28f, .070f, NeonMesoKind.Pothole),
+            new NeonMesoFeature(1070f, 68f, .050f, NeonMesoKind.TripleBump),
+            new NeonMesoFeature(1160f, 38f, .070f, NeonMesoKind.SharpCrest),
+            new NeonMesoFeature(1210f, 34f, .055f, NeonMesoKind.Pothole),
+
+            new NeonMesoFeature(1495f, 48f, .045f, NeonMesoKind.Alternating),
+            new NeonMesoFeature(1555f, 32f, .060f, NeonMesoKind.Pothole),
+            new NeonMesoFeature(1600f, 66f, .050f, NeonMesoKind.DoubleBump),
+            new NeonMesoFeature(1680f, 28f, .075f, NeonMesoKind.SharpCrest),
+            new NeonMesoFeature(1725f, 52f, .040f, NeonMesoKind.ShortPlateau),
+            new NeonMesoFeature(1795f, 36f, .075f, NeonMesoKind.Pothole),
+            new NeonMesoFeature(1845f, 70f, .045f, NeonMesoKind.TripleBump),
+            new NeonMesoFeature(1930f, 32f, .070f, NeonMesoKind.SharpCrest),
+            new NeonMesoFeature(1975f, 38f, .060f, NeonMesoKind.Pothole),
+
+            new NeonMesoFeature(2255f, 55f, .050f, NeonMesoKind.Whoops),
+            new NeonMesoFeature(2325f, 32f, .075f, NeonMesoKind.Pothole),
+            new NeonMesoFeature(2370f, 44f, .055f, NeonMesoKind.Bump),
+            new NeonMesoFeature(2425f, 62f, .060f, NeonMesoKind.Alternating),
+            new NeonMesoFeature(2498f, 38f, .070f, NeonMesoKind.SharpCrest),
+            new NeonMesoFeature(2548f, 66f, .050f, NeonMesoKind.TripleBump),
+            new NeonMesoFeature(2622f, 40f, .080f, NeonMesoKind.Pothole),
+            new NeonMesoFeature(2670f, 60f, .060f, NeonMesoKind.BrokenRhythm),
+
+            new NeonMesoFeature(2985f, 65f, .050f, NeonMesoKind.SoftStep),
+            new NeonMesoFeature(3060f, 44f, .055f, NeonMesoKind.Bump),
+            new NeonMesoFeature(3115f, 60f, .055f, NeonMesoKind.SoftStep),
+            new NeonMesoFeature(3185f, 30f, .075f, NeonMesoKind.Pothole),
+            new NeonMesoFeature(3225f, 70f, .060f, NeonMesoKind.ShortPlateau),
+            new NeonMesoFeature(3305f, 42f, .055f, NeonMesoKind.DoubleBump),
+            new NeonMesoFeature(3358f, 58f, .060f, NeonMesoKind.SoftStep),
+
+            new NeonMesoFeature(3670f, 48f, .055f, NeonMesoKind.Alternating),
+            new NeonMesoFeature(3730f, 30f, .075f, NeonMesoKind.Pothole),
+            new NeonMesoFeature(3775f, 58f, .055f, NeonMesoKind.Whoops),
+            new NeonMesoFeature(3845f, 36f, .075f, NeonMesoKind.SharpCrest),
+            new NeonMesoFeature(3895f, 66f, -.055f, NeonMesoKind.DoubleBump),
+            new NeonMesoFeature(3970f, 55f, .060f, NeonMesoKind.BrokenRhythm),
+            new NeonMesoFeature(4035f, 32f, .080f, NeonMesoKind.Pothole),
+            new NeonMesoFeature(4075f, 37f, .060f, NeonMesoKind.Bump),
+
+            new NeonMesoFeature(4355f, 60f, .055f, NeonMesoKind.Alternating),
+            new NeonMesoFeature(4425f, 34f, .080f, NeonMesoKind.SharpCrest),
+            new NeonMesoFeature(4470f, 52f, .070f, NeonMesoKind.Pothole),
+            new NeonMesoFeature(4535f, 68f, .060f, NeonMesoKind.DoubleBump),
+            new NeonMesoFeature(4615f, 30f, .085f, NeonMesoKind.Pothole),
+            new NeonMesoFeature(4655f, 45f, .055f, NeonMesoKind.ShortPlateau),
+            new NeonMesoFeature(4710f, 60f, .050f, NeonMesoKind.TripleBump),
+            new NeonMesoFeature(4785f, 38f, .075f, NeonMesoKind.SharpCrest),
+            new NeonMesoFeature(4835f, 55f, .060f, NeonMesoKind.Alternating),
+            new NeonMesoFeature(4900f, 42f, .075f, NeonMesoKind.Pothole),
+
+            new NeonMesoFeature(5195f, 36f, .095f, NeonMesoKind.SharpCrest),
+            new NeonMesoFeature(5240f, 42f, .085f, NeonMesoKind.Pothole),
+            new NeonMesoFeature(5292f, 55f, .065f, NeonMesoKind.Whoops),
+            new NeonMesoFeature(5355f, 36f, .085f, NeonMesoKind.SharpCrest),
+            new NeonMesoFeature(5398f, 44f, .090f, NeonMesoKind.Pothole),
+            new NeonMesoFeature(5450f, 52f, .070f, NeonMesoKind.BrokenRhythm),
+
+            new NeonMesoFeature(5745f, 50f, .025f, NeonMesoKind.Bump),
+            new NeonMesoFeature(5810f, 38f, .025f, NeonMesoKind.Pothole),
+            new NeonMesoFeature(5860f, 58f, .022f, NeonMesoKind.Alternating),
+            new NeonMesoFeature(5930f, 50f, .020f, NeonMesoKind.Bump)
         };
 
         public static int NeonMesoFeatureCount => NeonMesoFeatures.Length;
-        public const float NeonMesoMinimumLength = 60f;
-        public const float NeonMesoMaximumLength = 150f;
+        public static int NeonSharpCrestCount => CountNeonMesoFeatures(NeonMesoKind.SharpCrest);
+        public static int NeonPotholeCount => CountNeonMesoFeatures(NeonMesoKind.Pothole);
+        public static int NeonWhoopsCount => CountNeonMesoFeatures(NeonMesoKind.Whoops);
+        public static int NeonSoftStepCount => CountNeonMesoFeatures(NeonMesoKind.SoftStep);
+        public static int NeonTripleBumpCount => CountNeonMesoFeatures(NeonMesoKind.TripleBump);
+        public static int NeonPlateauCount => CountNeonMesoFeatures(NeonMesoKind.ShortPlateau);
+        public static int NeonBrokenRhythmCount => CountNeonMesoFeatures(NeonMesoKind.BrokenRhythm);
+        public const float NeonMesoMinimumLength = 28f;
+        public const float NeonMesoMaximumLength = 70f;
+        public const float NeonMesoMinimumNormalizedHeight = .020f;
+        public const float NeonMesoMaximumNormalizedHeight = .095f;
+
+        private static int CountNeonMesoFeatures(NeonMesoKind kind)
+        {
+            int count = 0;
+            for (int i = 0; i < NeonMesoFeatures.Length; i++)
+                if (NeonMesoFeatures[i].kind == kind) count++;
+            return count;
+        }
 
         public static Vector2 GetNeonSectionRange(NeonTemplateSection section)
         {
@@ -406,8 +487,21 @@ namespace AnimeHillRacing.Terrain
                 float shape;
                 switch (feature.kind)
                 {
+                    case NeonMesoKind.SharpCrest:
+                        shape = Mathf.Pow(Mathf.Sin(t * Mathf.PI), 3f);
+                        break;
+                    case NeonMesoKind.Pothole:
+                        shape = -envelope;
+                        break;
+                    case NeonMesoKind.Whoops:
+                        shape = Mathf.Sin(t * Mathf.PI * 3f) * envelope;
+                        break;
                     case NeonMesoKind.DoubleBump:
                         shape = Mathf.Sin(t * Mathf.PI * 2f);
+                        shape *= shape;
+                        break;
+                    case NeonMesoKind.TripleBump:
+                        shape = Mathf.Sin(t * Mathf.PI * 3f);
                         shape *= shape;
                         break;
                     case NeonMesoKind.Alternating:
@@ -417,6 +511,15 @@ namespace AnimeHillRacing.Terrain
                         float rise = Smooth01(Mathf.InverseLerp(0f, .22f, t));
                         float fall = 1f - Smooth01(Mathf.InverseLerp(.78f, 1f, t));
                         shape = rise * fall;
+                        break;
+                    case NeonMesoKind.ShortPlateau:
+                        float plateauRise = Smooth01(Mathf.InverseLerp(0f, .18f, t));
+                        float plateauFall = 1f - Smooth01(Mathf.InverseLerp(.72f, 1f, t));
+                        shape = plateauRise * plateauFall;
+                        break;
+                    case NeonMesoKind.BrokenRhythm:
+                        shape = (Mathf.Sin(t * Mathf.PI * 2f) * .72f +
+                                 Mathf.Sin(t * Mathf.PI * 4f) * .28f) * envelope;
                         break;
                     default:
                         shape = envelope;

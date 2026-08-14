@@ -33,6 +33,8 @@ namespace AnimeHillRacing.Vehicle
             public Sprite sprite;
             public bool unlockedByDefault = true;
             [Min(0)] public int gemPrice;
+            public AnimeHillRacing.Core.BundleType bundleType = AnimeHillRacing.Core.BundleType.Cosmetic;
+            public bool allowsBlueprintProgression = true;
             [Min(0f)] public float visibleDiameter;
         }
 
@@ -80,6 +82,11 @@ namespace AnimeHillRacing.Vehicle
         public GameObject gameplayPrefab2D;
         public GameObject gameplayPrefab3D;
         public Sprite previewSprite;
+
+        [Header("Premium Vehicle Bundle (optional)")]
+        public bool unlockedByDefault = true;
+        [Min(0)] public int gemPrice;
+        public bool allowsBlueprintProgression = true;
 
         [Header("Garage / Customize")]
         public CustomizationOption[] skins;

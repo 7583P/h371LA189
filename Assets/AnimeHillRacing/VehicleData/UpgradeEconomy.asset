@@ -12,13 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 507d1afd17e3299428516edb6c6439a2, type: 3}
   m_Name: UpgradeEconomy
   m_EditorClassIdentifier: Assembly-CSharp::AnimeHillRacing.Vehicle.UpgradeEconomyDefinition
-  jeepFinalUpgradeCost: 5000
-  formulaFinalUpgradeCost: 15000
-  rallyFinalUpgradeCost: 10000
-  sportBikeFinalUpgradeCost: 20000
-  jeepFirstUpgradeCost: 100
-  formulaFirstUpgradeCost: 250
-  rallyFirstUpgradeCost: 180
-  sportBikeFirstUpgradeCost: 300
+  jeepFinalUpgradeCost: 50000
+  formulaFinalUpgradeCost: 150000
+  rallyFinalUpgradeCost: 100000
+  sportBikeFinalUpgradeCost: 200000
+  jeepFirstUpgradeCost: 1000
+  formulaFirstUpgradeCost: 2500
+  rallyFirstUpgradeCost: 1800
+  sportBikeFirstUpgradeCost: 3000
   costExponent: 1.45
-  roundingStep: 25
+  roundingStep: 250

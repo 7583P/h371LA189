@@ -33,6 +33,7 @@ namespace AnimeHillRacing.Core
         private const string SelectedVehicleKey = "AHR.SelectedVehicle";
         private const string SelectedTransmissionKey = "AHR.SelectedTransmission";
         private const string SelectedDriverKey = "AHR.Customize.Driver";
+        private const string SelectedCharacterAccessoryKey = "AHR.Customize.CharacterAccessory";
         private const string DistanceBonusValueKey = "AHR.DistanceBonus.CurrentValue";
         private const string DistanceBonusThresholdKey = "AHR.DistanceBonus.NextThreshold";
         private const string DistanceBonusX10MigrationKey = "AHR.Migration.DistanceBonusX10.V1";
@@ -127,6 +128,15 @@ namespace AnimeHillRacing.Core
         public static void SetSelectedDriverId(string driverId)
         {
             PlayerPrefs.SetString(SelectedDriverKey, driverId ?? string.Empty);
+            PlayerPrefs.Save();
+        }
+
+        public static string GetSelectedCharacterAccessoryId(string defaultAccessoryId) =>
+            PlayerPrefs.GetString(SelectedCharacterAccessoryKey, defaultAccessoryId ?? "default");
+
+        public static void SetSelectedCharacterAccessoryId(string accessoryId)
+        {
+            PlayerPrefs.SetString(SelectedCharacterAccessoryKey, accessoryId ?? "default");
             PlayerPrefs.Save();
         }
 

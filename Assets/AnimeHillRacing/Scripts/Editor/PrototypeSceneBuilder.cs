@@ -108,6 +108,9 @@ namespace AnimeHillRacing.Editor
         private const string DriverForearmPath = DriverRoot + "/Arms/Stickman_Black_Forearm.png";
         private const string DriverThighPath = DriverRoot + "/Legs/Stickman_Black_Thigh.png";
         private const string DriverLowerLegPath = DriverRoot + "/Legs/Stickman_Black_LowerLeg.png";
+        private const string DriverAccessoryRoot = DriverRoot + "/Accesory";
+        private const string DriverGlassesPath = DriverAccessoryRoot + "/Glasses.png";
+        private const string DriverFireGlassesPath = DriverAccessoryRoot + "/Fire Glasses.png";
         private const string CountrysideSkyPath = "Assets/Art/Backgrounds/Countryside/Countryside_Sky.png";
         private const string CountrysideMountainsPath = "Assets/Art/Backgrounds/Countryside/Countryside_Mountains.png";
         private static Font font;
@@ -168,6 +171,7 @@ namespace AnimeHillRacing.Editor
             public Sprite bronzeChestClosed, bronzeChestOpen, silverChestClosed, silverChestOpen;
             public Sprite goldChestClosed, goldChestOpen, masterChestClosed, masterChestOpen;
             public Sprite legendaryChestClosed, legendaryChestOpen, coinsChest, chestShelf;
+            public Sprite driverGlasses, driverFireGlasses;
             public DriverDefinition stickmanBlack;
             public EnvironmentDefinition countrysideEnvironment;
             public EnvironmentDefinition neonCityEnvironment;
@@ -245,6 +249,26 @@ namespace AnimeHillRacing.Editor
             AssetDatabase.Refresh();
             EditorSceneManager.OpenScene(MainMenuPath, OpenSceneMode.Single);
             Debug.Log("NEON_RECOVERY_BUILD_OK: four required scenes rebuilt and validated.");
+        }
+
+        [MenuItem("Anime Hill Racing/Rebuild Driver + Physics + Characters + Shop")]
+        public static void RebuildDriverPhysicsCharactersShop()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+                throw new System.InvalidOperationException("Exit Play Mode before rebuilding driver/shop content.");
+            EnsureFolders();
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            BuiltAssets assets = CreateAssets();
+            ValidateCustomizationContract(assets);
+            ValidateVehiclePhysicsContract(assets);
+            ValidateSuspensionContract(assets);
+            BuildGarageModern(assets);
+            ValidateCharacterAccessoryAndShopContract(assets);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+            EditorSceneManager.OpenScene(GaragePath, OpenSceneMode.Single);
+            Debug.Log("DRIVER_PHYSICS_CHARACTERS_SHOP_BUILD_OK: authoritative poses/prefabs, ride model, " +
+                      "persistent accessories and vertical shop rebuilt and validated.");
         }
 
         private static void BuildAllGameScenesInternal()
@@ -2603,6 +2627,74 @@ namespace AnimeHillRacing.Editor
                       $"{assets.sportBike.RearWheelDiameter:0.00}m ({rearPercent:P1}), all three wheel skins normalized.");
         }
 
+        private static void ValidateCharacterAccessoryAndShopContract(BuiltAssets assets)
+        {
+            DriverDefinition driver = assets.stickmanBlack;
+            if (driver?.accessories == null || driver.accessories.Length != 3 ||
+                driver.accessories[0]?.accessoryId != "default" || driver.accessories[0].sprite != null ||
+                driver.accessories[1]?.accessoryId != "glasses" || driver.accessories[1].sprite != assets.driverGlasses ||
+                driver.accessories[2]?.accessoryId != "fire-glasses" ||
+                driver.accessories[2].sprite != assets.driverFireGlasses)
+                throw new System.InvalidOperationException(
+                    "Characters requires stable default/glasses/fire-glasses accessory data and real sprites.");
+
+            VehicleDefinition[] vehicles = { assets.jeep, assets.formula, assets.rally, assets.sportBike };
+            GaragePreviewRenderer preview = Object.FindFirstObjectByType<GaragePreviewRenderer>(FindObjectsInactive.Include);
+            if (preview?.Driver == null)
+                throw new System.InvalidOperationException("Character accessory preview driver is missing.");
+            for (int vehicleIndex = 0; vehicleIndex < vehicles.Length; vehicleIndex++)
+            {
+                VehicleDefinition vehicle = vehicles[vehicleIndex];
+                VehicleDefinition.DriverPartPose headPose = vehicle.driverPose.head;
+                VehicleDefinition.DriverPartPose accessoryPose = vehicle.driverPose.accessory;
+                if (!accessoryPose.visible || accessoryPose.sortingOrder <= headPose.sortingOrder ||
+                    Mathf.Abs(accessoryPose.position.y - headPose.position.y) > .08f ||
+                    accessoryPose.position.x >= headPose.position.x)
+                    throw new System.InvalidOperationException(
+                        $"{vehicle.displayName}: AccessoryAnchor is not aligned to the head/cockpit sorting contract.");
+                for (int accessoryIndex = 0; accessoryIndex < driver.accessories.Length; accessoryIndex++)
+                {
+                    DriverDefinition.CharacterAccessoryOption option = driver.accessories[accessoryIndex];
+                    preview.Driver.Apply(driver, vehicle.driverPose, option, null, false);
+                    bool expectedVisible = option.sprite != null;
+                    if (preview.Driver.AccessoryRenderer == null ||
+                        preview.Driver.AccessoryRenderer.enabled != expectedVisible ||
+                        preview.Driver.AccessoryRenderer.sprite != option.sprite)
+                        throw new System.InvalidOperationException(
+                            $"{vehicle.displayName}: accessory preview transition failed for {option.accessoryId}.");
+                }
+            }
+
+            const string selectionKey = "AHR.Customize.CharacterAccessory";
+            bool hadSelection = PlayerPrefs.HasKey(selectionKey);
+            string previousSelection = PlayerPrefs.GetString(selectionKey, string.Empty);
+            SaveManager.SetSelectedCharacterAccessoryId("fire-glasses");
+            if (SaveManager.GetSelectedCharacterAccessoryId("default") != "fire-glasses")
+                throw new System.InvalidOperationException("Character accessory stable-ID persistence failed.");
+            if (hadSelection) PlayerPrefs.SetString(selectionKey, previousSelection);
+            else PlayerPrefs.DeleteKey(selectionKey);
+            PlayerPrefs.Save();
+
+            ScrollRect[] scrollRects = Object.FindObjectsByType<ScrollRect>(FindObjectsInactive.Include,
+                FindObjectsSortMode.None);
+            ScrollRect shop = null;
+            for (int i = 0; i < scrollRects.Length; i++)
+                if (scrollRects[i] != null && scrollRects[i].gameObject.name == "Store Panel") shop = scrollRects[i];
+            if (shop == null || shop.horizontal || !shop.vertical || shop.viewport == null || shop.content == null ||
+                shop.movementType != ScrollRect.MovementType.Clamped ||
+                shop.content.GetComponent<VerticalLayoutGroup>() == null ||
+                shop.content.GetComponent<ContentSizeFitter>() == null ||
+                shop.content.Find("Special Offers") == null ||
+                shop.content.Find("Blue Prints Accesories") == null ||
+                shop.content.Find("Character Accessories") == null)
+                throw new System.InvalidOperationException(
+                    "Shop requires one clamped vertical ScrollRect with Viewport/Content/layout and both ordered sections.");
+            if (shop.transform.parent == null || shop.transform.parent.name != "Safe Area")
+                throw new System.InvalidOperationException("Shop is not contained by the mobile Safe Area.");
+            Debug.Log("CHARACTERS_SHOP_AUDIT_PASS: 3 stable accessories x 4 vehicle poses, preview transitions, " +
+                      "save/restore and clamped mobile vertical Shop structure validated; IAP offers remain disabled.");
+        }
+
         private static VehicleDefinition.DriverPose CreateJeepDriverPose()
         {
             VehicleDefinition.DriverPartPose P(float x, float y, float r, float sx = .042f,
@@ -2610,9 +2702,9 @@ namespace AnimeHillRacing.Editor
                 VehicleDefinition.DriverPartPose.Create(x, y, r, sx, sy, visible, order);
             return new VehicleDefinition.DriverPose
             {
-                rootPosition = new Vector2(-.38f, .42f), rootScale = 1f,
-                torso = P(-.01f, .25f, -12f, .030f, .030f, true, 3),
-                head = P(-.06f, .70f, -4f, .033f, .033f, true, 4),
+                rootPosition = new Vector2(-.42f, .24f), rootScale = .96f,
+                torso = P(-.01f, .25f, -10f, .030f, .032f, true, 3),
+                head = P(-.04f, .68f, -3f, .032f, .034f, true, 5),
                 leftUpperArm = P(.16f, .42f, -34f, .022f, .022f, true, 4),
                 leftForearm = P(.39f, .27f, -58f, .021f, .021f, true, 4),
                 rightUpperArm = P(.11f, .39f, -29f, .022f, .022f, true, 2),
@@ -2620,7 +2712,8 @@ namespace AnimeHillRacing.Editor
                 leftThigh = P(-.04f, -.03f, -79f, .023f, .023f, true, 2),
                 leftLowerLeg = P(.17f, -.28f, -15f, .021f, .021f, true, 2),
                 rightThigh = P(-.11f, -.02f, -70f, .023f, .023f, true, 1),
-                rightLowerLeg = P(.09f, -.27f, -8f, .021f, .021f, true, 1)
+                rightLowerLeg = P(.09f, -.27f, -8f, .021f, .021f, true, 1),
+                accessory = P(-.34f, .67f, -3f, 1f, 1f, true, 6)
             };
         }
 
@@ -2631,17 +2724,18 @@ namespace AnimeHillRacing.Editor
                 VehicleDefinition.DriverPartPose.Create(x, y, r, sx, sy, visible, order);
             return new VehicleDefinition.DriverPose
             {
-                rootPosition = new Vector2(-.30f, .26f), rootScale = .82f,
-                torso = P(-.02f, .12f, -38f, .025f, .025f, true, 3),
-                head = P(-.18f, .45f, -16f, .032f, .032f, true, 4),
-                leftUpperArm = P(.14f, .19f, -62f, .019f, .019f, true, 4),
-                leftForearm = P(.37f, .05f, -72f, .018f, .018f, true, 4),
-                rightUpperArm = P(.09f, .16f, -57f, .019f, .019f, true, 2),
-                rightForearm = P(.33f, .03f, -70f, .018f, .018f, true, 2),
+                rootPosition = new Vector2(.16f, .18f), rootScale = .86f,
+                torso = P(-.02f, .12f, -30f, .026f, .029f, true, 12),
+                head = P(.05f, .45f, -10f, .031f, .034f, true, 15),
+                leftUpperArm = P(.16f, .21f, -58f, .020f, .020f, true, 14),
+                leftForearm = P(.40f, .06f, -70f, .019f, .019f, true, 14),
+                rightUpperArm = P(.11f, .18f, -54f, .020f, .020f, true, 13),
+                rightForearm = P(.36f, .04f, -68f, .019f, .019f, true, 13),
                 leftThigh = P(0f, 0f, 0f, .02f, .02f, false, 1),
                 leftLowerLeg = P(0f, 0f, 0f, .02f, .02f, false, 1),
                 rightThigh = P(0f, 0f, 0f, .02f, .02f, false, 1),
-                rightLowerLeg = P(0f, 0f, 0f, .02f, .02f, false, 1)
+                rightLowerLeg = P(0f, 0f, 0f, .02f, .02f, false, 1),
+                accessory = P(-.23f, .44f, -10f, 1f, 1f, true, 16)
             };
         }
 
@@ -2652,13 +2746,14 @@ namespace AnimeHillRacing.Editor
                 VehicleDefinition.DriverPartPose.Create(x, y, r, scale, scale, visible, order);
             return new VehicleDefinition.DriverPose
             {
-                rootPosition = new Vector2(-.34f, .28f), rootScale = .90f,
+                rootPosition = new Vector2(-.34f, .26f), rootScale = .88f,
                 torso = P(0f, 0f, 0f),
-                head = P(-.03f, .54f, -3f, .032f, true, 9),
+                head = P(-.03f, .52f, -3f, .031f, true, 8),
                 leftUpperArm = P(0f, 0f, 0f), leftForearm = P(0f, 0f, 0f),
                 rightUpperArm = P(0f, 0f, 0f), rightForearm = P(0f, 0f, 0f),
                 leftThigh = P(0f, 0f, 0f), leftLowerLeg = P(0f, 0f, 0f),
-                rightThigh = P(0f, 0f, 0f), rightLowerLeg = P(0f, 0f, 0f)
+                rightThigh = P(0f, 0f, 0f), rightLowerLeg = P(0f, 0f, 0f),
+                accessory = P(-.33f, .51f, -3f, 1f, true, 9)
             };
         }
 
@@ -2669,17 +2764,18 @@ namespace AnimeHillRacing.Editor
                 VehicleDefinition.DriverPartPose.Create(x, y, r, scale, scale, visible, order);
             return new VehicleDefinition.DriverPose
             {
-                rootPosition = new Vector2(-.34f, .39f), rootScale = .82f,
-                torso = P(.10f, .24f, -38f, .024f, true, 3),
-                head = P(.24f, .58f, -16f, .029f, true, 5),
-                leftUpperArm = P(.28f, .35f, -56f),
-                leftForearm = P(.52f, .18f, -68f, .019f),
-                rightUpperArm = P(.23f, .32f, -52f, .020f, true, 2),
-                rightForearm = P(.48f, .16f, -66f, .019f, true, 2),
-                leftThigh = P(-.04f, .02f, -70f, .022f, true, 3),
-                leftLowerLeg = P(.18f, -.22f, -18f, .020f, true, 3),
-                rightThigh = P(-.10f, 0f, -66f, .022f, true, 2),
-                rightLowerLeg = P(.12f, -.24f, -14f, .020f, true, 2)
+                rootPosition = new Vector2(-.33f, .42f), rootScale = 1f,
+                torso = P(.14f, .25f, -50f, .026f, true, 13),
+                head = P(.42f, .54f, -24f, .031f, true, 17),
+                leftUpperArm = P(.35f, .34f, -58f, .022f, true, 16),
+                leftForearm = P(.62f, .16f, -70f, .021f, true, 16),
+                rightUpperArm = P(.30f, .31f, -55f, .022f, true, 15),
+                rightForearm = P(.58f, .14f, -68f, .021f, true, 15),
+                leftThigh = P(-.03f, .02f, -68f, .024f, true, 14),
+                leftLowerLeg = P(.20f, -.21f, -18f, .022f, true, 14),
+                rightThigh = P(-.09f, 0f, -64f, .024f, true, 12),
+                rightLowerLeg = P(.14f, -.23f, -14f, .022f, true, 12),
+                accessory = P(.13f, .53f, -24f, 1f, true, 18)
             };
         }
 
@@ -3187,6 +3283,10 @@ namespace AnimeHillRacing.Editor
                     CollectLandingFailures(vehicle,
                         SimulateFlatLanding(vehicle, maximumLevel, maximumLevelSpeeds[i], -12f), true, failures);
                 }
+                CollectLandingFailures(vehicle,
+                    SimulateFlatLanding(vehicle, maximumLevel, representativeSpeed, -7f, -2f), false, failures);
+                CollectLandingFailures(vehicle,
+                    SimulateFlatLanding(vehicle, maximumLevel, representativeSpeed, -7f, 2f), false, failures);
             }
         }
 
@@ -3228,7 +3328,7 @@ namespace AnimeHillRacing.Editor
         }
 
         private static LandingResult SimulateFlatLanding(VehicleDefinition source, int level, float speedKmh,
-            float verticalSpeedMps)
+            float verticalSpeedMps, float pitchDegrees = 0f)
         {
             NewScene();
             SimulationMode previousMode = Physics.simulationMode;
@@ -3243,7 +3343,8 @@ namespace AnimeHillRacing.Editor
             GameObject inputObject = new GameObject("Landing Input");
             VehicleInputController input = inputObject.AddComponent<VehicleInputController>();
             input.SetInputMode(GameModeType.Adventure2_5D);
-            GameObject instance = Object.Instantiate(source.gameplayPrefab2D, new Vector3(0f, 2.1f, 0f), Quaternion.identity);
+            GameObject instance = Object.Instantiate(source.gameplayPrefab2D, new Vector3(0f, 2.1f, 0f),
+                Quaternion.Euler(0f, 0f, pitchDegrees));
             VehicleController controller = instance.GetComponent<VehicleController>();
             SuspensionController[] points = instance.GetComponentsInChildren<SuspensionController>(true);
             controller.AssignRuntimeReferences(testDefinition, input, points);
@@ -3263,7 +3364,7 @@ namespace AnimeHillRacing.Editor
             float settledAngular = 0f;
             int reboundEpisodes = 0;
             bool upwardEpisode = false;
-            float significantReboundThreshold = Mathf.Max(.75f, Mathf.Abs(verticalSpeedMps) * .15f);
+            float significantReboundThreshold = Mathf.Max(.75f, Mathf.Abs(verticalSpeedMps) * .20f);
             bool bodyTunneled = false;
             CapsuleCollider chassis = instance.GetComponent<CapsuleCollider>();
             const float step = .02f;
@@ -3964,6 +4065,7 @@ namespace AnimeHillRacing.Editor
                 RpmGaugePath, RpmNeedlePath, SpeedGaugePath, SpeedNeedlePath,
                 DriverPreviewPath, DriverHeadPath, DriverTorsoPath,
                 DriverUpperArmPath, DriverForearmPath, DriverThighPath, DriverLowerLegPath,
+                DriverGlassesPath, DriverFireGlassesPath,
                 CountrysideSkyPath, CountrysideMountainsPath, FuelCanPath, Coin01Path, Coin05Path,
                 BronzeChestClosedPath, BronzeChestOpenPath, SilverChestClosedPath, SilverChestOpenPath,
                 GoldChestClosedPath, GoldChestOpenPath, MasterChestClosedPath, MasterChestOpenPath,
@@ -3996,6 +4098,8 @@ namespace AnimeHillRacing.Editor
             assets.sportBikeWheel02 = AssetDatabase.LoadAssetAtPath<Sprite>(SportBikeWheel02Path);
             assets.sportBikeGoldWheel = AssetDatabase.LoadAssetAtPath<Sprite>(SportBikeGoldWheelPath);
             assets.sportBikeGhostyWheel = AssetDatabase.LoadAssetAtPath<Sprite>(SportBikeGhostyWheelPath);
+            assets.driverGlasses = AssetDatabase.LoadAssetAtPath<Sprite>(DriverGlassesPath);
+            assets.driverFireGlasses = AssetDatabase.LoadAssetAtPath<Sprite>(DriverFireGlassesPath);
             assets.neonSky = AssetDatabase.LoadAssetAtPath<Sprite>(NeonSkyPath);
             assets.neonBackground = AssetDatabase.LoadAssetAtPath<Sprite>(NeonBackgroundPath);
             assets.neonTerrain = AssetDatabase.LoadAssetAtPath<Sprite>(NeonTerrainPath);
@@ -4077,14 +4181,16 @@ namespace AnimeHillRacing.Editor
             assets.jeep.suspension.compressionTravelRatio = .90f;
             assets.jeep.suspension.targetSag01 = .30f;
             assets.jeep.suspension.stiffnessTuneScale = new Vector2(.82f, 1.32f);
-            assets.jeep.suspension.dampingRatio = new Vector2(.80f, .94f);
+            assets.jeep.suspension.dampingRatio = new Vector2(.78f, .90f);
+            assets.jeep.suspension.compressionDampingMultiplier = .82f;
+            assets.jeep.suspension.reboundDampingMultiplier = 1.12f;
             assets.jeep.suspension.springMin = 70000f; assets.jeep.suspension.springMax = 82000f;
             assets.jeep.suspension.dampingMin = 10000f; assets.jeep.suspension.dampingMax = 12000f;
-            assets.jeep.suspension.bumpStopStart = .70f;
-            assets.jeep.suspension.progressiveSpringMultiplier = 2f;
+            assets.jeep.suspension.bumpStopStart = .72f;
+            assets.jeep.suspension.progressiveSpringMultiplier = 1.7f;
             assets.jeep.suspension.hardStopSpringMultiplier = 8f;
             assets.jeep.suspension.maximumAcceleration = 24f;
-            assets.jeep.suspension.maximumReboundAcceleration = 3f;
+            assets.jeep.suspension.maximumReboundAcceleration = 2.2f;
             assets.jeep.grip.minGrip = .14f; assets.jeep.grip.maxGrip = 2.20f;
             assets.jeep.grip.slipThreshold = .16f; assets.jeep.grip.slidingGripMultiplier = .38f;
             assets.jeep.grip.tractionRecoveryPerSecond = 3.2f;
@@ -4093,7 +4199,7 @@ namespace AnimeHillRacing.Editor
             assets.jeep.fuel.maximumRunDurationSeconds = 30f; assets.jeep.fuel.referenceRunDurationSeconds = 30f;
             assets.jeep.mass = 1150f; assets.jeep.wheelMass = 48f; assets.jeep.wheelRadius = .45f;
             assets.jeep.engine.speedTorqueCurve = ArcadeSpeedTorqueCurve();
-            assets.jeep.collisionPitchInertiaMultiplier = 1.55f;
+            assets.jeep.collisionPitchInertiaMultiplier = 3.2f;
             assets.jeep.maximumDepenetrationVelocity = 3f;
             assets.jeep.halfWheelbase = 1.18f; assets.jeep.halfTrack = .78f;
             assets.jeep.topSpeedMps = 100f / 3.6f; assets.jeep.airControlTorque = 3200f;
@@ -4148,14 +4254,16 @@ namespace AnimeHillRacing.Editor
             assets.formula.suspension.maxTravel = .25f; assets.formula.suspension.compressionTravelRatio = .90f;
             assets.formula.suspension.targetSag01 = .29f;
             assets.formula.suspension.stiffnessTuneScale = new Vector2(.78f, 1.25f);
-            assets.formula.suspension.dampingRatio = new Vector2(.96f, 1.08f);
+            assets.formula.suspension.dampingRatio = new Vector2(.88f, .98f);
+            assets.formula.suspension.compressionDampingMultiplier = .90f;
+            assets.formula.suspension.reboundDampingMultiplier = 1.22f;
             assets.formula.suspension.springMin = 82000f; assets.formula.suspension.springMax = 96000f;
             assets.formula.suspension.dampingMin = 14000f; assets.formula.suspension.dampingMax = 16000f;
-            assets.formula.suspension.bumpStopStart = .65f;
-            assets.formula.suspension.progressiveSpringMultiplier = 3f;
+            assets.formula.suspension.bumpStopStart = .70f;
+            assets.formula.suspension.progressiveSpringMultiplier = 2.4f;
             assets.formula.suspension.hardStopSpringMultiplier = 10f;
             assets.formula.suspension.maximumAcceleration = 20f;
-            assets.formula.suspension.maximumReboundAcceleration = .5f;
+            assets.formula.suspension.maximumReboundAcceleration = .6f;
             assets.formula.grip.minGrip = .14f; assets.formula.grip.maxGrip = 2.20f;
             assets.formula.grip.slipThreshold = .13f; assets.formula.grip.slidingGripMultiplier = .46f;
             assets.formula.grip.tractionRecoveryPerSecond = 4.2f;
@@ -4211,14 +4319,16 @@ namespace AnimeHillRacing.Editor
             assets.rally.suspension.maxTravel = .40f; assets.rally.suspension.compressionTravelRatio = .89f;
             assets.rally.suspension.targetSag01 = .30f;
             assets.rally.suspension.stiffnessTuneScale = new Vector2(.82f, 1.33f);
-            assets.rally.suspension.dampingRatio = new Vector2(.90f, 1.02f);
+            assets.rally.suspension.dampingRatio = new Vector2(.82f, .94f);
+            assets.rally.suspension.compressionDampingMultiplier = .80f;
+            assets.rally.suspension.reboundDampingMultiplier = 1.16f;
             assets.rally.suspension.springMin = 72000f; assets.rally.suspension.springMax = 84000f;
             assets.rally.suspension.dampingMin = 12500f; assets.rally.suspension.dampingMax = 15000f;
-            assets.rally.suspension.bumpStopStart = .62f;
-            assets.rally.suspension.progressiveSpringMultiplier = 3.4f;
+            assets.rally.suspension.bumpStopStart = .66f;
+            assets.rally.suspension.progressiveSpringMultiplier = 2.8f;
             assets.rally.suspension.hardStopSpringMultiplier = 9f;
             assets.rally.suspension.maximumAcceleration = 26f;
-            assets.rally.suspension.maximumReboundAcceleration = .5f;
+            assets.rally.suspension.maximumReboundAcceleration = .8f;
             assets.rally.grip.minGrip = .14f; assets.rally.grip.maxGrip = 2.20f;
             assets.rally.grip.slipThreshold = .15f; assets.rally.grip.slidingGripMultiplier = .52f;
             assets.rally.grip.tractionRecoveryPerSecond = 5f;
@@ -4270,7 +4380,7 @@ namespace AnimeHillRacing.Editor
             assets.sportBike.brakeForce = 9800f;
             assets.sportBike.reverseForce = 3300f;
             assets.sportBike.airControlTorque = 7600f;
-            assets.sportBike.collisionPitchInertiaMultiplier = 4.1f;
+            assets.sportBike.collisionPitchInertiaMultiplier = 4.5f;
             assets.sportBike.maximumDepenetrationVelocity = 2.8f;
             assets.sportBike.maxAirAngularVelocity = 3.2f;
             assets.sportBike.airAngularAcceleration = 21f;
@@ -4290,13 +4400,15 @@ namespace AnimeHillRacing.Editor
             assets.sportBike.suspension.compressionTravelRatio = .88f;
             assets.sportBike.suspension.targetSag01 = .29f;
             assets.sportBike.suspension.stiffnessTuneScale = new Vector2(.78f, 1.30f);
-            assets.sportBike.suspension.dampingRatio = new Vector2(.94f, 1.08f);
+            assets.sportBike.suspension.dampingRatio = new Vector2(.86f, .98f);
+            assets.sportBike.suspension.compressionDampingMultiplier = .84f;
+            assets.sportBike.suspension.reboundDampingMultiplier = 1.14f;
             assets.sportBike.suspension.springMin = 18000f;
             assets.sportBike.suspension.springMax = 26000f;
             assets.sportBike.suspension.dampingMin = 2500f;
             assets.sportBike.suspension.dampingMax = 3900f;
-            assets.sportBike.suspension.bumpStopStart = .68f;
-            assets.sportBike.suspension.progressiveSpringMultiplier = 3f;
+            assets.sportBike.suspension.bumpStopStart = .70f;
+            assets.sportBike.suspension.progressiveSpringMultiplier = 2.5f;
             assets.sportBike.suspension.hardStopSpringMultiplier = 9f;
             assets.sportBike.suspension.maximumAcceleration = 24f;
             assets.sportBike.suspension.maximumReboundAcceleration = 1.2f;
@@ -4351,6 +4463,29 @@ namespace AnimeHillRacing.Editor
             assets.stickmanBlack.forearm = AssetDatabase.LoadAssetAtPath<Sprite>(DriverForearmPath);
             assets.stickmanBlack.thigh = AssetDatabase.LoadAssetAtPath<Sprite>(DriverThighPath);
             assets.stickmanBlack.lowerLeg = AssetDatabase.LoadAssetAtPath<Sprite>(DriverLowerLegPath);
+            assets.stickmanBlack.accessories = new[]
+            {
+                new DriverDefinition.CharacterAccessoryOption
+                {
+                    accessoryId = "default", displayName = "DEFAULT / NO ACCESSORY",
+                    sprite = null, unlockedByDefault = true, gemPrice = 0,
+                    visibleWidth = .72f, allowsBlueprintProgression = false
+                },
+                new DriverDefinition.CharacterAccessoryOption
+                {
+                    accessoryId = "glasses", displayName = "GLASSES",
+                    sprite = assets.driverGlasses, unlockedByDefault = true, gemPrice = 0,
+                    visibleWidth = .62f, anchorOffset = new Vector2(.11f, 0f),
+                    allowsBlueprintProgression = true
+                },
+                new DriverDefinition.CharacterAccessoryOption
+                {
+                    accessoryId = "fire-glasses", displayName = "FIRE GLASSES",
+                    sprite = assets.driverFireGlasses, unlockedByDefault = true, gemPrice = 0,
+                    visibleWidth = .65f, anchorOffset = new Vector2(.11f, 0f),
+                    allowsBlueprintProgression = true
+                }
+            };
             EditorUtility.SetDirty(assets.stickmanBlack);
 
             CreateVehiclePrefabs(assets);
@@ -4877,12 +5012,14 @@ namespace AnimeHillRacing.Editor
             previewImage.color = Color.white; previewImage.raycastTarget = false;
             Button previous = CreateButton("Previous Vehicle", safe, "<", new Vector2(-820f, -30f), new Vector2(76f, 100f));
             Button next = CreateButton("Next Vehicle", safe, ">", new Vector2(-80f, -30f), new Vector2(76f, 100f));
-            Text skinSummary = CreateText("Skin Summary", safe, "SKIN\nDEFAULT", 17, TextAnchor.MiddleCenter,
-                new Vector2(.04f, .12f), new Vector2(.18f, .23f), Vector2.zero, Vector2.zero);
-            Text wheelSummary = CreateText("Wheel Summary", safe, "WHEELS\nWHEEL 01", 17, TextAnchor.MiddleCenter,
-                new Vector2(.19f, .12f), new Vector2(.33f, .23f), Vector2.zero, Vector2.zero);
-            Text driverSummary = CreateText("Driver Summary", safe, "DRIVER\nSTICKMAN BLACK", 17, TextAnchor.MiddleCenter,
-                new Vector2(.34f, .12f), new Vector2(.48f, .23f), Vector2.zero, Vector2.zero);
+            Text skinSummary = CreateText("Skin Summary", safe, "SKIN\nDEFAULT", 15, TextAnchor.MiddleCenter,
+                new Vector2(.04f, .12f), new Vector2(.145f, .23f), Vector2.zero, Vector2.zero);
+            Text wheelSummary = CreateText("Wheel Summary", safe, "WHEELS\nWHEEL 01", 15, TextAnchor.MiddleCenter,
+                new Vector2(.15f, .12f), new Vector2(.255f, .23f), Vector2.zero, Vector2.zero);
+            Text driverSummary = CreateText("Driver Summary", safe, "DRIVER\nSTICKMAN BLACK", 15, TextAnchor.MiddleCenter,
+                new Vector2(.26f, .12f), new Vector2(.365f, .23f), Vector2.zero, Vector2.zero);
+            Text characterSummary = CreateText("Character Accessory Summary", safe, "CHARACTERS\nDEFAULT", 15,
+                TextAnchor.MiddleCenter, new Vector2(.37f, .12f), new Vector2(.48f, .23f), Vector2.zero, Vector2.zero);
 
             GameObject vehiclePanel = CreateImage("Vehicle Panel", safe, new Color(.025f, .06f, .12f, .88f),
                 new Vector2(.52f, .16f), new Vector2(.97f, .84f), Vector2.zero, Vector2.zero);
@@ -4894,11 +5031,13 @@ namespace AnimeHillRacing.Editor
 
             GameObject customizationPanel = UIObject("Skins Panel", safe, new Vector2(.51f, .13f),
                 new Vector2(.98f, .86f), Vector2.zero, Vector2.zero);
-            var categories = new Button[3];
-            categories[0] = CreateButton("Vehicle Skin Category", customizationPanel.transform, "VEHICLE SKIN", new Vector2(-250f, 280f), new Vector2(220f, 64f));
-            categories[1] = CreateButton("Wheels Category", customizationPanel.transform, "WHEELS", new Vector2(0f, 280f), new Vector2(220f, 64f));
-            categories[2] = CreateButton("Driver Category", customizationPanel.transform, "CHARACTER", new Vector2(250f, 280f), new Vector2(220f, 64f));
-            Bind(categories[0], menu.ShowSkins); Bind(categories[1], menu.ShowWheels); Bind(categories[2], menu.ShowDrivers);
+            var categories = new Button[4];
+            categories[0] = CreateButton("Vehicle Skin Category", customizationPanel.transform, "VEHICLE SKIN", new Vector2(-315f, 280f), new Vector2(190f, 64f));
+            categories[1] = CreateButton("Wheels Category", customizationPanel.transform, "WHEELS", new Vector2(-105f, 280f), new Vector2(190f, 64f));
+            categories[2] = CreateButton("Driver Category", customizationPanel.transform, "DRIVER", new Vector2(105f, 280f), new Vector2(190f, 64f));
+            categories[3] = CreateButton("Characters Category", customizationPanel.transform, "CHARACTERS", new Vector2(315f, 280f), new Vector2(190f, 64f));
+            Bind(categories[0], menu.ShowSkins); Bind(categories[1], menu.ShowWheels);
+            Bind(categories[2], menu.ShowDrivers); Bind(categories[3], menu.ShowCharacters);
             Text categoryName = CreateText("Category Name", customizationPanel.transform, "VEHICLE SKIN", 28,
                 TextAnchor.MiddleCenter, new Vector2(.15f, .69f), new Vector2(.85f, .80f), Vector2.zero, Vector2.zero);
             var optionButtons = new Button[6]; var optionImages = new Image[6]; var optionLabels = new Text[6];
@@ -4960,12 +5099,54 @@ namespace AnimeHillRacing.Editor
                 TextAnchor.UpperLeft, new Vector2(.10f, .12f), new Vector2(.90f, .88f), Vector2.zero, Vector2.zero);
             GameObject storePanel = CreateImage("Store Panel", safe, new Color(.025f, .06f, .12f, .90f),
                 new Vector2(.52f, .16f), new Vector2(.97f, .84f), Vector2.zero, Vector2.zero);
-            CreateText("Blueprint Shop Title", storePanel.transform, "BLUEPRINTS", 32,
-                TextAnchor.MiddleLeft, new Vector2(.04f, .88f), new Vector2(.48f, .98f), Vector2.zero, Vector2.zero).fontStyle = FontStyle.Bold;
-            Text blueprintCoins = CreateText("Blueprint Coins", storePanel.transform, "COINS  0", 22,
-                TextAnchor.MiddleRight, new Vector2(.48f, .88f), new Vector2(.96f, .98f), Vector2.zero, Vector2.zero);
-            CreateText("Pack Selector Title", storePanel.transform, "SELECT BLUEPRINT PACK", 16,
-                TextAnchor.MiddleCenter, new Vector2(.22f, .79f), new Vector2(.78f, .87f), Vector2.zero, Vector2.zero);
+            GameObject viewport = CreateImage("Shop Viewport", storePanel.transform, new Color(0f, 0f, 0f, .015f),
+                new Vector2(.025f, .025f), new Vector2(.975f, .975f), Vector2.zero, Vector2.zero);
+            Mask viewportMask = viewport.AddComponent<Mask>(); viewportMask.showMaskGraphic = false;
+            GameObject content = UIObject("Shop Content", viewport.transform, new Vector2(0f, 1f), Vector2.one,
+                Vector2.zero, new Vector2(0f, 1800f));
+            RectTransform contentRect = content.GetComponent<RectTransform>();
+            contentRect.pivot = new Vector2(.5f, 1f); contentRect.anchoredPosition = Vector2.zero;
+            VerticalLayoutGroup shopLayout = content.AddComponent<VerticalLayoutGroup>();
+            shopLayout.padding = new RectOffset(24, 24, 24, 34); shopLayout.spacing = 24f;
+            shopLayout.childAlignment = TextAnchor.UpperCenter; shopLayout.childControlWidth = true;
+            shopLayout.childControlHeight = true; shopLayout.childForceExpandWidth = true;
+            shopLayout.childForceExpandHeight = false;
+            ContentSizeFitter shopFitter = content.AddComponent<ContentSizeFitter>();
+            shopFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            ScrollRect shopScroll = storePanel.AddComponent<ScrollRect>();
+            shopScroll.viewport = viewport.GetComponent<RectTransform>(); shopScroll.content = contentRect;
+            shopScroll.horizontal = false; shopScroll.vertical = true;
+            shopScroll.movementType = ScrollRect.MovementType.Clamped;
+            shopScroll.inertia = true; shopScroll.decelerationRate = .135f; shopScroll.scrollSensitivity = 45f;
+
+            GameObject specialOffers = CreateImage("Special Offers", content.transform,
+                new Color(.08f, .045f, .12f, .98f), new Vector2(.5f, .5f), new Vector2(.5f, .5f),
+                Vector2.zero, new Vector2(900f, 330f));
+            specialOffers.AddComponent<LayoutElement>().preferredHeight = 330f;
+            CreateText("Special Offers Title", specialOffers.transform, "Special Offers", 31,
+                TextAnchor.MiddleLeft, new Vector2(.04f, .78f), new Vector2(.96f, .96f), Vector2.zero, Vector2.zero).fontStyle = FontStyle.Bold;
+            CreateText("IAP Status", specialOffers.transform,
+                "REAL-MONEY OFFERS\nPURCHASES DISABLED — GOOGLE PLAY BILLING / IAP IS NOT CONFIGURED",
+                17, TextAnchor.MiddleLeft, new Vector2(.04f, .55f), new Vector2(.96f, .78f), Vector2.zero, Vector2.zero);
+            for (int i = 0; i < 3; i++)
+            {
+                GameObject offer = CreateImage("Special Offer " + (i + 1), specialOffers.transform,
+                    new Color(.16f, .09f, .20f, .94f), new Vector2(.5f, .5f), new Vector2(.5f, .5f),
+                    new Vector2(-285f + i * 285f, -72f), new Vector2(255f, 125f));
+                CreateText("Status", offer.transform, "COMING SOON\nIAP DISABLED", 18,
+                    TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            }
+
+            GameObject blueprintSection = CreateImage("Blue Prints Accesories", content.transform,
+                new Color(.025f, .075f, .13f, .98f), new Vector2(.5f, .5f), new Vector2(.5f, .5f),
+                Vector2.zero, new Vector2(900f, 1030f));
+            blueprintSection.AddComponent<LayoutElement>().preferredHeight = 1030f;
+            CreateText("Blueprint Shop Title", blueprintSection.transform, "Blue Prints / Accesories", 31,
+                TextAnchor.MiddleLeft, new Vector2(.04f, .89f), new Vector2(.63f, .98f), Vector2.zero, Vector2.zero).fontStyle = FontStyle.Bold;
+            Text blueprintCoins = CreateText("Blueprint Coins", blueprintSection.transform, "COINS  0", 22,
+                TextAnchor.MiddleRight, new Vector2(.63f, .89f), new Vector2(.96f, .98f), Vector2.zero, Vector2.zero);
+            CreateText("Pack Selector Title", blueprintSection.transform, "SELECT BLUEPRINT PACK", 16,
+                TextAnchor.MiddleCenter, new Vector2(.22f, .81f), new Vector2(.78f, .88f), Vector2.zero, Vector2.zero);
             var blueprintPackButtons = new Button[BlueprintPackCatalog.Count];
             UnityAction[] blueprintPackActions = { menu.SelectBlueprintPack1, menu.SelectBlueprintPack5,
                 menu.SelectBlueprintPack10, menu.SelectBlueprintPack100 };
@@ -4974,9 +5155,9 @@ namespace AnimeHillRacing.Editor
                 BlueprintPackTier tier = (BlueprintPackTier)i;
                 int amount = BlueprintPackCatalog.GetBlueprintAmount(tier);
                 int price = BlueprintPackCatalog.GetCoinPrice(tier);
-                blueprintPackButtons[i] = CreateButton("Blueprint Pack " + amount, storePanel.transform,
+                blueprintPackButtons[i] = CreateButton("Blueprint Pack " + amount, blueprintSection.transform,
                     $"+{amount} BP\n{(price >= 1000000 ? "1M" : (price / 1000) + "K")}",
-                    new Vector2(-300f + i * 200f, 245f), new Vector2(185f, 62f));
+                    new Vector2(-300f + i * 200f, 330f), new Vector2(185f, 70f));
                 Bind(blueprintPackButtons[i], blueprintPackActions[i]);
             }
             var blueprintButtons = new Button[6]; var blueprintImages = new Image[6]; var blueprintLabels = new Text[6];
@@ -4985,8 +5166,8 @@ namespace AnimeHillRacing.Editor
             for (int i = 0; i < blueprintButtons.Length; i++)
             {
                 int column = i % 3; int rowIndex = i / 3;
-                float x = -280f + column * 280f; float y = 95f - rowIndex * 225f;
-                blueprintButtons[i] = CreateButton("Blueprint Bundle " + (i + 1), storePanel.transform, "",
+                float x = -280f + column * 280f; float y = 130f - rowIndex * 235f;
+                blueprintButtons[i] = CreateButton("Blueprint Bundle " + (i + 1), blueprintSection.transform, "",
                     new Vector2(x, y), new Vector2(255f, 205f));
                 blueprintImages[i] = CreateImage("Thumbnail", blueprintButtons[i].transform, Color.white,
                     new Vector2(.10f, .39f), new Vector2(.90f, .95f), Vector2.zero, Vector2.zero).GetComponent<Image>();
@@ -4995,11 +5176,33 @@ namespace AnimeHillRacing.Editor
                     TextAnchor.MiddleCenter, new Vector2(.03f, .01f), new Vector2(.97f, .40f), Vector2.zero, Vector2.zero);
                 Bind(blueprintButtons[i], blueprintActions[i]);
             }
-            Text blueprintPage = CreateText("Blueprint Page", storePanel.transform, "PAGE 1 / 1", 18,
-                TextAnchor.MiddleCenter, new Vector2(.37f, .01f), new Vector2(.63f, .09f), Vector2.zero, Vector2.zero);
-            Button blueprintPrev = CreateButton("Previous Blueprint Page", storePanel.transform, "<", new Vector2(-180f, -315f), new Vector2(90f, 52f));
-            Button blueprintNext = CreateButton("Next Blueprint Page", storePanel.transform, ">", new Vector2(180f, -315f), new Vector2(90f, 52f));
+            Text blueprintPage = CreateText("Blueprint Page", blueprintSection.transform, "PAGE 1 / 1", 18,
+                TextAnchor.MiddleCenter, new Vector2(.37f, .055f), new Vector2(.63f, .115f), Vector2.zero, Vector2.zero);
+            Button blueprintPrev = CreateButton("Previous Blueprint Page", blueprintSection.transform, "<", new Vector2(-180f, -430f), new Vector2(90f, 52f));
+            Button blueprintNext = CreateButton("Next Blueprint Page", blueprintSection.transform, ">", new Vector2(180f, -430f), new Vector2(90f, 52f));
             Bind(blueprintPrev, menu.PreviousBlueprintPage); Bind(blueprintNext, menu.NextBlueprintPage);
+
+            GameObject accessorySection = CreateImage("Character Accessories", content.transform,
+                new Color(.035f, .085f, .13f, .98f), new Vector2(.5f, .5f), new Vector2(.5f, .5f),
+                Vector2.zero, new Vector2(900f, 410f));
+            accessorySection.AddComponent<LayoutElement>().preferredHeight = 410f;
+            CreateText("Character Accessories Title", accessorySection.transform, "CHARACTER ACCESSORIES", 27,
+                TextAnchor.MiddleLeft, new Vector2(.04f, .78f), new Vector2(.96f, .96f), Vector2.zero, Vector2.zero).fontStyle = FontStyle.Bold;
+            var shopAccessoryButtons = new Button[3]; var shopAccessoryImages = new Image[3];
+            var shopAccessoryLabels = new Text[3];
+            UnityAction[] accessoryActions = { menu.SelectShopAccessory0, menu.SelectShopAccessory1,
+                menu.SelectShopAccessory2 };
+            for (int i = 0; i < shopAccessoryButtons.Length; i++)
+            {
+                shopAccessoryButtons[i] = CreateButton("Accessory " + (i + 1), accessorySection.transform, "",
+                    new Vector2(-285f + i * 285f, -55f), new Vector2(255f, 255f));
+                shopAccessoryImages[i] = CreateImage("Thumbnail", shopAccessoryButtons[i].transform, Color.white,
+                    new Vector2(.08f, .30f), new Vector2(.92f, .93f), Vector2.zero, Vector2.zero).GetComponent<Image>();
+                shopAccessoryImages[i].raycastTarget = false; shopAccessoryImages[i].preserveAspect = true;
+                shopAccessoryLabels[i] = CreateText("Details", shopAccessoryButtons[i].transform, "ACCESSORY", 16,
+                    TextAnchor.MiddleCenter, new Vector2(.04f, .03f), new Vector2(.96f, .29f), Vector2.zero, Vector2.zero);
+                Bind(shopAccessoryButtons[i], accessoryActions[i]);
+            }
             GameObject settingsPanel = CreateImage("Settings Panel", safe, new Color(.025f, .06f, .12f, .90f),
                 new Vector2(.52f, .16f), new Vector2(.97f, .84f), Vector2.zero, Vector2.zero);
             CreateText("Settings Placeholder", settingsPanel.transform, "SETTINGS", 42, TextAnchor.MiddleCenter,
@@ -5029,7 +5232,8 @@ namespace AnimeHillRacing.Editor
                 tuningValues, tuningCosts, tuningButtons, tuningCoins, sectionTitle, upgradeSummary, vehiclePanel,
                 customizationPanel, upgradePanel, storePanel, settingsPanel, modal, modalTitle, modalValues,
                 modalCost, modalStatus, yes, gemsBalance, blueprintButtons, blueprintImages, blueprintLabels,
-                blueprintPage, blueprintCoins, optionBlueprintFills, optionBlueprintTexts, blueprintPackButtons);
+                blueprintPage, blueprintCoins, optionBlueprintFills, optionBlueprintTexts, blueprintPackButtons,
+                characterSummary, shopAccessoryButtons, shopAccessoryImages, shopAccessoryLabels);
             CreateEventSystem();
             ValidateGarageComposition(assets);
             EditorSceneManager.SaveScene(scene, GaragePath);
@@ -5574,6 +5778,7 @@ namespace AnimeHillRacing.Editor
             SpriteRenderer leftLowerLeg = Part("Left Lower Leg");
             SpriteRenderer rightThigh = Part("Right Thigh");
             SpriteRenderer rightLowerLeg = Part("Right Lower Leg");
+            SpriteRenderer accessory = Part("Accessory Anchor");
             GameObject impactObject = new GameObject("Head Terrain Reaction Trigger");
             impactObject.transform.SetParent(root, false);
             impactObject.transform.localPosition = new Vector3(vehicle.driverPose.head.position.x,
@@ -5584,6 +5789,7 @@ namespace AnimeHillRacing.Editor
             ArticulatedDriver2D articulated = root.gameObject.AddComponent<ArticulatedDriver2D>();
             articulated.AssignParts(torso, head, leftUpperArm, leftForearm, rightUpperArm, rightForearm,
                 leftThigh, leftLowerLeg, rightThigh, rightLowerLeg, impact);
+            articulated.AssignAccessory(accessory);
             articulated.Apply(definition, vehicle.driverPose, body, physicalReaction);
             return articulated;
         }

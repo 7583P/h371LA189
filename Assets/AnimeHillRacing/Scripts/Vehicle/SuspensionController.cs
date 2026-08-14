@@ -29,6 +29,8 @@ namespace AnimeHillRacing.Vehicle
         private float wheelRadius;
         private float spring;
         private float damping;
+        private float compressionDampingMultiplier;
+        private float reboundDampingMultiplier;
         private float bumpStopStart;
         private float progressiveSpringMultiplier;
         private float hardStopSpringMultiplier;
@@ -92,6 +94,8 @@ namespace AnimeHillRacing.Vehicle
             wheelRadius = definition.wheelRadius;
             spring = stats.spring;
             damping = stats.damping;
+            compressionDampingMultiplier = definition.suspension.compressionDampingMultiplier;
+            reboundDampingMultiplier = definition.suspension.reboundDampingMultiplier;
             bumpStopStart = definition.suspension.bumpStopStart;
             progressiveSpringMultiplier = stats.progressiveSpringMultiplier;
             hardStopSpringMultiplier = definition.suspension.hardStopSpringMultiplier;
@@ -274,7 +278,8 @@ namespace AnimeHillRacing.Vehicle
                 progressiveSpringMultiplier, hardStopSpringMultiplier, maximumNormalForce);
             float unboundedCombinedForce = SuspensionPhysics.CalculateSuspensionForce(rawCompression,
                 relativeVelocity, spring, damping, maximumCompression, maximumExtension, bumpStopStart,
-                progressiveSpringMultiplier, hardStopSpringMultiplier, maximumNormalForce);
+                progressiveSpringMultiplier, hardStopSpringMultiplier, maximumNormalForce,
+                compressionDampingMultiplier, reboundDampingMultiplier);
             lastDamperForce = unboundedCombinedForce - lastSpringForce;
             lastSuspensionForce = unboundedCombinedForce;
             lastSuspensionForce = SuspensionPhysics.LimitSuspensionForce(lastSuspensionForce, relativeVelocity,
@@ -494,10 +499,14 @@ namespace AnimeHillRacing.Vehicle
 
         public static float CalculateSuspensionForce(float rawCompression, float relativeVelocity, float spring,
             float damping, float maximumCompression, float maximumExtension, float bumpStopStart,
-            float progressiveSpringMultiplier, float hardStopSpringMultiplier, float maximumForce)
+            float progressiveSpringMultiplier, float hardStopSpringMultiplier, float maximumForce,
+            float compressionDampingMultiplier = 1f, float reboundDampingMultiplier = 1f)
         {
             float displacement = Mathf.Clamp(rawCompression, -maximumExtension, maximumCompression);
-            float force = displacement * spring - relativeVelocity * damping;
+            float directionalDamping = damping * (relativeVelocity < 0f
+                ? Mathf.Clamp(compressionDampingMultiplier, .6f, 1.2f)
+                : Mathf.Clamp(reboundDampingMultiplier, .8f, 1.4f));
+            float force = displacement * spring - relativeVelocity * directionalDamping;
 
             float compression01 = Mathf.Clamp01(displacement / Mathf.Max(.001f, maximumCompression));
             float start = Mathf.Clamp(bumpStopStart, .5f, .9f);

@@ -1,3 +1,4 @@
+using AnimeHillRacing.Core;
 using UnityEngine;
 
 namespace AnimeHillRacing.Vehicle
@@ -14,6 +15,7 @@ namespace AnimeHillRacing.Vehicle
         [SerializeField] private SpriteRenderer leftLowerLeg;
         [SerializeField] private SpriteRenderer rightThigh;
         [SerializeField] private SpriteRenderer rightLowerLeg;
+        [SerializeField] private SpriteRenderer accessory;
         [SerializeField] private DriverHeadImpact headImpact;
         [SerializeField] private bool physicalReaction = true;
 
@@ -31,6 +33,7 @@ namespace AnimeHillRacing.Vehicle
         private Vector3 previousVelocity;
 
         public SpriteRenderer HeadRenderer => head;
+        public SpriteRenderer AccessoryRenderer => accessory;
         public DriverHeadImpact HeadImpact => headImpact;
 
         private void Awake()
@@ -73,6 +76,16 @@ namespace AnimeHillRacing.Vehicle
         public void Apply(DriverDefinition driver, VehicleDefinition.DriverPose pose, Rigidbody body,
             bool enablePhysicalReaction)
         {
+            DriverDefinition.CharacterAccessoryOption selected = driver != null
+                ? driver.FindAccessory(SaveManager.GetSelectedCharacterAccessoryId(driver.DefaultAccessoryId))
+                : null;
+            Apply(driver, pose, selected, body, enablePhysicalReaction);
+        }
+
+        public void Apply(DriverDefinition driver, VehicleDefinition.DriverPose pose,
+            DriverDefinition.CharacterAccessoryOption selectedAccessory, Rigidbody body,
+            bool enablePhysicalReaction)
+        {
             if (driver == null || pose == null) return;
             vehicleBody = body;
             physicalReaction = enablePhysicalReaction;
@@ -88,6 +101,8 @@ namespace AnimeHillRacing.Vehicle
             ApplyPart(leftLowerLeg, driver.lowerLeg, pose.leftLowerLeg);
             ApplyPart(rightThigh, driver.thigh, pose.rightThigh);
             ApplyPart(rightLowerLeg, driver.lowerLeg, pose.rightLowerLeg);
+            EnsureAccessoryRenderer();
+            ApplyAccessory(selectedAccessory, pose.accessory);
             torsoTransform = torso != null ? torso.transform : null;
             headTransform = head != null ? head.transform : null;
             torsoBaseRotation = torsoTransform != null ? torsoTransform.localRotation : Quaternion.identity;
@@ -122,6 +137,42 @@ namespace AnimeHillRacing.Vehicle
             Awake();
         }
 
+        public void AssignAccessory(SpriteRenderer accessoryPart) => accessory = accessoryPart;
+
+        private void EnsureAccessoryRenderer()
+        {
+            if (accessory != null) return;
+            Transform existing = transform.Find("Accessory Anchor");
+            if (existing == null)
+            {
+                var anchor = new GameObject("Accessory Anchor");
+                anchor.transform.SetParent(transform, false);
+                existing = anchor.transform;
+            }
+            accessory = existing.GetComponent<SpriteRenderer>();
+            if (accessory == null) accessory = existing.gameObject.AddComponent<SpriteRenderer>();
+        }
+
+        private void ApplyAccessory(DriverDefinition.CharacterAccessoryOption option,
+            VehicleDefinition.DriverPartPose pose)
+        {
+            if (accessory == null) return;
+            Sprite sprite = option != null ? option.sprite : null;
+            accessory.sprite = sprite;
+            accessory.enabled = pose.visible && sprite != null;
+            accessory.sortingOrder = pose.sortingOrder;
+            Transform part = accessory.transform;
+            Vector2 sharedOffset = option != null ? option.anchorOffset : Vector2.zero;
+            part.localPosition = new Vector3(pose.position.x + sharedOffset.x,
+                pose.position.y + sharedOffset.y, part.localPosition.z);
+            part.localRotation = Quaternion.Euler(0f, 0f, pose.rotation);
+            float sourceWidth = sprite != null ? Mathf.Max(.001f, sprite.bounds.size.x) : 1f;
+            float fittedScale = option != null ? option.visibleWidth / sourceWidth : 1f;
+            float scaleX = Mathf.Abs(pose.scale.x) > .0001f ? Mathf.Abs(pose.scale.x) : 1f;
+            float scaleY = Mathf.Abs(pose.scale.y) > .0001f ? Mathf.Abs(pose.scale.y) : scaleX;
+            part.localScale = new Vector3(fittedScale * scaleX, fittedScale * scaleY, 1f);
+        }
+
         private static void ApplyPart(SpriteRenderer renderer, Sprite sprite,
             VehicleDefinition.DriverPartPose pose)
         {
@@ -132,9 +183,9 @@ namespace AnimeHillRacing.Vehicle
             Transform part = renderer.transform;
             part.localPosition = new Vector3(pose.position.x, pose.position.y, part.localPosition.z);
             part.localRotation = Quaternion.Euler(0f, 0f, pose.rotation);
-            float uniformScale = Mathf.Abs(pose.scale.x) > .0001f ? Mathf.Abs(pose.scale.x) :
-                Mathf.Abs(pose.scale.y) > .0001f ? Mathf.Abs(pose.scale.y) : 1f;
-            part.localScale = new Vector3(uniformScale, uniformScale, 1f);
+            float scaleX = Mathf.Abs(pose.scale.x) > .0001f ? Mathf.Abs(pose.scale.x) : 1f;
+            float scaleY = Mathf.Abs(pose.scale.y) > .0001f ? Mathf.Abs(pose.scale.y) : scaleX;
+            part.localScale = new Vector3(scaleX, scaleY, 1f);
         }
     }
 

@@ -10,7 +10,7 @@ namespace AnimeHillRacing.UI
     [ExecuteAlways]
     public sealed class GarageUI : MonoBehaviour
     {
-        private enum Category { Skin, Wheels, Driver, Tuning }
+        private enum Category { Skin, Wheels, Driver, Characters, Tuning }
         private enum PurchaseKind { None, Tune, Customization, Blueprints }
 
         [SerializeField] private GameCatalog catalog;
@@ -20,6 +20,7 @@ namespace AnimeHillRacing.UI
         [SerializeField] private Text skinSummary;
         [SerializeField] private Text wheelSummary;
         [SerializeField] private Text driverSummary;
+        [SerializeField] private Text characterSummary;
         [SerializeField] private Button[] categoryButtons;
         [SerializeField] private Button[] optionButtons;
         [SerializeField] private Image[] optionImages;
@@ -53,6 +54,9 @@ namespace AnimeHillRacing.UI
         [SerializeField] private Text blueprintPageText;
         [SerializeField] private Text blueprintCoinsText;
         [SerializeField] private Button[] blueprintPackButtons;
+        [SerializeField] private Button[] shopAccessoryButtons;
+        [SerializeField] private Image[] shopAccessoryImages;
+        [SerializeField] private Text[] shopAccessoryLabels;
 
         private int vehicleIndex;
         private Category category;
@@ -86,6 +90,7 @@ namespace AnimeHillRacing.UI
         public void NextVehicle() => CycleVehicle(1);
         public void ShowWheels() { category = Category.Wheels; Refresh(); }
         public void ShowDrivers() { category = Category.Driver; Refresh(); }
+        public void ShowCharacters() { category = Category.Characters; Refresh(); }
         public void ShowTuning() { section = GarageSection.Tuning; Refresh(); }
         public void ShowVehicle() { section = GarageSection.Vehicle; Refresh(); }
         public void ShowUpgrade() { section = GarageSection.Upgrade; Refresh(); }
@@ -114,6 +119,9 @@ namespace AnimeHillRacing.UI
         public void SelectBlueprintPack5() => SelectBlueprintPack(BlueprintPackTier.Five);
         public void SelectBlueprintPack10() => SelectBlueprintPack(BlueprintPackTier.Ten);
         public void SelectBlueprintPack100() => SelectBlueprintPack(BlueprintPackTier.Hundred);
+        public void SelectShopAccessory0() => SelectShopAccessory(0);
+        public void SelectShopAccessory1() => SelectShopAccessory(1);
+        public void SelectShopAccessory2() => SelectShopAccessory(2);
         public void PreviousBlueprintPage() { blueprintPage = Mathf.Max(0, blueprintPage - 1); RefreshBlueprintShop(); }
         public void NextBlueprintPage()
         {
@@ -208,8 +216,11 @@ namespace AnimeHillRacing.UI
             }
             if (pendingPurchaseKind == PurchaseKind.Customization)
             {
-                bool cosmeticPurchased = SaveManager.TryPurchaseCustomization(CurrentVehicle.vehicleId,
-                    pendingCategory.ToString(), pendingOptionId, pendingGemPrice,
+                string purchaseScope = pendingCategory == Category.Characters ? "global" : CurrentVehicle.vehicleId;
+                string purchaseCategory = pendingCategory == Category.Characters
+                    ? "CharacterAccessory" : pendingCategory.ToString();
+                bool cosmeticPurchased = SaveManager.TryPurchaseCustomization(purchaseScope,
+                    purchaseCategory, pendingOptionId, pendingGemPrice,
                     out CustomizationPurchaseResult cosmeticResult);
                 purchaseInFlight = false;
                 if (cosmeticPurchased || cosmeticResult == CustomizationPurchaseResult.AlreadyUnlocked)
@@ -333,8 +344,9 @@ namespace AnimeHillRacing.UI
             if (vehicleName != null) vehicleName.text = vehicle.displayName.ToUpperInvariant();
             if (sectionTitle != null) sectionTitle.text = section.ToString().ToUpperInvariant();
             if (categoryName != null) categoryName.text = category == Category.Skin ? "VEHICLE SKIN" :
-                category == Category.Wheels ? "WHEELS" : category == Category.Driver ? "DRIVER / CHARACTER" : "TUNING";
-            for (int i = 0; i < 4; i++)
+                category == Category.Wheels ? "WHEELS" : category == Category.Driver ? "DRIVER" :
+                category == Category.Characters ? "CHARACTERS / ACCESSORIES" : "TUNING";
+            for (int i = 0; i < (categoryButtons?.Length ?? 0); i++)
                 if (categoryButtons != null && i < categoryButtons.Length && categoryButtons[i] != null)
                     categoryButtons[i].image.color = i == (int)category
                         ? new Color(.18f, .58f, .82f, 1f) : new Color(.08f, .18f, .30f, .96f);
@@ -377,6 +389,11 @@ namespace AnimeHillRacing.UI
             if (skinSummary != null) skinSummary.text = "SKIN\n" + CleanName(skin?.displayName, vehicle.displayName);
             if (wheelSummary != null) wheelSummary.text = "WHEELS\n" + CleanName(wheel?.displayName, vehicle.displayName);
             if (driverSummary != null) driverSummary.text = "DRIVER\n" + (driver?.displayName ?? "---");
+            if (characterSummary != null)
+            {
+                DriverDefinition.CharacterAccessoryOption selectedAccessory = SelectedAccessory();
+                characterSummary.text = "CHARACTERS\n" + (selectedAccessory?.displayName ?? "DEFAULT");
+            }
             if (showingTuning) RefreshTuning(vehicle);
             if (upgradeSummary != null)
             {
@@ -438,6 +455,47 @@ namespace AnimeHillRacing.UI
                         (unlocked ? "UNLOCKED" : $"BUY +{amount}  •  {price:N0} COINS");
                 }
             }
+            RefreshShopAccessories();
+        }
+
+        private void RefreshShopAccessories()
+        {
+            DriverDefinition driver = SelectedDriver();
+            int count = driver?.accessories?.Length ?? 0;
+            for (int i = 0; i < (shopAccessoryButtons?.Length ?? 0); i++)
+            {
+                bool visible = i < count && driver.accessories[i] != null;
+                Button button = shopAccessoryButtons[i];
+                if (button == null) continue;
+                button.gameObject.SetActive(visible);
+                if (!visible) continue;
+                DriverDefinition.CharacterAccessoryOption option = driver.accessories[i];
+                bool unlocked = IsAccessoryUnlocked(option);
+                bool selected = option.accessoryId == SaveManager.GetSelectedCharacterAccessoryId(driver.DefaultAccessoryId);
+                button.interactable = unlocked || option.gemPrice > 0;
+                button.image.color = selected ? new Color(.18f, .60f, .82f, 1f) :
+                    unlocked ? new Color(.10f, .30f, .24f, .96f) : new Color(.12f, .12f, .14f, .84f);
+                if (shopAccessoryImages != null && i < shopAccessoryImages.Length && shopAccessoryImages[i] != null)
+                {
+                    shopAccessoryImages[i].sprite = option.sprite;
+                    shopAccessoryImages[i].enabled = option.sprite != null;
+                    shopAccessoryImages[i].preserveAspect = true;
+                }
+                if (shopAccessoryLabels != null && i < shopAccessoryLabels.Length && shopAccessoryLabels[i] != null)
+                    shopAccessoryLabels[i].text = option.displayName.ToUpperInvariant() + "\n" +
+                        (selected ? "EQUIPPED" : unlocked ? "EQUIP" : option.gemPrice > 0
+                            ? $"{option.gemPrice:N0} GEMS" : "LOCKED");
+            }
+        }
+
+        private void SelectShopAccessory(int index)
+        {
+            DriverDefinition driver = SelectedDriver();
+            if (driver?.accessories == null || index < 0 || index >= driver.accessories.Length) return;
+            DriverDefinition.CharacterAccessoryOption option = driver.accessories[index];
+            if (option == null || !IsAccessoryUnlocked(option)) return;
+            SaveManager.SetSelectedCharacterAccessoryId(option.accessoryId);
+            Refresh();
         }
 
         private void SelectBlueprintPack(BlueprintPackTier tier)
@@ -469,6 +527,13 @@ namespace AnimeHillRacing.UI
         {
             VehicleDefinition vehicle = CurrentVehicle;
             if (vehicle == null || category == Category.Driver || index < 0 || index >= OptionCount()) return null;
+            if (category == Category.Characters)
+            {
+                DriverDefinition.CharacterAccessoryOption accessory = SelectedDriver()?.accessories[index];
+                if (accessory == null || !accessory.allowsBlueprintProgression || accessory.gemPrice <= 0) return null;
+                return PremiumBundleCatalog.Find(catalog, PremiumBundleCatalog.CosmeticBundleId(
+                    "global", "CharacterAccessory", accessory.accessoryId));
+            }
             VehicleDefinition.CustomizationOption item = category == Category.Skin
                 ? vehicle.skins[index] : vehicle.wheels[index];
             if (item == null || !item.allowsBlueprintProgression || item.gemPrice <= 0) return null;
@@ -533,6 +598,7 @@ namespace AnimeHillRacing.UI
             if (category == Category.Skin) return vehicle?.skins?.Length ?? 0;
             if (category == Category.Wheels) return vehicle?.wheels?.Length ?? 0;
             if (category == Category.Driver) return catalog?.drivers?.Length ?? 0;
+            if (category == Category.Characters) return SelectedDriver()?.accessories?.Length ?? 0;
             return 0;
         }
 
@@ -540,6 +606,11 @@ namespace AnimeHillRacing.UI
         {
             if (category == Category.Skin) return SaveManager.GetSelectedSkinId(CurrentVehicle);
             if (category == Category.Wheels) return SaveManager.GetSelectedWheelId(CurrentVehicle);
+            if (category == Category.Characters)
+            {
+                DriverDefinition driver = SelectedDriver();
+                return SaveManager.GetSelectedCharacterAccessoryId(driver?.DefaultAccessoryId ?? "default");
+            }
             return SaveManager.GetSelectedDriverId(catalog?.drivers != null && catalog.drivers.Length > 0
                 ? catalog.drivers[0].driverId : string.Empty);
         }
@@ -557,6 +628,14 @@ namespace AnimeHillRacing.UI
                 unlocked = SaveManager.IsCustomizationUnlocked("global", "Driver", id, option.unlockedByDefault);
                 return true;
             }
+            if (category == Category.Characters)
+            {
+                DriverDefinition.CharacterAccessoryOption option = SelectedDriver()?.accessories[index];
+                if (option == null) return false;
+                id = option.accessoryId; icon = option.sprite; gemPrice = option.gemPrice;
+                unlocked = IsAccessoryUnlocked(option);
+                return true;
+            }
             VehicleDefinition.CustomizationOption item = category == Category.Skin ? vehicle.skins[index] : vehicle.wheels[index];
             if (item == null) return false;
             id = item.optionId; icon = item.sprite;
@@ -570,11 +649,13 @@ namespace AnimeHillRacing.UI
             if (selectedCategory == Category.Skin) SaveManager.SetSelectedSkinId(vehicle, id);
             else if (selectedCategory == Category.Wheels) SaveManager.SetSelectedWheelId(vehicle, id);
             else if (selectedCategory == Category.Driver) SaveManager.SetSelectedDriverId(id);
+            else if (selectedCategory == Category.Characters) SaveManager.SetSelectedCharacterAccessoryId(id);
         }
 
         private string OptionName(int index)
         {
             if (category == Category.Driver) return catalog.drivers[index].displayName;
+            if (category == Category.Characters) return SelectedDriver().accessories[index].displayName;
             VehicleDefinition.CustomizationOption item = category == Category.Skin
                 ? CurrentVehicle.skins[index] : CurrentVehicle.wheels[index];
             return item.displayName;
@@ -585,6 +666,16 @@ namespace AnimeHillRacing.UI
             string fallback = catalog?.drivers != null && catalog.drivers.Length > 0 ? catalog.drivers[0].driverId : string.Empty;
             return catalog?.FindDriver(SaveManager.GetSelectedDriverId(fallback));
         }
+
+        private DriverDefinition.CharacterAccessoryOption SelectedAccessory()
+        {
+            DriverDefinition driver = SelectedDriver();
+            return driver?.FindAccessory(SaveManager.GetSelectedCharacterAccessoryId(driver.DefaultAccessoryId));
+        }
+
+        private static bool IsAccessoryUnlocked(DriverDefinition.CharacterAccessoryOption option) =>
+            option != null && SaveManager.IsCustomizationUnlocked("global", "CharacterAccessory",
+                option.accessoryId, option.unlockedByDefault);
 
         private static string CleanName(string value, string vehicleName)
         {
@@ -616,7 +707,9 @@ namespace AnimeHillRacing.UI
             Image[] targetBlueprintImages = null, Text[] targetBlueprintLabels = null,
             Text targetBlueprintPage = null, Text targetBlueprintCoins = null,
             Image[] targetOptionBlueprintFills = null, Text[] targetOptionBlueprintTexts = null,
-            Button[] targetBlueprintPackButtons = null)
+            Button[] targetBlueprintPackButtons = null, Text targetCharacterSummary = null,
+            Button[] targetShopAccessoryButtons = null, Image[] targetShopAccessoryImages = null,
+            Text[] targetShopAccessoryLabels = null)
         {
             catalog = gameCatalog; preview = previewRenderer; vehicleName = vehicleLabel; categoryName = categoryLabel;
             skinSummary = skinLabel; wheelSummary = wheelLabel; driverSummary = driverLabel;
@@ -636,6 +729,10 @@ namespace AnimeHillRacing.UI
             optionBlueprintFills = targetOptionBlueprintFills;
             optionBlueprintTexts = targetOptionBlueprintTexts;
             blueprintPackButtons = targetBlueprintPackButtons;
+            characterSummary = targetCharacterSummary;
+            shopAccessoryButtons = targetShopAccessoryButtons;
+            shopAccessoryImages = targetShopAccessoryImages;
+            shopAccessoryLabels = targetShopAccessoryLabels;
             FindSavedVehicle();
             Refresh();
         }

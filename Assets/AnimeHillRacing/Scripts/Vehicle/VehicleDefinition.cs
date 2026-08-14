@@ -73,6 +73,8 @@ namespace AnimeHillRacing.Vehicle
             public DriverPartPose leftLowerLeg;
             public DriverPartPose rightThigh;
             public DriverPartPose rightLowerLeg;
+            [Tooltip("Vehicle-pose-relative placement of glasses and future head accessories.")]
+            public DriverPartPose accessory;
         }
 
         [Header("Identity")]
@@ -185,6 +187,10 @@ namespace AnimeHillRacing.Vehicle
             public Vector2 stiffnessTuneScale = new Vector2(.94f, 1.06f);
             [Tooltip("Level 1 / maximum-level damping ratio for the sprung mass at one wheel.")]
             public Vector2 dampingRatio = new Vector2(.82f, .96f);
+            [Tooltip("Damper authority while the wheel compresses into the chassis. Values below one let the travel absorb landings.")]
+            [Range(.6f, 1.2f)] public float compressionDampingMultiplier = .84f;
+            [Tooltip("Damper authority while suspension extends. A modest increase suppresses repeated pogo rebounds.")]
+            [Range(.8f, 1.4f)] public float reboundDampingMultiplier = 1.12f;
             [Tooltip("Normalized compression at which the progressive bump stop begins to add resistance.")]
             [Range(0.5f, 0.9f)] public float bumpStopStart = 0.7f;
             [Tooltip("Additional progressive spring authority near maximum compression.")]
@@ -475,6 +481,8 @@ namespace AnimeHillRacing.Vehicle
                 suspension.stiffnessTuneScale.x, 1.35f);
             suspension.dampingRatio.x = Mathf.Clamp(suspension.dampingRatio.x, .55f, 1.25f);
             suspension.dampingRatio.y = Mathf.Clamp(suspension.dampingRatio.y, .55f, 1.35f);
+            suspension.compressionDampingMultiplier = Mathf.Clamp(suspension.compressionDampingMultiplier, .6f, 1.2f);
+            suspension.reboundDampingMultiplier = Mathf.Clamp(suspension.reboundDampingMultiplier, .8f, 1.4f);
             maximumDepenetrationVelocity = Mathf.Max(.5f, maximumDepenetrationVelocity);
             downforceReferenceSpeedMps = Mathf.Max(1f, downforceReferenceSpeedMps);
             maximumDownforceAcceleration = Mathf.Max(0f, maximumDownforceAcceleration);

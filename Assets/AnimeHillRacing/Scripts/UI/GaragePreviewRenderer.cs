@@ -21,6 +21,7 @@ namespace AnimeHillRacing.UI
         private Sprite appliedSkin;
         private Sprite appliedWheel;
         private DriverDefinition appliedDriver;
+        private string appliedAccessoryId;
         private Vector2 lastTargetSize;
 
         public SpriteRenderer BodyRenderer => body;
@@ -116,13 +117,17 @@ namespace AnimeHillRacing.UI
             if (vehicle == null) return;
             Sprite skinSprite = skin != null ? skin.sprite : null;
             Sprite wheelSprite = wheelOption != null ? wheelOption.sprite : null;
+            string accessoryId = driverDefinition != null
+                ? AnimeHillRacing.Core.SaveManager.GetSelectedCharacterAccessoryId(driverDefinition.DefaultAccessoryId)
+                : string.Empty;
             if (vehicle == appliedVehicle && skinSprite == appliedSkin && wheelSprite == appliedWheel &&
-                driverDefinition == appliedDriver)
+                driverDefinition == appliedDriver && accessoryId == appliedAccessoryId)
                 return;
             appliedVehicle = vehicle;
             appliedSkin = skinSprite;
             appliedWheel = wheelSprite;
             appliedDriver = driverDefinition;
+            appliedAccessoryId = accessoryId;
             if (body != null)
             {
                 body.sprite = skinSprite;
@@ -131,7 +136,8 @@ namespace AnimeHillRacing.UI
                 body.transform.localPosition = new Vector3(vehicle.bodyVisualOffset.x, vehicle.bodyVisualOffset.y, 0f);
                 FitWidth(body.transform, body.sprite, vehicle.visualWidth);
             }
-            if (driver != null) driver.Apply(driverDefinition, vehicle.driverPose, null, false);
+            if (driver != null) driver.Apply(driverDefinition, vehicle.driverPose,
+                driverDefinition?.FindAccessory(accessoryId), null, false);
             ApplyWheel(rearWheel, wheelOption, vehicle.rearWheelVisualPosition, vehicle.RearWheelDiameter);
             ApplyWheel(frontWheel, wheelOption, vehicle.frontWheelVisualPosition, vehicle.FrontWheelDiameter);
             RenderNow();

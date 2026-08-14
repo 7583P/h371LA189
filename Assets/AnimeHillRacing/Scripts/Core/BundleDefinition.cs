@@ -58,6 +58,9 @@ namespace AnimeHillRacing.Core
                 AppendCosmetics(bundles, vehicle, vehicle.skins, "Skin");
                 AppendCosmetics(bundles, vehicle, vehicle.wheels, "Wheels");
             }
+            if (catalog.drivers != null)
+                for (int i = 0; i < catalog.drivers.Length; i++)
+                    AppendCharacterAccessories(bundles, catalog.drivers[i]);
             return bundles;
         }
 
@@ -98,6 +101,20 @@ namespace AnimeHillRacing.Core
                     displayName,
                     option.bundleType, option.sprite, option.gemPrice, vehicle.vehicleId, category,
                     option.optionId, option.unlockedByDefault));
+            }
+        }
+
+        private static void AppendCharacterAccessories(List<BundleDefinition> target, DriverDefinition driver)
+        {
+            if (driver?.accessories == null) return;
+            for (int i = 0; i < driver.accessories.Length; i++)
+            {
+                DriverDefinition.CharacterAccessoryOption option = driver.accessories[i];
+                if (option == null || !option.allowsBlueprintProgression || option.gemPrice <= 0) continue;
+                target.Add(new BundleDefinition(
+                    CosmeticBundleId("global", "CharacterAccessory", option.accessoryId),
+                    option.displayName, BundleType.Cosmetic, option.sprite, option.gemPrice,
+                    "global", "CharacterAccessory", option.accessoryId, option.unlockedByDefault));
             }
         }
     }

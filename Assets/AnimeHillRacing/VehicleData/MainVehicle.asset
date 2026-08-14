@@ -48,20 +48,20 @@ MonoBehaviour:
     allowsBlueprintProgression: 1
     visibleDiameter: 0
   driverPose:
-    rootPosition: {x: -0.38, y: 0.42}
-    rootScale: 1
+    rootPosition: {x: -0.42, y: 0.24}
+    rootScale: 0.96
     torso:
       position: {x: -0.01, y: 0.25}
-      rotation: -12
-      scale: {x: 0.03, y: 0.03}
+      rotation: -10
+      scale: {x: 0.03, y: 0.032}
       visible: 1
       sortingOrder: 3
     head:
-      position: {x: -0.06, y: 0.7}
-      rotation: -4
-      scale: {x: 0.033, y: 0.033}
+      position: {x: -0.04, y: 0.68}
+      rotation: -3
+      scale: {x: 0.032, y: 0.034}
       visible: 1
-      sortingOrder: 4
+      sortingOrder: 5
     leftUpperArm:
       position: {x: 0.16, y: 0.42}
       rotation: -34
@@ -110,6 +110,12 @@ MonoBehaviour:
       scale: {x: 0.021, y: 0.021}
       visible: 1
       sortingOrder: 1
+    accessory:
+      position: {x: -0.34, y: 0.67}
+      rotation: -3
+      scale: {x: 1, y: 1}
+      visible: 1
+      sortingOrder: 6
   visualWidth: 3.8
   flipBodyX: 0
   bodyVisualOffset: {x: 0, y: 0.16}
@@ -139,7 +145,7 @@ MonoBehaviour:
   airControlTorque: 3200
   downforceReferenceSpeedMps: 30
   maximumDownforceAcceleration: 14
-  collisionPitchInertiaMultiplier: 1.55
+  collisionPitchInertiaMultiplier: 3.2
   maximumDepenetrationVelocity: 3
   maxAirAngularVelocity: 2.5
   airAngularAcceleration: 14
@@ -277,12 +283,14 @@ MonoBehaviour:
     dampingMax: 12000
     targetSag01: 0.3
     stiffnessTuneScale: {x: 0.82, y: 1.32}
-    dampingRatio: {x: 0.8, y: 0.94}
-    bumpStopStart: 0.7
-    progressiveSpringMultiplier: 2
+    dampingRatio: {x: 0.78, y: 0.9}
+    compressionDampingMultiplier: 0.82
+    reboundDampingMultiplier: 1.12
+    bumpStopStart: 0.72
+    progressiveSpringMultiplier: 1.7
     hardStopSpringMultiplier: 8
     maximumAcceleration: 24
-    maximumReboundAcceleration: 3
+    maximumReboundAcceleration: 2.2
   grip:
     minGrip: 0.14
     maxGrip: 2.2

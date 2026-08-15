@@ -246,6 +246,8 @@ namespace AnimeHillRacing.Terrain
 
         public static float SampleHeight(MapProfile profile, float worldX)
         {
+            if (profile != null && profile.useCityHighwayTerrain)
+                return SampleCityHighwayHeight(profile, worldX);
             if (profile != null && profile.supportsLiquidExposure)
                 return SampleNeonHeight(profile, worldX);
             return profile != null && profile.elevationProfile != null
@@ -256,6 +258,7 @@ namespace AnimeHillRacing.Terrain
         public static float SampleProfileHeight(MapProfile profile, float worldX)
         {
             if (profile == null) return 0f;
+            if (profile.useCityHighwayTerrain) return SampleCityHighwayHeight(profile, worldX);
             if (profile.supportsLiquidExposure) return SampleNeonHeight(profile, worldX);
             float distance = Mathf.Max(0f, worldX);
             float difficulty = profile.EvaluateDifficulty(distance);
@@ -279,6 +282,52 @@ namespace AnimeHillRacing.Terrain
             float startFlatten = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((worldX + 20f) / 120f));
             return profile.baseHeight + (featureShape + broadVariation + perlinVariation) *
                    profile.amplitude * amplitudeProgress * startFlatten;
+        }
+
+        public static float SampleCityHighwayHeight(MapProfile profile, float worldX)
+        {
+            if (profile == null) return 0f;
+            float distance = Mathf.Max(0f, worldX);
+            float featureLength = Mathf.Max(42f, profile.cityFeatureLength);
+            float featurePosition = distance / featureLength;
+            int featureIndex = Mathf.FloorToInt(featurePosition);
+            float t = featurePosition - featureIndex;
+            float difficulty = Mathf.Clamp01(profile.EvaluateDifficulty(distance));
+            float amplitude = profile.amplitude * Mathf.Lerp(profile.introductoryAmplitude, 1f, difficulty);
+            uint seed = CombinedSeed(profile);
+            float p0 = CityAnchor(seed, featureIndex - 1);
+            float p1 = CityAnchor(seed, featureIndex);
+            float p2 = CityAnchor(seed, featureIndex + 1);
+            float p3 = CityAnchor(seed, featureIndex + 2);
+            float backbone = CatmullRom(p0, p1, p2, p3, t);
+
+            float envelope = Mathf.Sin(t * Mathf.PI);
+            envelope *= envelope;
+            float rhythmVariant = Hash01(seed, featureIndex * 619 + 157);
+            float cycles = rhythmVariant < .34f ? 1f : rhythmVariant < .72f ? 1.5f : 2f;
+            float phase = Hash01(seed, featureIndex * 811 + 43) > .5f ? 0f : Mathf.PI;
+            float miniRhythm = Mathf.Sin(t * TwoPi * cycles + phase) * envelope *
+                               profile.cityMiniRhythmStrength * Mathf.Lerp(.35f, 1f, difficulty);
+            float broadWave = Mathf.Sin(distance * TwoPi / 220f + Hash01(seed, 991) * TwoPi) * .12f;
+            float startBlend = Smooth01(Mathf.InverseLerp(10f, 110f, distance));
+            return profile.baseHeight + (backbone + miniRhythm + broadWave) * amplitude * startBlend;
+        }
+
+        private static float CityAnchor(uint seed, int index)
+        {
+            float previous = Hash01(seed, (index - 1) * 503 + 19) * 2f - 1f;
+            float current = Hash01(seed, index * 503 + 19) * 2f - 1f;
+            float next = Hash01(seed, (index + 1) * 503 + 19) * 2f - 1f;
+            return previous * .20f + current * .60f + next * .20f;
+        }
+
+        private static float CatmullRom(float p0, float p1, float p2, float p3, float t)
+        {
+            float t2 = t * t;
+            float t3 = t2 * t;
+            return .5f * ((2f * p1) + (-p0 + p2) * t +
+                           (2f * p0 - 5f * p1 + 4f * p2 - p3) * t2 +
+                           (-p0 + 3f * p1 - 3f * p2 + p3) * t3);
         }
 
         public static int GetCycleIndex(float distance) => Mathf.FloorToInt(
@@ -714,49 +763,94 @@ namespace AnimeHillRacing.Terrain
             endSlope = previousSlope;
             float skirtBottom = profile.baseHeight - profile.amplitude *
                 (Mathf.Max(1f, profile.maximumDifficulty) + 0.5f) - profile.terrainVisualDepth;
-            Vector3[] vertices = new Vector3[sampleCount * 3];
+            CalculateGroundVisualExtents(profile, out float groundVisualDepth, out float groundVisualRise);
+            float terrainFillDepth = CalculateTerrainFillDepth(profile);
+            // Six independent vertices keep the three responsibilities separate: deep Terrain wall,
+            // visible Ground ribbon and the horizontal driveable surface. Their top Y still comes from
+            // the same surfaceHeights array used by the authoritative physics collider.
+            Vector3[] vertices = new Vector3[sampleCount * 6];
             Vector2[] uvs = new Vector2[vertices.Length];
-            var surfaceTriangles = new List<int>((sampleCount - 1) * 6);
+            var surfaceTriangles = new List<int>((sampleCount - 1) * 12);
             var skirtTriangles = new List<int>((sampleCount - 1) * 6);
             for (int i = 0; i < sampleCount; i++)
             {
                 float localX = i * dx;
-                int vertex = i * 3;
-                vertices[vertex] = new Vector3(localX, surfaceHeights[i], -width * 0.5f);
-                vertices[vertex + 1] = new Vector3(localX, surfaceHeights[i], width * 0.5f);
-                vertices[vertex + 2] = new Vector3(localX, skirtBottom, -width * 0.5f);
-                uvs[vertex] = new Vector2(localX * 0.1f, 0f);
-                uvs[vertex + 1] = new Vector2(localX * 0.1f, 1f);
-                uvs[vertex + 2] = new Vector2(localX * 0.1f, Mathf.Abs(surfaceHeights[i] - skirtBottom) * 0.1f);
+                float textureU = profile.fitAuthoredTerrainTexture
+                    ? (chunkStartX + localX) / Mathf.Max(1f, profile.terrainTextureRepeatWidth)
+                    : localX * .1f;
+                float surfaceY = surfaceHeights[i];
+                float groundBottomY = surfaceY - groundVisualDepth;
+                float groundTopY = surfaceY + groundVisualRise;
+                float terrainTopY = surfaceY - terrainFillDepth;
+                int vertex = i * 6;
+                vertices[vertex] = new Vector3(localX, terrainTopY, -width * .5f);        // Terrain fill top
+                vertices[vertex + 1] = new Vector3(localX, skirtBottom, -width * .5f);    // Terrain bottom
+                vertices[vertex + 2] = new Vector3(localX, groundTopY, -width * .5f);     // Ground art top
+                vertices[vertex + 3] = new Vector3(localX, groundBottomY, -width * .5f);  // Ground bottom
+                vertices[vertex + 4] = new Vector3(localX, surfaceY, -width * .5f);       // Physical surface front
+                vertices[vertex + 5] = new Vector3(localX, surfaceY, width * .5f);         // Surface back
+                if (profile.fitAuthoredTerrainTexture)
+                {
+                    // Ground's authored visible band is mapped to its side-facing ribbon. The contact V can
+                    // sit inside that band so foliage may extend above the road while the continuous turf line
+                    // remains exactly on the generated/collider surface. Terrain starts behind the continuous
+                    // Ground band so transparent decorative roots cannot expose a gap.
+                    uvs[vertex] = new Vector2(textureU, profile.terrainWallUvRange.y);
+                    uvs[vertex + 1] = new Vector2(textureU, profile.terrainWallUvRange.x);
+                    uvs[vertex + 2] = new Vector2(textureU, profile.terrainSurfaceUvRange.y);
+                    uvs[vertex + 3] = new Vector2(textureU, profile.terrainSurfaceUvRange.x);
+                    uvs[vertex + 4] = new Vector2(textureU, profile.terrainSurfaceUvRange.y);
+                    uvs[vertex + 5] = new Vector2(textureU, profile.terrainSurfaceUvRange.x);
+                }
+                else
+                {
+                    uvs[vertex] = new Vector2(textureU, 0f);
+                    uvs[vertex + 1] = new Vector2(textureU,
+                        Mathf.Abs(surfaceHeights[i] - skirtBottom) * .1f);
+                    uvs[vertex + 2] = new Vector2(textureU, 0f);
+                    uvs[vertex + 3] = new Vector2(textureU, 0f);
+                    uvs[vertex + 4] = new Vector2(textureU, 0f);
+                    uvs[vertex + 5] = new Vector2(textureU, 1f);
+                }
             }
 
             for (int i = 0; i < sampleCount - 1; i++)
             {
                 float segmentWorldX = chunkStartX + (i + .5f) * dx;
                 if (IsLiquidGap(profile, segmentWorldX)) continue;
-                int vertex = i * 3;
-                int next = vertex + 3;
-                surfaceTriangles.Add(vertex);
-                surfaceTriangles.Add(vertex + 1);
-                surfaceTriangles.Add(next);
-                surfaceTriangles.Add(vertex + 1);
-                surfaceTriangles.Add(next + 1);
-                surfaceTriangles.Add(next);
+                int vertex = i * 6;
+                int next = vertex + 6;
+                if (profile.fitAuthoredTerrainTexture)
+                {
+                    surfaceTriangles.Add(vertex + 2);
+                    surfaceTriangles.Add(next + 2);
+                    surfaceTriangles.Add(vertex + 3);
+                    surfaceTriangles.Add(next + 2);
+                    surfaceTriangles.Add(next + 3);
+                    surfaceTriangles.Add(vertex + 3);
+                }
+                surfaceTriangles.Add(vertex + 4);
+                surfaceTriangles.Add(vertex + 5);
+                surfaceTriangles.Add(next + 4);
+                surfaceTriangles.Add(vertex + 5);
+                surfaceTriangles.Add(next + 5);
+                surfaceTriangles.Add(next + 4);
                 skirtTriangles.Add(vertex);
                 skirtTriangles.Add(next);
-                skirtTriangles.Add(vertex + 2);
+                skirtTriangles.Add(vertex + 1);
                 skirtTriangles.Add(next);
-                skirtTriangles.Add(next + 2);
-                skirtTriangles.Add(vertex + 2);
+                skirtTriangles.Add(next + 1);
+                skirtTriangles.Add(vertex + 1);
             }
 
             mesh.Clear();
             mesh.vertices = vertices;
             mesh.uv = uvs;
-            if (profile.supportsLiquidExposure && profile.terrainEdgeMaterial != null)
+            if ((profile.supportsLiquidExposure || profile.useSeparateTerrainMaterials) &&
+                profile.terrainEdgeMaterial != null)
             {
-                // Neon uses Terrain.png for the visible wall and Ground.png for the driveable top.
-                // Both visual submeshes share the same vertices and the one authoritative collider.
+                // Submesh 0 is the deep Terrain wall. Submesh 1 is the Ground ribbon/top surface.
+                // Physics is generated separately from the same surfaceHeights source of truth.
                 mesh.subMeshCount = 2;
                 mesh.SetTriangles(skirtTriangles, 0);
                 mesh.SetTriangles(surfaceTriangles, 1);
@@ -769,6 +863,87 @@ namespace AnimeHillRacing.Terrain
             }
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
+        }
+
+        public static float CalculateGroundVisualDepth(MapProfile profile)
+        {
+            CalculateGroundVisualExtents(profile, out float depth, out _);
+            return depth;
+        }
+
+        public static void CalculateGroundVisualExtents(MapProfile profile, out float depthBelowSurface,
+            out float riseAboveSurface)
+        {
+            depthBelowSurface = 0f;
+            riseAboveSurface = 0f;
+            if (profile == null || !profile.fitAuthoredTerrainTexture) return;
+            Texture texture = profile.terrainEdgeMaterial != null
+                ? profile.terrainEdgeMaterial.mainTexture : null;
+            if (texture == null || texture.width <= 0 || texture.height <= 0) return;
+            float bottomV = profile.terrainSurfaceUvRange.x;
+            float topV = profile.terrainSurfaceUvRange.y;
+            float minimumV = Mathf.Min(bottomV, topV);
+            float maximumV = Mathf.Max(bottomV, topV);
+            float contactV = profile.terrainSurfaceContactV >= minimumV &&
+                             profile.terrainSurfaceContactV <= maximumV
+                ? profile.terrainSurfaceContactV : topV;
+            float metresPerV = profile.terrainTextureRepeatWidth * texture.height / texture.width;
+            // Both extents come from the source pixels and PPU-derived repeat width; there is no visual offset.
+            depthBelowSurface = Mathf.Clamp(Mathf.Abs(contactV - bottomV) * metresPerV, .05f, 3f);
+            riseAboveSurface = Mathf.Clamp(Mathf.Abs(topV - contactV) * metresPerV, 0f, 3f);
+        }
+
+        public static float CalculateTerrainFillDepth(MapProfile profile)
+        {
+            if (profile == null || !profile.fitAuthoredTerrainTexture) return 0f;
+            Texture texture = profile.terrainEdgeMaterial != null
+                ? profile.terrainEdgeMaterial.mainTexture : null;
+            if (texture == null || texture.width <= 0 || texture.height <= 0) return 0f;
+            float bottomV = profile.terrainSurfaceUvRange.x;
+            float topV = profile.terrainSurfaceUvRange.y;
+            float minimumV = Mathf.Min(bottomV, topV);
+            float maximumV = Mathf.Max(bottomV, topV);
+            float contactV = profile.terrainSurfaceContactV >= minimumV &&
+                             profile.terrainSurfaceContactV <= maximumV
+                ? profile.terrainSurfaceContactV : topV;
+            float fillV = profile.terrainFillStartV >= minimumV && profile.terrainFillStartV <= maximumV
+                ? profile.terrainFillStartV : bottomV;
+            float metresPerV = profile.terrainTextureRepeatWidth * texture.height / texture.width;
+            return Mathf.Clamp(Mathf.Abs(contactV - fillV) * metresPerV, 0f,
+                CalculateGroundVisualDepth(profile));
+        }
+
+        public static void BuildSurfaceColliderMesh(Mesh target, MapProfile profile, float chunkStartX,
+            float chunkLength, float[] heights, float width)
+        {
+            if (target == null || heights == null || heights.Length < 2) return;
+            int sampleCount = heights.Length;
+            float dx = chunkLength / Mathf.Max(1, sampleCount - 1);
+            var vertices = new Vector3[sampleCount * 2];
+            var triangles = new List<int>((sampleCount - 1) * 6);
+            for (int i = 0; i < sampleCount; i++)
+            {
+                float x = i * dx;
+                vertices[i * 2] = new Vector3(x, heights[i], -width * .5f);
+                vertices[i * 2 + 1] = new Vector3(x, heights[i], width * .5f);
+            }
+            for (int i = 0; i < sampleCount - 1; i++)
+            {
+                if (IsLiquidGap(profile, chunkStartX + (i + .5f) * dx)) continue;
+                int vertex = i * 2;
+                int next = vertex + 2;
+                triangles.Add(vertex);
+                triangles.Add(vertex + 1);
+                triangles.Add(next);
+                triangles.Add(vertex + 1);
+                triangles.Add(next + 1);
+                triangles.Add(next);
+            }
+            target.Clear();
+            target.vertices = vertices;
+            target.SetTriangles(triangles, 0);
+            target.RecalculateNormals();
+            target.RecalculateBounds();
         }
 
         private static bool IsTechnicalFeatureCandidate(MapProfile profile, uint seed, int index, float difficulty)

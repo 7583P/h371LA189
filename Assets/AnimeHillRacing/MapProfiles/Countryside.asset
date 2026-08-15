@@ -27,6 +27,9 @@ MonoBehaviour:
   frequency: 0.019
   smoothing: 0.65
   hillSize: 1
+  useCityHighwayTerrain: 0
+  cityFeatureLength: 120
+  cityMiniRhythmStrength: 0.18
   difficultyCurve:
     serializedVersion: 2
     m_Curve:
@@ -101,8 +104,15 @@ MonoBehaviour:
   fuelPlacementSearchStep: 3
   fuelMaximumPlacementSlope: 12.599999
   environment: {fileID: 11400000, guid: 1f42449c8cf4dfd48b1ecb84164eb343, type: 2}
-  terrainMaterial: {fileID: 2100000, guid: b3fb8020d6afa544883c8cb6a3babc3c, type: 2}
-  terrainEdgeMaterial: {fileID: 2100000, guid: 3a9a51f89e6bdef488fe3b3bcf9bd6b0, type: 2}
+  terrainMaterial: {fileID: 2100000, guid: 93c78abf61cc4aba86d35ab9b07cfe85, type: 2}
+  terrainEdgeMaterial: {fileID: 2100000, guid: 4741ca1bc6914f4aa98872d53d41c57b, type: 2}
+  useSeparateTerrainMaterials: 1
+  fitAuthoredTerrainTexture: 1
+  terrainTextureRepeatWidth: 21.72
+  terrainWallUvRange: {x: 0, y: 1}
+  terrainSurfaceUvRange: {x: 0.441989, y: 0.622928}
+  terrainSurfaceContactV: 0.559392
+  terrainFillStartV: 0.559392
   groundPhysicsMaterial: {fileID: 13400000, guid: 4dfb87f232532b24aafe44e9c5c97f50, type: 2}
   terrainEdgeWidth: 0.18
   terrainVisualDepth: 20
@@ -136,6 +146,7 @@ MonoBehaviour:
     growthSaturation: 2.5
     deterministicLengthVariation: 0.12
     visualDepth: 7
+    exitRampHorizontalLength: 12
     surfaceOffset: 0.15
     cautionSprite: {fileID: 0}
     cautionDistanceBeforeRamp: 10
@@ -152,3 +163,4 @@ MonoBehaviour:
     entrySlowdownSeconds: 0.35
     continuousViscosity: 2.4
     liquidDriveAcceleration: 9
+    maximumSinkAcceleration: 8

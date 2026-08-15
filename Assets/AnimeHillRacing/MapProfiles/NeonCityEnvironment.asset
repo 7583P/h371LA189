@@ -15,6 +15,17 @@ MonoBehaviour:
   environmentId: neon-city
   sky: {fileID: 21300000, guid: fbe350ed0ee106544a557d5b75db078b, type: 3}
   mountains: {fileID: 21300000, guid: 0c2d76222afe6794e87545d574166876, type: 3}
+  clouds: []
+  cloudParallaxX: 0.09
+  cloudSpacing: 18
+  cloudSpacingJitter: 4
+  cloudHeightRange: {x: 3.2, y: 8.5}
+  cloudVisualWidthRange: {x: 3.2, y: 6.8}
+  cloudDriftSpeedRange: {x: 0.08, y: 0.22}
+  cloudOpacityRange: {x: 0.58, y: 0.9}
+  cloudBobAmplitude: 0.18
+  cloudBobPeriodRange: {x: 18, y: 32}
+  pooledClouds: 8
   mountainParallaxX: 0.18
   mountainParallaxY: 0.035
   lockVerticalToCamera: 1

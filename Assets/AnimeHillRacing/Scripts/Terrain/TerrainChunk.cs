@@ -15,6 +15,7 @@ namespace AnimeHillRacing.Terrain
 
         private readonly List<TrackedPickup> pickups = new List<TrackedPickup>(24);
         private Mesh mesh;
+        private Mesh surfaceColliderMesh;
         private MeshFilter meshFilter;
         private MeshRenderer meshRenderer;
         private MeshCollider meshCollider;
@@ -62,6 +63,11 @@ namespace AnimeHillRacing.Terrain
                 mesh.MarkDynamic();
                 meshFilter.sharedMesh = mesh;
             }
+            if (surfaceColliderMesh == null)
+            {
+                surfaceColliderMesh = new Mesh { name = "Ground Surface Only Collider" };
+                surfaceColliderMesh.MarkDynamic();
+            }
         }
 
         public void Generate(int index, MapProfile profile, float targetChunkLength, int samples, float width,
@@ -79,10 +85,13 @@ namespace AnimeHillRacing.Terrain
             EndHeight = endHeight;
             EndSlope = endSlope;
             IsGenerated = true;
+            TerrainGenerator.BuildSurfaceColliderMesh(surfaceColliderMesh, profile,
+                index * targetChunkLength, targetChunkLength, surfaceHeights, width);
             meshCollider.sharedMesh = null;
-            meshCollider.sharedMesh = mesh;
+            meshCollider.sharedMesh = surfaceColliderMesh;
             meshCollider.sharedMaterial = profile.groundPhysicsMaterial;
-            if (profile.supportsLiquidExposure && profile.terrainEdgeMaterial != null)
+            if ((profile.supportsLiquidExposure || profile.useSeparateTerrainMaterials) &&
+                profile.terrainEdgeMaterial != null)
                 meshRenderer.sharedMaterials = new[] { profile.terrainMaterial, profile.terrainEdgeMaterial };
             else
                 meshRenderer.sharedMaterial = profile.terrainMaterial;
@@ -90,10 +99,10 @@ namespace AnimeHillRacing.Terrain
                 ? profile.terrainEdgeMaterial : profile.terrainMaterial;
             edgeRenderer.startWidth = profile.terrainEdgeWidth;
             edgeRenderer.endWidth = profile.terrainEdgeWidth;
-            if (profile.supportsLiquidExposure)
+            if (profile.supportsLiquidExposure || profile.useSeparateTerrainMaterials)
             {
-                // Neon City's visual mesh is textured and contains real gaps. A single LineRenderer would
-                // bridge those gaps, so it is intentionally omitted for this profile.
+                // Textured maps use the surface submesh as their edge. Neon also contains real gaps, so a
+                // single LineRenderer would bridge them. In both cases the extra line is intentionally omitted.
                 edgeRenderer.positionCount = 0;
                 name = $"Terrain Chunk {index}";
                 return;
@@ -154,6 +163,8 @@ namespace AnimeHillRacing.Terrain
         {
             if (mesh != null)
                 Destroy(mesh);
+            if (surfaceColliderMesh != null)
+                Destroy(surfaceColliderMesh);
         }
     }
 }

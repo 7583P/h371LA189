@@ -15,10 +15,22 @@ MonoBehaviour:
   environmentId: countryside
   sky: {fileID: 21300000, guid: ced41b0fef1084b42969721c68956cb6, type: 3}
   mountains: {fileID: 21300000, guid: a6116bcf8435eb24fb79d4b5b5310f68, type: 3}
-  mountainParallaxX: 0.2
+  clouds: []
+  cloudParallaxX: 0.09
+  cloudSpacing: 18
+  cloudSpacingJitter: 4
+  cloudHeightRange: {x: 3.2, y: 8.5}
+  cloudVisualWidthRange: {x: 3.2, y: 6.8}
+  cloudDriftSpeedRange: {x: 0.08, y: 0.22}
+  cloudOpacityRange: {x: 0.58, y: 0.9}
+  cloudBobAmplitude: 0.18
+  cloudBobPeriodRange: {x: 18, y: 32}
+  pooledClouds: 8
+  mountainParallaxX: 0.18
   mountainParallaxY: 0.04
-  lockVerticalToCamera: 0
-  mountainVisualHeight: 17
-  mountainBaseY: -4
+  lockVerticalToCamera: 1
+  mountainVisualHeight: 19
+  mountainBaseY: 1
   pooledMountainSegments: 5
-  seamOverlap: 0.012
+  seamOverlap: 0.004
+  mirrorAlternatingMountainTiles: 1

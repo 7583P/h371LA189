@@ -20,6 +20,8 @@ namespace AnimeHillRacing.UI
         [SerializeField] private Text[] modeCardStatusTexts;
         [SerializeField] private Text modeText;
         [SerializeField] private Text mapText;
+        [SerializeField] private Image mapSkyPreview;
+        [SerializeField] private Image mapBackgroundPreview;
         [SerializeField] private GameObject adventureTrackSelector;
         [SerializeField] private Text vehicleText;
         [SerializeField] private Image vehiclePreviewImage;
@@ -47,6 +49,7 @@ namespace AnimeHillRacing.UI
 
         private void Start()
         {
+            ResolveMapPreviewImages();
             mode = GameSession.SelectedGameMode;
             FindSavedVehicle();
             FindSavedMap();
@@ -187,6 +190,11 @@ namespace AnimeHillRacing.UI
                         ? $"TRACK\n{map.displayName.ToUpperInvariant()}\n{best}"
                         : $"{map.displayName.ToUpperInvariant()}\nDIFFICULTY  NORMAL\n{best}";
             }
+            MapProfile mapProfile = map as MapProfile;
+            if (mapSkyPreview != null)
+                mapSkyPreview.sprite = mapProfile != null ? mapProfile.environment?.sky : null;
+            if (mapBackgroundPreview != null)
+                mapBackgroundPreview.sprite = mapProfile != null ? mapProfile.environment?.mountains : null;
             if (vehicleText != null) vehicleText.text = vehicle != null ? vehicle.displayName.ToUpperInvariant() : "NO VEHICLE";
             if (vehiclePreviewImage != null)
             {
@@ -224,6 +232,18 @@ namespace AnimeHillRacing.UI
                                              $"MAP   {(map != null ? map.displayName.ToUpperInvariant() : "-")}\n" +
                                              $"VEHICLE   {vehicle.displayName.ToUpperInvariant()}\n\n" +
                                              tuneLines;
+            }
+        }
+
+        private void ResolveMapPreviewImages()
+        {
+            if (mapSkyPreview != null && mapBackgroundPreview != null) return;
+            Image[] images = GetComponentsInChildren<Image>(true);
+            for (int i = 0; i < images.Length; i++)
+            {
+                if (mapSkyPreview == null && images[i].name.Contains("Sky Preview")) mapSkyPreview = images[i];
+                if (mapBackgroundPreview == null && images[i].name.Contains("Mountains Preview"))
+                    mapBackgroundPreview = images[i];
             }
         }
 

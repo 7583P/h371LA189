@@ -76,6 +76,11 @@ namespace AnimeHillRacing.Terrain
         [Range(0f, 1f)] public float smoothing = 0.65f;
         [Min(1f)] public float hillSize = 1f;
 
+        [Header("City Highway Terrain")]
+        public bool useCityHighwayTerrain;
+        [Min(42f)] public float cityFeatureLength = 120f;
+        [Range(0f, .35f)] public float cityMiniRhythmStrength = .18f;
+
         [Header("Progressive Difficulty")]
         public AnimationCurve difficultyCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f);
         [FormerlySerializedAs("difficulty"), Range(0f, 2f)] public float maximumDifficulty = 1f;
@@ -111,6 +116,18 @@ namespace AnimeHillRacing.Terrain
         public EnvironmentDefinition environment;
         public Material terrainMaterial;
         public Material terrainEdgeMaterial;
+        public bool useSeparateTerrainMaterials;
+        [Tooltip("Maps authored transparent terrain art only across its visible pixel band.")]
+        public bool fitAuthoredTerrainTexture;
+        [Min(1f)] public float terrainTextureRepeatWidth = 40f;
+        public Vector2 terrainWallUvRange = new Vector2(0f, 1f);
+        public Vector2 terrainSurfaceUvRange = new Vector2(0f, 1f);
+        [Tooltip("V coordinate inside terrainSurfaceUvRange that represents the physical driving surface. " +
+                 "Negative values keep the legacy behavior and use the upper edge.")]
+        [Range(-1f, 1f)] public float terrainSurfaceContactV = -1f;
+        [Tooltip("V coordinate where the deep Terrain fill starts behind the Ground artwork. " +
+                 "Negative values use the lower edge of the authored Ground band.")]
+        [Range(-1f, 1f)] public float terrainFillStartV = -1f;
         public PhysicsMaterial groundPhysicsMaterial;
         [Range(0.04f, 0.5f)] public float terrainEdgeWidth = 0.18f;
         [Min(5f)] public float terrainVisualDepth = 20f;

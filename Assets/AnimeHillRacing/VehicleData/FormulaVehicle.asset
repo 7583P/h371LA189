@@ -160,7 +160,7 @@ MonoBehaviour:
   reverseForce: 6000
   airControlTorque: 9000
   downforceReferenceSpeedMps: 30
-  maximumDownforceAcceleration: 14
+  maximumDownforceAcceleration: 28
   collisionPitchInertiaMultiplier: 4
   maximumDepenetrationVelocity: 1.5
   chassisAirControlMultiplier: 0.08
@@ -394,26 +394,26 @@ MonoBehaviour:
     airControlTorque:
     - 9000
     airborneDownforceAcceleration:
-    - 1.5
-    - 2.131579
-    - 2.7631578
-    - 3.3947368
-    - 4.0263157
-    - 4.657895
-    - 5.2894735
-    - 5.9210525
-    - 6.5526314
-    - 7.184211
-    - 7.8157897
-    - 8.447369
-    - 9.078947
-    - 9.710526
-    - 10.342105
-    - 10.973684
-    - 11.605263
-    - 12.236842
-    - 12.868422
-    - 13.5
+    - 3
+    - 4.263158
+    - 5.5263157
+    - 6.7894735
+    - 8.052631
+    - 9.31579
+    - 10.578947
+    - 11.842105
+    - 13.105263
+    - 14.368422
+    - 15.631579
+    - 16.894737
+    - 18.157894
+    - 19.421053
+    - 20.68421
+    - 21.947369
+    - 23.210526
+    - 24.473684
+    - 25.736843
+    - 27
     fuelRunDurationSeconds:
     - 20
     - 21.041666

@@ -111,8 +111,16 @@ namespace AnimeHillRacing.Editor
         private const string DriverAccessoryRoot = DriverRoot + "/Accesory";
         private const string DriverGlassesPath = DriverAccessoryRoot + "/Glasses.png";
         private const string DriverFireGlassesPath = DriverAccessoryRoot + "/Fire Glasses.png";
-        private const string CountrysideSkyPath = "Assets/Art/Backgrounds/Countryside/Countryside_Sky.png";
-        private const string CountrysideMountainsPath = "Assets/Art/Backgrounds/Countryside/Countryside_Mountains.png";
+        private const string CountrysideRoot = "Assets/Art/Backgrounds/Countryside";
+        private const string CountrysideSkyPath = CountrysideRoot + "/Countryside_Sky.png";
+        private const string CountrysideMountainsPath = CountrysideRoot + "/Countryside_Mountains.png";
+        private const string CountrysideTerrainPath = CountrysideRoot + "/Terrain.png";
+        private const string CountrysideGroundPath = CountrysideRoot + "/Ground.png";
+        private const string CityRoot = "Assets/Art/Backgrounds/City";
+        private const string CitySkyPath = CityRoot + "/Sky.png";
+        private const string CityBackgroundPath = CityRoot + "/Background.png";
+        private const string CityTerrainPath = CityRoot + "/Terrain.png";
+        private const string CityGroundPath = CityRoot + "/Ground.png";
         private static Font font;
 
         private sealed class BuiltAssets
@@ -148,6 +156,13 @@ namespace AnimeHillRacing.Editor
             public Sprite neonGround;
             public Sprite neonLiquid;
             public Sprite neonCaution;
+            public Sprite countrysideTerrain;
+            public Sprite countrysideGround;
+            public Sprite citySky;
+            public Sprite cityBackground;
+            public Sprite cityTerrain;
+            public Sprite cityGround;
+            public Sprite[] cityClouds;
             public Sprite mainMenuBackground;
             public Sprite homeButton;
             public Sprite raceButton;
@@ -175,8 +190,10 @@ namespace AnimeHillRacing.Editor
             public DriverDefinition stickmanBlack;
             public EnvironmentDefinition countrysideEnvironment;
             public EnvironmentDefinition neonCityEnvironment;
+            public EnvironmentDefinition cityEnvironment;
             public MapProfile countryside;
             public MapProfile neonCity;
+            public MapProfile city;
             public CoinRouteDefinition countrysideCoinRoute;
             public TerrainElevationProfile elevation;
             public RoadCurvatureProfile curvature;
@@ -189,6 +206,8 @@ namespace AnimeHillRacing.Editor
             public Material countrysideEdgeMaterial;
             public Material neonCityMaterial;
             public Material neonCityEdgeMaterial;
+            public Material cityTerrainMaterial;
+            public Material cityGroundMaterial;
             public Material nearMountains;
             public Material farMountains;
             public Material road;
@@ -234,6 +253,7 @@ namespace AnimeHillRacing.Editor
             ValidateCustomizationContract(assets);
             ValidateCountrysideTerrainContract(assets.countryside);
             ValidateNeonCityContract(assets);
+            ValidateCityContract(assets);
             ValidateVehiclePhysicsContract(assets);
             ValidateTuningContract(assets);
             ValidateStuntRotationContract();
@@ -373,6 +393,7 @@ namespace AnimeHillRacing.Editor
             ValidateCustomizationContract(assets);
             ValidateCountrysideTerrainContract(assets.countryside);
             ValidateNeonCityContract(assets);
+            ValidateCityContract(assets);
             ValidateVehiclePhysicsContract(assets);
             ValidateStuntRotationContract();
             ValidateFuelSequenceContract(assets);
@@ -1359,7 +1380,9 @@ namespace AnimeHillRacing.Editor
             importer.spritePivot = new Vector2(.5f, .5f);
             importer.alphaIsTransparency = true;
             importer.mipmapEnabled = false;
-            bool tiled = path == NeonLiquidPath || path == NeonTerrainPath || path == NeonGroundPath;
+            bool tiled = path == NeonLiquidPath || path == NeonTerrainPath || path == NeonGroundPath ||
+                         path == CityTerrainPath || path == CityGroundPath ||
+                         path == CountrysideTerrainPath || path == CountrysideGroundPath;
             importer.wrapMode = tiled ? TextureWrapMode.Repeat : TextureWrapMode.Clamp;
             importer.filterMode = FilterMode.Bilinear;
             importer.textureCompression = TextureImporterCompression.CompressedHQ;
@@ -1459,7 +1482,12 @@ namespace AnimeHillRacing.Editor
                 assets.countrysideEnvironment.mountainParallaxX > .25f ||
                 assets.countrysideEnvironment.mountainParallaxY < .03f ||
                 assets.countrysideEnvironment.mountainParallaxY > .06f ||
-                assets.countrysideEnvironment.lockVerticalToCamera)
+                !assets.countrysideEnvironment.lockVerticalToCamera ||
+                !assets.countrysideEnvironment.mirrorAlternatingMountainTiles ||
+                assets.countrysideEnvironment.mountainVisualHeight < 18f ||
+                assets.countrysideEnvironment.mountainVisualHeight > 20f ||
+                assets.countrysideEnvironment.mountainBaseY < .5f ||
+                assets.countrysideEnvironment.mountainBaseY > 2f)
                 throw new System.InvalidOperationException("Countryside environment assets or parallax bounds are invalid.");
             if (AssetDatabase.LoadAssetAtPath<Sprite>(FormulaReferencePath) == assets.formula.previewSprite)
                 throw new System.InvalidOperationException("Formula_Reference must never be used as the selectable vehicle skin.");
@@ -1525,11 +1553,12 @@ namespace AnimeHillRacing.Editor
                 Mathf.Abs((lockedYLow + 80f) - (lockedYHigh - 120f)) > .001f)
                 throw new System.InvalidOperationException(
                     "Neon City background must remain vertically locked to the camera with horizontal parallax enabled.");
-            if (assets.catalog.CountMaps(GameModeType.Adventure2_5D) != 2 ||
+            if (assets.catalog.CountMaps(GameModeType.Adventure2_5D) != 3 ||
                 assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 0)?.mapId != "countryside" ||
-                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 1)?.mapId != "neon-city")
+                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 1)?.mapId != "neon-city" ||
+                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 2)?.mapId != "city")
                 throw new System.InvalidOperationException(
-                    "Adventure track selector requires exactly Countryside and Neon City profiles.");
+                    "Adventure track selector requires Countryside, Neon City and City profiles.");
             if (profile == null || !profile.supportsLiquidExposure || profile.liquidChallenges == null ||
                 profile.liquidChallenges.cycleLength != 6000f ||
                 profile.liquidChallenges.challengesPerCycle != 8 ||
@@ -1862,6 +1891,94 @@ namespace AnimeHillRacing.Editor
                 SaveManager.CanAffordGems(499, 500) || !SaveManager.CanAffordGems(500, 500))
                 throw new System.InvalidOperationException("Premium cosmetic Gem thresholds are invalid.");
             Debug.Log("Neon validation: cycles 0-3=8/8, grammar complete, exposure 3+4+3=10s, Gems milestones stable.");
+        }
+
+        private static void ValidateCityContract(BuiltAssets assets)
+        {
+            MapProfile profile = assets.city;
+            EnvironmentDefinition environment = profile != null ? profile.environment : null;
+            if (profile == null || profile.mapId != "city" || !profile.useCityHighwayTerrain ||
+                profile.supportsLiquidExposure || !profile.useSeparateTerrainMaterials ||
+                !profile.fitAuthoredTerrainTexture ||
+                Mathf.Abs(profile.terrainFillStartV - profile.terrainSurfaceContactV) > .0001f ||
+                profile.hardEndDistance != 5000f || environment == null || environment.sky != assets.citySky ||
+                environment.mountains != assets.cityBackground || environment.clouds == null ||
+                environment.clouds.Length != 15 || profile.terrainMaterial != assets.cityTerrainMaterial ||
+                profile.terrainEdgeMaterial != assets.cityGroundMaterial ||
+                profile.terrainMaterial.mainTexture != assets.cityTerrain.texture ||
+                profile.terrainEdgeMaterial.mainTexture != assets.cityGround.texture)
+                throw new System.InvalidOperationException("City profile, visuals, clouds or terrain materials are incomplete.");
+            float d0 = profile.EvaluateDifficulty(0f);
+            float d2500 = profile.EvaluateDifficulty(2500f);
+            float d5000 = profile.EvaluateDifficulty(5000f);
+            float d9000 = profile.EvaluateDifficulty(9000f);
+            if (!(d0 < d2500 && d2500 < d5000) || !Mathf.Approximately(d5000, d9000))
+                throw new System.InvalidOperationException("City difficulty must grow through 5000 m and remain capped.");
+            float maximumRawSlope = 0f;
+            float maximumRawSlopeDistance = 0f;
+            for (float x = 0f; x <= 8000f; x += 1f)
+            {
+                float rise = TerrainGenerator.SampleCityHighwayHeight(profile, x + 1f) -
+                             TerrainGenerator.SampleCityHighwayHeight(profile, x);
+                float rawSlope = Mathf.Abs(Mathf.Atan(rise) * Mathf.Rad2Deg);
+                if (float.IsNaN(rawSlope) || float.IsInfinity(rawSlope))
+                    throw new System.InvalidOperationException($"City raw terrain is invalid near {x:0} m.");
+                if (rawSlope > maximumRawSlope)
+                {
+                    maximumRawSlope = rawSlope;
+                    maximumRawSlopeDistance = x;
+                }
+            }
+
+            const float chunkLength = 80f;
+            const int samples = 48;
+            var visualMesh = new Mesh();
+            var colliderMesh = new Mesh();
+            float endHeight = 0f;
+            float endSlope = 0f;
+            float maximumAlignmentError = 0f;
+            float maximumFinalSlope = 0f;
+            float minimumGroundDepth = float.MaxValue;
+            for (int chunk = 0; chunk <= 100; chunk++)
+            {
+                float start = chunk * chunkLength;
+                TerrainGenerator.BuildMesh(visualMesh, profile, start, chunkLength, samples, 10f,
+                    chunk > 0, endHeight, endSlope, out float[] heights, out endHeight, out endSlope);
+                TerrainGenerator.BuildSurfaceColliderMesh(colliderMesh, profile, start, chunkLength, heights, 10f);
+                Vector3[] visual = visualMesh.vertices;
+                Vector3[] physical = colliderMesh.vertices;
+                if (visual.Length != heights.Length * 6 || physical.Length != heights.Length * 2)
+                    throw new System.InvalidOperationException("City visual/collider mesh topology is incomplete.");
+                for (int i = 0; i < heights.Length; i++)
+                {
+                    float groundTop = visual[i * 6 + 2].y;
+                    float groundBottom = visual[i * 6 + 3].y;
+                    float terrainTop = visual[i * 6].y;
+                    float colliderTop = physical[i * 2].y;
+                    maximumAlignmentError = Mathf.Max(maximumAlignmentError,
+                        Mathf.Abs(groundTop - heights[i]), Mathf.Abs(colliderTop - heights[i]),
+                        Mathf.Abs(terrainTop - (heights[i] - TerrainGenerator.CalculateTerrainFillDepth(profile))),
+                        Mathf.Max(0f, groundBottom - terrainTop));
+                    minimumGroundDepth = Mathf.Min(minimumGroundDepth, groundTop - groundBottom);
+                    if (i > 0)
+                    {
+                        float dx = chunkLength / samples;
+                        maximumFinalSlope = Mathf.Max(maximumFinalSlope,
+                            Mathf.Abs(Mathf.Atan2(heights[i] - heights[i - 1], dx) * Mathf.Rad2Deg));
+                    }
+                }
+            }
+            Object.DestroyImmediate(visualMesh);
+            Object.DestroyImmediate(colliderMesh);
+            if (maximumAlignmentError > .0001f || minimumGroundDepth <= .05f || maximumFinalSlope > 34.05f)
+                throw new System.InvalidOperationException(
+                    $"City surface contract failed: alignment={maximumAlignmentError:0.000000}m, " +
+                    $"Ground depth={minimumGroundDepth:0.000}m, slope={maximumFinalSlope:0.00} degrees.");
+            Debug.Log($"CITY_SURFACE_ALIGNMENT_PASS: Ground top = generated height = collider, " +
+                       $"max error {maximumAlignmentError:0.000000}m over 0-8000m; " +
+                       $"Ground depth {minimumGroundDepth:0.000}m; max final slope {maximumFinalSlope:0.00} degrees; " +
+                       $"raw peak {maximumRawSlope:0.00} degrees near {maximumRawSlopeDistance:0}m is constrained " +
+                       "by the authoritative mesh limiter.");
         }
 
         private struct NeonSectionAudit
@@ -2228,12 +2345,34 @@ namespace AnimeHillRacing.Editor
         {
             if (profile == null || profile.mapId != "countryside" || profile.supportsLiquidExposure)
                 throw new System.InvalidOperationException("Countryside terrain profile is invalid.");
+            Texture2D authoredTerrain = AssetDatabase.LoadAssetAtPath<Texture2D>(CountrysideTerrainPath);
+            Texture2D authoredGround = AssetDatabase.LoadAssetAtPath<Texture2D>(CountrysideGroundPath);
+            TextureImporter terrainImporter = AssetImporter.GetAtPath(CountrysideTerrainPath) as TextureImporter;
+            TextureImporter groundImporter = AssetImporter.GetAtPath(CountrysideGroundPath) as TextureImporter;
+            float expectedRepeatWidth = authoredGround != null ? authoredGround.width / 100f : 0f;
+            if (authoredTerrain == null || authoredGround == null || profile.terrainMaterial == null ||
+                profile.terrainEdgeMaterial == null || profile.terrainMaterial.mainTexture != authoredTerrain ||
+                profile.terrainEdgeMaterial.mainTexture != authoredGround || !profile.useSeparateTerrainMaterials ||
+                !profile.fitAuthoredTerrainTexture ||
+                Mathf.Abs(profile.terrainFillStartV - profile.terrainSurfaceContactV) > .0001f ||
+                Mathf.Abs(profile.terrainTextureRepeatWidth - expectedRepeatWidth) > .001f ||
+                terrainImporter == null || groundImporter == null || terrainImporter.mipmapEnabled ||
+                groundImporter.mipmapEnabled || terrainImporter.wrapMode != TextureWrapMode.Repeat ||
+                groundImporter.wrapMode != TextureWrapMode.Repeat ||
+                Mathf.Abs(terrainImporter.spritePixelsPerUnit - 100f) > .001f ||
+                Mathf.Abs(groundImporter.spritePixelsPerUnit - 100f) > .001f)
+                throw new System.InvalidOperationException(
+                    "Countryside Ground/Terrain materials, native scale or import settings are invalid.");
             var mesh = new Mesh();
+            var colliderMesh = new Mesh();
             float endHeight = 0f;
             float endSlope = 0f;
             float minimumHeight = float.PositiveInfinity;
             float maximumHeight = float.NegativeInfinity;
             float maximumSlope = 0f;
+            float maximumAlignmentError = 0f;
+            float minimumGroundDepth = float.PositiveInfinity;
+            float minimumTerrainDepth = float.PositiveInfinity;
             int directionChanges = 0;
             int previousDirection = 0;
             const float chunkLength = 80f;
@@ -2243,10 +2382,33 @@ namespace AnimeHillRacing.Editor
             {
                 TerrainGenerator.BuildMesh(mesh, profile, chunk * chunkLength, chunkLength, samples, 10f,
                     chunk > 0, endHeight, endSlope, out float[] heights, out endHeight, out endSlope);
+                TerrainGenerator.BuildSurfaceColliderMesh(colliderMesh, profile, chunk * chunkLength,
+                    chunkLength, heights, 10f);
+                Vector3[] visual = mesh.vertices;
+                Vector3[] physical = colliderMesh.vertices;
+                if (mesh.subMeshCount != 2 || visual.Length != heights.Length * 6 ||
+                    physical.Length != heights.Length * 2)
+                    throw new System.InvalidOperationException("Countryside visual/collider mesh topology is incomplete.");
                 for (int i = 0; i < heights.Length; i++)
                 {
                     minimumHeight = Mathf.Min(minimumHeight, heights[i]);
                     maximumHeight = Mathf.Max(maximumHeight, heights[i]);
+                    float groundTop = visual[i * 6 + 2].y;
+                    float groundBottom = visual[i * 6 + 3].y;
+                    float terrainTop = visual[i * 6].y;
+                    float terrainBottom = visual[i * 6 + 1].y;
+                    float renderedSurface = visual[i * 6 + 4].y;
+                    float colliderSurface = physical[i * 2].y;
+                    float contactT = Mathf.InverseLerp(profile.terrainSurfaceUvRange.x,
+                        profile.terrainSurfaceUvRange.y, profile.terrainSurfaceContactV);
+                    float groundContact = Mathf.Lerp(groundBottom, groundTop, contactT);
+                    float expectedTerrainTop = heights[i] - TerrainGenerator.CalculateTerrainFillDepth(profile);
+                    maximumAlignmentError = Mathf.Max(maximumAlignmentError,
+                        Mathf.Abs(groundContact - heights[i]), Mathf.Abs(renderedSurface - heights[i]),
+                        Mathf.Abs(colliderSurface - heights[i]), Mathf.Abs(terrainTop - expectedTerrainTop),
+                        Mathf.Max(0f, groundBottom - terrainTop));
+                    minimumGroundDepth = Mathf.Min(minimumGroundDepth, groundTop - groundBottom);
+                    minimumTerrainDepth = Mathf.Min(minimumTerrainDepth, terrainTop - terrainBottom);
                     if (i == 0) continue;
                     float delta = heights[i] - heights[i - 1];
                     maximumSlope = Mathf.Max(maximumSlope,
@@ -2258,18 +2420,21 @@ namespace AnimeHillRacing.Editor
                 }
             }
             Object.DestroyImmediate(mesh);
+            Object.DestroyImmediate(colliderMesh);
             float difficultyAtPeak = profile.EvaluateDifficulty(10000f);
             float difficultyAfterPeak = profile.EvaluateDifficulty(11000f);
             if (maximumSlope > profile.maxSlopeAngle + .25f || maximumHeight - minimumHeight < 25f ||
                 directionChanges < 60 || !Mathf.Approximately(difficultyAtPeak, 1f) ||
-                !Mathf.Approximately(difficultyAtPeak, difficultyAfterPeak))
+                !Mathf.Approximately(difficultyAtPeak, difficultyAfterPeak) ||
+                maximumAlignmentError > .0001f || minimumGroundDepth <= .05f || minimumTerrainDepth <= 5f)
                 throw new System.InvalidOperationException(
                     $"Countryside movement invalid: range={minimumHeight:0.0}..{maximumHeight:0.0}m, " +
                     $"slope={maximumSlope:0.0}, directionChanges={directionChanges}, " +
-                    $"difficulty10km={difficultyAtPeak:0.00}.");
+                    $"difficulty10km={difficultyAtPeak:0.00}, alignment={maximumAlignmentError:0.000000}m.");
             Debug.Log($"COUNTRYSIDE_TERRAIN_PATTERN: range {minimumHeight:0.0}..{maximumHeight:0.0}m, " +
-                      $"max slope {maximumSlope:0.0} degrees, {directionChanges} climb/descent changes, " +
-                      "difficulty peaks at 10000m.");
+                       $"max slope {maximumSlope:0.0} degrees, {directionChanges} climb/descent changes, " +
+                       $"difficulty peaks at 10000m; Ground/collider error {maximumAlignmentError:0.000000}m, " +
+                       $"Ground band {minimumGroundDepth:0.000}m, Terrain fill >= {minimumTerrainDepth:0.0}m.");
         }
 
         private static void ValidateFuelSequenceContract(BuiltAssets assets)
@@ -4214,17 +4379,22 @@ namespace AnimeHillRacing.Editor
                 DriverPreviewPath, DriverHeadPath, DriverTorsoPath,
                 DriverUpperArmPath, DriverForearmPath, DriverThighPath, DriverLowerLegPath,
                 DriverGlassesPath, DriverFireGlassesPath,
-                CountrysideSkyPath, CountrysideMountainsPath, FuelCanPath, Coin01Path, Coin05Path,
+                 CountrysideSkyPath, CountrysideMountainsPath, CountrysideTerrainPath, CountrysideGroundPath,
+                 CitySkyPath, CityBackgroundPath,
+                CityTerrainPath, CityGroundPath, FuelCanPath, Coin01Path, Coin05Path,
                 BronzeChestClosedPath, BronzeChestOpenPath, SilverChestClosedPath, SilverChestOpenPath,
                 GoldChestClosedPath, GoldChestOpenPath, MasterChestClosedPath, MasterChestOpenPath,
                 LegendaryChestClosedPath, LegendaryChestOpenPath, CoinsChestPath, ChestShelfPath };
             for (int i = 0; i < spritePaths.Length; i++)
-                ConfigureFormulaSprite(spritePaths[i], spritePaths[i] == CountrysideSkyPath ||
-                    spritePaths[i] == CountrysideMountainsPath || spritePaths[i].StartsWith(NeonRoot) ||
+                ConfigureFormulaSprite(spritePaths[i], spritePaths[i].StartsWith(CountrysideRoot) ||
+                    spritePaths[i].StartsWith(NeonRoot) ||
+                    spritePaths[i].StartsWith(CityRoot) ||
                     spritePaths[i].StartsWith(ButtonRoot) ||
                     spritePaths[i].StartsWith(GameUiRoot) ? 4096 :
                     spritePaths[i] == FuelCanPath || spritePaths[i] == Coin01Path || spritePaths[i] == Coin05Path ? 512 :
                     spritePaths[i].StartsWith(ChestRoot) ? 2048 : 2048);
+            for (int i = 1; i <= 15; i++)
+                ConfigureFormulaSprite($"{CityRoot}/Clouds/Cloud_{i:00}.png", 2048);
             assets.jeepBody = AssetDatabase.LoadAssetAtPath<Sprite>(JeepBodyPath);
             assets.jeepWheel01 = AssetDatabase.LoadAssetAtPath<Sprite>(JeepWheel01Path);
             assets.jeepWheel02 = AssetDatabase.LoadAssetAtPath<Sprite>(JeepWheel02Path);
@@ -4254,6 +4424,16 @@ namespace AnimeHillRacing.Editor
             assets.neonGround = AssetDatabase.LoadAssetAtPath<Sprite>(NeonGroundPath);
             assets.neonLiquid = AssetDatabase.LoadAssetAtPath<Sprite>(NeonLiquidPath);
             assets.neonCaution = AssetDatabase.LoadAssetAtPath<Sprite>(NeonCautionPath);
+            assets.countrysideTerrain = AssetDatabase.LoadAssetAtPath<Sprite>(CountrysideTerrainPath);
+            assets.countrysideGround = AssetDatabase.LoadAssetAtPath<Sprite>(CountrysideGroundPath);
+            assets.citySky = AssetDatabase.LoadAssetAtPath<Sprite>(CitySkyPath);
+            assets.cityBackground = AssetDatabase.LoadAssetAtPath<Sprite>(CityBackgroundPath);
+            assets.cityTerrain = AssetDatabase.LoadAssetAtPath<Sprite>(CityTerrainPath);
+            assets.cityGround = AssetDatabase.LoadAssetAtPath<Sprite>(CityGroundPath);
+            assets.cityClouds = new Sprite[15];
+            for (int i = 0; i < assets.cityClouds.Length; i++)
+                assets.cityClouds[i] = AssetDatabase.LoadAssetAtPath<Sprite>(
+                    $"{CityRoot}/Clouds/Cloud_{i + 1:00}.png");
             assets.mainMenuBackground = AssetDatabase.LoadAssetAtPath<Sprite>(MainMenuBackgroundPath);
             assets.homeButton = AssetDatabase.LoadAssetAtPath<Sprite>(HomeButtonPath);
             assets.raceButton = AssetDatabase.LoadAssetAtPath<Sprite>(RaceButtonPath);
@@ -4286,12 +4466,18 @@ namespace AnimeHillRacing.Editor
             assets.legendaryChestOpen = AssetDatabase.LoadAssetAtPath<Sprite>(LegendaryChestOpenPath);
             assets.coinsChest = AssetDatabase.LoadAssetAtPath<Sprite>(CoinsChestPath);
             assets.chestShelf = AssetDatabase.LoadAssetAtPath<Sprite>(ChestShelfPath);
-            assets.countrysideMaterial = UnlitMaterialAsset("CountrysideGround", new Color(0.34f, 0.16f, 0.07f));
-            assets.countrysideEdgeMaterial = UnlitMaterialAsset("CountrysideEdge", new Color(0.30f, 0.78f, 0.20f));
+            assets.countrysideMaterial = UnlitTextureMaterialAsset("CountrysideTerrain",
+                assets.countrysideTerrain != null ? assets.countrysideTerrain.texture : null);
+            assets.countrysideEdgeMaterial = UnlitTextureMaterialAsset("CountrysideGround",
+                assets.countrysideGround != null ? assets.countrysideGround.texture : null);
             assets.neonCityMaterial = UnlitTextureMaterialAsset("NeonCityTerrain", assets.neonTerrain != null
                 ? assets.neonTerrain.texture : null);
             assets.neonCityEdgeMaterial = UnlitTextureMaterialAsset("NeonCityEdge", assets.neonGround != null
                 ? assets.neonGround.texture : null);
+            assets.cityTerrainMaterial = UnlitTextureMaterialAsset("CityTerrain", assets.cityTerrain != null
+                ? assets.cityTerrain.texture : null);
+            assets.cityGroundMaterial = UnlitTextureMaterialAsset("CityGround", assets.cityGround != null
+                ? assets.cityGround.texture : null);
             assets.nearMountains = MaterialAsset("MountainsNear", new Color(0.12f, 0.32f, 0.24f));
             assets.farMountains = MaterialAsset("MountainsFar", new Color(0.22f, 0.38f, 0.46f));
             assets.road = MaterialAsset("Road", new Color(0.17f, 0.18f, 0.20f));
@@ -4718,6 +4904,14 @@ namespace AnimeHillRacing.Editor
             assets.countryside.fuelGapIncrease = 5f;
             assets.countryside.terrainMaterial = assets.countrysideMaterial;
             assets.countryside.terrainEdgeMaterial = assets.countrysideEdgeMaterial;
+            assets.countryside.useSeparateTerrainMaterials = true;
+            assets.countryside.fitAuthoredTerrainTexture = true;
+            assets.countryside.terrainTextureRepeatWidth = assets.countrysideGround != null
+                ? assets.countrysideGround.rect.width / assets.countrysideGround.pixelsPerUnit : 21.72f;
+            assets.countryside.terrainWallUvRange = new Vector2(0f, 1f);
+            assets.countryside.terrainSurfaceUvRange = new Vector2(.441989f, .622928f);
+            assets.countryside.terrainSurfaceContactV = .559392f;
+            assets.countryside.terrainFillStartV = .559392f;
             assets.countryside.groundPhysicsMaterial = assets.groundPhysics;
             assets.countryside.terrainEdgeWidth = 0.18f;
             assets.countryside.terrainVisualDepth = 20f;
@@ -4726,15 +4920,100 @@ namespace AnimeHillRacing.Editor
             assets.countrysideEnvironment.environmentId = "countryside";
             assets.countrysideEnvironment.sky = AssetDatabase.LoadAssetAtPath<Sprite>(CountrysideSkyPath);
             assets.countrysideEnvironment.mountains = AssetDatabase.LoadAssetAtPath<Sprite>(CountrysideMountainsPath);
-            assets.countrysideEnvironment.mountainParallaxX = .20f;
+            assets.countrysideEnvironment.mountainParallaxX = .18f;
             assets.countrysideEnvironment.mountainParallaxY = .04f;
-            assets.countrysideEnvironment.lockVerticalToCamera = false;
-            assets.countrysideEnvironment.mountainVisualHeight = 17f;
-            assets.countrysideEnvironment.mountainBaseY = -4f;
+            assets.countrysideEnvironment.lockVerticalToCamera = true;
+            assets.countrysideEnvironment.mountainVisualHeight = 19f;
+            assets.countrysideEnvironment.mountainBaseY = 1f;
             assets.countrysideEnvironment.pooledMountainSegments = 5;
-            assets.countrysideEnvironment.seamOverlap = .012f;
+            assets.countrysideEnvironment.seamOverlap = .004f;
+            assets.countrysideEnvironment.mirrorAlternatingMountainTiles = true;
             assets.countryside.environment = assets.countrysideEnvironment;
             EditorUtility.SetDirty(assets.countrysideEnvironment);
+
+            assets.cityEnvironment = LoadOrCreate<EnvironmentDefinition>(Root + "/MapProfiles/CityEnvironment.asset");
+            assets.cityEnvironment.environmentId = "city";
+            assets.cityEnvironment.sky = assets.citySky;
+            assets.cityEnvironment.mountains = assets.cityBackground;
+            assets.cityEnvironment.clouds = assets.cityClouds;
+            assets.cityEnvironment.cloudParallaxX = .09f;
+            assets.cityEnvironment.cloudSpacing = 19f;
+            assets.cityEnvironment.cloudSpacingJitter = 4.5f;
+            assets.cityEnvironment.cloudHeightRange = new Vector2(3.4f, 8.8f);
+            assets.cityEnvironment.cloudVisualWidthRange = new Vector2(3.8f, 7.5f);
+            assets.cityEnvironment.cloudDriftSpeedRange = new Vector2(.08f, .24f);
+            assets.cityEnvironment.cloudOpacityRange = new Vector2(.56f, .9f);
+            assets.cityEnvironment.cloudBobAmplitude = .22f;
+            assets.cityEnvironment.cloudBobPeriodRange = new Vector2(18f, 34f);
+            assets.cityEnvironment.pooledClouds = 8;
+            assets.cityEnvironment.mountainParallaxX = .18f;
+            assets.cityEnvironment.mountainParallaxY = .04f;
+            assets.cityEnvironment.lockVerticalToCamera = true;
+            assets.cityEnvironment.mountainVisualHeight = 15.5f;
+            assets.cityEnvironment.mountainBaseY = 4.2f;
+            assets.cityEnvironment.pooledMountainSegments = 5;
+            assets.cityEnvironment.seamOverlap = .016f;
+            assets.cityEnvironment.mirrorAlternatingMountainTiles = false;
+            EditorUtility.SetDirty(assets.cityEnvironment);
+
+            assets.city = LoadOrCreate<MapProfile>(Root + "/MapProfiles/City.asset");
+            assets.city.mapId = "city";
+            assets.city.displayName = "CITY";
+            assets.city.supportedGameMode = GameModeType.Adventure2_5D;
+            assets.city.seed = 4152026;
+            assets.city.coinRoute = assets.countrysideCoinRoute;
+            assets.city.elevationProfile = null;
+            assets.city.baseHeight = 0f;
+            assets.city.amplitude = 18f;
+            assets.city.frequency = .012f;
+            assets.city.smoothing = .72f;
+            assets.city.hillSize = 1.15f;
+            assets.city.useCityHighwayTerrain = true;
+            assets.city.cityFeatureLength = 48f;
+            assets.city.cityMiniRhythmStrength = .16f;
+            assets.city.introductoryAmplitude = .38f;
+            assets.city.introEndDistance = 350f;
+            assets.city.easyEndDistance = 1500f;
+            assets.city.normalEndDistance = 3300f;
+            assets.city.hardEndDistance = 5000f;
+            assets.city.difficultyCurve = new AnimationCurve(
+                new Keyframe(0f, 0f), new Keyframe(.25f, .22f),
+                new Keyframe(.60f, .62f), new Keyframe(1f, 1f));
+            assets.city.maximumDifficulty = 1f;
+            assets.city.sectionLength = 72f;
+            assets.city.recoveryEverySections = 5;
+            assets.city.technicalSectionChance = .42f;
+            assets.city.technicalDetailStrength = .72f;
+            assets.city.flatFeatureWeight = .02f;
+            assets.city.hillFeatureWeight = .54f;
+            assets.city.valleyFeatureWeight = .27f;
+            assets.city.technicalFeatureWeight = .17f;
+            assets.city.maxSlopeAngle = 34f;
+            assets.city.maxHeightDeltaPerSample = Mathf.Tan(34f * Mathf.Deg2Rad) * (80f / 48f);
+            assets.city.minimumValleyWidth = 18f;
+            assets.city.minimumLandingLength = 16f;
+            assets.city.maximumCrestSharpness = 7f;
+            assets.city.smoothingPasses = 2;
+            assets.city.initialFuelGap = 5f;
+            assets.city.fuelGapIncrease = 5f;
+            assets.city.fuelPlacementSearchRadius = 24f;
+            assets.city.fuelPlacementSearchStep = 2f;
+            assets.city.fuelMaximumPlacementSlope = 16f;
+            assets.city.environment = assets.cityEnvironment;
+            assets.city.terrainMaterial = assets.cityTerrainMaterial;
+            assets.city.terrainEdgeMaterial = assets.cityGroundMaterial;
+            assets.city.useSeparateTerrainMaterials = true;
+            assets.city.fitAuthoredTerrainTexture = true;
+            assets.city.terrainTextureRepeatWidth = 45f;
+            assets.city.terrainWallUvRange = new Vector2(.171f, .82f);
+            assets.city.terrainSurfaceUvRange = new Vector2(.293f, .45f);
+            assets.city.terrainSurfaceContactV = .45f;
+            assets.city.terrainFillStartV = .45f;
+            assets.city.groundPhysicsMaterial = assets.groundPhysics;
+            assets.city.terrainEdgeWidth = .18f;
+            assets.city.terrainVisualDepth = 22f;
+            assets.city.supportsLiquidExposure = false;
+            EditorUtility.SetDirty(assets.city);
 
             assets.neonCityEnvironment = LoadOrCreate<EnvironmentDefinition>(
                 Root + "/MapProfiles/NeonCityEnvironment.asset");
@@ -4748,6 +5027,7 @@ namespace AnimeHillRacing.Editor
             assets.neonCityEnvironment.mountainBaseY = -3.2f;
             assets.neonCityEnvironment.pooledMountainSegments = 5;
             assets.neonCityEnvironment.seamOverlap = .018f;
+            assets.neonCityEnvironment.mirrorAlternatingMountainTiles = false;
             EditorUtility.SetDirty(assets.neonCityEnvironment);
 
             assets.neonCity = LoadOrCreate<MapProfile>(Root + "/MapProfiles/NeonCity.asset");
@@ -4908,7 +5188,7 @@ namespace AnimeHillRacing.Editor
             EditorUtility.SetDirty(assets.chestCatalog);
             assets.catalog = LoadOrCreate<GameCatalog>(Root + "/VehicleData/GameCatalog.asset");
             assets.catalog.maps = new MapDefinition[]
-                { assets.countryside, assets.neonCity, assets.countrysideRoad, assets.testCircuit };
+                { assets.countryside, assets.neonCity, assets.city, assets.countrysideRoad, assets.testCircuit };
             assets.catalog.vehicles = new[] { assets.jeep, assets.formula, assets.rally, assets.sportBike };
             assets.catalog.drivers = new[] { assets.stickmanBlack };
             assets.catalog.upgradeEconomy = assets.economy;
@@ -5706,7 +5986,7 @@ namespace AnimeHillRacing.Editor
             terrain.AssignRuntimeReferences(assets.countryside, null, pool);
             VehicleCamera camera = CreateClimbCamera(null);
             CreateCountrysideBackground(camera.GetComponent<Camera>(), assets.countrysideEnvironment);
-            CreateSunsetLighting(true);
+            CreateSunsetLighting(false);
             Canvas canvas = CreateCanvas(Color.clear, false);
             Transform safe = CreateSafeArea(canvas.transform);
             GameplayHUD hud = CreateGameplayHud(safe, input, assets);
@@ -6135,7 +6415,7 @@ namespace AnimeHillRacing.Editor
 
         private static ResultsUI CreateResults(Transform safe, GameManager manager, out RawImage resultImage)
         {
-            GameObject panel = CreateImage("Results Panel", safe, new Color(0.025f, 0.035f, 0.065f, 0.5f),
+            GameObject panel = CreateImage("Results Panel", safe, new Color(0f, 0f, 0f, 0.80f),
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1540f, 820f));
             Outline resultsOutline = panel.AddComponent<Outline>();
             resultsOutline.effectColor = new Color(.22f, .62f, .94f, .85f);
@@ -6425,7 +6705,11 @@ namespace AnimeHillRacing.Editor
         {
             string path = Root + "/Materials/" + name + ".mat";
             Material material = AssetDatabase.LoadAssetAtPath<Material>(path);
-            Shader shader = Shader.Find("Unlit/Texture") ?? Shader.Find("Sprites/Default");
+            bool needsTransparency = name == "CityTerrain" || name == "CityGround" ||
+                                     name == "CountrysideTerrain" || name == "CountrysideGround";
+            Shader shader = needsTransparency
+                ? Shader.Find("AnimeHillRacing/Transparent Texture") ?? Shader.Find("Sprites/Default")
+                : Shader.Find("Unlit/Texture") ?? Shader.Find("Sprites/Default");
             if (shader == null) throw new System.InvalidOperationException("No compatible unlit texture shader was found.");
             if (material == null)
             {
@@ -6435,6 +6719,8 @@ namespace AnimeHillRacing.Editor
             else if (material.shader != shader) material.shader = shader;
             material.mainTexture = texture;
             material.color = Color.white;
+            if (name == "CityTerrain" || name == "CountrysideTerrain") material.renderQueue = 2450;
+            else if (name == "CityGround" || name == "CountrysideGround") material.renderQueue = 2451;
             EditorUtility.SetDirty(material);
             return material;
         }

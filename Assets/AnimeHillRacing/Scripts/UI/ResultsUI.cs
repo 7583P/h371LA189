@@ -13,10 +13,14 @@ namespace AnimeHillRacing.UI
         [SerializeField] private GameManager gameManager;
         [SerializeField] private TimeTrialManager timeTrialManager;
 
-        private const float ResultsBackgroundAlpha = .5f;
+        private const float ResultsBackgroundAlpha = .80f;
 
         public Text TitleText => titleText;
         public Text StatsText => resultsText;
+
+        private void Awake() => ApplyBackgroundTransparency();
+
+        private void OnEnable() => ApplyBackgroundTransparency();
 
         public void Show(GameManager manager)
         {
@@ -78,9 +82,7 @@ namespace AnimeHillRacing.UI
         {
             Image background = root != null ? root.GetComponent<Image>() : GetComponent<Image>();
             if (background == null) return;
-            Color color = background.color;
-            color.a = ResultsBackgroundAlpha;
-            background.color = color;
+            background.color = new Color(0f, 0f, 0f, ResultsBackgroundAlpha);
         }
 
         public void AssignTimeTrial(TimeTrialManager manager) => timeTrialManager = manager;

@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 124aed6c493347c45a5308110da9f364, type: 3}
+  m_Name: CityEnvironment
+  m_EditorClassIdentifier: Assembly-CSharp::AnimeHillRacing.CameraSystem.EnvironmentDefinition
+  environmentId: city
+  sky: {fileID: 21300000, guid: a1000000000000000000000000000001, type: 3}
+  mountains: {fileID: 21300000, guid: a1000000000000000000000000000002, type: 3}
+  clouds:
+  - {fileID: 21300000, guid: c1000000000000000000000000000001, type: 3}
+  - {fileID: 21300000, guid: c1000000000000000000000000000002, type: 3}
+  - {fileID: 21300000, guid: c1000000000000000000000000000003, type: 3}
+  - {fileID: 21300000, guid: c1000000000000000000000000000004, type: 3}
+  - {fileID: 21300000, guid: c1000000000000000000000000000005, type: 3}
+  - {fileID: 21300000, guid: c1000000000000000000000000000006, type: 3}
+  - {fileID: 21300000, guid: c1000000000000000000000000000007, type: 3}
+  - {fileID: 21300000, guid: c1000000000000000000000000000008, type: 3}
+  - {fileID: 21300000, guid: c1000000000000000000000000000009, type: 3}
+  - {fileID: 21300000, guid: c1000000000000000000000000000010, type: 3}
+  - {fileID: 21300000, guid: c1000000000000000000000000000011, type: 3}
+  - {fileID: 21300000, guid: c1000000000000000000000000000012, type: 3}
+  - {fileID: 21300000, guid: c1000000000000000000000000000013, type: 3}
+  - {fileID: 21300000, guid: c1000000000000000000000000000014, type: 3}
+  - {fileID: 21300000, guid: c1000000000000000000000000000015, type: 3}
+  cloudParallaxX: 0.09
+  cloudSpacing: 19
+  cloudSpacingJitter: 4.5
+  cloudHeightRange: {x: 3.4, y: 8.8}
+  cloudVisualWidthRange: {x: 3.8, y: 7.5}
+  cloudDriftSpeedRange: {x: 0.08, y: 0.24}
+  cloudOpacityRange: {x: 0.56, y: 0.9}
+  cloudBobAmplitude: 0.22
+  cloudBobPeriodRange: {x: 18, y: 34}
+  pooledClouds: 8
+  mountainParallaxX: 0.18
+  mountainParallaxY: 0.04
+  lockVerticalToCamera: 1
+  mountainVisualHeight: 15.5
+  mountainBaseY: 4.2
+  pooledMountainSegments: 5
+  seamOverlap: 0.016

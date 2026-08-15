@@ -164,7 +164,7 @@ namespace AnimeHillRacing.UI
         {
             VehicleDefinition vehicle = CurrentVehicle;
             if (vehicle == null || catalog?.upgradeEconomy == null) return;
-            SaveManager.TryPurchaseTune(vehicle, type, catalog.upgradeEconomy, out _);
+            SaveManager.TryIncreaseEquippedTune(vehicle, type, catalog.upgradeEconomy, out _, out _);
             Refresh();
         }
 
@@ -255,6 +255,7 @@ namespace AnimeHillRacing.UI
             VehicleDefinition vehicle = CurrentVehicle;
             if (vehicle == null) return;
             VehicleUpgradeState state = SaveManager.LoadUpgrades(vehicle.vehicleId, vehicle);
+            VehicleUpgradeState purchasedState = SaveManager.LoadPurchasedUpgrades(vehicle.vehicleId, vehicle);
             int visibleSlots = vehicle.GetTuneSlotCount();
             int rowCount = tuningNameTexts != null ? tuningNameTexts.Length : 0;
             for (int i = 0; i < rowCount; i++)
@@ -265,20 +266,23 @@ namespace AnimeHillRacing.UI
                 if (!visible) continue;
                 VehicleUpgradeType type = vehicle.GetTuneTypeForSlot(i);
                 int current = state.GetTune(type);
+                int purchased = purchasedState.GetTune(type);
                 int maximum = vehicle.GetMaxTunes(type);
                 bool atMax = current >= maximum;
+                bool purchasedMax = purchased >= maximum;
                 if (tuningNameTexts != null && i < tuningNameTexts.Length && tuningNameTexts[i] != null)
                     tuningNameTexts[i].text = vehicle.GetTuneDisplayName(type);
                 if (tuningLevelTexts != null && i < tuningLevelTexts.Length && tuningLevelTexts[i] != null)
-                    tuningLevelTexts[i].text = $"LEVEL {current} / {maximum}";
+                    tuningLevelTexts[i].text = $"EQUIPPED {current} / {maximum}   BOUGHT {purchased}";
                 if (tuningValueTexts != null && i < tuningValueTexts.Length && tuningValueTexts[i] != null)
                     tuningValueTexts[i].text = TuneComparison(vehicle, state, type, atMax);
-                int cost = atMax || catalog?.upgradeEconomy == null ? -1 :
-                    catalog.upgradeEconomy.GetCostForNextTune(vehicle, type, current);
+                int cost = purchasedMax || catalog?.upgradeEconomy == null ? -1 :
+                    catalog.upgradeEconomy.GetCostForNextTune(vehicle, type, purchased);
                 if (tuningCostTexts != null && i < tuningCostTexts.Length && tuningCostTexts[i] != null)
-                    tuningCostTexts[i].text = atMax ? "MAX" : $"TUNE\n{cost:N0} COINS";
+                    tuningCostTexts[i].text = current < purchased ? "↑  EQUIP" : purchasedMax
+                        ? "↑  MAX" : $"↑  {cost:N0} COINS";
                 if (tuningButtons != null && i < tuningButtons.Length && tuningButtons[i] != null)
-                    tuningButtons[i].interactable = !atMax;
+                    tuningButtons[i].interactable = current < maximum && (current < purchased || cost >= 0);
             }
             if (tuningCoinsText != null) tuningCoinsText.text = $"COINS  {SaveManager.TotalCoins:N0}";
         }

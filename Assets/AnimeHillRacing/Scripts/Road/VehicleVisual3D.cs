@@ -46,10 +46,8 @@ namespace AnimeHillRacing.Road
                 {
                     bodyRenderers[i].sprite = skin.sprite;
                     bodyRenderers[i].flipX = definition.flipBodyX ^ (i == 1);
-                    float sourceWidth = bodyRenderers[i].sprite != null
-                        ? bodyRenderers[i].sprite.bounds.size.x : 1f;
                     bodyRenderers[i].transform.localScale = Vector3.one *
-                        (definition.visualWidth / Mathf.Max(.001f, sourceWidth));
+                        VehicleDefinition.SpriteWidthScale(bodyRenderers[i].sprite, definition.visualWidth);
                 }
             if (wheelRenderers != null && wheel != null)
                 for (int i = 0; i < wheelRenderers.Length; i++) if (wheelRenderers[i] != null)
@@ -59,9 +57,8 @@ namespace AnimeHillRacing.Road
                     renderer.sortingOrder = 11;
                     bool front = frontWheels != null && i < frontWheels.Length && frontWheels[i];
                     float diameter = front ? definition.FrontWheelDiameter : definition.RearWheelDiameter;
-                    float sourceDiameter = VehicleDefinition.WheelSourceDiameter(wheel);
                     renderer.transform.localScale = Vector3.one *
-                        (diameter / Mathf.Max(.001f, sourceDiameter));
+                        VehicleDefinition.WheelVisualScale(wheel, diameter);
                 }
             if (articulatedDriver != null && fallbackDriver != null)
                 articulatedDriver.Apply(fallbackDriver, definition.driverPose, GetComponentInParent<Rigidbody>(), true);

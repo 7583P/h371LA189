@@ -169,13 +169,14 @@ MonoBehaviour:
   airControlTorque: 7600
   downforceReferenceSpeedMps: 30
   maximumDownforceAcceleration: 14
-  collisionPitchInertiaMultiplier: 4.5
-  maximumDepenetrationVelocity: 2.8
+  collisionPitchInertiaMultiplier: 7.5
+  maximumDepenetrationVelocity: 1.4
+  chassisAirControlMultiplier: 0.07
   maxAirAngularVelocity: 3.2
   airAngularAcceleration: 21
   airAngularDamping: 1.7
   accelerationForceCalibration: 1
-  centerOfMass: {x: -0.04, y: -0.24, z: 0}
+  centerOfMass: {x: -0.015, y: -0.36, z: 0}
   engine:
     idleRpm: 1100
     redlineRpm: 7200
@@ -306,14 +307,20 @@ MonoBehaviour:
     dampingMin: 2500
     dampingMax: 3900
     targetSag01: 0.29
-    stiffnessTuneScale: {x: 0.78, y: 1.3}
-    dampingRatio: {x: 0.86, y: 0.98}
-    compressionDampingMultiplier: 0.84
-    reboundDampingMultiplier: 1.14
-    bumpStopStart: 0.7
-    progressiveSpringMultiplier: 2.5
-    hardStopSpringMultiplier: 9
-    maximumAcceleration: 24
+    stiffnessTuneScale: {x: 0.78, y: 1}
+    dampingRatio: {x: 0.72, y: 1.1}
+    compressionDampingMultiplier: 0.88
+    reboundDampingMultiplier: 1.18
+    compressionDampingTuneScale: {x: 0.76, y: 0.95}
+    reboundDampingTuneScale: {x: 0.96, y: 1.5}
+    reboundAccelerationTune: {x: 1.8, y: 0.5}
+    wheelContactTolerance: {x: 0.007, y: 0.018}
+    landingDampingScale: {x: 1.1, y: 1.5}
+    landingDampingDuration: 0.18
+    bumpStopStart: 0.74
+    progressiveSpringMultiplier: 1.6
+    hardStopSpringMultiplier: 7
+    maximumAcceleration: 20
     maximumReboundAcceleration: 1.2
   grip:
     minGrip: 0.14

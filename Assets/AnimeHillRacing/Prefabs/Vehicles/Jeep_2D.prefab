@@ -636,6 +636,7 @@ MonoBehaviour:
   airborneGraceSeconds: 0.08
   groundedAngularDamping: 0.45
   collisionAngularVelocityLimit: 8
+  logPhysicsDiagnostics: 0
 --- !u!114 &6507707174842983476
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -21,6 +21,12 @@ namespace AnimeHillRacing.Vehicle
         public abstract float EngineRpm { get; }
         public abstract float WheelSlip { get; }
         public abstract bool AnyGrounded { get; }
+        public virtual bool FrontWheelGrounded => AnyGrounded;
+        public virtual bool RearWheelGrounded => AnyGrounded;
+        public virtual bool AnyWheelGrounded => AnyGrounded;
+        public virtual bool BothWheelsGrounded => AnyGrounded;
+        public virtual bool ChassisGrounded => false;
+        public virtual bool Airborne => !AnyGrounded;
         public abstract TransmissionController Transmission { get; }
         public abstract VehicleDefinition Definition { get; }
         public abstract ResolvedVehicleStats Stats { get; }

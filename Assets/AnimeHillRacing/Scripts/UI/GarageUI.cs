@@ -33,6 +33,7 @@ namespace AnimeHillRacing.UI
         [SerializeField] private Text[] tuningValues;
         [SerializeField] private Text[] tuningCosts;
         [SerializeField] private Button[] tuningButtons;
+        [SerializeField] private Button[] tuningDownButtons;
         [SerializeField] private Text tuningCoins;
         [SerializeField] private Text gemsBalance;
         [SerializeField] private Text sectionTitle;
@@ -79,6 +80,7 @@ namespace AnimeHillRacing.UI
         {
             if (catalog == null) return;
             EnsureRuntimeTuningRows();
+            EnsureTuneAdjustmentButtons();
             FindSavedVehicle();
             section = GameSession.RequestedGarageSection;
             if (confirmationModal != null) confirmationModal.SetActive(false);
@@ -109,6 +111,12 @@ namespace AnimeHillRacing.UI
         public void UpgradeTune3() => PurchaseTune(3);
         public void UpgradeTune4() => PurchaseTune(4);
         public void UpgradeTune5() => PurchaseTune(5);
+        public void DecreaseTune0() => DecreaseTune(0);
+        public void DecreaseTune1() => DecreaseTune(1);
+        public void DecreaseTune2() => DecreaseTune(2);
+        public void DecreaseTune3() => DecreaseTune(3);
+        public void DecreaseTune4() => DecreaseTune(4);
+        public void DecreaseTune5() => DecreaseTune(5);
         public void SelectBlueprint0() => SelectBlueprint(0);
         public void SelectBlueprint1() => SelectBlueprint(1);
         public void SelectBlueprint2() => SelectBlueprint(2);
@@ -169,9 +177,20 @@ namespace AnimeHillRacing.UI
             VehicleDefinition vehicle = CurrentVehicle;
             if (vehicle == null || slot < 0 || slot >= vehicle.GetTuneSlotCount() || catalog?.upgradeEconomy == null) return;
             pendingType = vehicle.GetTuneTypeForSlot(slot);
+            VehicleUpgradeState equippedState = SaveManager.LoadUpgrades(vehicle.vehicleId, vehicle);
+            VehicleUpgradeState purchasedState = SaveManager.LoadPurchasedUpgrades(vehicle.vehicleId, vehicle);
+            int equipped = equippedState.GetTune(pendingType);
+            int purchased = purchasedState.GetTune(pendingType);
+            if (equipped < purchased)
+            {
+                SaveManager.TryIncreaseEquippedTune(vehicle, pendingType, catalog.upgradeEconomy,
+                    out _, out _);
+                Refresh();
+                return;
+            }
             pendingPurchaseKind = PurchaseKind.Tune;
-            VehicleUpgradeState state = SaveManager.LoadUpgrades(vehicle.vehicleId, vehicle);
-            int current = state.GetTune(pendingType);
+            VehicleUpgradeState state = equippedState;
+            int current = purchased;
             int maximum = vehicle.GetMaxTunes(pendingType);
             if (current >= maximum) return;
             int cost = catalog.upgradeEconomy.GetCostForNextTune(vehicle, pendingType, current);
@@ -187,6 +206,15 @@ namespace AnimeHillRacing.UI
             if (confirmationStatus != null) confirmationStatus.text = string.Empty;
             if (confirmationYes != null) confirmationYes.interactable = true;
             if (confirmationModal != null) confirmationModal.SetActive(true);
+        }
+
+        private void DecreaseTune(int slot)
+        {
+            if (!Application.isPlaying) return;
+            VehicleDefinition vehicle = CurrentVehicle;
+            if (vehicle == null || slot < 0 || slot >= vehicle.GetTuneSlotCount()) return;
+            SaveManager.TryDecreaseEquippedTune(vehicle, vehicle.GetTuneTypeForSlot(slot), out _);
+            Refresh();
         }
 
         public void ConfirmPurchase()
@@ -333,6 +361,63 @@ namespace AnimeHillRacing.UI
                 rect.anchoredPosition = new Vector2(0f, 260f - i * 104f);
                 rect.sizeDelta = new Vector2(rect.sizeDelta.x, 92f);
             }
+        }
+
+        private void EnsureTuneAdjustmentButtons()
+        {
+            if (!Application.isPlaying || tuningButtons == null) return;
+            if (tuningDownButtons == null || tuningDownButtons.Length != tuningButtons.Length)
+                System.Array.Resize(ref tuningDownButtons, tuningButtons.Length);
+            for (int i = 0; i < tuningButtons.Length; i++)
+            {
+                Button up = tuningButtons[i];
+                if (up == null || up.transform.parent == null) continue;
+                RectTransform upRect = up.transform as RectTransform;
+                if (upRect != null)
+                {
+                    upRect.anchoredPosition = new Vector2(350f, 0f);
+                    upRect.sizeDelta = new Vector2(150f, 60f);
+                }
+                Transform existing = up.transform.parent.Find("Decrease");
+                Button down = existing != null ? existing.GetComponent<Button>() : null;
+                if (down == null) down = CreateTuneDownButton(up, i);
+                tuningDownButtons[i] = down;
+            }
+        }
+
+        private Button CreateTuneDownButton(Button template, int slot)
+        {
+            GameObject gameObject = new GameObject("Decrease", typeof(RectTransform), typeof(Image), typeof(Button));
+            RectTransform rect = gameObject.GetComponent<RectTransform>();
+            rect.SetParent(template.transform.parent, false);
+            rect.anchorMin = rect.anchorMax = new Vector2(.5f, .5f);
+            rect.anchoredPosition = new Vector2(235f, 0f);
+            rect.sizeDelta = new Vector2(70f, 60f);
+            Image image = gameObject.GetComponent<Image>();
+            image.sprite = template.image != null ? template.image.sprite : null;
+            image.type = template.image != null ? template.image.type : Image.Type.Simple;
+            image.color = template.image != null ? template.image.color : new Color(.13f, .30f, .53f, .95f);
+            Button button = gameObject.GetComponent<Button>();
+            button.colors = template.colors;
+            Text source = template.GetComponentInChildren<Text>(true);
+            GameObject labelObject = new GameObject("Label", typeof(RectTransform), typeof(Text));
+            RectTransform labelRect = labelObject.GetComponent<RectTransform>();
+            labelRect.SetParent(rect, false);
+            labelRect.anchorMin = Vector2.zero;
+            labelRect.anchorMax = Vector2.one;
+            labelRect.sizeDelta = Vector2.zero;
+            Text label = labelObject.GetComponent<Text>();
+            label.font = source != null ? source.font : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            label.text = "↓";
+            label.fontSize = 34;
+            label.fontStyle = FontStyle.Bold;
+            label.alignment = TextAnchor.MiddleCenter;
+            label.color = Color.white;
+            label.raycastTarget = false;
+            int capturedSlot = slot;
+            button.onClick.AddListener(() => DecreaseTune(capturedSlot));
+            gameObject.AddComponent<ButtonPressFeedback>();
+            return button;
         }
 
         private void Refresh()
@@ -547,6 +632,7 @@ namespace AnimeHillRacing.UI
         private void RefreshTuning(VehicleDefinition vehicle)
         {
             VehicleUpgradeState state = SaveManager.LoadUpgrades(vehicle.vehicleId, vehicle);
+            VehicleUpgradeState purchasedState = SaveManager.LoadPurchasedUpgrades(vehicle.vehicleId, vehicle);
             if (tuningCoins != null) tuningCoins.text = $"COINS  {SaveManager.TotalCoins:N0}";
             int count = vehicle.GetTuneSlotCount();
             for (int i = 0; i < (tuningButtons != null ? tuningButtons.Length : 0); i++)
@@ -558,22 +644,29 @@ namespace AnimeHillRacing.UI
                 if (!visible) continue;
                 VehicleUpgradeType type = vehicle.GetTuneTypeForSlot(i);
                 int current = state.GetTune(type);
+                int purchased = purchasedState.GetTune(type);
                 int maximum = vehicle.GetMaxTunes(type);
-                bool atMax = current >= maximum;
-                int cost = atMax || catalog?.upgradeEconomy == null ? -1 :
-                    catalog.upgradeEconomy.GetCostForNextTune(vehicle, type, current);
+                bool purchasedMax = purchased >= maximum;
+                bool canEquipUp = current < purchased;
+                int cost = purchasedMax || catalog?.upgradeEconomy == null ? -1 :
+                    catalog.upgradeEconomy.GetCostForNextTune(vehicle, type, purchased);
                 if (tuningNames != null && i < tuningNames.Length) tuningNames[i].text = vehicle.GetTuneDisplayName(type);
-                if (tuningLevels != null && i < tuningLevels.Length) tuningLevels[i].text = $"LEVEL {current} / {maximum}";
+                if (tuningLevels != null && i < tuningLevels.Length)
+                    tuningLevels[i].text = $"EQUIPPED {current} / {maximum}   BOUGHT {purchased}";
                 var next = new VehicleUpgradeState();
                 next.CopyFrom(state);
-                next.SetTune(type, current + (atMax ? 0 : 1));
+                next.SetTune(type, current + (current < maximum ? 1 : 0));
                 next.ClampTo(vehicle);
                 if (tuningValues != null && i < tuningValues.Length)
-                    tuningValues[i].text = atMax
+                    tuningValues[i].text = current >= maximum
                         ? $"CURRENT  {TuneValue(vehicle, state, type)}\nNEXT  MAX"
                         : $"CURRENT  {TuneValue(vehicle, state, type)}\nNEXT  {TuneValue(vehicle, next, type)}";
-                if (tuningCosts != null && i < tuningCosts.Length) tuningCosts[i].text = atMax ? "MAX" : cost < 0 ? "UNAVAILABLE" : $"UPGRADE  {cost:N0}";
-                tuningButtons[i].interactable = !atMax && cost >= 0;
+                if (tuningCosts != null && i < tuningCosts.Length)
+                    tuningCosts[i].text = canEquipUp ? "↑  EQUIP" : purchasedMax ? "↑  MAX" :
+                        cost < 0 ? "UNAVAILABLE" : $"↑  {cost:N0}";
+                tuningButtons[i].interactable = current < maximum && (canEquipUp || cost >= 0);
+                if (tuningDownButtons != null && i < tuningDownButtons.Length && tuningDownButtons[i] != null)
+                    tuningDownButtons[i].interactable = current > 1;
             }
         }
 

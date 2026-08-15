@@ -191,6 +191,18 @@ namespace AnimeHillRacing.Vehicle
             [Range(.6f, 1.2f)] public float compressionDampingMultiplier = .84f;
             [Tooltip("Damper authority while suspension extends. A modest increase suppresses repeated pogo rebounds.")]
             [Range(.8f, 1.4f)] public float reboundDampingMultiplier = 1.12f;
+            [Tooltip("Level 1 / maximum-level compression damper scale. Early tune levels improve impact absorption first.")]
+            public Vector2 compressionDampingTuneScale = new Vector2(.78f, 1.05f);
+            [Tooltip("Level 1 / maximum-level rebound damper scale. Late tune levels primarily suppress pogo motion.")]
+            public Vector2 reboundDampingTuneScale = new Vector2(.82f, 1.35f);
+            [Tooltip("Level 1 / maximum-level upward recovery acceleration cap in g. Lower maximum-level values prevent catapulting.")]
+            public Vector2 reboundAccelerationTune = new Vector2(2.5f, .75f);
+            [Tooltip("Level 1 / maximum-level contact skin beyond the physical tire radius.")]
+            public Vector2 wheelContactTolerance = new Vector2(.012f, .024f);
+            [Tooltip("Extra rebound damper authority while the spring physically settles after a wheel landing.")]
+            public Vector2 landingDampingScale = new Vector2(.92f, 1.28f);
+            [Tooltip("How long the suspension keeps its landing damper active after a meaningful impact.")]
+            [Range(.06f, .24f)] public float landingDampingDuration = .14f;
             [Tooltip("Normalized compression at which the progressive bump stop begins to add resistance.")]
             [Range(0.5f, 0.9f)] public float bumpStopStart = 0.7f;
             [Tooltip("Additional progressive spring authority near maximum compression.")]
@@ -240,9 +252,11 @@ namespace AnimeHillRacing.Vehicle
         [Header("Aerodynamics (Formula)")]
         [Min(1f)] public float downforceReferenceSpeedMps = 30f;
         [Min(0f)] public float maximumDownforceAcceleration = 14f;
-        [Range(1f, 6f)] public float collisionPitchInertiaMultiplier = 1.55f;
+        [Range(1f, 16f)] public float collisionPitchInertiaMultiplier = 1.55f;
         [Tooltip("Caps PhysX penetration correction so a chassis contact cannot catapult the vehicle.")]
         [Min(.5f)] public float maximumDepenetrationVelocity = 3f;
+        [Tooltip("Fraction of normal air-control authority retained while only the chassis is touching terrain.")]
+        [Range(.05f, .15f)] public float chassisAirControlMultiplier = .10f;
         [Header("Air Rotation Control")]
         [Min(.1f)] public float maxAirAngularVelocity = 2.5f;
         [Min(.1f)] public float airAngularAcceleration = 14f;
@@ -267,10 +281,24 @@ namespace AnimeHillRacing.Vehicle
 
         public static float WheelSourceDiameter(CustomizationOption option)
         {
-            if (option != null && option.visibleDiameter > .001f) return option.visibleDiameter;
-            Sprite sprite = option != null ? option.sprite : null;
-            return sprite != null ? Mathf.Max(sprite.bounds.size.x, sprite.bounds.size.y) : 1f;
+            return WheelSourceDiameter(option != null ? option.sprite : null,
+                option != null ? option.visibleDiameter : 0f);
         }
+
+        public static float WheelSourceDiameter(Sprite sprite, float visibleDiameter = 0f) =>
+            visibleDiameter > .001f ? visibleDiameter :
+            sprite != null ? Mathf.Max(sprite.bounds.size.x, sprite.bounds.size.y) : 1f;
+
+        public static float WheelVisualScale(CustomizationOption option, float canonicalDiameter) =>
+            Mathf.Max(.05f, canonicalDiameter) / Mathf.Max(.001f, WheelSourceDiameter(option));
+
+        public static float WheelVisualScale(Sprite sprite, float canonicalDiameter, float visibleDiameter = 0f) =>
+            Mathf.Max(.05f, canonicalDiameter) /
+            Mathf.Max(.001f, WheelSourceDiameter(sprite, visibleDiameter));
+
+        public static float SpriteWidthScale(Sprite sprite, float canonicalWidth) =>
+            Mathf.Max(.1f, canonicalWidth) /
+            Mathf.Max(.001f, sprite != null ? sprite.bounds.size.x : 1f);
 
         public ResolvedVehicleStats Resolve(VehicleUpgradeState upgrades)
         {
@@ -280,6 +308,8 @@ namespace AnimeHillRacing.Vehicle
             float accelerationLevel = UpgradeProgress(upgrades.accelerationTune, accelerationMaxTunes);
             float turboLevel = UpgradeProgress(upgrades.turboTune, turboMaxTunes);
             float suspensionQuality = UpgradeProgress(upgrades.suspensionTune, suspensionMaxTunes);
+            float absorptionQuality = 1f - Mathf.Pow(1f - suspensionQuality, 1.6f);
+            float stabilityQuality = Mathf.SmoothStep(0f, 1f, suspensionQuality);
             float gripProgress = UpgradeProgress(upgrades.gripTune, gripMaxTunes);
             float airControl = TargetValue(tuneTargets?.airControlTorque,
                 UpgradeProgress(upgrades.airControlTune, airControlMaxTunes), airControlTorque);
@@ -289,7 +319,7 @@ namespace AnimeHillRacing.Vehicle
             float topSpeed = TargetValue(tuneTargets?.engineTopSpeedKmh, engineLevel, 135f) / 3.6f;
             float accelerationTarget = TargetValue(tuneTargets?.accelerationZeroToHundredSeconds,
                 archetype == VehicleArchetype.Rally ? turboLevel : accelerationLevel, 9.5f);
-            float suspensionTravel = Mathf.Lerp(suspension.minTravel, suspension.maxTravel, suspensionQuality);
+            float suspensionTravel = Mathf.Lerp(suspension.minTravel, suspension.maxTravel, absorptionQuality);
             SuspensionPhysics.GetTravelLimits(suspension, suspensionTravel,
                 out _, out float suspensionExtension);
             float targetCompression = Mathf.Max(.015f,
@@ -297,11 +327,19 @@ namespace AnimeHillRacing.Vehicle
             float sprungMassPerWheel = mass * .5f;
             float sagDerivedSpring = sprungMassPerWheel * Physics.gravity.magnitude / targetCompression;
             float springScale = Mathf.Lerp(suspension.stiffnessTuneScale.x,
-                suspension.stiffnessTuneScale.y, suspensionQuality);
+                suspension.stiffnessTuneScale.y, absorptionQuality);
             float resolvedSpring = sagDerivedSpring * springScale;
             float dampingRatio = Mathf.Lerp(suspension.dampingRatio.x,
-                suspension.dampingRatio.y, suspensionQuality);
+                suspension.dampingRatio.y, stabilityQuality);
             float resolvedDamping = 2f * Mathf.Sqrt(resolvedSpring * sprungMassPerWheel) * dampingRatio;
+            float compressionDamping = suspension.compressionDampingMultiplier * Mathf.Lerp(
+                suspension.compressionDampingTuneScale.x, suspension.compressionDampingTuneScale.y,
+                absorptionQuality);
+            float reboundDamping = suspension.reboundDampingMultiplier * Mathf.Lerp(
+                suspension.reboundDampingTuneScale.x, suspension.reboundDampingTuneScale.y,
+                stabilityQuality);
+            float reboundAcceleration = Mathf.Lerp(suspension.reboundAccelerationTune.x,
+                suspension.reboundAccelerationTune.y, stabilityQuality);
             float gripRating = GripPointValue(tuneTargets?.gripRatings, gripProgress);
             float normalizedGrip = Mathf.Clamp01(gripRating / GlobalGripMaximum);
             float physicalGrip = Mathf.Lerp(grip.minGrip, grip.maxGrip,
@@ -324,6 +362,15 @@ namespace AnimeHillRacing.Vehicle
                 suspensionTravel = suspensionTravel,
                 spring = resolvedSpring,
                 damping = resolvedDamping,
+                compressionDampingMultiplier = compressionDamping,
+                reboundDampingMultiplier = reboundDamping,
+                maximumReboundAcceleration = reboundAcceleration,
+                wheelContactTolerance = Mathf.Lerp(suspension.wheelContactTolerance.x,
+                    suspension.wheelContactTolerance.y, absorptionQuality),
+                landingDampingMultiplier = Mathf.Lerp(suspension.landingDampingScale.x,
+                    suspension.landingDampingScale.y, absorptionQuality),
+                landingDampingDuration = suspension.landingDampingDuration,
+                suspensionQuality = suspensionQuality,
                 progressiveSpringMultiplier = suspension.progressiveSpringMultiplier *
                                                Mathf.Lerp(.90f, 1.10f, suspensionQuality),
                 grip = physicalGrip,
@@ -473,7 +520,7 @@ namespace AnimeHillRacing.Vehicle
             rearWheelVisualDiameter = Mathf.Max(0f, rearWheelVisualDiameter);
             frontWheelVisualDiameter = Mathf.Max(0f, frontWheelVisualDiameter);
             wheelMass = Mathf.Max(1f, wheelMass);
-            collisionPitchInertiaMultiplier = Mathf.Clamp(collisionPitchInertiaMultiplier, 1f, 6f);
+            collisionPitchInertiaMultiplier = Mathf.Clamp(collisionPitchInertiaMultiplier, 1f, 16f);
             suspension.compressionTravelRatio = Mathf.Clamp(suspension.compressionTravelRatio, .6f, .95f);
             suspension.targetSag01 = Mathf.Clamp(suspension.targetSag01, .25f, .35f);
             suspension.stiffnessTuneScale.x = Mathf.Clamp(suspension.stiffnessTuneScale.x, .75f, 1.25f);
@@ -483,7 +530,24 @@ namespace AnimeHillRacing.Vehicle
             suspension.dampingRatio.y = Mathf.Clamp(suspension.dampingRatio.y, .55f, 1.35f);
             suspension.compressionDampingMultiplier = Mathf.Clamp(suspension.compressionDampingMultiplier, .6f, 1.2f);
             suspension.reboundDampingMultiplier = Mathf.Clamp(suspension.reboundDampingMultiplier, .8f, 1.4f);
+            suspension.compressionDampingTuneScale.x = Mathf.Clamp(suspension.compressionDampingTuneScale.x, .5f, 1.25f);
+            suspension.compressionDampingTuneScale.y = Mathf.Clamp(suspension.compressionDampingTuneScale.y,
+                suspension.compressionDampingTuneScale.x, 1.5f);
+            suspension.reboundDampingTuneScale.x = Mathf.Clamp(suspension.reboundDampingTuneScale.x, .5f, 1.4f);
+            suspension.reboundDampingTuneScale.y = Mathf.Clamp(suspension.reboundDampingTuneScale.y,
+                suspension.reboundDampingTuneScale.x, 1.8f);
+            suspension.reboundAccelerationTune.x = Mathf.Clamp(suspension.reboundAccelerationTune.x, .5f, 6f);
+            suspension.reboundAccelerationTune.y = Mathf.Clamp(suspension.reboundAccelerationTune.y, .5f,
+                suspension.reboundAccelerationTune.x);
+            suspension.wheelContactTolerance.x = Mathf.Clamp(suspension.wheelContactTolerance.x, .005f, .035f);
+            suspension.wheelContactTolerance.y = Mathf.Clamp(suspension.wheelContactTolerance.y,
+                suspension.wheelContactTolerance.x, .04f);
+            suspension.landingDampingScale.x = Mathf.Clamp(suspension.landingDampingScale.x, .5f, 1.5f);
+            suspension.landingDampingScale.y = Mathf.Clamp(suspension.landingDampingScale.y,
+                suspension.landingDampingScale.x, 1.8f);
+            suspension.landingDampingDuration = Mathf.Clamp(suspension.landingDampingDuration, .06f, .24f);
             maximumDepenetrationVelocity = Mathf.Max(.5f, maximumDepenetrationVelocity);
+            chassisAirControlMultiplier = Mathf.Clamp(chassisAirControlMultiplier, .05f, .15f);
             downforceReferenceSpeedMps = Mathf.Max(1f, downforceReferenceSpeedMps);
             maximumDownforceAcceleration = Mathf.Max(0f, maximumDownforceAcceleration);
             suspension.bumpStopStart = Mathf.Clamp(suspension.bumpStopStart, .5f, .9f);
@@ -528,6 +592,13 @@ namespace AnimeHillRacing.Vehicle
         public float suspensionTravel;
         public float spring;
         public float damping;
+        public float compressionDampingMultiplier;
+        public float reboundDampingMultiplier;
+        public float maximumReboundAcceleration;
+        public float wheelContactTolerance;
+        public float landingDampingMultiplier;
+        public float landingDampingDuration;
+        public float suspensionQuality;
         public float progressiveSpringMultiplier;
         public float grip;
         public int gripRating;

@@ -167,14 +167,13 @@ namespace AnimeHillRacing.UI
             renderer.sprite = option != null ? option.sprite : null;
             renderer.transform.localPosition = new Vector3(position.x, position.y, -.02f);
             renderer.sortingOrder = 11;
-            float source = VehicleDefinition.WheelSourceDiameter(option);
-            renderer.transform.localScale = Vector3.one * (diameter / Mathf.Max(.001f, source));
+            renderer.transform.localScale = Vector3.one *
+                                            VehicleDefinition.WheelVisualScale(option, diameter);
         }
 
         private static void FitWidth(Transform target, Sprite sprite, float width)
         {
-            float source = sprite != null ? sprite.bounds.size.x : 1f;
-            target.localScale = Vector3.one * (width / Mathf.Max(.001f, source));
+            target.localScale = Vector3.one * VehicleDefinition.SpriteWidthScale(sprite, width);
         }
     }
 }

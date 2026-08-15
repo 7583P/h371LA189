@@ -1230,7 +1230,8 @@ namespace AnimeHillRacing.Editor
                               $"{result.seamRelativeWheelVelocity:0.000}/{result.motorRelativeWheelVelocity:0.000}/" +
                               $"{result.reverseRelativeWheelVelocity:0.000}m/s, " +
                               $"chassisV={result.maximumChassisVerticalVelocity:0.000}m/s, " +
-                              $"travelExcess={result.maximumTravelExcess:0.0000}m, motor+reverse+5/20/40/80kmh=RUN.");
+                              $"travelExcess={result.maximumTravelExcess:0.0000}m, " +
+                              "motor+reverse+50/100/150/200/top-kmh=RUN.");
                     if (result.maximumAxisDrift > .02f) failures.Add($"{vehicles[v].displayName} L{levels[i]} axis drift");
                     if (result.maximumAnchorDrift > .0001f) failures.Add($"{vehicles[v].displayName} L{levels[i]} anchor drift");
                     if (result.settledCompressionSpan > .10f) failures.Add($"{vehicles[v].displayName} L{levels[i]} stationary jitter");
@@ -1242,8 +1243,8 @@ namespace AnimeHillRacing.Editor
             if (failures.Count > 0)
                 throw new System.InvalidOperationException("WHEEL STABILITY DIAGNOSTICS FAILED: " +
                                                            string.Join("; ", failures));
-            Debug.Log("WHEEL STABILITY DIAGNOSTICS PASS: JEEP/FORMULA/RALLY level 0/mid/max, " +
-                      "stationary, motor, reverse, 5/20/40/80 km/h and a collider seam.");
+            Debug.Log("WHEEL STABILITY DIAGNOSTICS PASS: JEEP/FORMULA/RALLY/SPORT BIKE level 0/mid/max, " +
+                      "stationary, motor, reverse, 50/100/150/200/top km/h and a collider seam.");
         }
 
         [MenuItem("Anime Hill Racing/Capture HUD Calibration Frames")]
@@ -2395,8 +2396,13 @@ namespace AnimeHillRacing.Editor
                 GameObject prefab = definition.gameplayPrefab2D;
                 CapsuleCollider chassis = prefab != null ? prefab.GetComponent<CapsuleCollider>() : null;
                 if (chassis == null || chassis.sharedMaterial != assets.chassisPhysics ||
-                    chassis.sharedMaterial.bounciness > .001f)
-                    throw new System.InvalidOperationException($"{definition.displayName} requires a rounded zero-bounce chassis collider.");
+                    chassis.sharedMaterial.bounciness > .001f ||
+                    chassis.sharedMaterial.dynamicFriction < .08f ||
+                    chassis.sharedMaterial.dynamicFriction > .24f ||
+                    chassis.sharedMaterial.staticFriction < chassis.sharedMaterial.dynamicFriction ||
+                    chassis.sharedMaterial.frictionCombine != PhysicsMaterialCombine.Multiply)
+                    throw new System.InvalidOperationException($"{definition.displayName} requires a rounded, " +
+                        "zero-bounce, low-friction sliding chassis collider.");
                 SuspensionController[] suspension = prefab.GetComponentsInChildren<SuspensionController>(true);
                 Rigidbody[] rigidbodies = prefab.GetComponentsInChildren<Rigidbody>(true);
                 ConfigurableJoint[] joints = prefab.GetComponentsInChildren<ConfigurableJoint>(true);
@@ -2434,13 +2440,36 @@ namespace AnimeHillRacing.Editor
                     frontWheelRenderer.sortingOrder <= bodyRenderer.sortingOrder ||
                     rearWheelRenderer.sortingOrder <= bodyRenderer.sortingOrder)
                     throw new System.InvalidOperationException($"{definition.displayName} wheels must render on the chassis layer with a greater sorting order.");
+                for (int optionIndex = 0; optionIndex < definition.wheels.Length; optionIndex++)
+                {
+                    VehicleDefinition.CustomizationOption option = definition.wheels[optionIndex];
+                    float sourceDiameter = VehicleDefinition.WheelSourceDiameter(option);
+                    float effectiveRear = sourceDiameter *
+                                          VehicleDefinition.WheelVisualScale(option, definition.RearWheelDiameter);
+                    float effectiveFront = sourceDiameter *
+                                           VehicleDefinition.WheelVisualScale(option, definition.FrontWheelDiameter);
+                    if (Mathf.Abs(effectiveRear - definition.RearWheelDiameter) > .0001f ||
+                        Mathf.Abs(effectiveFront - definition.FrontWheelDiameter) > .0001f)
+                        throw new System.InvalidOperationException($"{definition.displayName} wheel skin " +
+                            $"{option.optionId} is not normalized to its canonical axle diameters.");
+                }
+                for (int optionIndex = 0; optionIndex < definition.skins.Length; optionIndex++)
+                {
+                    Sprite sprite = definition.skins[optionIndex].sprite;
+                    float effectiveWidth = (sprite != null ? sprite.bounds.size.x : 1f) *
+                                           VehicleDefinition.SpriteWidthScale(sprite, definition.visualWidth);
+                    if (Mathf.Abs(effectiveWidth - definition.visualWidth) > .0001f)
+                        throw new System.InvalidOperationException($"{definition.displayName} body skin " +
+                            $"{definition.skins[optionIndex].optionId} is not normalized to canonical width.");
+                }
             }
             if (Mathf.Abs(assets.jeep.FrontWheelAnchor - 1.24f) > .001f ||
                 assets.countryside.groundPhysicsMaterial != assets.groundPhysics ||
                 assets.countrysideRoad.groundPhysicsMaterial != assets.groundPhysics)
                 throw new System.InvalidOperationException("Jeep front axle or stable terrain physics material is not configured.");
-            Debug.Log("Vehicle physics validation: chassis-relative joint axes, rounded zero-bounce chassis, " +
-                      "bounded suspension, visual/physical wheel anchors aligned and 2D wheels sorted above chassis.");
+            Debug.Log("Vehicle physics validation: low-friction zero-bounce sliding chassis, chassis-relative " +
+                      "joint axes, bounded suspension, canonical skin sizes, visual/physical wheel anchors " +
+                      "aligned and 2D wheels sorted above chassis.");
         }
 
         private struct SuspensionAuditResult
@@ -3058,7 +3087,7 @@ namespace AnimeHillRacing.Editor
                         ref result, minimumCompression, maximumCompression, 0);
             }
 
-            float[] speedsKmh = { 5f, 20f, 40f, 80f };
+            float[] speedsKmh = { 50f, 100f, 150f, 200f, source.topSpeedMps * 3.6f };
             for (int speedIndex = 0; speedIndex < speedsKmh.Length; speedIndex++)
             {
                 float speed = speedsKmh[speedIndex] / 3.6f;
@@ -3531,6 +3560,15 @@ namespace AnimeHillRacing.Editor
             clone.suspension.minTravel = clone.suspension.maxTravel = source.suspension.maxTravel;
             clone.suspension.stiffnessTuneScale = Vector2.one * source.suspension.stiffnessTuneScale.y;
             clone.suspension.dampingRatio = Vector2.one * source.suspension.dampingRatio.y;
+            clone.suspension.compressionDampingMultiplier = source.suspension.compressionDampingMultiplier *
+                source.suspension.compressionDampingTuneScale.y;
+            clone.suspension.reboundDampingMultiplier = source.suspension.reboundDampingMultiplier *
+                source.suspension.reboundDampingTuneScale.y;
+            clone.suspension.compressionDampingTuneScale = Vector2.one;
+            clone.suspension.reboundDampingTuneScale = Vector2.one;
+            clone.suspension.reboundAccelerationTune = Vector2.one * source.suspension.reboundAccelerationTune.y;
+            clone.suspension.wheelContactTolerance = Vector2.one * source.suspension.wheelContactTolerance.y;
+            clone.suspension.landingDampingScale = Vector2.one * source.suspension.landingDampingScale.y;
             clone.engine.minTorqueNm = clone.engine.maxTorqueNm = source.engine.maxTorqueNm;
             return clone;
         }
@@ -3587,6 +3625,13 @@ namespace AnimeHillRacing.Editor
                 2f * Mathf.Sqrt(stats.spring * clone.mass * .5f));
             clone.suspension.dampingRatio = Vector2.one * ratio;
             clone.suspension.progressiveSpringMultiplier = stats.progressiveSpringMultiplier / .90f;
+            clone.suspension.compressionDampingMultiplier = stats.compressionDampingMultiplier;
+            clone.suspension.reboundDampingMultiplier = stats.reboundDampingMultiplier;
+            clone.suspension.compressionDampingTuneScale = Vector2.one;
+            clone.suspension.reboundDampingTuneScale = Vector2.one;
+            clone.suspension.reboundAccelerationTune = Vector2.one * stats.maximumReboundAcceleration;
+            clone.suspension.wheelContactTolerance = Vector2.one * stats.wheelContactTolerance;
+            clone.suspension.landingDampingScale = Vector2.one * stats.landingDampingMultiplier;
             return clone;
         }
 
@@ -4247,9 +4292,12 @@ namespace AnimeHillRacing.Editor
             assets.road = MaterialAsset("Road", new Color(0.17f, 0.18f, 0.20f));
             assets.grass = MaterialAsset("RoadGrass", new Color(0.18f, 0.42f, 0.19f));
             assets.shortcut = MaterialAsset("ShortcutTech", new Color(0.72f, 0.12f, 0.68f));
-            // Virtual wheels own all longitudinal grip. Chassis friction only creates a pitch impulse
-            // when the rounded body skims terrain during a hard landing, so keep the body frictionless.
-            assets.chassisPhysics = PhysicsMaterialAsset("VehicleBodyLowBounce", 0f, 0f);
+            // Motor torque remains exclusive to the physical wheels. The rounded chassis uses a low,
+            // non-zero physical coefficient so momentum produces a long slide without behaving like ice.
+            assets.chassisPhysics = PhysicsMaterialAsset("VehicleBodyLowBounce", .16f, 0f);
+            assets.chassisPhysics.staticFriction = .20f;
+            assets.chassisPhysics.frictionCombine = PhysicsMaterialCombine.Multiply;
+            EditorUtility.SetDirty(assets.chassisPhysics);
             assets.groundPhysics = PhysicsMaterialAsset("TerrainStable", .72f, 0f);
             assets.groundPhysics.frictionCombine = PhysicsMaterialCombine.Multiply;
             EditorUtility.SetDirty(assets.groundPhysics);
@@ -4278,14 +4326,20 @@ namespace AnimeHillRacing.Editor
             assets.jeep.suspension.restLength = .52f;
             assets.jeep.suspension.compressionTravelRatio = .90f;
             assets.jeep.suspension.targetSag01 = .30f;
-            assets.jeep.suspension.stiffnessTuneScale = new Vector2(.82f, 1.32f);
-            assets.jeep.suspension.dampingRatio = new Vector2(.78f, .90f);
-            assets.jeep.suspension.compressionDampingMultiplier = .82f;
-            assets.jeep.suspension.reboundDampingMultiplier = 1.12f;
+            assets.jeep.suspension.stiffnessTuneScale = new Vector2(.82f, 1.0f);
+            assets.jeep.suspension.dampingRatio = new Vector2(.66f, 1.04f);
+            assets.jeep.suspension.compressionDampingMultiplier = .88f;
+            assets.jeep.suspension.reboundDampingMultiplier = 1.15f;
+            assets.jeep.suspension.compressionDampingTuneScale = new Vector2(.74f, 1.10f);
+            assets.jeep.suspension.reboundDampingTuneScale = new Vector2(.92f, 1.50f);
+            assets.jeep.suspension.reboundAccelerationTune = new Vector2(2.0f, .50f);
+            assets.jeep.suspension.wheelContactTolerance = new Vector2(.008f, .020f);
+            assets.jeep.suspension.landingDampingScale = new Vector2(1.02f, 1.32f);
+            assets.jeep.suspension.landingDampingDuration = .14f;
             assets.jeep.suspension.springMin = 70000f; assets.jeep.suspension.springMax = 82000f;
             assets.jeep.suspension.dampingMin = 10000f; assets.jeep.suspension.dampingMax = 12000f;
             assets.jeep.suspension.bumpStopStart = .72f;
-            assets.jeep.suspension.progressiveSpringMultiplier = 1.7f;
+            assets.jeep.suspension.progressiveSpringMultiplier = 1.5f;
             assets.jeep.suspension.hardStopSpringMultiplier = 8f;
             assets.jeep.suspension.maximumAcceleration = 24f;
             assets.jeep.suspension.maximumReboundAcceleration = 2.2f;
@@ -4297,14 +4351,15 @@ namespace AnimeHillRacing.Editor
             assets.jeep.fuel.maximumRunDurationSeconds = 30f; assets.jeep.fuel.referenceRunDurationSeconds = 30f;
             assets.jeep.mass = 1150f; assets.jeep.wheelMass = 48f; assets.jeep.wheelRadius = .45f;
             assets.jeep.engine.speedTorqueCurve = ArcadeSpeedTorqueCurve();
-            assets.jeep.collisionPitchInertiaMultiplier = 3.2f;
-            assets.jeep.maximumDepenetrationVelocity = 3f;
+            assets.jeep.collisionPitchInertiaMultiplier = 5.6f;
+            assets.jeep.maximumDepenetrationVelocity = 1.7f;
+            assets.jeep.chassisAirControlMultiplier = .10f;
             assets.jeep.halfWheelbase = 1.18f; assets.jeep.halfTrack = .78f;
             assets.jeep.topSpeedMps = 100f / 3.6f; assets.jeep.airControlTorque = 3200f;
             assets.jeep.maxAirAngularVelocity = 2.5f; assets.jeep.airAngularAcceleration = 14f;
             // The visual/physical Jeep axles sit at -1.12 / +1.24 m. Center the mass between them so
             // equal wheel-first landing forces cannot manufacture a pitch impulse on flat terrain.
-            assets.jeep.airAngularDamping = 1.8f; assets.jeep.centerOfMass = new Vector3(.06f, -.20f, 0f);
+            assets.jeep.airAngularDamping = 1.8f; assets.jeep.centerOfMass = new Vector3(.12f, -.30f, 0f);
             assets.jeep.accelerationForceCalibration = 1.02f;
             assets.jeep.previewSprite = assets.jeepBody;
             assets.jeep.skins = new[] { Customization("jeep-skin-default", "JEEP DEFAULT", assets.jeepBody) };
@@ -4334,8 +4389,9 @@ namespace AnimeHillRacing.Editor
             assets.formula.tuneTargets = CreateFormulaTuneTargets();
             assets.formula.mass = 780f; assets.formula.wheelMass = 28f; assets.formula.wheelRadius = .48f;
             assets.formula.engine.speedTorqueCurve = ArcadeSpeedTorqueCurve();
-            assets.formula.collisionPitchInertiaMultiplier = 4.25f;
-            assets.formula.maximumDepenetrationVelocity = 3f;
+            assets.formula.collisionPitchInertiaMultiplier = 16f;
+            assets.formula.maximumDepenetrationVelocity = 1.5f;
+            assets.formula.chassisAirControlMultiplier = .08f;
             assets.formula.halfWheelbase = 1.46f; assets.formula.halfTrack = .78f;
             assets.formula.topSpeedMps = 300f / 3.6f;
             assets.formula.brakeForce = 18000f; assets.formula.reverseForce = 6000f;
@@ -4344,7 +4400,7 @@ namespace AnimeHillRacing.Editor
             assets.formula.downforceReferenceSpeedMps = 30f;
             assets.formula.maximumDownforceAcceleration = 14f;
             assets.formula.maxAirAngularVelocity = 3.5f; assets.formula.airAngularAcceleration = 24f;
-            assets.formula.airAngularDamping = 1.5f; assets.formula.centerOfMass = new Vector3(0f, -.30f, 0f);
+            assets.formula.airAngularDamping = 1.5f; assets.formula.centerOfMass = new Vector3(.08f, -.38f, 0f);
             assets.formula.engine.minTorqueNm = 300f; assets.formula.engine.maxTorqueNm = 700f;
             assets.formula.engine.drivetrainEfficiency = .88f;
             assets.formula.transmission.forwardGearRatios = new[] { 3.80f, 2.75f, 2.15f, 1.75f, 1.48f, 1.30f, 1.18f };
@@ -4352,15 +4408,21 @@ namespace AnimeHillRacing.Editor
             assets.formula.suspension.maxTravel = .25f; assets.formula.suspension.compressionTravelRatio = .90f;
             assets.formula.suspension.targetSag01 = .29f;
             assets.formula.suspension.stiffnessTuneScale = new Vector2(.78f, 1.25f);
-            assets.formula.suspension.dampingRatio = new Vector2(.88f, .98f);
-            assets.formula.suspension.compressionDampingMultiplier = .90f;
-            assets.formula.suspension.reboundDampingMultiplier = 1.22f;
+            assets.formula.suspension.dampingRatio = new Vector2(.72f, 1.10f);
+            assets.formula.suspension.compressionDampingMultiplier = .78f;
+            assets.formula.suspension.reboundDampingMultiplier = 1.20f;
+            assets.formula.suspension.compressionDampingTuneScale = new Vector2(.76f, .95f);
+            assets.formula.suspension.reboundDampingTuneScale = new Vector2(.90f, 1.50f);
+            assets.formula.suspension.reboundAccelerationTune = new Vector2(1.4f, .50f);
+            assets.formula.suspension.wheelContactTolerance = new Vector2(.007f, .018f);
+            assets.formula.suspension.landingDampingScale = new Vector2(1.02f, 1.45f);
+            assets.formula.suspension.landingDampingDuration = .13f;
             assets.formula.suspension.springMin = 82000f; assets.formula.suspension.springMax = 96000f;
             assets.formula.suspension.dampingMin = 14000f; assets.formula.suspension.dampingMax = 16000f;
-            assets.formula.suspension.bumpStopStart = .70f;
-            assets.formula.suspension.progressiveSpringMultiplier = 2.4f;
-            assets.formula.suspension.hardStopSpringMultiplier = 10f;
-            assets.formula.suspension.maximumAcceleration = 20f;
+            assets.formula.suspension.bumpStopStart = .76f;
+            assets.formula.suspension.progressiveSpringMultiplier = 1.2f;
+            assets.formula.suspension.hardStopSpringMultiplier = 5f;
+            assets.formula.suspension.maximumAcceleration = 16f;
             assets.formula.suspension.maximumReboundAcceleration = .6f;
             assets.formula.grip.minGrip = .14f; assets.formula.grip.maxGrip = 2.20f;
             assets.formula.grip.slipThreshold = .13f; assets.formula.grip.slidingGripMultiplier = .46f;
@@ -4401,30 +4463,37 @@ namespace AnimeHillRacing.Editor
             assets.rally.tuneTargets = CreateRallyTuneTargets();
             assets.rally.mass = 1030f; assets.rally.wheelMass = 36f; assets.rally.wheelRadius = .51f;
             assets.rally.engine.speedTorqueCurve = ArcadeSpeedTorqueCurve();
-            assets.rally.collisionPitchInertiaMultiplier = 3.75f;
-            assets.rally.maximumDepenetrationVelocity = 3f;
+            assets.rally.collisionPitchInertiaMultiplier = 5.5f;
+            assets.rally.maximumDepenetrationVelocity = 1.6f;
+            assets.rally.chassisAirControlMultiplier = .09f;
             assets.rally.halfWheelbase = 1.35f; assets.rally.halfTrack = .78f;
             assets.rally.topSpeedMps = 280f / 3.6f;
             assets.rally.brakeForce = 16500f; assets.rally.reverseForce = 5800f;
             assets.rally.accelerationForceCalibration = 1f;
             assets.rally.airControlTorque = 6500f;
             assets.rally.maxAirAngularVelocity = 3.05f; assets.rally.airAngularAcceleration = 20f;
-            assets.rally.airAngularDamping = 1.6f; assets.rally.centerOfMass = new Vector3(.01f, -.28f, 0f);
+            assets.rally.airAngularDamping = 1.6f; assets.rally.centerOfMass = new Vector3(.10f, -.36f, 0f);
             assets.rally.engine.minTorqueNm = 280f; assets.rally.engine.maxTorqueNm = 650f;
             assets.rally.engine.drivetrainEfficiency = .86f;
             assets.rally.transmission.forwardGearRatios = new[] { 4.20f, 3.10f, 2.50f, 2.10f, 1.82f, 1.58f, 1.38f };
             assets.rally.suspension.restLength = .56f; assets.rally.suspension.minTravel = .25f;
             assets.rally.suspension.maxTravel = .40f; assets.rally.suspension.compressionTravelRatio = .89f;
             assets.rally.suspension.targetSag01 = .30f;
-            assets.rally.suspension.stiffnessTuneScale = new Vector2(.82f, 1.33f);
-            assets.rally.suspension.dampingRatio = new Vector2(.82f, .94f);
-            assets.rally.suspension.compressionDampingMultiplier = .80f;
-            assets.rally.suspension.reboundDampingMultiplier = 1.16f;
+            assets.rally.suspension.stiffnessTuneScale = new Vector2(.82f, 1.0f);
+            assets.rally.suspension.dampingRatio = new Vector2(.68f, 1.06f);
+            assets.rally.suspension.compressionDampingMultiplier = .86f;
+            assets.rally.suspension.reboundDampingMultiplier = 1.18f;
+            assets.rally.suspension.compressionDampingTuneScale = new Vector2(.74f, 1.10f);
+            assets.rally.suspension.reboundDampingTuneScale = new Vector2(.94f, 1.50f);
+            assets.rally.suspension.reboundAccelerationTune = new Vector2(1.8f, .50f);
+            assets.rally.suspension.wheelContactTolerance = new Vector2(.008f, .022f);
+            assets.rally.suspension.landingDampingScale = new Vector2(1.05f, 1.45f);
+            assets.rally.suspension.landingDampingDuration = .16f;
             assets.rally.suspension.springMin = 72000f; assets.rally.suspension.springMax = 84000f;
             assets.rally.suspension.dampingMin = 12500f; assets.rally.suspension.dampingMax = 15000f;
-            assets.rally.suspension.bumpStopStart = .66f;
-            assets.rally.suspension.progressiveSpringMultiplier = 2.8f;
-            assets.rally.suspension.hardStopSpringMultiplier = 9f;
+            assets.rally.suspension.bumpStopStart = .72f;
+            assets.rally.suspension.progressiveSpringMultiplier = 1.9f;
+            assets.rally.suspension.hardStopSpringMultiplier = 7f;
             assets.rally.suspension.maximumAcceleration = 26f;
             assets.rally.suspension.maximumReboundAcceleration = .8f;
             assets.rally.grip.minGrip = .14f; assets.rally.grip.maxGrip = 2.20f;
@@ -4478,13 +4547,14 @@ namespace AnimeHillRacing.Editor
             assets.sportBike.brakeForce = 9800f;
             assets.sportBike.reverseForce = 3300f;
             assets.sportBike.airControlTorque = 7600f;
-            assets.sportBike.collisionPitchInertiaMultiplier = 4.5f;
-            assets.sportBike.maximumDepenetrationVelocity = 2.8f;
+            assets.sportBike.collisionPitchInertiaMultiplier = 7.5f;
+            assets.sportBike.maximumDepenetrationVelocity = 1.4f;
+            assets.sportBike.chassisAirControlMultiplier = .07f;
             assets.sportBike.maxAirAngularVelocity = 3.2f;
             assets.sportBike.airAngularAcceleration = 21f;
             assets.sportBike.airAngularDamping = 1.7f;
             assets.sportBike.accelerationForceCalibration = 1f;
-            assets.sportBike.centerOfMass = new Vector3(-.04f, -.24f, 0f);
+            assets.sportBike.centerOfMass = new Vector3(-.015f, -.36f, 0f);
             assets.sportBike.engine.minTorqueNm = 85f;
             assets.sportBike.engine.maxTorqueNm = 260f;
             assets.sportBike.engine.drivetrainEfficiency = .86f;
@@ -4497,18 +4567,24 @@ namespace AnimeHillRacing.Editor
             assets.sportBike.suspension.maxTravel = .27f;
             assets.sportBike.suspension.compressionTravelRatio = .88f;
             assets.sportBike.suspension.targetSag01 = .29f;
-            assets.sportBike.suspension.stiffnessTuneScale = new Vector2(.78f, 1.30f);
-            assets.sportBike.suspension.dampingRatio = new Vector2(.86f, .98f);
-            assets.sportBike.suspension.compressionDampingMultiplier = .84f;
-            assets.sportBike.suspension.reboundDampingMultiplier = 1.14f;
+            assets.sportBike.suspension.stiffnessTuneScale = new Vector2(.78f, 1.0f);
+            assets.sportBike.suspension.dampingRatio = new Vector2(.72f, 1.10f);
+            assets.sportBike.suspension.compressionDampingMultiplier = .88f;
+            assets.sportBike.suspension.reboundDampingMultiplier = 1.18f;
+            assets.sportBike.suspension.compressionDampingTuneScale = new Vector2(.76f, .95f);
+            assets.sportBike.suspension.reboundDampingTuneScale = new Vector2(.96f, 1.50f);
+            assets.sportBike.suspension.reboundAccelerationTune = new Vector2(1.8f, .50f);
+            assets.sportBike.suspension.wheelContactTolerance = new Vector2(.007f, .018f);
+            assets.sportBike.suspension.landingDampingScale = new Vector2(1.10f, 1.50f);
+            assets.sportBike.suspension.landingDampingDuration = .18f;
             assets.sportBike.suspension.springMin = 18000f;
             assets.sportBike.suspension.springMax = 26000f;
             assets.sportBike.suspension.dampingMin = 2500f;
             assets.sportBike.suspension.dampingMax = 3900f;
-            assets.sportBike.suspension.bumpStopStart = .70f;
-            assets.sportBike.suspension.progressiveSpringMultiplier = 2.5f;
-            assets.sportBike.suspension.hardStopSpringMultiplier = 9f;
-            assets.sportBike.suspension.maximumAcceleration = 24f;
+            assets.sportBike.suspension.bumpStopStart = .74f;
+            assets.sportBike.suspension.progressiveSpringMultiplier = 1.6f;
+            assets.sportBike.suspension.hardStopSpringMultiplier = 7f;
+            assets.sportBike.suspension.maximumAcceleration = 20f;
             assets.sportBike.suspension.maximumReboundAcceleration = 1.2f;
             assets.sportBike.grip.minGrip = .14f;
             assets.sportBike.grip.maxGrip = 2.20f;
@@ -5025,6 +5101,8 @@ namespace AnimeHillRacing.Editor
             var tuningCosts = new Text[6]; var tuningButtons = new Button[6];
             UnityAction[] upgrades = { menu.UpgradeTune0, menu.UpgradeTune1, menu.UpgradeTune2,
                 menu.UpgradeTune3, menu.UpgradeTune4, menu.UpgradeTune5 };
+            UnityAction[] decreases = { menu.DecreaseTune0, menu.DecreaseTune1, menu.DecreaseTune2,
+                menu.DecreaseTune3, menu.DecreaseTune4, menu.DecreaseTune5 };
             for (int i = 0; i < tuningNames.Length; i++)
             {
                 float y = 235f - i * 94f;
@@ -5037,8 +5115,10 @@ namespace AnimeHillRacing.Editor
                     new Vector2(.25f, .50f), new Vector2(.48f, .96f), Vector2.zero, Vector2.zero);
                 tuningValues[i] = CreateText("Value", row.transform, "0", 17, TextAnchor.MiddleLeft,
                     new Vector2(.48f, .50f), new Vector2(.69f, .96f), Vector2.zero, Vector2.zero);
-                tuningButtons[i] = CreateButton("Upgrade", row.transform, "UPGRADE", new Vector2(285f, 0f), new Vector2(220f, 56f));
+                Button decrease = CreateButton("Decrease", row.transform, "↓", new Vector2(220f, 0f), new Vector2(62f, 56f));
+                tuningButtons[i] = CreateButton("Upgrade", row.transform, "↑  UPGRADE", new Vector2(325f, 0f), new Vector2(138f, 56f));
                 tuningCosts[i] = tuningButtons[i].GetComponentInChildren<Text>(true);
+                Bind(decrease, decreases[i]);
                 Bind(tuningButtons[i], upgrades[i]);
             }
             Button back = CreateButton("Back", safe, "BACK", new Vector2(-720f, -455f), new Vector2(230f, 66f));
@@ -5174,6 +5254,8 @@ namespace AnimeHillRacing.Editor
             var tuningCosts = new Text[6]; var tuningButtons = new Button[6];
             UnityAction[] upgrades = { menu.UpgradeTune0, menu.UpgradeTune1, menu.UpgradeTune2,
                 menu.UpgradeTune3, menu.UpgradeTune4, menu.UpgradeTune5 };
+            UnityAction[] decreases = { menu.DecreaseTune0, menu.DecreaseTune1, menu.DecreaseTune2,
+                menu.DecreaseTune3, menu.DecreaseTune4, menu.DecreaseTune5 };
             for (int i = 0; i < tuningNames.Length; i++)
             {
                 float y = 260f - i * 104f;
@@ -5186,8 +5268,10 @@ namespace AnimeHillRacing.Editor
                     new Vector2(.02f, .06f), new Vector2(.25f, .52f), Vector2.zero, Vector2.zero);
                 tuningValues[i] = CreateText("Value", row.transform, "CURRENT\nNEXT", 15, TextAnchor.MiddleLeft,
                     new Vector2(.27f, .05f), new Vector2(.72f, .95f), Vector2.zero, Vector2.zero);
-                tuningButtons[i] = CreateButton("Upgrade", row.transform, "PRICE", new Vector2(330f, 0f), new Vector2(190f, 60f));
+                Button decrease = CreateButton("Decrease", row.transform, "↓", new Vector2(235f, 0f), new Vector2(70f, 60f));
+                tuningButtons[i] = CreateButton("Upgrade", row.transform, "↑  PRICE", new Vector2(350f, 0f), new Vector2(150f, 60f));
                 tuningCosts[i] = tuningButtons[i].GetComponentInChildren<Text>(true);
+                Bind(decrease, decreases[i]);
                 Bind(tuningButtons[i], upgrades[i]);
             }
 
@@ -5839,8 +5923,8 @@ namespace AnimeHillRacing.Editor
             SpriteRenderer renderer = gameObject.AddComponent<SpriteRenderer>();
             renderer.sprite = sprite;
             renderer.sortingOrder = sortingOrder;
-            float sourceWidth = sprite != null ? sprite.bounds.size.x : 1f;
-            gameObject.transform.localScale = Vector3.one * (targetWidth / Mathf.Max(.001f, sourceWidth));
+            gameObject.transform.localScale = Vector3.one *
+                                              VehicleDefinition.SpriteWidthScale(sprite, targetWidth);
             return gameObject.transform;
         }
 
@@ -5848,9 +5932,8 @@ namespace AnimeHillRacing.Editor
             Vector3 localPosition, float targetDiameter, int sortingOrder, float visibleDiameter = 0f)
         {
             Transform wheel = CreateSpriteVisual(name, parent, sprite, localPosition, targetDiameter, sortingOrder);
-            float sourceDiameter = visibleDiameter > .001f ? visibleDiameter :
-                sprite != null ? Mathf.Max(sprite.bounds.size.x, sprite.bounds.size.y) : 1f;
-            wheel.localScale = Vector3.one * (targetDiameter / Mathf.Max(.001f, sourceDiameter));
+            wheel.localScale = Vector3.one *
+                               VehicleDefinition.WheelVisualScale(sprite, targetDiameter, visibleDiameter);
             return wheel;
         }
 
@@ -5900,6 +5983,8 @@ namespace AnimeHillRacing.Editor
             origin.transform.localPosition = new Vector3(x, -definition.suspension.restLength, 0f);
             Rigidbody wheelBody = origin.AddComponent<Rigidbody>();
             wheelBody.mass = definition.wheelMass;
+            wheelBody.solverIterations = 12;
+            wheelBody.solverVelocityIterations = 8;
             wheelBody.interpolation = RigidbodyInterpolation.Interpolate;
             wheelBody.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
             wheelBody.constraints = RigidbodyConstraints.FreezePositionZ |

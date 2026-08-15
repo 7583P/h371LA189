@@ -21,6 +21,10 @@ namespace AnimeHillRacing.Core
 
     public static class SaveManager
     {
+        // Temporary development switch. Set this to false to restore the player's real balances.
+        public static bool TemporaryUnlimitedCurrencyEnabled => true;
+        public const int UnlimitedCurrencyDisplayAmount = 999_999_999;
+
         public const int DistanceBonusMinimum = 200;
         public const int DistanceBonusMaximum = 2500;
         public const int DistanceBonusIncrement = 100;
@@ -39,8 +43,10 @@ namespace AnimeHillRacing.Core
         private const string DistanceBonusX10MigrationKey = "AHR.Migration.DistanceBonusX10.V1";
         private const string FormulaWheelMigrationKey = "AHR.Migration.FormulaDefaultWheel02.V1";
 
-        public static int TotalCoins => PlayerPrefs.GetInt(TotalCoinsKey, 0);
-        public static int TotalGems => Mathf.Max(0, PlayerPrefs.GetInt(TotalGemsKey, 0));
+        public static int TotalCoins => TemporaryUnlimitedCurrencyEnabled
+            ? UnlimitedCurrencyDisplayAmount : StoredTotalCoins;
+        public static int TotalGems => TemporaryUnlimitedCurrencyEnabled
+            ? UnlimitedCurrencyDisplayAmount : StoredTotalGems;
         public static int CurrentDistanceBonusValue
         {
             get
@@ -56,7 +62,7 @@ namespace AnimeHillRacing.Core
         public static int ClaimDistanceBonus()
         {
             int award = CurrentDistanceBonusValue;
-            PlayerPrefs.SetInt(TotalCoinsKey, TotalCoins + award);
+            AddCoins(award, false);
             PlayerPrefs.SetInt(DistanceBonusValueKey, Mathf.Min(DistanceBonusMaximum,
                 award + DistanceBonusIncrement));
             PlayerPrefs.SetFloat(DistanceBonusThresholdKey, NextDistanceBonusThreshold + 300f);
@@ -157,7 +163,8 @@ namespace AnimeHillRacing.Core
         {
             int award = Mathf.Max(0, amount);
             if (award == 0) return;
-            PlayerPrefs.SetInt(TotalGemsKey, TotalGems + award);
+            long total = (long)StoredTotalGems + award;
+            PlayerPrefs.SetInt(TotalGemsKey, (int)System.Math.Min(int.MaxValue, total));
             PlayerPrefs.Save();
         }
 
@@ -165,7 +172,7 @@ namespace AnimeHillRacing.Core
         {
             int award = Mathf.Max(0, amount);
             if (award == 0) return;
-            long total = (long)TotalCoins + award;
+            long total = (long)StoredTotalCoins + award;
             PlayerPrefs.SetInt(TotalCoinsKey, (int)System.Math.Min(int.MaxValue, total));
             if (persistImmediately) PlayerPrefs.Save();
         }
@@ -237,7 +244,8 @@ namespace AnimeHillRacing.Core
                 return false;
             }
 
-            PlayerPrefs.SetInt(TotalCoinsKey, TotalCoins - coinPrice);
+            if (!TemporaryUnlimitedCurrencyEnabled)
+                PlayerPrefs.SetInt(TotalCoinsKey, StoredTotalCoins - coinPrice);
             AddBlueprints(bundle, blueprintAmount, out _, false);
             PlayerPrefs.Save();
             result = BlueprintPurchaseResult.Success;
@@ -267,7 +275,8 @@ namespace AnimeHillRacing.Core
                 result = CustomizationPurchaseResult.NotEnoughGems;
                 return false;
             }
-            PlayerPrefs.SetInt(TotalGemsKey, TotalGems - gemPrice);
+            if (!TemporaryUnlimitedCurrencyEnabled)
+                PlayerPrefs.SetInt(TotalGemsKey, StoredTotalGems - gemPrice);
             PlayerPrefs.SetInt(unlockKey, 1);
             PlayerPrefs.Save();
             result = CustomizationPurchaseResult.Success;
@@ -284,7 +293,8 @@ namespace AnimeHillRacing.Core
             string key = BestKey(mode, mapId);
             float best = Mathf.Max(PlayerPrefs.GetFloat(key, 0f), distance);
             PlayerPrefs.SetFloat(key, best);
-            PlayerPrefs.SetInt(TotalCoinsKey, TotalCoins + Mathf.Max(0, runCoins));
+            long total = (long)StoredTotalCoins + Mathf.Max(0, runCoins);
+            PlayerPrefs.SetInt(TotalCoinsKey, (int)System.Math.Min(int.MaxValue, total));
             PlayerPrefs.Save();
             return best;
         }
@@ -312,6 +322,30 @@ namespace AnimeHillRacing.Core
 
         public static VehicleUpgradeState LoadUpgrades(string vehicleId, VehicleDefinition definition)
         {
+            VehicleUpgradeState purchased = LoadPurchasedUpgrades(vehicleId, definition);
+            var state = new VehicleUpgradeState();
+            state.engineTune = LoadEquippedUpgradeLevel(vehicleId, VehicleUpgradeType.Engine,
+                definition != null ? definition.engineMaxTunes : 14, purchased.engineTune);
+            state.accelerationTune = LoadEquippedUpgradeLevel(vehicleId, VehicleUpgradeType.Acceleration,
+                definition != null ? definition.accelerationMaxTunes : 15, purchased.accelerationTune);
+            state.suspensionTune = LoadEquippedUpgradeLevel(vehicleId, VehicleUpgradeType.Suspension,
+                definition != null ? definition.suspensionMaxTunes : 12, purchased.suspensionTune);
+            state.gripTune = LoadEquippedUpgradeLevel(vehicleId, VehicleUpgradeType.Grip,
+                definition != null ? definition.gripMaxTunes : 12, purchased.gripTune);
+            state.airControlTune = LoadEquippedUpgradeLevel(vehicleId, VehicleUpgradeType.AirControl,
+                definition != null ? definition.airControlMaxTunes : 0, purchased.airControlTune);
+            state.downforceTune = LoadEquippedUpgradeLevel(vehicleId, VehicleUpgradeType.Downforce,
+                definition != null ? definition.downforceMaxTunes : 0, purchased.downforceTune);
+            state.fuelTune = LoadEquippedUpgradeLevel(vehicleId, VehicleUpgradeType.Fuel,
+                definition != null ? definition.fuelMaxTunes : 15, purchased.fuelTune);
+            state.turboTune = LoadEquippedUpgradeLevel(vehicleId, VehicleUpgradeType.Turbo,
+                definition != null ? definition.turboMaxTunes : 0, purchased.turboTune);
+            state.ClampTo(definition);
+            return state;
+        }
+
+        public static VehicleUpgradeState LoadPurchasedUpgrades(string vehicleId, VehicleDefinition definition)
+        {
             var state = new VehicleUpgradeState();
             state.engineTune = LoadOrMigrateUpgradeLevel(vehicleId, VehicleUpgradeType.Engine,
                 definition != null ? definition.engineMaxTunes : 14);
@@ -333,6 +367,44 @@ namespace AnimeHillRacing.Core
             return state;
         }
 
+        public static bool TryIncreaseEquippedTune(VehicleDefinition definition, VehicleUpgradeType type,
+            UpgradeEconomyDefinition economy, out int resultingTune, out TunePurchaseResult result)
+        {
+            if (definition == null)
+            {
+                resultingTune = 1;
+                result = TunePurchaseResult.InvalidConfiguration;
+                return false;
+            }
+            int equipped = LoadUpgrades(definition.vehicleId, definition).GetTune(type);
+            int purchased = LoadPurchasedUpgrades(definition.vehicleId, definition).GetTune(type);
+            if (equipped < purchased)
+            {
+                resultingTune = equipped + 1;
+                SaveEquippedTune(definition, type, resultingTune, purchased);
+                result = TunePurchaseResult.Success;
+                return true;
+            }
+            return TryPurchaseTune(definition, type, economy, out resultingTune, out result);
+        }
+
+        public static bool TryDecreaseEquippedTune(VehicleDefinition definition, VehicleUpgradeType type,
+            out int resultingTune)
+        {
+            resultingTune = 1;
+            if (definition == null || definition.GetMaxTunes(type) <= 0) return false;
+            int current = LoadUpgrades(definition.vehicleId, definition).GetTune(type);
+            if (current <= 1)
+            {
+                resultingTune = current;
+                return false;
+            }
+            int purchased = LoadPurchasedUpgrades(definition.vehicleId, definition).GetTune(type);
+            resultingTune = current - 1;
+            SaveEquippedTune(definition, type, resultingTune, purchased);
+            return true;
+        }
+
         public static bool TryPurchaseTune(VehicleDefinition definition, VehicleUpgradeType type,
             UpgradeEconomyDefinition economy, out int resultingTune)
         {
@@ -349,7 +421,7 @@ namespace AnimeHillRacing.Core
                 return false;
             }
             int maximum = definition.GetMaxTunes(type);
-            int current = LoadUpgrades(definition.vehicleId, definition).GetTune(type);
+            int current = LoadPurchasedUpgrades(definition.vehicleId, definition).GetTune(type);
             resultingTune = current;
             if (maximum <= 0 || current >= maximum)
             {
@@ -367,9 +439,11 @@ namespace AnimeHillRacing.Core
                 result = TunePurchaseResult.NotEnoughCoins;
                 return false;
             }
-            PlayerPrefs.SetInt(TotalCoinsKey, TotalCoins - cost);
+            if (!TemporaryUnlimitedCurrencyEnabled)
+                PlayerPrefs.SetInt(TotalCoinsKey, StoredTotalCoins - cost);
             resultingTune = current + 1;
             PlayerPrefs.SetInt(UpgradeLevelKey(definition.vehicleId, type), resultingTune);
+            PlayerPrefs.SetInt(EquippedLevelKey(definition.vehicleId, type), resultingTune);
             PlayerPrefs.SetInt(OneBasedSchemaKey(definition.vehicleId, type), 1);
             PlayerPrefs.Save();
             result = TunePurchaseResult.Success;
@@ -431,6 +505,34 @@ namespace AnimeHillRacing.Core
             return level;
         }
 
+        private static int LoadEquippedUpgradeLevel(string vehicleId, VehicleUpgradeType type, int maximum,
+            int purchasedLevel)
+        {
+            if (maximum <= 0) return 0;
+            int purchased = Mathf.Clamp(purchasedLevel, 1, maximum);
+            string key = EquippedLevelKey(vehicleId, type);
+            int equipped = PlayerPrefs.HasKey(key)
+                ? Mathf.Clamp(PlayerPrefs.GetInt(key, purchased), 1, purchased)
+                : purchased;
+            if (!PlayerPrefs.HasKey(key) || PlayerPrefs.GetInt(key, equipped) != equipped)
+            {
+                PlayerPrefs.SetInt(key, equipped);
+                PlayerPrefs.Save();
+            }
+            return equipped;
+        }
+
+        private static void SaveEquippedTune(VehicleDefinition definition, VehicleUpgradeType type,
+            int equippedLevel, int purchasedLevel)
+        {
+            int maximum = definition.GetMaxTunes(type);
+            if (maximum <= 0) return;
+            int purchased = Mathf.Clamp(purchasedLevel, 1, maximum);
+            PlayerPrefs.SetInt(EquippedLevelKey(definition.vehicleId, type),
+                Mathf.Clamp(equippedLevel, 1, purchased));
+            PlayerPrefs.Save();
+        }
+
         private static string BestKey(GameModeType mode, string mapId) =>
             $"AHR.Best.{(int)mode}.{mapId}";
 
@@ -446,6 +548,9 @@ namespace AnimeHillRacing.Core
         private static string UpgradeLevelKey(string vehicleId, VehicleUpgradeType type) =>
             $"AHR.UpgradeLevel.{vehicleId}.{(int)type}";
 
+        private static string EquippedLevelKey(string vehicleId, VehicleUpgradeType type) =>
+            $"AHR.EquippedTuneLevel.{vehicleId}.{(int)type}";
+
         private static string ZeroBasedSchemaKey(string vehicleId, VehicleUpgradeType type) =>
             $"AHR.UpgradeSchema.ZeroBasedV2.{vehicleId}.{(int)type}";
 
@@ -457,6 +562,9 @@ namespace AnimeHillRacing.Core
 
         private static string BlueprintKey(string bundleId) => $"AHR.Blueprints.{bundleId}";
         private static string VehicleUnlockKey(string vehicleId) => $"AHR.Vehicle.Unlock.{vehicleId}";
+
+        private static int StoredTotalCoins => Mathf.Max(0, PlayerPrefs.GetInt(TotalCoinsKey, 0));
+        private static int StoredTotalGems => Mathf.Max(0, PlayerPrefs.GetInt(TotalGemsKey, 0));
 
         private static void EnsureDistanceBonusX10Migration()
         {

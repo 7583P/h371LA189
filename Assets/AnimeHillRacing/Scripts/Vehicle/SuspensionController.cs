@@ -37,9 +37,15 @@ namespace AnimeHillRacing.Vehicle
         private float maximumNormalForce;
         private float supportedMass;
         private float maximumReboundAcceleration;
+        private float wheelContactTolerance;
+        private float landingDampingMultiplier;
+        private float landingDampingDuration;
+        private float landingDampingUntil = float.NegativeInfinity;
+        private float lastLandingImpactSpeed;
         private float lastSuspensionForce;
         private float lastSpringForce;
         private float lastDamperForce;
+        private float lastRelativeVelocity;
         private float lastAppliedMotorTorque;
         private float lastContactNormalForce;
         private float currentLength;
@@ -48,6 +54,7 @@ namespace AnimeHillRacing.Vehicle
         private float slidingGripMultiplier;
         private float tractionRecoveryPerSecond;
         private bool contactSinceLastStep;
+        private bool wasGrounded;
         private bool motionSynchronized;
         private Vector3 contactNormal = Vector3.up;
         private Vector3 contactPoint;
@@ -67,6 +74,10 @@ namespace AnimeHillRacing.Vehicle
         public float CurrentLength => currentLength;
         public float Slip01 { get; private set; }
         public float WheelAngularVelocity => wheelBody != null ? -wheelBody.angularVelocity.z : 0f;
+        public float WheelRpm => WheelAngularVelocity * 60f / (2f * Mathf.PI);
+        public float PhysicalWheelRadius => wheelRadius;
+        public bool LandingDamperActive => IsGrounded && Time.fixedTime <= landingDampingUntil;
+        public float LastLandingImpactSpeed => lastLandingImpactSpeed;
         public Rigidbody WheelBody => wheelBody;
         public SphereCollider WheelCollider => wheelCollider;
         public ConfigurableJoint SuspensionJoint => suspensionJoint;
@@ -77,7 +88,12 @@ namespace AnimeHillRacing.Vehicle
         public Vector3 ContactPoint => contactPoint;
         public float LastSpringForce => lastSpringForce;
         public float LastDamperForce => lastDamperForce;
+        public float LastSuspensionForce => lastSuspensionForce;
+        public float LastRelativeVelocity => lastRelativeVelocity;
         public float LastAppliedMotorTorque => lastAppliedMotorTorque;
+        public float CompressionDampingMultiplier => compressionDampingMultiplier;
+        public float ReboundDampingMultiplier => reboundDampingMultiplier;
+        public float MaximumReboundAcceleration => maximumReboundAcceleration;
         public float JointTranslation => suspensionJoint != null && wheelBody != null
             ? Vector3.Dot(wheelBody.transform.TransformPoint(suspensionJoint.connectedAnchor) -
                           suspensionJoint.transform.TransformPoint(suspensionJoint.anchor), SuspensionAxisWorld)
@@ -92,17 +108,22 @@ namespace AnimeHillRacing.Vehicle
             SuspensionPhysics.GetTravelLimits(definition.suspension, stats.suspensionTravel,
                 out maximumCompression, out maximumExtension);
             wheelRadius = definition.wheelRadius;
-            spring = stats.spring;
-            damping = stats.damping;
-            compressionDampingMultiplier = definition.suspension.compressionDampingMultiplier;
-            reboundDampingMultiplier = definition.suspension.reboundDampingMultiplier;
+            float equalSupportedMass = targetBody.mass / Mathf.Max(1, suspensionPointCount);
+            supportedMass = SuspensionPhysics.CalculateAxleSupportedMass(targetBody.mass,
+                definition.centerOfMass.x, definition.halfWheelbase, anchorLocalX, suspensionPointCount);
+            float axleLoadScale = supportedMass / Mathf.Max(.01f, equalSupportedMass);
+            spring = stats.spring * axleLoadScale;
+            damping = stats.damping * axleLoadScale;
+            compressionDampingMultiplier = stats.compressionDampingMultiplier;
+            reboundDampingMultiplier = stats.reboundDampingMultiplier;
             bumpStopStart = definition.suspension.bumpStopStart;
             progressiveSpringMultiplier = stats.progressiveSpringMultiplier;
             hardStopSpringMultiplier = definition.suspension.hardStopSpringMultiplier;
-            maximumReboundAcceleration = definition.suspension.maximumReboundAcceleration;
-            supportedMass = targetBody.mass / Mathf.Max(1, suspensionPointCount);
-            maximumNormalForce = targetBody.mass * definition.suspension.maximumAcceleration /
-                                 Mathf.Max(1, suspensionPointCount);
+            maximumReboundAcceleration = stats.maximumReboundAcceleration;
+            wheelContactTolerance = stats.wheelContactTolerance;
+            landingDampingMultiplier = stats.landingDampingMultiplier;
+            landingDampingDuration = stats.landingDampingDuration;
+            maximumNormalForce = supportedMass * definition.suspension.maximumAcceleration;
             slipThreshold = stats.slipThreshold;
             slidingGripMultiplier = stats.slidingGripMultiplier;
             tractionRecoveryPerSecond = stats.tractionRecoveryPerSecond;
@@ -111,6 +132,9 @@ namespace AnimeHillRacing.Vehicle
             ConfigureHardTravelLimit();
             currentLength = restLength;
             motionSynchronized = false;
+            wasGrounded = false;
+            landingDampingUntil = float.NegativeInfinity;
+            lastLandingImpactSpeed = 0f;
             contactPoint = wheelBody.position - body.transform.up * wheelRadius;
             SyncVisual();
         }
@@ -143,6 +167,8 @@ namespace AnimeHillRacing.Vehicle
             wheelBody.interpolation = RigidbodyInterpolation.Interpolate;
             wheelBody.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
             wheelBody.maxDepenetrationVelocity = definition.maximumDepenetrationVelocity;
+            wheelBody.solverIterations = Mathf.Max(wheelBody.solverIterations, 12);
+            wheelBody.solverVelocityIterations = Mathf.Max(wheelBody.solverVelocityIterations, 8);
             wheelBody.maxAngularVelocity = Mathf.Max(40f, statsTopWheelSpeed(definition) * 1.65f);
             wheelBody.constraints = RigidbodyConstraints.FreezePositionZ |
                                     RigidbodyConstraints.FreezeRotationX |
@@ -239,9 +265,17 @@ namespace AnimeHillRacing.Vehicle
             suspensionJoint.linearLimitSpring = limitSpring;
             suspensionJoint.enableCollision = false;
             suspensionJoint.enablePreprocessing = true;
-            suspensionJoint.projectionMode = JointProjectionMode.PositionAndRotation;
-            suspensionJoint.projectionDistance = .015f;
-            suspensionJoint.projectionAngle = 2f;
+            // PhysX joints become noisy when a light wheel is constrained directly against a much heavier
+            // chassis. Scale only the connected body's inverse mass for the constraint solve so the effective
+            // ratio stays at or below 8:1; the actual Rigidbody masses and all external forces remain intact.
+            suspensionJoint.massScale = 1f;
+            suspensionJoint.connectedMassScale = Mathf.Clamp(
+                8f * wheelBody.mass / Mathf.Max(1f, body.mass), .2f, 1f);
+            // Position projection teleports a joint back inside its limit after a large solver error.
+            // On hard landings that correction becomes a visible second kick, and at high road speed it
+            // presents as wheel jitter. The increased solver iteration budget resolves the physical limit
+            // continuously, so projection must stay disabled.
+            suspensionJoint.projectionMode = JointProjectionMode.None;
             suspensionJoint.breakForce = Mathf.Infinity;
             suspensionJoint.breakTorque = Mathf.Infinity;
             expectedJointAnchor = suspensionJoint.anchor;
@@ -273,24 +307,42 @@ namespace AnimeHillRacing.Vehicle
                 maximumExtension, measuredLength);
             float rawCompression = restLength - measuredLength;
             float relativeVelocity = Vector3.Dot(body.GetPointVelocity(anchor) - wheelBody.linearVelocity, up);
+            lastRelativeVelocity = relativeVelocity;
+            bool probedGround = ProbeGround(out RaycastHit hit);
+            IsGrounded = contactSinceLastStep || probedGround;
+            if (IsGrounded && !wasGrounded && relativeVelocity < -.65f)
+            {
+                lastLandingImpactSpeed = -relativeVelocity;
+                landingDampingUntil = Time.fixedTime + landingDampingDuration;
+            }
+            bool landingSettling = IsGrounded && Time.fixedTime <= landingDampingUntil;
+            // Extra compression damping on a hard touchdown transfers the wheel impact into an upward
+            // chassis impulse. Let the existing compression tune consume the impact through travel, then
+            // use the short settling window only while the spring is extending and returning stored energy.
+            float activeCompressionDamping = compressionDampingMultiplier;
+            float activeReboundDamping = reboundDampingMultiplier *
+                                         (landingSettling && relativeVelocity >= 0f
+                                             ? Mathf.Max(1f, landingDampingMultiplier) : 1f);
             lastSpringForce = SuspensionPhysics.CalculateSuspensionForce(rawCompression, 0f,
                 spring, damping, maximumCompression, maximumExtension, bumpStopStart,
                 progressiveSpringMultiplier, hardStopSpringMultiplier, maximumNormalForce);
             float unboundedCombinedForce = SuspensionPhysics.CalculateSuspensionForce(rawCompression,
                 relativeVelocity, spring, damping, maximumCompression, maximumExtension, bumpStopStart,
                 progressiveSpringMultiplier, hardStopSpringMultiplier, maximumNormalForce,
-                compressionDampingMultiplier, reboundDampingMultiplier);
+                activeCompressionDamping, activeReboundDamping);
             lastDamperForce = unboundedCombinedForce - lastSpringForce;
             lastSuspensionForce = unboundedCombinedForce;
             lastSuspensionForce = SuspensionPhysics.LimitSuspensionForce(lastSuspensionForce, relativeVelocity,
                 supportedMass, Time.fixedDeltaTime, maximumReboundAcceleration);
+            // A grounded tire can unload to zero normal force, but a negative suspension force would pull
+            // the unsprung body away from the road and manufacture contact loss. Airborne droop still keeps
+            // its signed force so the wheel remains physically attached to the chassis.
+            if (IsGrounded) lastSuspensionForce = Mathf.Max(0f, lastSuspensionForce);
 
             Vector3 suspensionForce = up * lastSuspensionForce;
             body.AddForceAtPosition(suspensionForce, anchor, ForceMode.Force);
             wheelBody.AddForce(-suspensionForce, ForceMode.Force);
 
-            bool probedGround = ProbeGround(out RaycastHit hit);
-            IsGrounded = contactSinceLastStep || probedGround;
             GroundHit = hit;
             if (probedGround)
             {
@@ -306,6 +358,7 @@ namespace AnimeHillRacing.Vehicle
                 tractionBlend = 0f;
                 lastContactNormalForce = 0f;
             }
+            wasGrounded = IsGrounded;
 
             Compression01 = SuspensionPhysics.CalculateSag01(restLength - currentLength,
                 maximumCompression, maximumExtension);
@@ -315,8 +368,9 @@ namespace AnimeHillRacing.Vehicle
 
         private bool ProbeGround(out RaycastHit nearest)
         {
-            Vector3 origin = wheelBody.position + body.transform.up * .035f;
-            float distance = wheelRadius + .075f;
+            const float originLift = .02f;
+            Vector3 origin = wheelBody.position + body.transform.up * originLift;
+            float distance = wheelRadius + originLift + Mathf.Clamp(wheelContactTolerance, .005f, .04f);
             return SuspensionPhysics.TryRaycastGround(origin, -body.transform.up, distance, groundMask,
                 body.transform, groundHits, out nearest);
         }
@@ -434,7 +488,8 @@ namespace AnimeHillRacing.Vehicle
             }
             if (bestUp <= -.2f) return;
             contactSinceLastStep = true;
-            lastContactNormalForce = collision.impulse.magnitude / Mathf.Max(.001f, Time.fixedDeltaTime);
+            lastContactNormalForce = Mathf.Min(maximumNormalForce,
+                collision.impulse.magnitude / Mathf.Max(.001f, Time.fixedDeltaTime));
         }
 
         private void OnDestroy()
@@ -447,6 +502,18 @@ namespace AnimeHillRacing.Vehicle
 
     public static class SuspensionPhysics
     {
+        public static float CalculateAxleSupportedMass(float totalMass, float centerOfMassX,
+            float halfWheelbase, float anchorLocalX, int suspensionPointCount)
+        {
+            int count = Mathf.Max(1, suspensionPointCount);
+            float equalMass = Mathf.Max(.01f, totalMass) / count;
+            if (count != 2 || halfWheelbase <= .01f) return equalMass;
+            float frontFraction = Mathf.Clamp((centerOfMassX + halfWheelbase) /
+                                               (2f * halfWheelbase), .35f, .65f);
+            return Mathf.Max(.01f, totalMass) * (anchorLocalX >= 0f
+                ? frontFraction : 1f - frontFraction);
+        }
+
         public static bool TryRaycastGround(Vector3 origin, Vector3 direction, float distance, LayerMask mask,
             Transform vehicleRoot, RaycastHit[] hitBuffer, out RaycastHit nearestHit)
         {
@@ -504,9 +571,9 @@ namespace AnimeHillRacing.Vehicle
         {
             float displacement = Mathf.Clamp(rawCompression, -maximumExtension, maximumCompression);
             float directionalDamping = damping * (relativeVelocity < 0f
-                ? Mathf.Clamp(compressionDampingMultiplier, .6f, 1.2f)
-                : Mathf.Clamp(reboundDampingMultiplier, .8f, 1.4f));
-            float force = displacement * spring - relativeVelocity * directionalDamping;
+                ? Mathf.Clamp(compressionDampingMultiplier, .5f, 1.8f)
+                : Mathf.Clamp(reboundDampingMultiplier, .5f, 1.8f));
+            float elasticForce = displacement * spring;
 
             float compression01 = Mathf.Clamp01(displacement / Mathf.Max(.001f, maximumCompression));
             float start = Mathf.Clamp(bumpStopStart, .5f, .9f);
@@ -514,8 +581,8 @@ namespace AnimeHillRacing.Vehicle
             {
                 float progress = Mathf.InverseLerp(start, 1f, compression01);
                 float progressiveDisplacement = Mathf.Max(0f, displacement - maximumCompression * start);
-                force += progressiveDisplacement * spring * Mathf.Max(0f, progressiveSpringMultiplier) *
-                         progress * progress;
+                elasticForce += progressiveDisplacement * spring * Mathf.Max(0f, progressiveSpringMultiplier) *
+                                progress * progress;
             }
 
             // A bump stop is a progressive spring inside the final part of the valid travel. Once the
@@ -526,10 +593,15 @@ namespace AnimeHillRacing.Vehicle
             {
                 float hardStopProgress = Mathf.InverseLerp(hardStopStart, 1f, compression01);
                 float hardStopTravel = maximumCompression * (1f - hardStopStart);
-                force += hardStopTravel * spring * Mathf.Max(0f, hardStopSpringMultiplier) *
-                         hardStopProgress * hardStopProgress * hardStopProgress;
+                elasticForce += hardStopTravel * spring * Mathf.Max(0f, hardStopSpringMultiplier) *
+                                hardStopProgress * hardStopProgress * hardStopProgress;
             }
-            return Mathf.Clamp(force, -maximumForce * .35f, maximumForce);
+            // Cap elastic bump-stop authority before applying damping. Clamping only the combined force
+            // allowed a saturated spring to consume all rebound damping and return its stored energy as a
+            // second jump. The damper must remain effective while the capped spring extends.
+            elasticForce = Mathf.Clamp(elasticForce, -maximumForce * .35f, maximumForce);
+            float dampingForce = -relativeVelocity * directionalDamping;
+            return Mathf.Clamp(elasticForce + dampingForce, -maximumForce * .35f, maximumForce);
         }
 
         public static float LimitSuspensionForce(float force, float relativeVelocity, float supportedMass,

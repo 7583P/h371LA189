@@ -323,11 +323,26 @@ namespace AnimeHillRacing.Vehicle
             float activeReboundDamping = reboundDampingMultiplier *
                                          (landingSettling && relativeVelocity >= 0f
                                              ? Mathf.Max(1f, landingDampingMultiplier) : 1f);
+            float activeDamping = damping;
+            if (!IsGrounded)
+            {
+                // On the road the contact constraint reacts against the damper. In free flight the same
+                // coefficient acts only between the light wheel and the much heavier chassis. The sprung-mass
+                // damping coefficient can then remove more relative velocity than exists in one physics step,
+                // reversing it every frame and producing the visible airborne wheel chatter. Cap only the
+                // airborne damper to a passive one-step impulse; the spring, wheel spin and travel stay physical.
+                float directionalScale = relativeVelocity < 0f
+                    ? activeCompressionDamping : activeReboundDamping;
+                float passiveDamping = SuspensionPhysics.CalculatePassiveAirborneDampingLimit(
+                    body.mass, wheelBody.mass, Time.fixedDeltaTime);
+                activeDamping = Mathf.Min(activeDamping,
+                    passiveDamping / Mathf.Max(.5f, directionalScale));
+            }
             lastSpringForce = SuspensionPhysics.CalculateSuspensionForce(rawCompression, 0f,
                 spring, damping, maximumCompression, maximumExtension, bumpStopStart,
                 progressiveSpringMultiplier, hardStopSpringMultiplier, maximumNormalForce);
             float unboundedCombinedForce = SuspensionPhysics.CalculateSuspensionForce(rawCompression,
-                relativeVelocity, spring, damping, maximumCompression, maximumExtension, bumpStopStart,
+                relativeVelocity, spring, activeDamping, maximumCompression, maximumExtension, bumpStopStart,
                 progressiveSpringMultiplier, hardStopSpringMultiplier, maximumNormalForce,
                 activeCompressionDamping, activeReboundDamping);
             lastDamperForce = unboundedCombinedForce - lastSpringForce;
@@ -555,6 +570,16 @@ namespace AnimeHillRacing.Vehicle
         {
             float totalTravel = Mathf.Max(.001f, maximumCompression + maximumExtension);
             return Mathf.Clamp01((compressionFromRest + maximumExtension) / totalTravel);
+        }
+
+        public static float CalculatePassiveAirborneDampingLimit(float chassisMass, float wheelMass,
+            float fixedDeltaTime)
+        {
+            float safeChassisMass = Mathf.Max(.01f, chassisMass);
+            float safeWheelMass = Mathf.Max(.01f, wheelMass);
+            float reducedMass = safeChassisMass * safeWheelMass /
+                                (safeChassisMass + safeWheelMass);
+            return reducedMass / Mathf.Max(.001f, fixedDeltaTime);
         }
 
         public static float CalculateNormalForce(float rawCompression, float pointVelocity, float spring,

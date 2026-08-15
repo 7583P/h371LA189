@@ -16,14 +16,9 @@ namespace AnimeHillRacing.Vehicle
     public sealed class VehicleDefinition : ScriptableObject
     {
         public const int GlobalGripMaximum = 1000;
-        // Every real tune uses the same discrete progression. Normal upgrades taper gently from
-        // strong early gains to still-visible late gains; only the final two purchases use the
-        // deliberately small weights below. The weights are normalized per tune so Level 1 is
-        // exactly stock and Max Level is exactly the authored endpoint for every level count.
-        public const float EarlyUpgradeWeight = 1.55f;
-        public const float LateUpgradeWeight = .75f;
-        public const float PenultimateUpgradeWeight = .30f;
-        public const float FinalUpgradeWeight = .22f;
+        // Tune levels are one-based and map once, linearly, onto their authored endpoints.
+        // Per-stat response curves (for example the rating-to-friction conversion) operate on the
+        // resolved value, never on the level percentage a second time.
 
         [Serializable]
         public sealed class CustomizationOption
@@ -308,8 +303,8 @@ namespace AnimeHillRacing.Vehicle
             float accelerationLevel = UpgradeProgress(upgrades.accelerationTune, accelerationMaxTunes);
             float turboLevel = UpgradeProgress(upgrades.turboTune, turboMaxTunes);
             float suspensionQuality = UpgradeProgress(upgrades.suspensionTune, suspensionMaxTunes);
-            float absorptionQuality = 1f - Mathf.Pow(1f - suspensionQuality, 1.6f);
-            float stabilityQuality = Mathf.SmoothStep(0f, 1f, suspensionQuality);
+            float absorptionQuality = suspensionQuality;
+            float stabilityQuality = suspensionQuality;
             float gripProgress = UpgradeProgress(upgrades.gripTune, gripMaxTunes);
             float airControl = TargetValue(tuneTargets?.airControlTorque,
                 UpgradeProgress(upgrades.airControlTune, airControlMaxTunes), airControlTorque);
@@ -355,8 +350,8 @@ namespace AnimeHillRacing.Vehicle
                 motorTorqueNm = torque,
                 peakPowerKw = torque * 6200f / 9549f,
                 zeroToHundredTargetSeconds = accelerationTarget,
-                targetAccelerationMps2 = (100f / 3.6f) / Mathf.Max(0.5f, accelerationTarget) *
-                                         accelerationForceCalibration,
+                targetAccelerationMps2 = EvaluateZeroToHundredAcceleration(accelerationTarget,
+                    accelerationForceCalibration),
                 lowSpeedTorqueMultiplier = Mathf.Lerp(0.82f, 1.15f, accelerationAuthority),
                 shiftRecovery = Mathf.Lerp(0f, 0.30f, accelerationAuthority),
                 suspensionTravel = suspensionTravel,
@@ -388,6 +383,10 @@ namespace AnimeHillRacing.Vehicle
                 topSpeedMps = topSpeed
             };
         }
+
+        public static float EvaluateZeroToHundredAcceleration(float zeroToHundredSeconds,
+            float calibration = 1f) =>
+            (100f / 3.6f) / Mathf.Max(.5f, zeroToHundredSeconds) * Mathf.Max(0f, calibration);
 
         public int GetMaxTunes(VehicleUpgradeType type)
         {
@@ -436,36 +435,13 @@ namespace AnimeHillRacing.Vehicle
         {
             if (maximum <= 1 || level <= 1) return 0f;
             if (level >= maximum) return 1f;
-            int transitionCount = maximum - 1;
-            int regularTransitionCount = Mathf.Max(0, transitionCount - 2);
-            float totalWeight = 0f;
-            float completedWeight = 0f;
-            int completedTransitions = Mathf.Clamp(level - 1, 0, transitionCount);
-            for (int transition = 0; transition < transitionCount; transition++)
-            {
-                float weight = UpgradeTransitionWeight(transition, regularTransitionCount, transitionCount);
-                totalWeight += weight;
-                if (transition < completedTransitions) completedWeight += weight;
-            }
-            return totalWeight <= Mathf.Epsilon ? 0f : Mathf.Clamp01(completedWeight / totalWeight);
+            return Mathf.Clamp01((level - 1f) / (maximum - 1f));
         }
 
         public static float UpgradeGain(int currentLevel, int maximum) =>
             currentLevel < 1 || currentLevel >= maximum
                 ? 0f
                 : UpgradeProgress(currentLevel + 1, maximum) - UpgradeProgress(currentLevel, maximum);
-
-        private static float UpgradeTransitionWeight(int transition, int regularTransitionCount,
-            int transitionCount)
-        {
-            if (transitionCount <= 1) return 1f;
-            if (transition == transitionCount - 1) return FinalUpgradeWeight;
-            if (transition == transitionCount - 2) return PenultimateUpgradeWeight;
-            float t = regularTransitionCount <= 1
-                ? 0f
-                : transition / (regularTransitionCount - 1f);
-            return Mathf.Lerp(EarlyUpgradeWeight, LateUpgradeWeight, Mathf.SmoothStep(0f, 1f, t));
-        }
 
         private static float TargetValue(float[] values, float progress, float fallback)
         {

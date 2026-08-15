@@ -63,6 +63,88 @@ namespace AnimeHillRacing.Editor
             public float groundedRatio;
         }
 
+        private struct AirborneWheelResult
+        {
+            public float maximumLengthSpan;
+            public float maximumRelativeVelocity;
+            public float maximumVisualError;
+            public int unexpectedGroundedFrames;
+            public float supportedWheelGroundedRatio;
+        }
+
+        private struct TipImpactResult
+        {
+            public float maximumAngularVelocity;
+            public float finalSpeedMps;
+        }
+
+        [MenuItem("Anime Hill Racing/Validate Tune + Top Speed + Airborne Wheels + Formula")]
+        public static void ValidateTuneAirborneAndFormulaTips()
+        {
+            EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            VehicleDefinition[] vehicles =
+            {
+                Load("MainVehicle.asset"), Load("FormulaVehicle.asset"),
+                Load("RallyVehicle.asset"), Load("SportBikeVehicle.asset")
+            };
+            var failures = new List<string>();
+            var summaries = new List<string>();
+            for (int i = 0; i < vehicles.Length; i++)
+            {
+                VehicleDefinition vehicle = vehicles[i];
+                if (vehicle == null || vehicle.gameplayPrefab2D == null)
+                {
+                    failures.Add($"Vehicle data/prefab missing at index {i}.");
+                    continue;
+                }
+
+                ValidateTuneLevelMapping(vehicle, failures);
+                ValidateLongitudinalTuneIndependence(vehicle, failures);
+                ValidateTopSpeedControl(vehicle, failures);
+                int maximum = Mathf.Max(1, vehicle.suspensionMaxTunes);
+                int middle = Mathf.Clamp((maximum + 1) / 2, 1, maximum);
+                int[] levels = { 1, middle, maximum };
+                for (int levelIndex = 0; levelIndex < levels.Length; levelIndex++)
+                {
+                    if (levelIndex > 0 && levels[levelIndex] == levels[levelIndex - 1]) continue;
+                    AirborneWheelResult both = SimulateAirborneWheelStability(vehicle, levels[levelIndex], false);
+                    if (both.unexpectedGroundedFrames != 0 || both.maximumLengthSpan > .008f ||
+                        both.maximumRelativeVelocity > .12f || both.maximumVisualError > .0001f)
+                        failures.Add($"{vehicle.displayName} AIRBORNE L{levels[levelIndex]}: " +
+                            $"span={both.maximumLengthSpan:0.0000}m, relV={both.maximumRelativeVelocity:0.000}m/s, " +
+                            $"visual={both.maximumVisualError:0.000000}m, falseGround={both.unexpectedGroundedFrames}.");
+                }
+
+                AirborneWheelResult single = SimulateAirborneWheelStability(vehicle, middle, true);
+                if (single.unexpectedGroundedFrames != 0 || single.supportedWheelGroundedRatio < .80f ||
+                    single.maximumLengthSpan > .012f || single.maximumRelativeVelocity > .16f ||
+                    single.maximumVisualError > .0001f)
+                    failures.Add($"{vehicle.displayName} SINGLE-WHEEL AIRBORNE L{middle}: " +
+                        $"span={single.maximumLengthSpan:0.0000}m, relV={single.maximumRelativeVelocity:0.000}m/s, " +
+                        $"visual={single.maximumVisualError:0.000000}m, falseGround={single.unexpectedGroundedFrames}, " +
+                        $"support={single.supportedWheelGroundedRatio:P0}.");
+                summaries.Add($"{vehicle.displayName} tunes=L1/L{middle}/L{maximum} exact; air=" +
+                    $"{single.maximumLengthSpan:0.0000}m/{single.maximumRelativeVelocity:0.000}m/s");
+            }
+
+            VehicleDefinition formula = vehicles.Length > 1 ? vehicles[1] : null;
+            if (formula != null && formula.gameplayPrefab2D != null)
+            {
+                CapsuleCollider chassis = formula.gameplayPrefab2D.GetComponent<CapsuleCollider>();
+                if (chassis == null || chassis.direction != 0 || chassis.height > 3.70f || chassis.radius < .32f ||
+                    Mathf.Abs(chassis.center.y - chassis.radius + .05f) > .011f)
+                    failures.Add("FORMULA TIP GEOMETRY: expected a short, rounded longitudinal chassis collider.");
+                ValidateFormulaTipDirection(formula, true, failures, summaries);
+                ValidateFormulaTipDirection(formula, false, failures, summaries);
+                ValidateFormulaOneWheelControl(formula, failures, summaries);
+            }
+
+            if (failures.Count > 0)
+                throw new InvalidOperationException("TUNE/AIRBORNE/FORMULA FIX FAILED\n- " +
+                    string.Join("\n- ", failures) + "\nMETRICS\n" + string.Join("\n", summaries));
+            Debug.Log("TUNE/AIRBORNE/FORMULA FIX PASS | " + string.Join(" | ", summaries));
+        }
+
         [MenuItem("Anime Hill Racing/Validate Adventure Physics A-H")]
         public static void ValidateAdventurePhysicsAH()
         {
@@ -205,6 +287,391 @@ namespace AnimeHillRacing.Editor
                 throw new InvalidOperationException("ADVENTURE PHYSICS A-H FAILED\n- " +
                     string.Join("\n- ", failures) + "\nMETRICS\n" + string.Join("\n", summaries));
             Debug.Log("ADVENTURE PHYSICS A-H PASS | " + string.Join(" | ", summaries));
+        }
+
+        private static void ValidateTuneLevelMapping(VehicleDefinition vehicle, List<string> failures)
+        {
+            for (int slot = 0; slot < vehicle.GetTuneSlotCount(); slot++)
+            {
+                VehicleUpgradeType type = vehicle.GetTuneTypeForSlot(slot);
+                int maximum = vehicle.GetMaxTunes(type);
+                int middle = Mathf.Clamp((maximum + 1) / 2, 1, maximum);
+                int[] levels = { 1, middle, maximum };
+                for (int i = 0; i < levels.Length; i++)
+                {
+                    int level = levels[i];
+                    float progress = maximum <= 1 ? 0f : (level - 1f) / (maximum - 1f);
+                    float expected = ExpectedTuneValue(vehicle, type, progress);
+                    var state = new VehicleUpgradeState();
+                    state.SetTune(type, level);
+                    float actual = ResolvedTuneValue(vehicle.Resolve(state), type);
+                    float tolerance = type == VehicleUpgradeType.Grip ? .51f : .0005f;
+                    if (Mathf.Abs(actual - expected) > tolerance)
+                        failures.Add($"{vehicle.displayName} {type} L{level}: expected {expected:0.####}, " +
+                            $"resolved {actual:0.####}; tune percentage was transformed more than once.");
+                }
+            }
+        }
+
+        private static void ValidateTopSpeedControl(VehicleDefinition vehicle, List<string> failures)
+        {
+            int[] levels =
+            {
+                1,
+                Mathf.Clamp((vehicle.engineMaxTunes + 1) / 2, 1, Mathf.Max(1, vehicle.engineMaxTunes)),
+                Mathf.Max(1, vehicle.engineMaxTunes)
+            };
+            for (int i = 0; i < levels.Length; i++)
+            {
+                var upgrades = new VehicleUpgradeState
+                {
+                    engineTune = levels[i],
+                    accelerationTune = Mathf.Clamp(levels[i], 1, Mathf.Max(1, vehicle.accelerationMaxTunes)),
+                    turboTune = Mathf.Clamp(levels[i], 1, Mathf.Max(1, vehicle.turboMaxTunes))
+                };
+                ResolvedVehicleStats stats = vehicle.Resolve(upgrades);
+                float below = VehicleController.EvaluateTopSpeedDriveAuthority(stats.topSpeedMps - 1f,
+                    stats.topSpeedMps);
+                float atLimit = VehicleController.EvaluateTopSpeedDriveAuthority(stats.topSpeedMps,
+                    stats.topSpeedMps);
+                float noOverspeed = VehicleController.EvaluateTopSpeedGovernorAcceleration(stats.topSpeedMps,
+                    stats.topSpeedMps, Physics.gravity.magnitude, 40f);
+                float governed = VehicleController.EvaluateTopSpeedGovernorAcceleration(stats.topSpeedMps + 1f,
+                    stats.topSpeedMps, Physics.gravity.magnitude, 40f);
+                float orientationInvariantSpeed = VehicleController.EvaluateProgressSpeed(
+                    new Vector3(stats.topSpeedMps, stats.topSpeedMps * 2f, 0f));
+                if (below < .99f || atLimit > .0001f || noOverspeed > .0001f ||
+                    governed <= Physics.gravity.magnitude ||
+                    Mathf.Abs(orientationInvariantSpeed - stats.topSpeedMps) > .0001f)
+                    failures.Add($"{vehicle.displayName} TOP SPEED L{levels[i]}: drive below/limit=" +
+                        $"{below:0.000}/{atLimit:0.000}, governor limit/overspeed=" +
+                        $"{noOverspeed:0.000}/{governed:0.000}m/s2, progressSpeed=" +
+                        $"{orientationInvariantSpeed:0.000}m/s.");
+            }
+
+            float recoveredSpeed = SimulateOverspeedRecovery(vehicle);
+            float maximumTopSpeed = vehicle.Resolve(new VehicleUpgradeState
+            {
+                engineTune = Mathf.Max(1, vehicle.engineMaxTunes),
+                accelerationTune = Mathf.Max(1, vehicle.accelerationMaxTunes),
+                turboTune = Mathf.Max(1, vehicle.turboMaxTunes)
+            }).topSpeedMps;
+            if (recoveredSpeed > maximumTopSpeed + .5f || recoveredSpeed < maximumTopSpeed * .90f)
+                failures.Add($"{vehicle.displayName} PHYSICAL TOP SPEED: recovered to " +
+                    $"{recoveredSpeed * 3.6f:0.0}km/h from 108%, target {maximumTopSpeed * 3.6f:0.0}km/h.");
+        }
+
+        private static void ValidateLongitudinalTuneIndependence(VehicleDefinition vehicle,
+            List<string> failures)
+        {
+            VehicleUpgradeType accelerationType = vehicle.archetype == VehicleArchetype.Rally
+                ? VehicleUpgradeType.Turbo : VehicleUpgradeType.Acceleration;
+            int maximumAccelerationLevel = Mathf.Max(1, vehicle.GetMaxTunes(accelerationType));
+
+            var stock = new VehicleUpgradeState();
+            stock.SetTune(VehicleUpgradeType.Engine, 1);
+            stock.SetTune(accelerationType, 1);
+            var speedOnly = new VehicleUpgradeState();
+            speedOnly.SetTune(VehicleUpgradeType.Engine, Mathf.Max(1, vehicle.engineMaxTunes));
+            speedOnly.SetTune(accelerationType, 1);
+            var accelerationOnly = new VehicleUpgradeState();
+            accelerationOnly.SetTune(VehicleUpgradeType.Engine, 1);
+            accelerationOnly.SetTune(accelerationType, maximumAccelerationLevel);
+
+            ResolvedVehicleStats stockStats = vehicle.Resolve(stock);
+            ResolvedVehicleStats speedStats = vehicle.Resolve(speedOnly);
+            ResolvedVehicleStats accelerationStats = vehicle.Resolve(accelerationOnly);
+            float expectedStockAcceleration = VehicleDefinition.EvaluateZeroToHundredAcceleration(
+                stockStats.zeroToHundredTargetSeconds, vehicle.accelerationForceCalibration);
+            float expectedMaximumAcceleration = VehicleDefinition.EvaluateZeroToHundredAcceleration(
+                accelerationStats.zeroToHundredTargetSeconds, vehicle.accelerationForceCalibration);
+
+            if (Mathf.Abs(speedStats.zeroToHundredTargetSeconds - stockStats.zeroToHundredTargetSeconds) > .0001f ||
+                Mathf.Abs(accelerationStats.topSpeedMps - stockStats.topSpeedMps) > .0001f ||
+                Mathf.Abs(stockStats.targetAccelerationMps2 - expectedStockAcceleration) > .0001f ||
+                Mathf.Abs(accelerationStats.targetAccelerationMps2 - expectedMaximumAcceleration) > .0001f ||
+                (vehicle.engineMaxTunes > 1 && speedStats.topSpeedMps <= stockStats.topSpeedMps) ||
+                (maximumAccelerationLevel > 1 &&
+                 accelerationStats.targetAccelerationMps2 <= stockStats.targetAccelerationMps2))
+                failures.Add($"{vehicle.displayName} LONGITUDINAL TUNES: speed " +
+                    $"{stockStats.topSpeedMps * 3.6f:0.0}->{speedStats.topSpeedMps * 3.6f:0.0}km/h, " +
+                    $"0-100 {stockStats.zeroToHundredTargetSeconds:0.00}->" +
+                    $"{accelerationStats.zeroToHundredTargetSeconds:0.00}s. Engine Tune and 0-100 Tune " +
+                    "must remain mathematically independent.");
+        }
+
+        private static float SimulateOverspeedRecovery(VehicleDefinition source)
+        {
+            using (SimulationRig rig = SimulationRig.Create(source, source.suspensionMaxTunes, false))
+            {
+                rig.Settle(120);
+                float topSpeed = rig.Controller.Stats.topSpeedMps;
+                float initialSpeed = topSpeed * 1.08f;
+                Vector3 velocity = rig.Controller.transform.right * initialSpeed;
+                rig.Controller.Body.linearVelocity = velocity;
+                for (int i = 0; i < rig.Points.Length; i++)
+                {
+                    rig.Points[i].WheelBody.linearVelocity = velocity;
+                    rig.Points[i].WheelBody.angularVelocity = Vector3.back *
+                        (initialSpeed / Mathf.Max(.05f, source.wheelRadius));
+                }
+                rig.Input.SetTouchGas(true);
+                for (int frame = 0; frame < 90; frame++) rig.Step();
+                return Mathf.Max(0f, rig.Controller.SpeedMps);
+            }
+        }
+
+        private static void ValidateFormulaOneWheelControl(VehicleDefinition formula, List<string> failures,
+            List<string> summaries)
+        {
+            float both = VehicleController.EvaluatePitchControlAuthority(true, true, false, true,
+                formula.chassisAirControlMultiplier);
+            float frontOnly = VehicleController.EvaluatePitchControlAuthority(true, false, false, true,
+                formula.chassisAirControlMultiplier);
+            float rearOnly = VehicleController.EvaluatePitchControlAuthority(false, true, false, true,
+                formula.chassisAirControlMultiplier);
+            float chassis = VehicleController.EvaluatePitchControlAuthority(false, false, true, true,
+                formula.chassisAirControlMultiplier);
+            float airborne = VehicleController.EvaluatePitchControlAuthority(false, false, false, true,
+                formula.chassisAirControlMultiplier);
+            float otherVehicleOneWheel = VehicleController.EvaluatePitchControlAuthority(true, false, false,
+                false, formula.chassisAirControlMultiplier);
+            Vector3 pitchedRight = Quaternion.Euler(0f, 0f, 28f) * Vector3.right;
+            Vector3 pitchedUp = Quaternion.Euler(0f, 0f, 28f) * Vector3.up;
+            Vector3 downforce = VehicleController.EvaluateAerodynamicDownforceVector(pitchedUp, 10f);
+            float oneWheelDamping = VehicleController.EvaluatePitchAngularDamping(true, true, .45f, 1.5f);
+            float settledDamping = VehicleController.EvaluatePitchAngularDamping(true, false, .45f, 1.5f);
+            float airborneDamping = VehicleController.EvaluatePitchAngularDamping(false, false, .45f, 1.5f);
+            if (both != 0f || frontOnly < .10f || frontOnly > .18f ||
+                Mathf.Abs(frontOnly - rearOnly) > .0001f || chassis < .05f || chassis > .15f ||
+                Mathf.Abs(airborne - 1f) > .0001f || otherVehicleOneWheel != 0f ||
+                oneWheelDamping > .15f || Mathf.Abs(settledDamping - .45f) > .0001f ||
+                Mathf.Abs(airborneDamping - 1.5f) > .0001f ||
+                Mathf.Abs(Vector3.Dot(downforce, pitchedRight)) > .0001f ||
+                Mathf.Abs(downforce.magnitude - 10f) > .0001f)
+                failures.Add($"FORMULA ONE-WHEEL CONTROL: both/front/rear/chassis/air=" +
+                    $"{both:0.00}/{frontOnly:0.00}/{rearOnly:0.00}/{chassis:0.00}/{airborne:0.00}, " +
+                    $"damping one/both/air={oneWheelDamping:0.000}/{settledDamping:0.000}/" +
+                    $"{airborneDamping:0.000}.");
+            if (formula.collisionPitchInertiaMultiplier < 3.5f ||
+                formula.collisionPitchInertiaMultiplier > 5f || Mathf.Abs(formula.centerOfMass.x) > .01f)
+                failures.Add($"FORMULA ONE-WHEEL INERTIA: {formula.collisionPitchInertiaMultiplier:0.0}x " +
+                    $"COMx={formula.centerOfMass.x:0.00}; must remain stable without suppressing natural " +
+                    "front/rear pitch recovery.");
+            summaries.Add($"FORMULA one-wheel authority={frontOnly:P0}, pitch inertia=" +
+                $"{formula.collisionPitchInertiaMultiplier:0.0}x, damping={oneWheelDamping:0.000}");
+        }
+
+        private static float ExpectedTuneValue(VehicleDefinition vehicle, VehicleUpgradeType type, float progress)
+        {
+            if (type == VehicleUpgradeType.Suspension)
+                return Mathf.Lerp(vehicle.suspension.minTravel, vehicle.suspension.maxTravel, progress);
+            float[] values;
+            switch (type)
+            {
+                case VehicleUpgradeType.Engine:
+                    values = vehicle.tuneTargets.engineTopSpeedKmh; break;
+                case VehicleUpgradeType.Acceleration:
+                case VehicleUpgradeType.Turbo:
+                    values = vehicle.tuneTargets.accelerationZeroToHundredSeconds; break;
+                case VehicleUpgradeType.Grip:
+                    values = vehicle.tuneTargets.gripRatings; break;
+                case VehicleUpgradeType.Downforce:
+                    values = vehicle.tuneTargets.airborneDownforceAcceleration; break;
+                case VehicleUpgradeType.AirControl:
+                    values = vehicle.tuneTargets.airControlTorque; break;
+                default:
+                    values = vehicle.tuneTargets.fuelRunDurationSeconds; break;
+            }
+            if (values == null || values.Length == 0)
+                throw new InvalidOperationException($"{vehicle.displayName} {type} has no authored tune targets.");
+            return Mathf.Lerp(values[0], values[values.Length - 1], progress);
+        }
+
+        private static float ResolvedTuneValue(ResolvedVehicleStats stats, VehicleUpgradeType type)
+        {
+            switch (type)
+            {
+                case VehicleUpgradeType.Engine: return stats.topSpeedMps * 3.6f;
+                case VehicleUpgradeType.Acceleration:
+                case VehicleUpgradeType.Turbo: return stats.zeroToHundredTargetSeconds;
+                case VehicleUpgradeType.Suspension: return stats.suspensionTravel;
+                case VehicleUpgradeType.Grip: return stats.gripRating;
+                case VehicleUpgradeType.Downforce: return stats.airborneDownforceAcceleration;
+                case VehicleUpgradeType.AirControl: return stats.airControlTorque;
+                default: return stats.totalRunFuelDuration;
+            }
+        }
+
+        private static AirborneWheelResult SimulateAirborneWheelStability(VehicleDefinition source,
+            int suspensionLevel, bool singleWheelAirborne)
+        {
+            Vector3 position = singleWheelAirborne ? new Vector3(0f, 1.1f, 0f) : new Vector3(0f, 100f, 0f);
+            using (SimulationRig rig = SimulationRig.Create(source, suspensionLevel, false, position))
+            {
+                SuspensionController airbornePoint = null;
+                SuspensionController supportedPoint = null;
+                if (singleWheelAirborne)
+                {
+                    rig.ConfigureRearOnlyGround();
+                    rig.Controller.Body.constraints |= RigidbodyConstraints.FreezeRotation;
+                    for (int i = 0; i < rig.Points.Length; i++)
+                    {
+                        float localX = rig.Controller.transform.InverseTransformPoint(
+                            rig.Points[i].WheelBody.position).x;
+                        if (localX >= 0f) airbornePoint = rig.Points[i];
+                        else supportedPoint = rig.Points[i];
+                    }
+                }
+                else
+                {
+                    rig.Input.SetTouchGas(true);
+                    rig.Controller.Body.linearVelocity = Vector3.right * 20f + Vector3.down * 2f;
+                    for (int i = 0; i < rig.Points.Length; i++)
+                    {
+                        float perturbation = i % 2 == 0 ? .04f : -.04f;
+                        rig.Points[i].WheelBody.position += rig.Controller.transform.up * perturbation;
+                    }
+                    Physics.SyncTransforms();
+                }
+
+                float[] minimumLength = new float[rig.Points.Length];
+                float[] maximumLength = new float[rig.Points.Length];
+                for (int i = 0; i < rig.Points.Length; i++)
+                {
+                    minimumLength[i] = float.PositiveInfinity;
+                    maximumLength[i] = float.NegativeInfinity;
+                }
+                float maximumRelativeVelocity = 0f;
+                float maximumVisualError = 0f;
+                int unexpectedGroundedFrames = 0;
+                int supportedGroundedFrames = 0;
+                const int frames = 170;
+                const int measurementStart = 110;
+                for (int frame = 0; frame < frames; frame++)
+                {
+                    rig.Step();
+                    for (int p = 0; p < rig.Points.Length; p++)
+                        InvokePrivate(rig.Points[p], "LateUpdate");
+                    if (frame < measurementStart) continue;
+                    for (int p = 0; p < rig.Points.Length; p++)
+                    {
+                        SuspensionController point = rig.Points[p];
+                        bool shouldBeAirborne = !singleWheelAirborne || point == airbornePoint;
+                        if (shouldBeAirborne && point.IsGrounded) unexpectedGroundedFrames++;
+                        if (point == supportedPoint && point.IsGrounded) supportedGroundedFrames++;
+                        if (!shouldBeAirborne) continue;
+                        minimumLength[p] = Mathf.Min(minimumLength[p], point.CurrentLength);
+                        maximumLength[p] = Mathf.Max(maximumLength[p], point.CurrentLength);
+                        maximumRelativeVelocity = Mathf.Max(maximumRelativeVelocity,
+                            Mathf.Abs(point.LastRelativeVelocity));
+                        Transform visual = GetPrivateField<Transform>(point, "wheelVisual");
+                        if (visual != null)
+                            maximumVisualError = Mathf.Max(maximumVisualError,
+                                Vector2.Distance(visual.position, point.WheelBody.transform.position));
+                    }
+                }
+
+                float maximumSpan = 0f;
+                for (int i = 0; i < rig.Points.Length; i++)
+                    if (!float.IsInfinity(minimumLength[i]))
+                        maximumSpan = Mathf.Max(maximumSpan, maximumLength[i] - minimumLength[i]);
+                return new AirborneWheelResult
+                {
+                    maximumLengthSpan = maximumSpan,
+                    maximumRelativeVelocity = maximumRelativeVelocity,
+                    maximumVisualError = maximumVisualError,
+                    unexpectedGroundedFrames = unexpectedGroundedFrames,
+                    supportedWheelGroundedRatio = supportedGroundedFrames / (float)(frames - measurementStart)
+                };
+            }
+        }
+
+        private static void ValidateFormulaTipDirection(VehicleDefinition formula, bool front,
+            List<string> failures, List<string> summaries)
+        {
+            TipImpactResult gentle = SimulateFormulaTipImpact(formula, front, 1.5f);
+            TipImpactResult strong = SimulateFormulaTipImpact(formula, front, 7f);
+            string side = front ? "FRONT" : "REAR";
+            if (gentle.maximumAngularVelocity > 2.5f || gentle.finalSpeedMps < 8f)
+                failures.Add($"FORMULA {side} GENTLE: angular={gentle.maximumAngularVelocity:0.00}rad/s, " +
+                    $"finalSpeed={gentle.finalSpeedMps:0.00}m/s.");
+            if (strong.maximumAngularVelocity + .05f < gentle.maximumAngularVelocity)
+                failures.Add($"FORMULA {side} IMPACT PROPORTIONALITY: gentle/strong angular=" +
+                    $"{gentle.maximumAngularVelocity:0.00}/{strong.maximumAngularVelocity:0.00}rad/s.");
+            summaries.Add($"FORMULA {side} gentle/strong={gentle.maximumAngularVelocity:0.00}/" +
+                $"{strong.maximumAngularVelocity:0.00}rad/s, slide={gentle.finalSpeedMps:0.0}m/s");
+        }
+
+        private static TipImpactResult SimulateFormulaTipImpact(VehicleDefinition source, bool front,
+            float downwardSpeed)
+        {
+            SimulationMode previousMode = Physics.simulationMode;
+            Physics.simulationMode = SimulationMode.Script;
+            VehicleDefinition definition = null;
+            GameObject ground = null;
+            GameObject inputObject = null;
+            GameObject instance = null;
+            try
+            {
+                definition = CreateFrozenDefinition(source, source.suspensionMaxTunes);
+                ground = new GameObject("Formula Tip Audit Ground");
+                BoxCollider groundCollider = ground.AddComponent<BoxCollider>();
+                groundCollider.center = new Vector3(0f, -.5f, 0f);
+                groundCollider.size = new Vector3(200f, 1f, 20f);
+                groundCollider.sharedMaterial = AssetDatabase.LoadAssetAtPath<PhysicsMaterial>(GroundMaterialPath);
+                inputObject = new GameObject("Formula Tip Audit Input");
+                VehicleInputController input = inputObject.AddComponent<VehicleInputController>();
+                input.SetInputMode(GameModeType.Adventure2_5D);
+                instance = UnityEngine.Object.Instantiate(source.gameplayPrefab2D, Vector3.up * 4f,
+                    Quaternion.Euler(0f, 0f, front ? -15f : 15f));
+                VehicleController controller = instance.GetComponent<VehicleController>();
+                SuspensionController[] points = instance.GetComponentsInChildren<SuspensionController>(true);
+                controller.AssignRuntimeReferences(definition, input, points);
+                InvokePrivate(controller, "Awake");
+                MovementPlaneConstraint plane = instance.GetComponent<MovementPlaneConstraint>();
+                if (plane != null) InvokePrivate(plane, "Awake");
+                ConfigurableJoint[] joints = instance.GetComponents<ConfigurableJoint>();
+                for (int i = 0; i < joints.Length; i++) UnityEngine.Object.DestroyImmediate(joints[i]);
+                for (int i = 0; i < points.Length; i++)
+                {
+                    points[i].WheelCollider.enabled = false;
+                    points[i].WheelBody.detectCollisions = false;
+                    points[i].WheelBody.isKinematic = true;
+                }
+                controller.AssignRuntimeReferences(definition, input, Array.Empty<SuspensionController>());
+                Rigidbody body = controller.Body;
+                body.constraints = RigidbodyConstraints.FreezePositionZ;
+                CapsuleCollider chassis = instance.GetComponent<CapsuleCollider>();
+                Physics.SyncTransforms();
+                body.position += Vector3.up * (.015f - chassis.bounds.min.y);
+                body.linearVelocity = Vector3.right * 16f + Vector3.down * downwardSpeed;
+                body.angularVelocity = Vector3.zero;
+                Physics.SyncTransforms();
+                float maximumAngularVelocity = 0f;
+                for (int frame = 0; frame < 35; frame++)
+                {
+                    InvokePrivate(input, "Update");
+                    InvokePrivate(controller, "FixedUpdate");
+                    if (plane != null) InvokePrivate(plane, "FixedUpdate");
+                    Physics.Simulate(StepSeconds);
+                    maximumAngularVelocity = Mathf.Max(maximumAngularVelocity,
+                        Mathf.Abs(body.angularVelocity.z));
+                }
+                return new TipImpactResult
+                {
+                    maximumAngularVelocity = maximumAngularVelocity,
+                    finalSpeedMps = Mathf.Abs(Vector3.Dot(body.linearVelocity, Vector3.right))
+                };
+            }
+            finally
+            {
+                if (instance != null) UnityEngine.Object.DestroyImmediate(instance);
+                if (inputObject != null) UnityEngine.Object.DestroyImmediate(inputObject);
+                if (ground != null) UnityEngine.Object.DestroyImmediate(ground);
+                if (definition != null) UnityEngine.Object.DestroyImmediate(definition);
+                Physics.simulationMode = previousMode;
+            }
         }
 
         private static void ValidatePhysicalConfiguration(VehicleDefinition vehicle, List<string> failures)
@@ -754,6 +1221,16 @@ namespace AnimeHillRacing.Editor
                 for (int i = 0; i < frames; i++) Step();
             }
 
+            public void ConfigureRearOnlyGround()
+            {
+                BoxCollider collider = ground != null ? ground.GetComponent<BoxCollider>() : null;
+                if (collider == null)
+                    throw new InvalidOperationException("Rear-only wheel audit requires flat ground.");
+                collider.center = new Vector3(-50f, -.5f, 0f);
+                collider.size = new Vector3(100f, 1f, 20f);
+                Physics.SyncTransforms();
+            }
+
             public void Dispose()
             {
                 if (instance != null) UnityEngine.Object.DestroyImmediate(instance);
@@ -831,6 +1308,14 @@ namespace AnimeHillRacing.Editor
                 BindingFlags.Instance | BindingFlags.NonPublic);
             if (field == null) throw new MissingFieldException(target.GetType().Name, fieldName);
             field.SetValue(target, value);
+        }
+
+        private static T GetPrivateField<T>(object target, string fieldName) where T : class
+        {
+            FieldInfo field = target.GetType().GetField(fieldName,
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            if (field == null) throw new MissingFieldException(target.GetType().Name, fieldName);
+            return field.GetValue(target) as T;
         }
     }
 }

@@ -2923,7 +2923,7 @@ namespace AnimeHillRacing.Editor
                 accelerationZeroToHundredSeconds = CreateProgressionTargets(20, 5f, 2f),
                 gripRatings = CreateProgressionTargets(20, 200f, 520f),
                 airControlTorque = new float[] { 9000f },
-                airborneDownforceAcceleration = CreateProgressionTargets(20, 1.5f, 13.5f),
+                airborneDownforceAcceleration = CreateProgressionTargets(20, 3f, 27f),
                 fuelRunDurationSeconds = CreateProgressionTargets(25, 20f, 45f)
             };
         }
@@ -3831,19 +3831,15 @@ namespace AnimeHillRacing.Editor
                 {
                     VehicleUpgradeType type = definition.GetTuneTypeForSlot(slot);
                     int maximum = definition.GetMaxTunes(type);
-                    float earlyGain = VehicleDefinition.UpgradeGain(1, maximum);
-                    int middle = Mathf.Clamp((maximum + 1) / 2, 2, maximum - 1);
-                    float middleGain = VehicleDefinition.UpgradeGain(middle, maximum);
-                    float lateGain = VehicleDefinition.UpgradeGain(maximum - 3, maximum);
-                    float penultimateGain = VehicleDefinition.UpgradeGain(maximum - 2, maximum);
-                    float finalGain = VehicleDefinition.UpgradeGain(maximum - 1, maximum);
-                    if (!(earlyGain > middleGain && middleGain > lateGain &&
-                          lateGain > penultimateGain && penultimateGain > finalGain) ||
-                        penultimateGain > lateGain * .5f ||
-                        VehicleDefinition.UpgradeProgress(1, maximum) != 0f ||
+                    float expectedGain = 1f / Mathf.Max(1, maximum - 1);
+                    for (int level = 1; level < maximum; level++)
+                        if (Mathf.Abs(VehicleDefinition.UpgradeGain(level, maximum) - expectedGain) > .000001f)
+                            throw new System.InvalidOperationException(
+                                $"{definition.displayName} {type} Level {level} applies a non-linear or repeated percentage.");
+                    if (VehicleDefinition.UpgradeProgress(1, maximum) != 0f ||
                         VehicleDefinition.UpgradeProgress(maximum, maximum) != 1f)
                         throw new System.InvalidOperationException(
-                            $"{definition.displayName} {type} does not reserve its strong taper for the final two upgrades.");
+                            $"{definition.displayName} {type} does not preserve its exact Level 1/max endpoints.");
 
                     float previousValue = GetImprovementScalar(definition, type, 1);
                     for (int currentLevel = 1; currentLevel < maximum; currentLevel++)
@@ -3878,9 +3874,9 @@ namespace AnimeHillRacing.Editor
                     LogTuneProgression(definition, type, maximum);
                 }
             }
-            Debug.Log("UPGRADE_CURVES: exact one-based Level 1/max endpoints; early/mid/late gains remain " +
-                      "perceptible; only the final two transitions use small weights; every purchase changes " +
-                      "the resolved stat; prices strictly increase to J/F/R/S=50000/150000/100000/200000.");
+            Debug.Log("UPGRADE_CURVES: each one-based level applies its normalized percentage exactly once; " +
+                      "Level 1/max preserve the authored endpoints; every purchase changes the resolved stat; " +
+                      "prices strictly increase to J/F/R/S=50000/150000/100000/200000.");
         }
 
         private static float GetImprovementScalar(VehicleDefinition definition, VehicleUpgradeType type, int level)
@@ -4086,10 +4082,19 @@ namespace AnimeHillRacing.Editor
             float airtime1 = 16f / (Physics.gravity.magnitude + a1);
             float airtime10 = 16f / (Physics.gravity.magnitude + a10);
             float airtime20 = 16f / (Physics.gravity.magnitude + a20);
+            Vector3 groundedForce = VehicleController.EvaluateAppliedDownforceVector(Vector3.up, a20,
+                true, false);
+            Vector3 airborneForce = VehicleController.EvaluateAppliedDownforceVector(Vector3.right, a20,
+                false, false);
+            Vector3 chassisBounceForce = VehicleController.EvaluateAppliedDownforceVector(Vector3.up, a20,
+                false, true);
             if (!(a1 < a10 && a10 < a20) || !(airtime1 > airtime10 && airtime10 > airtime20) ||
-                a20 > formula.maximumDownforceAcceleration + .001f)
+                a20 > formula.maximumDownforceAcceleration + .001f ||
+                Vector3.Distance(groundedForce, Vector3.down * a20) > .001f ||
+                Vector3.Distance(airborneForce, Vector3.down * a20) > .001f ||
+                chassisBounceForce.sqrMagnitude > .000001f)
                 throw new System.InvalidOperationException(
-                    "Formula Downforce Levels 1/10/20 do not reduce airtime monotonically.");
+                    "Formula Downforce tuning or wheel/air/chassis contact routing is invalid.");
             Debug.Log($"FORMULA_DOWNFORCE_TEST @ {auditSpeed:0}m/s: L1={a1:0.00}m/s2/" +
                       $"{airtime1:0.000}s, L10={a10:0.00}/{airtime10:0.000}s, " +
                       $"L20={a20:0.00}/{airtime20:0.000}s; applied downward on ground and in air.");
@@ -4389,7 +4394,9 @@ namespace AnimeHillRacing.Editor
             assets.formula.tuneTargets = CreateFormulaTuneTargets();
             assets.formula.mass = 780f; assets.formula.wheelMass = 28f; assets.formula.wheelRadius = .48f;
             assets.formula.engine.speedTorqueCurve = ArcadeSpeedTorqueCurve();
-            assets.formula.collisionPitchInertiaMultiplier = 16f;
+            // The rounded chassis and low COM absorb tip contacts. Keep enough pitch inertia for Formula
+            // stability without suppressing gravity/contact recovery during a one-wheel balance.
+            assets.formula.collisionPitchInertiaMultiplier = 4f;
             assets.formula.maximumDepenetrationVelocity = 1.5f;
             assets.formula.chassisAirControlMultiplier = .08f;
             assets.formula.halfWheelbase = 1.46f; assets.formula.halfTrack = .78f;
@@ -4398,9 +4405,9 @@ namespace AnimeHillRacing.Editor
             assets.formula.accelerationForceCalibration = 1.01f;
             assets.formula.airControlTorque = 9000f;
             assets.formula.downforceReferenceSpeedMps = 30f;
-            assets.formula.maximumDownforceAcceleration = 14f;
+            assets.formula.maximumDownforceAcceleration = 28f;
             assets.formula.maxAirAngularVelocity = 3.5f; assets.formula.airAngularAcceleration = 24f;
-            assets.formula.airAngularDamping = 1.5f; assets.formula.centerOfMass = new Vector3(.08f, -.38f, 0f);
+            assets.formula.airAngularDamping = 1.5f; assets.formula.centerOfMass = new Vector3(0f, -.38f, 0f);
             assets.formula.engine.minTorqueNm = 300f; assets.formula.engine.maxTorqueNm = 700f;
             assets.formula.engine.drivetrainEfficiency = .88f;
             assets.formula.transmission.forwardGearRatios = new[] { 3.80f, 2.75f, 2.15f, 1.75f, 1.48f, 1.30f, 1.18f };
@@ -4822,7 +4829,9 @@ namespace AnimeHillRacing.Editor
                 entrySpeedRemaining = .10f,
                 entrySlowdownSeconds = .35f,
                 continuousViscosity = 2.4f,
-                liquidDriveAcceleration = 9f
+                liquidDriveAcceleration = 9f,
+                maximumSinkAcceleration = 8f,
+                exitRampHorizontalLength = 12f
             };
             EditorUtility.SetDirty(assets.neonCity);
             assets.elevation = LoadOrCreate<TerrainElevationProfile>(Root + "/MapProfiles/CountrysideElevation.asset");
@@ -5782,9 +5791,9 @@ namespace AnimeHillRacing.Editor
             CapsuleCollider collider = root.AddComponent<CapsuleCollider>();
             collider.direction = 0;
             collider.center = new Vector3(formula ? 0f : rally ? .01f : sportBike ? -.03f : .06f,
-                formula ? .24f : rally ? .33f : sportBike ? .18f : .24f, 0f);
-            collider.radius = formula ? .29f : rally ? .38f : sportBike ? .27f : .40f;
-            collider.height = formula ? 4.15f : rally ? 4.05f : sportBike ? 2.95f : 2.90f;
+                formula ? .29f : rally ? .33f : sportBike ? .18f : .24f, 0f);
+            collider.radius = formula ? .34f : rally ? .38f : sportBike ? .27f : .40f;
+            collider.height = formula ? 3.65f : rally ? 4.05f : sportBike ? 2.95f : 2.90f;
             collider.sharedMaterial = chassisMaterial;
             root.AddComponent<MovementPlaneConstraint>(); root.AddComponent<FuelSystem>();
             root.AddComponent<EngineController>(); root.AddComponent<TransmissionController>();
@@ -6126,7 +6135,7 @@ namespace AnimeHillRacing.Editor
 
         private static ResultsUI CreateResults(Transform safe, GameManager manager, out RawImage resultImage)
         {
-            GameObject panel = CreateImage("Results Panel", safe, new Color(0.025f, 0.035f, 0.065f, 0.96f),
+            GameObject panel = CreateImage("Results Panel", safe, new Color(0.025f, 0.035f, 0.065f, 0.5f),
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1540f, 820f));
             Outline resultsOutline = panel.AddComponent<Outline>();
             resultsOutline.effectColor = new Color(.22f, .62f, .94f, .85f);

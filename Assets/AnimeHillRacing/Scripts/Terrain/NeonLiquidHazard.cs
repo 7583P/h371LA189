@@ -16,6 +16,10 @@ namespace AnimeHillRacing.Terrain
         private BoxCollider volume;
         private SpriteRenderer liquidRenderer;
         private SpriteRenderer cautionRenderer;
+        private MeshFilter basinFilter;
+        private MeshRenderer basinRenderer;
+        private MeshCollider basinCollider;
+        private Mesh basinMesh;
         private LiquidChallengeSettings settings;
         private GameManager gameManager;
         private float surfaceY;
@@ -54,6 +58,29 @@ namespace AnimeHillRacing.Terrain
                 cautionRenderer = child.GetComponent<SpriteRenderer>();
                 if (cautionRenderer == null) cautionRenderer = child.gameObject.AddComponent<SpriteRenderer>();
             }
+            EnsureBasinComponents();
+        }
+
+        private void EnsureBasinComponents()
+        {
+            Transform child = transform.Find("Liquid Basin Terrain");
+            if (child == null)
+            {
+                child = new GameObject("Liquid Basin Terrain").transform;
+                child.SetParent(transform, false);
+            }
+            basinFilter ??= child.GetComponent<MeshFilter>();
+            if (basinFilter == null) basinFilter = child.gameObject.AddComponent<MeshFilter>();
+            basinRenderer ??= child.GetComponent<MeshRenderer>();
+            if (basinRenderer == null) basinRenderer = child.gameObject.AddComponent<MeshRenderer>();
+            basinCollider ??= child.GetComponent<MeshCollider>();
+            if (basinCollider == null) basinCollider = child.gameObject.AddComponent<MeshCollider>();
+            if (basinMesh == null)
+            {
+                basinMesh = new Mesh { name = "Neon Liquid Basin Terrain" };
+                basinMesh.MarkDynamic();
+                basinFilter.sharedMesh = basinMesh;
+            }
         }
 
         public void Configure(MapProfile profile, LiquidChallengeLayout layout, float trackWidth,
@@ -71,6 +98,7 @@ namespace AnimeHillRacing.Terrain
             transform.position = new Vector3(layout.poolStart, surfaceY, 0f);
             volume.center = new Vector3(layout.poolLength * .5f, -settings.visualDepth * .5f, 0f);
             volume.size = new Vector3(layout.poolLength, settings.visualDepth, Mathf.Max(2f, trackWidth));
+            ConfigureBasin(profile, layout, trackWidth);
 
             liquidRenderer.sprite = settings.liquidSprite;
             liquidRenderer.drawMode = SpriteDrawMode.Tiled;
@@ -94,6 +122,66 @@ namespace AnimeHillRacing.Terrain
                 (settings.cautionWidth / Mathf.Max(.001f, sourceWidth));
             gameObject.name = $"Neon Liquid C{CycleIndex} #{ChallengeIndex + 1} - Pooled";
             gameObject.SetActive(true);
+        }
+
+        private void ConfigureBasin(MapProfile profile, LiquidChallengeLayout layout, float trackWidth)
+        {
+            float depth = Mathf.Max(1f, settings.visualDepth);
+            float bottomY = -depth;
+            float exitY = TerrainGenerator.SampleHeight(profile, layout.poolEnd) - surfaceY;
+            float rampLength = Mathf.Clamp(settings.exitRampHorizontalLength, 2f,
+                Mathf.Max(2f, layout.poolLength - 2f));
+            float rampStartX = Mathf.Max(0f, layout.poolLength - rampLength);
+            float skirtBottom = bottomY - Mathf.Max(1f, profile.terrainVisualDepth);
+            float halfWidth = Mathf.Max(1f, trackWidth * .5f);
+            float[] x = { 0f, rampStartX, layout.poolLength };
+            float[] y = { bottomY, bottomY, exitY };
+            var vertices = new Vector3[9];
+            var uvs = new Vector2[9];
+            for (int i = 0; i < x.Length; i++)
+            {
+                int vertex = i * 3;
+                vertices[vertex] = new Vector3(x[i], y[i], -halfWidth);
+                vertices[vertex + 1] = new Vector3(x[i], y[i], halfWidth);
+                vertices[vertex + 2] = new Vector3(x[i], skirtBottom, -halfWidth);
+                uvs[vertex] = new Vector2(x[i] * .1f, 0f);
+                uvs[vertex + 1] = new Vector2(x[i] * .1f, 1f);
+                uvs[vertex + 2] = new Vector2(x[i] * .1f, Mathf.Abs(y[i] - skirtBottom) * .1f);
+            }
+            int[] surfaceTriangles =
+            {
+                0, 1, 3, 1, 4, 3,
+                3, 4, 6, 4, 7, 6
+            };
+            int[] skirtTriangles =
+            {
+                0, 3, 2, 3, 5, 2,
+                3, 6, 5, 6, 8, 5
+            };
+            basinMesh.Clear();
+            basinMesh.vertices = vertices;
+            basinMesh.uv = uvs;
+            if (profile.terrainEdgeMaterial != null)
+            {
+                basinMesh.subMeshCount = 2;
+                basinMesh.SetTriangles(skirtTriangles, 0);
+                basinMesh.SetTriangles(surfaceTriangles, 1);
+                basinRenderer.sharedMaterials = new[] { profile.terrainMaterial, profile.terrainEdgeMaterial };
+            }
+            else
+            {
+                var allTriangles = new int[skirtTriangles.Length + surfaceTriangles.Length];
+                skirtTriangles.CopyTo(allTriangles, 0);
+                surfaceTriangles.CopyTo(allTriangles, skirtTriangles.Length);
+                basinMesh.subMeshCount = 1;
+                basinMesh.SetTriangles(allTriangles, 0);
+                basinRenderer.sharedMaterial = profile.terrainMaterial;
+            }
+            basinMesh.RecalculateNormals();
+            basinMesh.RecalculateBounds();
+            basinCollider.sharedMesh = null;
+            basinCollider.sharedMesh = basinMesh;
+            basinCollider.sharedMaterial = profile.groundPhysicsMaterial;
         }
 
         public void Deactivate()
@@ -147,9 +235,11 @@ namespace AnimeHillRacing.Terrain
                 float damping = elapsed <= settings.entrySlowdownSeconds
                     ? entryDamping : settings.continuousViscosity;
                 body.AddForce(-body.linearVelocity * body.mass * damping, ForceMode.Force);
-                float targetY = surfaceY - .75f;
+                // Settle close to the real basin floor instead of hovering just below the surface.
+                float targetY = surfaceY - Mathf.Max(1f, settings.visualDepth) + .75f;
                 float buoyancy = Physics.gravity.magnitude +
-                                 Mathf.Clamp((targetY - body.position.y) * 4f - body.linearVelocity.y * 3f, -2f, 8f);
+                                 Mathf.Clamp((targetY - body.position.y) * 4f - body.linearVelocity.y * 3f,
+                                     -Mathf.Max(.1f, settings.maximumSinkAcceleration), 8f);
                 body.AddForce(Vector3.up * buoyancy, ForceMode.Acceleration);
                 body.AddForce(vehicle.transform.right *
                               (settings.liquidDriveAcceleration * Mathf.Clamp01(vehicle.AppliedThrottle)),
@@ -167,6 +257,13 @@ namespace AnimeHillRacing.Terrain
         }
 
         private void OnDisable() => ClearContacts();
+
+        private void OnDestroy()
+        {
+            if (basinMesh == null) return;
+            if (Application.isPlaying) Destroy(basinMesh);
+            else DestroyImmediate(basinMesh);
+        }
 
         private void ClearContacts()
         {

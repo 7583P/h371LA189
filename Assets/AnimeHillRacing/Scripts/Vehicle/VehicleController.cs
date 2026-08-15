@@ -17,6 +17,14 @@ namespace AnimeHillRacing.Vehicle
     [RequireComponent(typeof(FuelSystem))]
     public sealed class VehicleController : VehicleRuntimeBase
     {
+        private const float TopSpeedGovernorResponseSeconds = .45f;
+        private const float TopSpeedGovernorMaximumCorrectionAcceleration = 18f;
+        private const float TopSpeedTaperFraction = .01f;
+        private const float TopSpeedTaperMinimumMps = .35f;
+        private const float TopSpeedTaperMaximumMps = 1f;
+        private const float OneWheelPitchControlAuthority = .14f;
+        private const float OneWheelAngularDampingScale = .25f;
+
         [SerializeField] private VehicleDefinition definition;
         [SerializeField] private VehicleUpgradeState upgrades = new VehicleUpgradeState();
         [SerializeField] private VehicleInputController input;
@@ -61,7 +69,7 @@ namespace AnimeHillRacing.Vehicle
         private int chassisContactCountSinceLastStep;
         private float nextPhysicsDiagnosticTime;
 
-        public override float SpeedMps => body != null ? Vector3.Dot(body.linearVelocity, transform.right) : 0f;
+        public override float SpeedMps => body != null ? EvaluateProgressSpeed(body.linearVelocity) : 0f;
         public override float ProgressPosition => body != null ? body.position.x : 0f;
         public float FurthestDistanceReached => furthestDistanceReached;
         public float ReverseBoundaryX => Mathf.Max(initialReverseBoundary,
@@ -178,6 +186,7 @@ namespace AnimeHillRacing.Vehicle
             ApplyDrive(gas, brake, hasFuel);
             ApplyDrag();
             ApplyAerodynamicDownforce();
+            ApplyTopSpeedGovernor();
             ApplyAirControl(inputState, rawGrounded);
             LogPhysicsDiagnostics();
         }
@@ -189,7 +198,12 @@ namespace AnimeHillRacing.Vehicle
             float acceleration = EvaluateAerodynamicDownforceAcceleration(definition, stats,
                 Mathf.Abs(SpeedMps));
             if (acceleration > .001f)
-                body.AddForce(Vector3.down * acceleration, ForceMode.Acceleration);
+            {
+                Vector3 downforce = EvaluateAppliedDownforceVector(transform.up, acceleration,
+                    anyWheelGrounded, chassisGrounded);
+                if (downforce.sqrMagnitude > .000001f)
+                    body.AddForce(downforce, ForceMode.Acceleration);
+            }
         }
 
         public static float EvaluateAerodynamicDownforceAcceleration(VehicleDefinition source,
@@ -200,6 +214,25 @@ namespace AnimeHillRacing.Vehicle
                                           Mathf.Max(1f, source.downforceReferenceSpeedMps));
             return Mathf.Min(source.maximumDownforceAcceleration,
                        Mathf.Max(0f, resolved.airborneDownforceAcceleration)) * speed01 * speed01;
+        }
+
+        public static Vector3 EvaluateAerodynamicDownforceVector(Vector3 chassisUp,
+            float acceleration)
+        {
+            Vector3 safeUp = chassisUp.sqrMagnitude > .000001f ? chassisUp.normalized : Vector3.up;
+            return -safeUp * Mathf.Max(0f, acceleration);
+        }
+
+        public static Vector3 EvaluateAppliedDownforceVector(Vector3 chassisUp, float acceleration,
+            bool hasWheelContact, bool hasChassisContact)
+        {
+            float safeAcceleration = Mathf.Max(0f, acceleration);
+            if (safeAcceleration <= .001f || hasChassisContact && !hasWheelContact) return Vector3.zero;
+            // Tire contact loads the Formula along its aerodynamic lift axis. During true flight, world-down
+            // shortens the jump as the Downforce tune promises. A chassis-only bounce keeps natural gravity.
+            return hasWheelContact
+                ? EvaluateAerodynamicDownforceVector(chassisUp, safeAcceleration)
+                : Vector3.down * safeAcceleration;
         }
 
         private void ApplyDrive(float gas, float brake, bool hasFuel)
@@ -227,10 +260,13 @@ namespace AnimeHillRacing.Vehicle
                                                    forwardSpeed * forwardSpeed +
                                                    definition.mass * Physics.gravity.magnitude *
                                                    definition.grip.rollingResistance;
-                    float requestedDriveForce = (body.mass * stats.targetAccelerationMps2 +
+                    float driveAuthority = EvaluateTopSpeedDriveAuthority(forwardSpeed, stats.topSpeedMps);
+                    // targetAccelerationMps2 is the authored 0-100 tune expressed as acceleration. Keeping it
+                    // as the single longitudinal authority preserves every vehicle's exact tune endpoints;
+                    // the legacy engine torque values are not mutually calibrated across the four vehicles.
+                    float requestedDriveForce = (body.mass * stats.targetAccelerationMps2 * driveAuthority +
                                                  resistanceCompensation) * gas;
-                    requestedWheelTorque = speed < stats.topSpeedMps
-                        ? requestedDriveForce * definition.wheelRadius : 0f;
+                    requestedWheelTorque = requestedDriveForce * definition.wheelRadius;
                     break;
             }
 
@@ -304,22 +340,94 @@ namespace AnimeHillRacing.Vehicle
             body.AddForce(-velocity.normalized * (dragForce + rollingForce), ForceMode.Force);
         }
 
+        private void ApplyTopSpeedGovernor()
+        {
+            // The tune is an actual maximum, not merely a motor cut-off. Keep the correction force-based so
+            // impacts and airborne momentum are never rewritten. Adventure 2.5D speed is horizontal progress,
+            // so a pitched chassis cannot hide overspeed from either the tune or the HUD.
+            float forwardSpeed = SpeedMps;
+            if (forwardSpeed <= stats.topSpeedMps) return;
+
+            float downforceAcceleration = EvaluateAerodynamicDownforceAcceleration(definition, stats,
+                Mathf.Abs(forwardSpeed));
+            Vector3 externalDownAcceleration = Physics.gravity +
+                EvaluateAppliedDownforceVector(transform.up, downforceAcceleration,
+                    anyWheelGrounded, chassisGrounded);
+            bool physicallySupported = anyGrounded || chassisGrounded;
+            float downhillAcceleration = physicallySupported
+                ? Mathf.Max(0f, Vector3.Dot(externalDownAcceleration, transform.right)) *
+                  Mathf.Abs(Vector3.Dot(transform.right, Vector3.right))
+                : 0f;
+            float maximumGovernorAcceleration = externalDownAcceleration.magnitude +
+                                                TopSpeedGovernorMaximumCorrectionAcceleration;
+            float governorAcceleration = EvaluateTopSpeedGovernorAcceleration(forwardSpeed,
+                stats.topSpeedMps, downhillAcceleration, maximumGovernorAcceleration);
+            if (governorAcceleration > 0f)
+                body.AddForce(Vector3.left * governorAcceleration, ForceMode.Acceleration);
+        }
+
+        public static float EvaluateProgressSpeed(Vector3 linearVelocity) => linearVelocity.x;
+
+        public static float EvaluateTopSpeedDriveAuthority(float forwardSpeed, float topSpeed)
+        {
+            float safeTopSpeed = Mathf.Max(1f, topSpeed);
+            // Engine/top-speed tuning owns this window. The independent 0-100 tune must never change where
+            // maximum-speed limiting begins or how strongly an overspeed condition is corrected.
+            float taperWindow = Mathf.Clamp(safeTopSpeed * TopSpeedTaperFraction,
+                TopSpeedTaperMinimumMps, TopSpeedTaperMaximumMps);
+            return Mathf.Clamp01((safeTopSpeed - Mathf.Max(0f, forwardSpeed)) / taperWindow);
+        }
+
+        public static float EvaluateTopSpeedGovernorAcceleration(float forwardSpeed, float topSpeed,
+            float downhillAcceleration, float maximumAcceleration)
+        {
+            float overspeed = Mathf.Max(0f, forwardSpeed - Mathf.Max(1f, topSpeed));
+            if (overspeed <= 0f) return 0f;
+            float requested = Mathf.Max(0f, downhillAcceleration) +
+                              overspeed / TopSpeedGovernorResponseSeconds;
+            return Mathf.Min(requested, Mathf.Max(0f, maximumAcceleration));
+        }
+
         private void ApplyAirControl(VehicleInputState inputState, bool hasWheelContact)
         {
-            body.angularDamping = hasWheelContact ? groundedAngularDamping : definition.airAngularDamping;
+            bool formulaOnOneWheel = definition.archetype == VehicleArchetype.Formula &&
+                                     (frontWheelGrounded ^ rearWheelGrounded) && !chassisGrounded;
+            body.angularDamping = EvaluatePitchAngularDamping(hasWheelContact, formulaOnOneWheel,
+                groundedAngularDamping, definition.airAngularDamping);
             body.maxAngularVelocity = hasWheelContact ? collisionAngularVelocityLimit : definition.maxAirAngularVelocity;
-            if (hasWheelContact || !driveEnabled) return;
+            if (!driveEnabled) return;
+            float contactAuthority = EvaluatePitchControlAuthority(frontWheelGrounded, rearWheelGrounded,
+                chassisGrounded, definition.archetype == VehicleArchetype.Formula,
+                definition.chassisAirControlMultiplier);
+            if (contactAuthority <= 0f) return;
             float control = inputState.Gas - inputState.BrakeRaw;
             if (Mathf.Abs(control) < .001f) return;
             float authority = definition.airControlTorque > .001f
                 ? Mathf.Clamp(stats.airControlTorque / definition.airControlTorque, .5f, 1.2f) : 1f;
-            float contactAuthority = chassisGrounded ? definition.chassisAirControlMultiplier : 1f;
             float current = body.angularVelocity.z;
             float target = control * definition.maxAirAngularVelocity * authority * contactAuthority;
             float acceleration = Mathf.Clamp((target - current) / Mathf.Max(.001f, Time.fixedDeltaTime),
                 -definition.airAngularAcceleration * authority * contactAuthority,
                 definition.airAngularAcceleration * authority * contactAuthority);
             body.AddTorque(Vector3.forward * acceleration, ForceMode.Acceleration);
+        }
+
+        public static float EvaluatePitchAngularDamping(bool hasWheelContact, bool formulaOnOneWheel,
+            float groundedDamping, float airborneDamping)
+        {
+            if (formulaOnOneWheel)
+                return Mathf.Max(0f, groundedDamping) * OneWheelAngularDampingScale;
+            return hasWheelContact ? Mathf.Max(0f, groundedDamping) : Mathf.Max(0f, airborneDamping);
+        }
+
+        public static float EvaluatePitchControlAuthority(bool frontGrounded, bool rearGrounded,
+            bool chassisContact, bool allowOneWheelControl, float chassisAuthority)
+        {
+            if (frontGrounded && rearGrounded) return 0f;
+            if (chassisContact) return Mathf.Clamp(chassisAuthority, .05f, .15f);
+            if (frontGrounded ^ rearGrounded)
+                return allowOneWheelControl ? OneWheelPitchControlAuthority : 0f;
+            return 1f;
         }
 
         private void ResolveAxleIndices()
@@ -390,8 +498,10 @@ namespace AnimeHillRacing.Vehicle
             float rearRpm = rearSuspensionIndex >= 0 ? suspensionPoints[rearSuspensionIndex].WheelRpm : 0f;
             float frontRpm = frontSuspensionIndex >= 0 ? suspensionPoints[frontSuspensionIndex].WheelRpm : 0f;
             PhysicsMaterial chassisMaterial = GetComponent<Collider>()?.sharedMaterial;
-            float extraVerticalAcceleration = EvaluateAerodynamicDownforceAcceleration(definition, stats,
+            float evaluatedDownforce = EvaluateAerodynamicDownforceAcceleration(definition, stats,
                 Mathf.Abs(SpeedMps));
+            float extraVerticalAcceleration = -EvaluateAppliedDownforceVector(transform.up, evaluatedDownforce,
+                anyWheelGrounded, chassisGrounded).y;
             Debug.Log($"{definition.displayName} PHYSICS | front={frontWheelGrounded}, rear={rearWheelGrounded}, " +
                       $"chassis={chassisGrounded}({chassisContactRegions}), airborne={Airborne}, " +
                       $"speed={SpeedMps:0.00}, velocity={body.linearVelocity}, wZ={body.angularVelocity.z:0.00}, " +

@@ -36,6 +36,7 @@ namespace AnimeHillRacing.Terrain
         [Min(.1f)] public float growthSaturation = 2.5f;
         [Range(0f, .5f)] public float deterministicLengthVariation = .12f;
         [Min(1f)] public float visualDepth = 7f;
+        [Min(2f)] public float exitRampHorizontalLength = 12f;
         public float surfaceOffset = .15f;
 
         [Header("Caution Visual")]
@@ -56,6 +57,7 @@ namespace AnimeHillRacing.Terrain
         [Min(.05f)] public float entrySlowdownSeconds = .35f;
         [Min(0f)] public float continuousViscosity = 2.4f;
         [Min(0f)] public float liquidDriveAcceleration = 9f;
+        [Min(.1f)] public float maximumSinkAcceleration = 8f;
 
         public static float[] DefaultStructuralRunUpPositions() =>
             new[] { 430f, 1280f, 2040f, 2770f, 3460f, 4140f, 4980f, 5530f };

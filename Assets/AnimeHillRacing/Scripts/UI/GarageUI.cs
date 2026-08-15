@@ -485,7 +485,7 @@ namespace AnimeHillRacing.UI
                 VehicleUpgradeState state = SaveManager.LoadUpgrades(vehicle.vehicleId, vehicle);
                 ResolvedVehicleStats stats = vehicle.Resolve(state);
                 upgradeSummary.text = $"CURRENT PERFORMANCE\n\nSPEED  {stats.topSpeedMps * 3.6f:0} KM/H\n" +
-                    $"ACCELERATION  {stats.zeroToHundredTargetSeconds:0.0} SEC\n" +
+                    $"0-100 KM/H  {stats.zeroToHundredTargetSeconds:0.0} SEC\n" +
                     $"SUSPENSION  {stats.suspensionTravel:0.00} M\n" +
                     $"GRIP  {stats.gripRating} / {VehicleDefinition.GlobalGripMaximum}\n" +
                     $"FUEL  {stats.totalRunFuelDuration:0} SEC";

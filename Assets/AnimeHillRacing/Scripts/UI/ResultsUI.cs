@@ -13,12 +13,15 @@ namespace AnimeHillRacing.UI
         [SerializeField] private GameManager gameManager;
         [SerializeField] private TimeTrialManager timeTrialManager;
 
+        private const float ResultsBackgroundAlpha = .5f;
+
         public Text TitleText => titleText;
         public Text StatsText => resultsText;
 
         public void Show(GameManager manager)
         {
             gameManager = manager;
+            ApplyBackgroundTransparency();
             root.SetActive(true);
             root.transform.SetAsLastSibling();
             string reason = manager.EndReason == RunEndReason.DriverDown ? "DRIVER DOWN" :
@@ -38,6 +41,7 @@ namespace AnimeHillRacing.UI
         public void ShowTimeTrial(TimeTrialManager manager)
         {
             timeTrialManager = manager;
+            ApplyBackgroundTransparency();
             root.SetActive(true);
             root.transform.SetAsLastSibling();
             if (titleText != null) titleText.text = $"FINISHED - {manager.CircuitName}";
@@ -67,6 +71,16 @@ namespace AnimeHillRacing.UI
             titleText = targetTitle;
             resultsText = targetText;
             gameManager = manager;
+            ApplyBackgroundTransparency();
+        }
+
+        private void ApplyBackgroundTransparency()
+        {
+            Image background = root != null ? root.GetComponent<Image>() : GetComponent<Image>();
+            if (background == null) return;
+            Color color = background.color;
+            color.a = ResultsBackgroundAlpha;
+            background.color = color;
         }
 
         public void AssignTimeTrial(TimeTrialManager manager) => timeTrialManager = manager;

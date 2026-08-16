@@ -68,7 +68,12 @@ namespace AnimeHillRacing.Vehicle
 
             VehicleController climb = SpawnedVehicle as VehicleController;
             if (climb != null)
+            {
                 climb.AssignRuntimeReferences(ActiveDefinition, input, instance.GetComponentsInChildren<SuspensionController>(true));
+                climb.SetSurfaceGripMultiplier(terrainProfile != null && terrainProfile.rainstorm != null &&
+                                               terrainProfile.rainstorm.permanentRain
+                    ? terrainProfile.rainstorm.surfaceGripMultiplier : 1f);
+            }
             RoadVehicleController roadVehicle = SpawnedVehicle as RoadVehicleController;
             if (roadVehicle != null) roadVehicle.Assign(ActiveDefinition, input);
             instance.GetComponent<CrashDetector>()?.AssignGameManager(gameManager,
@@ -87,6 +92,8 @@ namespace AnimeHillRacing.Vehicle
                 terrain?.AssignRuntimeReferences(terrainProfile, SpawnedVehicle, pickupPool, gameManager);
                 gameManager?.ConfigureMap(terrainProfile);
                 FindFirstObjectByType<MountainBackground>()?.ApplyEnvironment(terrainProfile?.environment);
+                RainstormController.ApplyForMap(terrainProfile, sideCamera != null
+                    ? sideCamera.GetComponent<Camera>() : Camera.main);
             }
             else if (mode == GameModeType.Adventure3D)
                 road?.Assign(roadProfile, SpawnedVehicle, pickupPool);

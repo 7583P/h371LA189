@@ -25,6 +25,8 @@ namespace AnimeHillRacing.CameraSystem
         [Range(.03f, .06f)] public float mountainParallaxY = .04f;
         [Tooltip("Keeps the background at a fixed vertical position in camera space while retaining horizontal parallax.")]
         public bool lockVerticalToCamera;
+        [Tooltip("Scales and centers an opaque panorama so its outer edge remains beyond the camera viewport.")]
+        public bool coverViewportVertically;
         [Min(1f)] public float mountainVisualHeight = 17f;
         public float mountainBaseY = -4f;
         [Range(3, 7)] public int pooledMountainSegments = 5;

@@ -1,0 +1,168 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1276f9d865d95324183cc1cdbf2fbc9c, type: 3}
+  m_Name: Rainyer
+  m_EditorClassIdentifier: Assembly-CSharp::AnimeHillRacing.Terrain.MapProfile
+  mapId: rainyer
+  displayName: RAINYER
+  supportedGameMode: 0
+  seed: 8152026
+  coinRoute: {fileID: 11400000, guid: 2d8f01a9a8d293943a19b887710af661, type: 2}
+  introEndDistance: 260
+  easyEndDistance: 1050
+  normalEndDistance: 2400
+  hardEndDistance: 4200
+  elevationProfile: {fileID: 0}
+  baseHeight: 0
+  amplitude: 27
+  frequency: 0.022
+  smoothing: 0.54
+  hillSize: 0.82
+  useCityHighwayTerrain: 0
+  cityFeatureLength: 120
+  cityMiniRhythmStrength: 0.18
+  difficultyCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.25
+      value: 0.34
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.6
+      value: 0.78
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1.2
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  maximumDifficulty: 1.12
+  introductoryAmplitude: 0.34
+  sectionLength: 48
+  recoveryEverySections: 6
+  technicalSectionChance: 0.68
+  technicalDetailStrength: 0.94
+  flatFeatureWeight: 0.01
+  hillFeatureWeight: 0.45
+  valleyFeatureWeight: 0.25
+  technicalFeatureWeight: 0.29
+  maxSlopeAngle: 40
+  maxHeightDeltaPerSample: 1.3984993
+  minimumValleyWidth: 16
+  minimumLandingLength: 14
+  maximumCrestSharpness: 8
+  smoothingPasses: 1
+  coinDensityPer100m: 9
+  initialFuelGap: 5
+  fuelGapIncrease: 5
+  fuelPlacementSearchRadius: 26
+  fuelPlacementSearchStep: 2
+  fuelMaximumPlacementSlope: 18
+  environment: {fileID: 11400000, guid: 41bcde6df137fa04faab8a48938da256, type: 2}
+  terrainMaterial: {fileID: 2100000, guid: 47cf5e6f60f1cdb41a9e87f7c043e036, type: 2}
+  terrainEdgeMaterial: {fileID: 2100000, guid: f44368956a273aa4087a79254e1f10db, type: 2}
+  useSeparateTerrainMaterials: 1
+  fitAuthoredTerrainTexture: 0
+  terrainTextureRepeatWidth: 34
+  terrainWallUvRange: {x: 0, y: 1}
+  terrainSurfaceUvRange: {x: 0, y: 1}
+  terrainSurfaceContactV: -1
+  terrainFillStartV: -1
+  groundPhysicsMaterial: {fileID: 13400000, guid: 26ba0ca693e07af46b45d6e09338bdc9, type: 2}
+  terrainEdgeWidth: 0.22
+  terrainVisualDepth: 27
+  supportsLiquidExposure: 0
+  neonMaximumAmplitude: 28
+  neonAmplitudeSaturationCycles: 3
+  liquidChallenges:
+    cycleLength: 6000
+    challengesPerCycle: 8
+    cycleStartSafetyMargin: 260
+    structuralRunUpPositions:
+    - 430
+    - 1280
+    - 2040
+    - 2770
+    - 3460
+    - 4140
+    - 4980
+    - 5530
+    runUpLength: 42
+    rampTransitionLength: 6
+    rampHorizontalLength: 12
+    rampAngleDegrees: 20
+    landingLength: 26
+    recoveryLength: 48
+    postRecoveryBlendLength: 50
+    basePoolLength: 18
+    minimumPoolLength: 16
+    maximumPoolLength: 34
+    cycleGrowth: 0.85
+    growthSaturation: 2.5
+    deterministicLengthVariation: 0.12
+    visualDepth: 7
+    exitRampHorizontalLength: 12
+    surfaceOffset: 0.15
+    cautionSprite: {fileID: 0}
+    cautionDistanceBeforeRamp: 10
+    cautionBelowSurface: 1.65
+    cautionWidth: 3.2
+    cautionSortingOrder: 4
+    liquidSprite: {fileID: 0}
+    liquidSortingOrder: 3
+    normalAlpha: 1
+    submergedAlpha: 0.65
+    alphaLerpSpeed: 7
+    exposureLimitSeconds: 10
+    entrySpeedRemaining: 0.1
+    entrySlowdownSeconds: 0.35
+    continuousViscosity: 2.4
+    liquidDriveAcceleration: 9
+    maximumSinkAcceleration: 8
+  rainstorm:
+    permanentRain: 1
+    maximumParticles: 520
+    emissionRate: 145
+    fallVelocity: {x: -4.8, y: -21}
+    streakLength: 0.72
+    streakWidth: 0.035
+    surfaceGripMultiplier: 0.58
+    lightningEventsPerMinute: 4
+    lightningFlashDuration: 0.38
+    lightningFlashAlpha: 0.42

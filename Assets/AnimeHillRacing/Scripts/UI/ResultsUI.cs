@@ -13,7 +13,7 @@ namespace AnimeHillRacing.UI
         [SerializeField] private GameManager gameManager;
         [SerializeField] private TimeTrialManager timeTrialManager;
 
-        private const float ResultsBackgroundAlpha = .80f;
+        private const float ResultsBackgroundAlpha = .50f;
 
         public Text TitleText => titleText;
         public Text StatsText => resultsText;
@@ -28,8 +28,7 @@ namespace AnimeHillRacing.UI
             ApplyBackgroundTransparency();
             root.SetActive(true);
             root.transform.SetAsLastSibling();
-            string reason = manager.EndReason == RunEndReason.DriverDown ? "DRIVER DOWN" :
-                manager.EndReason == RunEndReason.Crashed ? "CRASHED" : "OUT OF FUEL";
+            string reason = manager.EndReason == RunEndReason.OutOfFuel ? "OUT OF FUEL" : "DRIVER DOWN";
             if (titleText != null) titleText.text = reason;
             resultsText.text = $"DISTANCE\n<size=34>{manager.Distance:N0} m</size>\n\n" +
                                $"BEST DISTANCE   {manager.BestDistance:N0} m\n" +

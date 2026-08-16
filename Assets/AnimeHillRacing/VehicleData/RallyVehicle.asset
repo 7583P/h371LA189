@@ -30,6 +30,7 @@ MonoBehaviour:
     bundleType: 0
     allowsBlueprintProgression: 1
     visibleDiameter: 0
+    visibleSize: {x: 24.136269, y: 8.666418}
   wheels:
   - optionId: rally-wheel-01
     displayName: RALLY WHEEL 01
@@ -39,6 +40,7 @@ MonoBehaviour:
     bundleType: 0
     allowsBlueprintProgression: 1
     visibleDiameter: 0
+    visibleSize: {x: 14.45, y: 14.52}
   - optionId: rally-wheel-ghosty
     displayName: RALLY GHOSTY WHEEL
     sprite: {fileID: 21300000, guid: 1129da19953c42a283655d629a715e93, type: 3}
@@ -47,6 +49,7 @@ MonoBehaviour:
     bundleType: 0
     allowsBlueprintProgression: 1
     visibleDiameter: 0
+    visibleSize: {x: 14.4, y: 14.56}
   - optionId: rally-wheel-sky-blue
     displayName: SKY BLUE WHEEL
     sprite: {fileID: 21300000, guid: 28373f10271f4d90ae5f7658cdd7185b, type: 3}
@@ -55,6 +58,7 @@ MonoBehaviour:
     bundleType: 0
     allowsBlueprintProgression: 1
     visibleDiameter: 0
+    visibleSize: {x: 8.3, y: 8.37}
   - optionId: rally-wheel-rainbow
     displayName: RAINBOW WHEEL
     sprite: {fileID: 21300000, guid: 1c374a0833864834930fb1c1334142ad, type: 3}
@@ -63,6 +67,7 @@ MonoBehaviour:
     bundleType: 0
     allowsBlueprintProgression: 1
     visibleDiameter: 0
+    visibleSize: {x: 8.43, y: 8.56}
   driverPose:
     rootPosition: {x: -0.34, y: 0.26}
     rootScale: 0.88
@@ -161,14 +166,17 @@ MonoBehaviour:
   airControlTorque: 6500
   downforceReferenceSpeedMps: 30
   maximumDownforceAcceleration: 14
-  collisionPitchInertiaMultiplier: 5.5
+  collisionPitchInertiaMultiplier: 1.2
   maximumDepenetrationVelocity: 1.6
   chassisAirControlMultiplier: 0.09
   maxAirAngularVelocity: 3.05
   airAngularAcceleration: 20
-  airAngularDamping: 1.6
+  airAngularDamping: 0.3
+  oneWheelAngularDamping: 0.08
+  twoWheelAngularDamping: 0.32
+  maximumPassiveAngularVelocity: 8.5
   accelerationForceCalibration: 1
-  centerOfMass: {x: 0.1, y: -0.36, z: 0}
+  centerOfMass: {x: 0.06, y: -0.07, z: 0}
   engine:
     idleRpm: 1100
     redlineRpm: 7200

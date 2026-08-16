@@ -31,6 +31,9 @@ namespace AnimeHillRacing.Vehicle
             public AnimeHillRacing.Core.BundleType bundleType = AnimeHillRacing.Core.BundleType.Cosmetic;
             public bool allowsBlueprintProgression = true;
             [Min(0f)] public float visibleDiameter;
+            [Tooltip("Alpha-bounded visible sprite size in world units. Populated automatically in the editor; " +
+                     "transparent canvas padding is excluded.")]
+            public Vector2 visibleSize;
         }
 
         [Serializable]
@@ -256,6 +259,12 @@ namespace AnimeHillRacing.Vehicle
         [Min(.1f)] public float maxAirAngularVelocity = 2.5f;
         [Min(.1f)] public float airAngularAcceleration = 14f;
         [Min(0f)] public float airAngularDamping = 1.8f;
+        [Tooltip("Passive angular damping while exactly one wheel supports the chassis. Kept below the settled value so an off-centre landing preserves its physical pitch response.")]
+        [Range(0f, 1f)] public float oneWheelAngularDamping = .10f;
+        [Tooltip("Passive angular damping after both wheels have established contact.")]
+        [Range(0f, 1f)] public float twoWheelAngularDamping = .35f;
+        [Tooltip("RigidBody angular-speed safety limit for collision and landing momentum. This is intentionally independent from the player air-control target.")]
+        [Min(1f)] public float maximumPassiveAngularVelocity = 8f;
         [Range(0.5f, 2f)] public float accelerationForceCalibration = 1f;
         public Vector3 centerOfMass = new Vector3(0f, -0.25f, 0f);
 
@@ -294,6 +303,45 @@ namespace AnimeHillRacing.Vehicle
         public static float SpriteWidthScale(Sprite sprite, float canonicalWidth) =>
             Mathf.Max(.1f, canonicalWidth) /
             Mathf.Max(.001f, sprite != null ? sprite.bounds.size.x : 1f);
+
+        public Vector3 BodyCustomizationScale(CustomizationOption option)
+        {
+            CustomizationOption defaultOption = skins != null && skins.Length > 0 ? skins[0] : null;
+            Vector2 defaultVisible = VisibleSize(defaultOption);
+            Vector2 selectedVisible = VisibleSize(option);
+            float legacyDefaultScale = SpriteWidthScale(defaultOption != null ? defaultOption.sprite : null,
+                visualWidth);
+            Vector2 targetVisible = defaultVisible * legacyDefaultScale;
+            return new Vector3(
+                targetVisible.x / Mathf.Max(.001f, selectedVisible.x),
+                targetVisible.y / Mathf.Max(.001f, selectedVisible.y), 1f);
+        }
+
+        public float WheelCustomizationScale(CustomizationOption option, float canonicalDiameter)
+        {
+            CustomizationOption defaultOption = wheels != null && wheels.Length > 0 ? wheels[0] : null;
+            float defaultVisibleDiameter = VisibleDiameter(defaultOption);
+            float selectedVisibleDiameter = VisibleDiameter(option);
+            float legacyDefaultScale = WheelVisualScale(defaultOption, canonicalDiameter);
+            return defaultVisibleDiameter * legacyDefaultScale /
+                   Mathf.Max(.001f, selectedVisibleDiameter);
+        }
+
+        public static Vector2 VisibleSize(CustomizationOption option)
+        {
+            if (option == null) return Vector2.one;
+            if (option.visibleSize.x > .001f && option.visibleSize.y > .001f)
+                return option.visibleSize;
+            if (option.visibleDiameter > .001f)
+                return Vector2.one * option.visibleDiameter;
+            return option.sprite != null ? option.sprite.bounds.size : Vector2.one;
+        }
+
+        public static float VisibleDiameter(CustomizationOption option)
+        {
+            Vector2 size = VisibleSize(option);
+            return Mathf.Max(size.x, size.y);
+        }
 
         public ResolvedVehicleStats Resolve(VehicleUpgradeState upgrades)
         {
@@ -524,6 +572,9 @@ namespace AnimeHillRacing.Vehicle
             suspension.landingDampingDuration = Mathf.Clamp(suspension.landingDampingDuration, .06f, .24f);
             maximumDepenetrationVelocity = Mathf.Max(.5f, maximumDepenetrationVelocity);
             chassisAirControlMultiplier = Mathf.Clamp(chassisAirControlMultiplier, .05f, .15f);
+            oneWheelAngularDamping = Mathf.Clamp(oneWheelAngularDamping, 0f, 1f);
+            twoWheelAngularDamping = Mathf.Clamp(twoWheelAngularDamping, oneWheelAngularDamping, 1f);
+            maximumPassiveAngularVelocity = Mathf.Max(1f, maximumPassiveAngularVelocity);
             downforceReferenceSpeedMps = Mathf.Max(1f, downforceReferenceSpeedMps);
             maximumDownforceAcceleration = Mathf.Max(0f, maximumDownforceAcceleration);
             suspension.bumpStopStart = Mathf.Clamp(suspension.bumpStopStart, .5f, .9f);

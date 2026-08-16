@@ -37,8 +37,7 @@ namespace AnimeHillRacing.Vehicle
                 bodyRenderer.sprite = skin.sprite;
                 bodyRenderer.flipX = definition.flipBodyX;
                 bodyRenderer.sortingOrder = 10;
-                bodyRenderer.transform.localScale = Vector3.one *
-                    VehicleDefinition.SpriteWidthScale(bodyRenderer.sprite, definition.visualWidth);
+                bodyRenderer.transform.localScale = definition.BodyCustomizationScale(skin);
             }
             ApplyWheel(frontWheelRenderer, wheel, definition.FrontWheelDiameter);
             ApplyWheel(rearWheelRenderer, wheel, definition.RearWheelDiameter);
@@ -80,14 +79,13 @@ namespace AnimeHillRacing.Vehicle
             ApplySavedCustomization();
         }
 
-        private static void ApplyWheel(SpriteRenderer renderer, VehicleDefinition.CustomizationOption wheel,
+        private void ApplyWheel(SpriteRenderer renderer, VehicleDefinition.CustomizationOption wheel,
             float diameter)
         {
             if (renderer == null || wheel == null) return;
             renderer.sprite = wheel.sprite;
             renderer.sortingOrder = 11;
-            renderer.transform.localScale = Vector3.one *
-                                            VehicleDefinition.WheelVisualScale(wheel, diameter);
+            renderer.transform.localScale = Vector3.one * definition.WheelCustomizationScale(wheel, diameter);
         }
     }
 }

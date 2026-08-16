@@ -30,6 +30,7 @@ MonoBehaviour:
     bundleType: 0
     allowsBlueprintProgression: 1
     visibleDiameter: 0
+    visibleSize: {x: 30.949997, y: 6.770312}
   - optionId: formula-skin-neon
     displayName: NEON SKIN
     sprite: {fileID: 21300000, guid: 614393b68a324819adb2dbd1d6509e3c, type: 3}
@@ -38,6 +39,7 @@ MonoBehaviour:
     bundleType: 0
     allowsBlueprintProgression: 1
     visibleDiameter: 0
+    visibleSize: {x: 21.571524, y: 5.005781}
   wheels:
   - optionId: formula-wheel-02
     displayName: FORMULA WHEEL 02
@@ -47,6 +49,7 @@ MonoBehaviour:
     bundleType: 0
     allowsBlueprintProgression: 1
     visibleDiameter: 0
+    visibleSize: {x: 14.31, y: 14.63}
   - optionId: formula-wheel-01
     displayName: FORMULA GHOSTY WHEELS
     sprite: {fileID: 21300000, guid: aca3fba5216593a40975e31bd6558040, type: 3}
@@ -55,6 +58,7 @@ MonoBehaviour:
     bundleType: 0
     allowsBlueprintProgression: 1
     visibleDiameter: 0
+    visibleSize: {x: 14.4, y: 14.56}
   - optionId: formula-wheel-rainbow
     displayName: RAINBOW WHEEL
     sprite: {fileID: 21300000, guid: 2a500d5d83da46f8b00460275d612656, type: 3}
@@ -63,6 +67,7 @@ MonoBehaviour:
     bundleType: 0
     allowsBlueprintProgression: 1
     visibleDiameter: 0
+    visibleSize: {x: 8.43, y: 8.56}
   driverPose:
     rootPosition: {x: 0.16, y: 0.18}
     rootScale: 0.86
@@ -161,14 +166,17 @@ MonoBehaviour:
   airControlTorque: 9000
   downforceReferenceSpeedMps: 30
   maximumDownforceAcceleration: 28
-  collisionPitchInertiaMultiplier: 4
+  collisionPitchInertiaMultiplier: 1.35
   maximumDepenetrationVelocity: 1.5
   chassisAirControlMultiplier: 0.08
   maxAirAngularVelocity: 3.5
   airAngularAcceleration: 24
-  airAngularDamping: 1.5
+  airAngularDamping: 0.26
+  oneWheelAngularDamping: 0.06
+  twoWheelAngularDamping: 0.28
+  maximumPassiveAngularVelocity: 9
   accelerationForceCalibration: 1.01
-  centerOfMass: {x: 0, y: -0.38, z: 0}
+  centerOfMass: {x: 0, y: -0.17, z: 0}
   engine:
     idleRpm: 1100
     redlineRpm: 7200

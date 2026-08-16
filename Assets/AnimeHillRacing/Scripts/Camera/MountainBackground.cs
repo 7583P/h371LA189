@@ -48,7 +48,10 @@ namespace AnimeHillRacing.CameraSystem
                 skyRenderer.transform.localScale = Vector3.one * scale;
             }
             float mountainSourceHeight = environment.mountains != null ? environment.mountains.bounds.size.y : 1f;
-            float scaleMountain = environment.mountainVisualHeight / Mathf.Max(.001f, mountainSourceHeight);
+            float targetMountainHeight = environment.coverViewportVertically
+                ? Mathf.Max(environment.mountainVisualHeight, displayCamera.orthographicSize * 2.12f)
+                : environment.mountainVisualHeight;
+            float scaleMountain = targetMountainHeight / Mathf.Max(.001f, mountainSourceHeight);
             float sourceWidthMountain = environment.mountains != null ? environment.mountains.bounds.size.x : 1f;
             tileWidth = sourceWidthMountain * scaleMountain * (1f - environment.seamOverlap);
             if (mountainSegments == null) return;
@@ -99,7 +102,8 @@ namespace AnimeHillRacing.CameraSystem
             int centerIndex = Mathf.RoundToInt((cameraPosition.x - parallaxOriginX) / tileWidth);
             // A camera-space lock must move the renderer with the camera in world space. This makes
             // its vertical position visually constant while horizontal parallax continues normally.
-            float y = CalculateVerticalPosition(environment, cameraPosition.y, initialCameraY);
+            float y = environment.coverViewportVertically
+                ? cameraPosition.y : CalculateVerticalPosition(environment, cameraPosition.y, initialCameraY);
             int count = mountainSegments != null ? mountainSegments.Length : 0;
             int half = count / 2;
             for (int i = 0; i < count; i++)

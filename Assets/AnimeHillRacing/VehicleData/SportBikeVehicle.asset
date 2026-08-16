@@ -30,6 +30,7 @@ MonoBehaviour:
     bundleType: 0
     allowsBlueprintProgression: 1
     visibleDiameter: 0
+    visibleSize: {x: 14.95, y: 7.86}
   - optionId: sport-bike-retro
     displayName: BIKE RETRO
     sprite: {fileID: 21300000, guid: 0e7562ba344fa6d4799299e109ffa29f, type: 3}
@@ -38,6 +39,7 @@ MonoBehaviour:
     bundleType: 0
     allowsBlueprintProgression: 1
     visibleDiameter: 0
+    visibleSize: {x: 15.12, y: 8.45}
   wheels:
   - optionId: sport-bike-wheel-01
     displayName: BIKE WHEEL 01
@@ -47,6 +49,7 @@ MonoBehaviour:
     bundleType: 0
     allowsBlueprintProgression: 1
     visibleDiameter: 9.94
+    visibleSize: {x: 9.76, y: 9.82}
   - optionId: sport-bike-wheel-02
     displayName: BIKE WHEEL 02
     sprite: {fileID: 21300000, guid: af538f9d995160d4694bb0730040cc10, type: 3}
@@ -55,6 +58,7 @@ MonoBehaviour:
     bundleType: 0
     allowsBlueprintProgression: 1
     visibleDiameter: 10.1
+    visibleSize: {x: 9.89, y: 10.03}
   - optionId: sport-bike-gold-wheel
     displayName: GOLD WHEEL
     sprite: {fileID: 21300000, guid: 3cc7d30b0562aa14086730a762a3630c, type: 3}
@@ -63,6 +67,7 @@ MonoBehaviour:
     bundleType: 0
     allowsBlueprintProgression: 1
     visibleDiameter: 14.08
+    visibleSize: {x: 14.08, y: 14.06}
   - optionId: sport-bike-wheel-ghosty
     displayName: SPORT BIKE GHOSTY WHEEL
     sprite: {fileID: 21300000, guid: 529eb95340d64bc38e96a34f19afc3be, type: 3}
@@ -71,6 +76,7 @@ MonoBehaviour:
     bundleType: 0
     allowsBlueprintProgression: 1
     visibleDiameter: 14.56
+    visibleSize: {x: 14.4, y: 14.56}
   driverPose:
     rootPosition: {x: -0.33, y: 0.42}
     rootScale: 1
@@ -169,14 +175,17 @@ MonoBehaviour:
   airControlTorque: 7600
   downforceReferenceSpeedMps: 30
   maximumDownforceAcceleration: 14
-  collisionPitchInertiaMultiplier: 7.5
+  collisionPitchInertiaMultiplier: 1
   maximumDepenetrationVelocity: 1.4
   chassisAirControlMultiplier: 0.07
   maxAirAngularVelocity: 3.2
   airAngularAcceleration: 21
-  airAngularDamping: 1.7
+  airAngularDamping: 0.2
+  oneWheelAngularDamping: 0.04
+  twoWheelAngularDamping: 0.22
+  maximumPassiveAngularVelocity: 10
   accelerationForceCalibration: 1
-  centerOfMass: {x: -0.015, y: -0.36, z: 0}
+  centerOfMass: {x: -0.015, y: -0.04, z: 0}
   engine:
     idleRpm: 1100
     redlineRpm: 7200

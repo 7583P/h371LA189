@@ -1545,6 +1545,7 @@ namespace AnimeHillRacing.Editor
         private static void ValidateNeonCityContract(BuiltAssets assets)
         {
             MapProfile profile = assets.neonCity;
+            MapProfile rainyer = AssetDatabase.LoadAssetAtPath<MapProfile>(Root + "/MapProfiles/Rainyer.asset");
             EnvironmentDefinition neonEnvironment = profile != null ? profile.environment : null;
             float lockedYLow = MountainBackground.CalculateVerticalPosition(neonEnvironment, -80f, 5f);
             float lockedYHigh = MountainBackground.CalculateVerticalPosition(neonEnvironment, 120f, 5f);
@@ -1553,12 +1554,14 @@ namespace AnimeHillRacing.Editor
                 Mathf.Abs((lockedYLow + 80f) - (lockedYHigh - 120f)) > .001f)
                 throw new System.InvalidOperationException(
                     "Neon City background must remain vertically locked to the camera with horizontal parallax enabled.");
-            if (assets.catalog.CountMaps(GameModeType.Adventure2_5D) != 3 ||
+            if (assets.catalog.CountMaps(GameModeType.Adventure2_5D) != 4 ||
                 assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 0)?.mapId != "countryside" ||
                 assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 1)?.mapId != "neon-city" ||
-                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 2)?.mapId != "city")
+                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 2)?.mapId != "city" ||
+                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 3)?.mapId != "rainyer" ||
+                rainyer == null || assets.catalog.FindMap("rainyer", GameModeType.Adventure2_5D) != rainyer)
                 throw new System.InvalidOperationException(
-                    "Adventure track selector requires Countryside, Neon City and City profiles.");
+                    "Adventure track selector requires Countryside, Neon City, City and Rainyer profiles.");
             if (profile == null || !profile.supportsLiquidExposure || profile.liquidChallenges == null ||
                 profile.liquidChallenges.cycleLength != 6000f ||
                 profile.liquidChallenges.challengesPerCycle != 8 ||
@@ -4542,15 +4545,16 @@ namespace AnimeHillRacing.Editor
             assets.jeep.fuel.maximumRunDurationSeconds = 30f; assets.jeep.fuel.referenceRunDurationSeconds = 30f;
             assets.jeep.mass = 1150f; assets.jeep.wheelMass = 48f; assets.jeep.wheelRadius = .45f;
             assets.jeep.engine.speedTorqueCurve = ArcadeSpeedTorqueCurve();
-            assets.jeep.collisionPitchInertiaMultiplier = 5.6f;
+            assets.jeep.collisionPitchInertiaMultiplier = 1.30f;
             assets.jeep.maximumDepenetrationVelocity = 1.7f;
             assets.jeep.chassisAirControlMultiplier = .10f;
             assets.jeep.halfWheelbase = 1.18f; assets.jeep.halfTrack = .78f;
             assets.jeep.topSpeedMps = 100f / 3.6f; assets.jeep.airControlTorque = 3200f;
             assets.jeep.maxAirAngularVelocity = 2.5f; assets.jeep.airAngularAcceleration = 14f;
-            // The visual/physical Jeep axles sit at -1.12 / +1.24 m. Center the mass between them so
-            // equal wheel-first landing forces cannot manufacture a pitch impulse on flat terrain.
-            assets.jeep.airAngularDamping = 1.8f; assets.jeep.centerOfMass = new Vector3(.12f, -.30f, 0f);
+            assets.jeep.airAngularDamping = .34f;
+            assets.jeep.oneWheelAngularDamping = .10f; assets.jeep.twoWheelAngularDamping = .34f;
+            assets.jeep.maximumPassiveAngularVelocity = 8f;
+            assets.jeep.centerOfMass = new Vector3(.08f, -.06f, 0f);
             assets.jeep.accelerationForceCalibration = 1.02f;
             assets.jeep.previewSprite = assets.jeepBody;
             assets.jeep.skins = new[] { Customization("jeep-skin-default", "JEEP DEFAULT", assets.jeepBody) };
@@ -4580,9 +4584,9 @@ namespace AnimeHillRacing.Editor
             assets.formula.tuneTargets = CreateFormulaTuneTargets();
             assets.formula.mass = 780f; assets.formula.wheelMass = 28f; assets.formula.wheelRadius = .48f;
             assets.formula.engine.speedTorqueCurve = ArcadeSpeedTorqueCurve();
-            // The rounded chassis and low COM absorb tip contacts. Keep enough pitch inertia for Formula
-            // stability without suppressing gravity/contact recovery during a one-wheel balance.
-            assets.formula.collisionPitchInertiaMultiplier = 4f;
+            // Formula remains the lowest-COM car, but its physical inertia must still transmit a strong
+            // nose/tail or one-wheel impact instead of acting like a four-times heavier flywheel.
+            assets.formula.collisionPitchInertiaMultiplier = 1.35f;
             assets.formula.maximumDepenetrationVelocity = 1.5f;
             assets.formula.chassisAirControlMultiplier = .08f;
             assets.formula.halfWheelbase = 1.46f; assets.formula.halfTrack = .78f;
@@ -4593,7 +4597,10 @@ namespace AnimeHillRacing.Editor
             assets.formula.downforceReferenceSpeedMps = 30f;
             assets.formula.maximumDownforceAcceleration = 28f;
             assets.formula.maxAirAngularVelocity = 3.5f; assets.formula.airAngularAcceleration = 24f;
-            assets.formula.airAngularDamping = 1.5f; assets.formula.centerOfMass = new Vector3(0f, -.38f, 0f);
+            assets.formula.airAngularDamping = .26f;
+            assets.formula.oneWheelAngularDamping = .06f; assets.formula.twoWheelAngularDamping = .28f;
+            assets.formula.maximumPassiveAngularVelocity = 9f;
+            assets.formula.centerOfMass = new Vector3(0f, -.17f, 0f);
             assets.formula.engine.minTorqueNm = 300f; assets.formula.engine.maxTorqueNm = 700f;
             assets.formula.engine.drivetrainEfficiency = .88f;
             assets.formula.transmission.forwardGearRatios = new[] { 3.80f, 2.75f, 2.15f, 1.75f, 1.48f, 1.30f, 1.18f };
@@ -4656,7 +4663,7 @@ namespace AnimeHillRacing.Editor
             assets.rally.tuneTargets = CreateRallyTuneTargets();
             assets.rally.mass = 1030f; assets.rally.wheelMass = 36f; assets.rally.wheelRadius = .51f;
             assets.rally.engine.speedTorqueCurve = ArcadeSpeedTorqueCurve();
-            assets.rally.collisionPitchInertiaMultiplier = 5.5f;
+            assets.rally.collisionPitchInertiaMultiplier = 1.20f;
             assets.rally.maximumDepenetrationVelocity = 1.6f;
             assets.rally.chassisAirControlMultiplier = .09f;
             assets.rally.halfWheelbase = 1.35f; assets.rally.halfTrack = .78f;
@@ -4665,7 +4672,10 @@ namespace AnimeHillRacing.Editor
             assets.rally.accelerationForceCalibration = 1f;
             assets.rally.airControlTorque = 6500f;
             assets.rally.maxAirAngularVelocity = 3.05f; assets.rally.airAngularAcceleration = 20f;
-            assets.rally.airAngularDamping = 1.6f; assets.rally.centerOfMass = new Vector3(.10f, -.36f, 0f);
+            assets.rally.airAngularDamping = .30f;
+            assets.rally.oneWheelAngularDamping = .08f; assets.rally.twoWheelAngularDamping = .32f;
+            assets.rally.maximumPassiveAngularVelocity = 8.5f;
+            assets.rally.centerOfMass = new Vector3(.06f, -.07f, 0f);
             assets.rally.engine.minTorqueNm = 280f; assets.rally.engine.maxTorqueNm = 650f;
             assets.rally.engine.drivetrainEfficiency = .86f;
             assets.rally.transmission.forwardGearRatios = new[] { 4.20f, 3.10f, 2.50f, 2.10f, 1.82f, 1.58f, 1.38f };
@@ -4740,14 +4750,16 @@ namespace AnimeHillRacing.Editor
             assets.sportBike.brakeForce = 9800f;
             assets.sportBike.reverseForce = 3300f;
             assets.sportBike.airControlTorque = 7600f;
-            assets.sportBike.collisionPitchInertiaMultiplier = 7.5f;
+            assets.sportBike.collisionPitchInertiaMultiplier = 1f;
             assets.sportBike.maximumDepenetrationVelocity = 1.4f;
             assets.sportBike.chassisAirControlMultiplier = .07f;
             assets.sportBike.maxAirAngularVelocity = 3.2f;
             assets.sportBike.airAngularAcceleration = 21f;
-            assets.sportBike.airAngularDamping = 1.7f;
+            assets.sportBike.airAngularDamping = .20f;
+            assets.sportBike.oneWheelAngularDamping = .04f; assets.sportBike.twoWheelAngularDamping = .22f;
+            assets.sportBike.maximumPassiveAngularVelocity = 10f;
             assets.sportBike.accelerationForceCalibration = 1f;
-            assets.sportBike.centerOfMass = new Vector3(-.015f, -.36f, 0f);
+            assets.sportBike.centerOfMass = new Vector3(-.015f, -.04f, 0f);
             assets.sportBike.engine.minTorqueNm = 85f;
             assets.sportBike.engine.maxTorqueNm = 260f;
             assets.sportBike.engine.drivetrainEfficiency = .86f;
@@ -5187,8 +5199,13 @@ namespace AnimeHillRacing.Editor
             };
             EditorUtility.SetDirty(assets.chestCatalog);
             assets.catalog = LoadOrCreate<GameCatalog>(Root + "/VehicleData/GameCatalog.asset");
-            assets.catalog.maps = new MapDefinition[]
-                { assets.countryside, assets.neonCity, assets.city, assets.countrysideRoad, assets.testCircuit };
+            MapDefinition rainyer = AssetDatabase.LoadAssetAtPath<MapDefinition>(
+                Root + "/MapProfiles/Rainyer.asset");
+            assets.catalog.maps = rainyer != null
+                ? new MapDefinition[] { assets.countryside, assets.neonCity, assets.city, rainyer,
+                    assets.countrysideRoad, assets.testCircuit }
+                : new MapDefinition[] { assets.countryside, assets.neonCity, assets.city,
+                    assets.countrysideRoad, assets.testCircuit };
             assets.catalog.vehicles = new[] { assets.jeep, assets.formula, assets.rally, assets.sportBike };
             assets.catalog.drivers = new[] { assets.stickmanBlack };
             assets.catalog.upgradeEconomy = assets.economy;
@@ -6415,7 +6432,7 @@ namespace AnimeHillRacing.Editor
 
         private static ResultsUI CreateResults(Transform safe, GameManager manager, out RawImage resultImage)
         {
-            GameObject panel = CreateImage("Results Panel", safe, new Color(0f, 0f, 0f, 0.80f),
+            GameObject panel = CreateImage("Results Panel", safe, new Color(0f, 0f, 0f, 0.50f),
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1540f, 820f));
             Outline resultsOutline = panel.AddComponent<Outline>();
             resultsOutline.effectColor = new Color(.22f, .62f, .94f, .85f);

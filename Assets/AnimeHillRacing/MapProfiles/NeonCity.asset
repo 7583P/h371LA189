@@ -137,3 +137,14 @@ MonoBehaviour:
     continuousViscosity: 2.4
     liquidDriveAcceleration: 9
     maximumSinkAcceleration: 8
+  rainstorm:
+    permanentRain: 0
+    maximumParticles: 520
+    emissionRate: 145
+    fallVelocity: {x: -4.8, y: -21}
+    streakLength: 0.72
+    streakWidth: 0.035
+    surfaceGripMultiplier: 0.58
+    lightningEventsPerMinute: 4
+    lightningFlashDuration: 0.38
+    lightningFlashAlpha: 0.42

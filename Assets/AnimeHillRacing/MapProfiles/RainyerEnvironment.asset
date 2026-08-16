@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 124aed6c493347c45a5308110da9f364, type: 3}
+  m_Name: RainyerEnvironment
+  m_EditorClassIdentifier: Assembly-CSharp::AnimeHillRacing.CameraSystem.EnvironmentDefinition
+  environmentId: rainyer
+  sky: {fileID: 21300000, guid: 2f145f93bd9721f41a90ea54eefcda5a, type: 3}
+  mountains: {fileID: 21300000, guid: db98757396f404244aa6472a00945111, type: 3}
+  clouds: []
+  cloudParallaxX: 0.09
+  cloudSpacing: 18
+  cloudSpacingJitter: 4
+  cloudHeightRange: {x: 3.2, y: 8.5}
+  cloudVisualWidthRange: {x: 3.2, y: 6.8}
+  cloudDriftSpeedRange: {x: 0.08, y: 0.22}
+  cloudOpacityRange: {x: 0.58, y: 0.9}
+  cloudBobAmplitude: 0.18
+  cloudBobPeriodRange: {x: 18, y: 32}
+  pooledClouds: 8
+  mountainParallaxX: 0.16
+  mountainParallaxY: 0.035
+  lockVerticalToCamera: 1
+  coverViewportVertically: 1
+  mountainVisualHeight: 18.5
+  mountainBaseY: 5.1
+  pooledMountainSegments: 5
+  seamOverlap: 0.008
+  mirrorAlternatingMountainTiles: 1

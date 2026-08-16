@@ -86,6 +86,9 @@ namespace AnimeHillRacing.Vehicle
             : body != null ? body.transform.up : Vector3.up;
         public Vector3 ContactNormal => contactNormal;
         public Vector3 ContactPoint => contactPoint;
+        public Vector3 SuspensionMountPoint => body != null
+            ? body.transform.TransformPoint(new Vector3(anchorLocalX, 0f, 0f)) : transform.position;
+        public Vector3 AppliedSuspensionForce => SuspensionAxisWorld * lastSuspensionForce;
         public float LastSpringForce => lastSpringForce;
         public float LastDamperForce => lastDamperForce;
         public float LastSuspensionForce => lastSuspensionForce;
@@ -309,6 +312,9 @@ namespace AnimeHillRacing.Vehicle
             float relativeVelocity = Vector3.Dot(body.GetPointVelocity(anchor) - wheelBody.linearVelocity, up);
             lastRelativeVelocity = relativeVelocity;
             bool probedGround = ProbeGround(out RaycastHit hit);
+            // Each wheel owns its own contact probe. The probe is constrained to the physical tire radius
+            // plus a small authored skin, so it represents that wheel touching the surface; it never promotes
+            // the opposite axle or the complete vehicle to grounded.
             IsGrounded = contactSinceLastStep || probedGround;
             if (IsGrounded && !wasGrounded && relativeVelocity < -.65f)
             {

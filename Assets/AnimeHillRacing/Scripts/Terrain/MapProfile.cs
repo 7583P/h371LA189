@@ -6,6 +6,21 @@ using AnimeHillRacing.CameraSystem;
 namespace AnimeHillRacing.Terrain
 {
     [System.Serializable]
+    public sealed class RainstormSettings
+    {
+        public bool permanentRain;
+        [Range(100, 900)] public int maximumParticles = 520;
+        [Range(20f, 300f)] public float emissionRate = 145f;
+        public Vector2 fallVelocity = new Vector2(-4.8f, -21f);
+        [Range(.2f, 1.5f)] public float streakLength = .72f;
+        [Range(.01f, .12f)] public float streakWidth = .035f;
+        [Range(.25f, 1f)] public float surfaceGripMultiplier = .58f;
+        [Range(.5f, 12f)] public float lightningEventsPerMinute = 4f;
+        [Min(.05f)] public float lightningFlashDuration = .38f;
+        [Range(.05f, .8f)] public float lightningFlashAlpha = .42f;
+    }
+
+    [System.Serializable]
     public sealed class LiquidChallengeSettings
     {
         public const float RequiredCycleLength = 6000f;
@@ -138,6 +153,9 @@ namespace AnimeHillRacing.Terrain
         [Min(.1f)] public float neonAmplitudeSaturationCycles = 3f;
         public LiquidChallengeSettings liquidChallenges = new LiquidChallengeSettings();
 
+        [Header("Optional Rainstorm")]
+        public RainstormSettings rainstorm = new RainstormSettings();
+
         public float EvaluateDifficulty(float distance)
         {
             float bandProgress = EvaluateDifficultyBands(distance);
@@ -153,6 +171,12 @@ namespace AnimeHillRacing.Terrain
             fuelPlacementSearchStep = Mathf.Max(0.5f, fuelPlacementSearchStep);
             initialFuelGap = Mathf.Max(1f, initialFuelGap);
             liquidChallenges ??= new LiquidChallengeSettings();
+            rainstorm ??= new RainstormSettings();
+            rainstorm.maximumParticles = Mathf.Clamp(rainstorm.maximumParticles, 100, 900);
+            rainstorm.emissionRate = Mathf.Clamp(rainstorm.emissionRate, 20f, 300f);
+            rainstorm.surfaceGripMultiplier = Mathf.Clamp(rainstorm.surfaceGripMultiplier, .25f, 1f);
+            rainstorm.lightningEventsPerMinute = Mathf.Clamp(rainstorm.lightningEventsPerMinute, .5f, 12f);
+            rainstorm.lightningFlashDuration = Mathf.Max(.05f, rainstorm.lightningFlashDuration);
             if (supportsLiquidExposure)
             {
                 neonMaximumAmplitude = Mathf.Max(amplitude, neonMaximumAmplitude);

@@ -23,7 +23,6 @@ namespace AnimeHillRacing.Vehicle
         private const float TopSpeedTaperMinimumMps = .35f;
         private const float TopSpeedTaperMaximumMps = 1f;
         private const float OneWheelPitchControlAuthority = .14f;
-        private const float OneWheelAngularDampingScale = .25f;
 
         [SerializeField] private VehicleDefinition definition;
         [SerializeField] private VehicleUpgradeState upgrades = new VehicleUpgradeState();
@@ -35,10 +34,10 @@ namespace AnimeHillRacing.Vehicle
         [SerializeField, Range(2f, 5f)] private float reverseEngageSpeedThresholdKmh = 4f;
         [SerializeField, Range(10f, 60f)] private float maxReverseSpeedKmh = 40f;
         [SerializeField, Range(0.02f, 0.2f)] private float airborneGraceSeconds = 0.08f;
-        [SerializeField, Min(0f)] private float groundedAngularDamping = .45f;
-        [SerializeField, Min(1f)] private float collisionAngularVelocityLimit = 8f;
         [Header("Optional physics diagnostics")]
         [SerializeField] private bool logPhysicsDiagnostics;
+        [SerializeField] private bool drawPhysicsGizmos;
+        [SerializeField, Min(.00001f)] private float gizmoForceScale = .00003f;
 
         private Rigidbody body;
         private EngineController engine;
@@ -68,6 +67,7 @@ namespace AnimeHillRacing.Vehicle
         private int chassisContactCount;
         private int chassisContactCountSinceLastStep;
         private float nextPhysicsDiagnosticTime;
+        private float surfaceGripMultiplier = 1f;
 
         public override float SpeedMps => body != null ? EvaluateProgressSpeed(body.linearVelocity) : 0f;
         public override float ProgressPosition => body != null ? body.position.x : 0f;
@@ -86,7 +86,8 @@ namespace AnimeHillRacing.Vehicle
         public override bool AnyWheelGrounded => anyWheelGrounded;
         public override bool BothWheelsGrounded => bothWheelsGrounded;
         public override bool ChassisGrounded => chassisGrounded;
-        public override bool Airborne => !anyWheelGrounded && !chassisGrounded;
+        public override bool FullyAirborne => !anyWheelGrounded && !chassisGrounded;
+        public override bool Airborne => FullyAirborne;
         public override TransmissionController Transmission => transmission;
         public override VehicleDefinition Definition => definition;
         public override ResolvedVehicleStats Stats => stats;
@@ -96,6 +97,12 @@ namespace AnimeHillRacing.Vehicle
         public Vector3 ChassisContactNormal => chassisContactNormal;
         public float ChassisImpactVelocity => chassisImpactVelocity;
         public int ChassisContactCount => chassisContactCount;
+        public float SurfaceGripMultiplier => surfaceGripMultiplier;
+        public SuspensionController FrontSuspension => SuspensionAt(frontSuspensionIndex);
+        public SuspensionController RearSuspension => SuspensionAt(rearSuspensionIndex);
+
+        public void SetSurfaceGripMultiplier(float multiplier) =>
+            surfaceGripMultiplier = Mathf.Clamp(multiplier, .25f, 1f);
 
         private void Awake()
         {
@@ -130,8 +137,9 @@ namespace AnimeHillRacing.Vehicle
             body.maxDepenetrationVelocity = definition.maximumDepenetrationVelocity;
             body.solverIterations = Mathf.Max(body.solverIterations, 12);
             body.solverVelocityIterations = Mathf.Max(body.solverVelocityIterations, 8);
-            body.angularDamping = groundedAngularDamping;
-            body.maxAngularVelocity = collisionAngularVelocityLimit;
+            body.angularDamping = definition.twoWheelAngularDamping;
+            body.maxAngularVelocity = Mathf.Max(definition.maxAirAngularVelocity,
+                definition.maximumPassiveAngularVelocity);
             fuel.Initialize(definition, stats);
             engine.Initialize(definition, stats, fuel);
             transmission.Initialize(definition, TransmissionMode.Auto);
@@ -187,7 +195,7 @@ namespace AnimeHillRacing.Vehicle
             ApplyDrag();
             ApplyAerodynamicDownforce();
             ApplyTopSpeedGovernor();
-            ApplyAirControl(inputState, rawGrounded);
+            ApplyAirControl(inputState);
             LogPhysicsDiagnostics();
         }
 
@@ -288,7 +296,7 @@ namespace AnimeHillRacing.Vehicle
             int groundedCount = 0;
             for (int i = 0; i < suspensionPoints.Length; i++)
             {
-                suspensionPoints[i].ApplyMotorTorque(perWheelTorque, stats.grip);
+                suspensionPoints[i].ApplyMotorTorque(perWheelTorque, stats.grip * surfaceGripMultiplier);
                 suspensionPoints[i].ApplyBrakeTorque(perWheelBrakeTorque);
                 if (suspensionPoints[i].IsGrounded)
                 {
@@ -388,13 +396,16 @@ namespace AnimeHillRacing.Vehicle
             return Mathf.Min(requested, Mathf.Max(0f, maximumAcceleration));
         }
 
-        private void ApplyAirControl(VehicleInputState inputState, bool hasWheelContact)
+        private void ApplyAirControl(VehicleInputState inputState)
         {
-            bool formulaOnOneWheel = definition.archetype == VehicleArchetype.Formula &&
-                                     (frontWheelGrounded ^ rearWheelGrounded) && !chassisGrounded;
-            body.angularDamping = EvaluatePitchAngularDamping(hasWheelContact, formulaOnOneWheel,
-                groundedAngularDamping, definition.airAngularDamping);
-            body.maxAngularVelocity = hasWheelContact ? collisionAngularVelocityLimit : definition.maxAirAngularVelocity;
+            body.angularDamping = EvaluatePitchAngularDamping(frontWheelGrounded, rearWheelGrounded,
+                chassisGrounded, definition.oneWheelAngularDamping, definition.twoWheelAngularDamping,
+                definition.airAngularDamping);
+            // maxAirAngularVelocity is the player's control target, not a clamp on collision momentum.
+            // Keeping a separate passive limit prevents a landing-generated rotation from being truncated
+            // as soon as the last tire leaves the ground.
+            body.maxAngularVelocity = Mathf.Max(definition.maxAirAngularVelocity,
+                definition.maximumPassiveAngularVelocity);
             if (!driveEnabled) return;
             float contactAuthority = EvaluatePitchControlAuthority(frontWheelGrounded, rearWheelGrounded,
                 chassisGrounded, definition.archetype == VehicleArchetype.Formula,
@@ -412,12 +423,16 @@ namespace AnimeHillRacing.Vehicle
             body.AddTorque(Vector3.forward * acceleration, ForceMode.Acceleration);
         }
 
-        public static float EvaluatePitchAngularDamping(bool hasWheelContact, bool formulaOnOneWheel,
-            float groundedDamping, float airborneDamping)
+        public static float EvaluatePitchAngularDamping(bool frontGrounded, bool rearGrounded,
+            bool chassisContact, float oneWheelDamping, float twoWheelDamping, float airborneDamping)
         {
-            if (formulaOnOneWheel)
-                return Mathf.Max(0f, groundedDamping) * OneWheelAngularDampingScale;
-            return hasWheelContact ? Mathf.Max(0f, groundedDamping) : Mathf.Max(0f, airborneDamping);
+            if (frontGrounded && rearGrounded)
+                return Mathf.Max(0f, twoWheelDamping);
+            if (frontGrounded ^ rearGrounded)
+                return Mathf.Max(0f, oneWheelDamping);
+            if (chassisContact)
+                return Mathf.Max(0f, oneWheelDamping) * .75f;
+            return Mathf.Max(0f, airborneDamping);
         }
 
         public static float EvaluatePitchControlAuthority(bool frontGrounded, bool rearGrounded,
@@ -446,6 +461,9 @@ namespace AnimeHillRacing.Vehicle
 
         private bool IsSuspensionGrounded(int index) => suspensionPoints != null && index >= 0 &&
             index < suspensionPoints.Length && suspensionPoints[index] != null && suspensionPoints[index].IsGrounded;
+
+        private SuspensionController SuspensionAt(int index) => suspensionPoints != null && index >= 0 &&
+            index < suspensionPoints.Length ? suspensionPoints[index] : null;
 
         private void OnCollisionEnter(Collision collision) => CaptureChassisContact(collision);
         private void OnCollisionStay(Collision collision) => CaptureChassisContact(collision);
@@ -497,6 +515,8 @@ namespace AnimeHillRacing.Vehicle
             float frontCompression = frontSuspensionIndex >= 0 ? suspensionPoints[frontSuspensionIndex].Compression01 : 0f;
             float rearRpm = rearSuspensionIndex >= 0 ? suspensionPoints[rearSuspensionIndex].WheelRpm : 0f;
             float frontRpm = frontSuspensionIndex >= 0 ? suspensionPoints[frontSuspensionIndex].WheelRpm : 0f;
+            SuspensionController front = FrontSuspension;
+            SuspensionController rear = RearSuspension;
             PhysicsMaterial chassisMaterial = GetComponent<Collider>()?.sharedMaterial;
             float evaluatedDownforce = EvaluateAerodynamicDownforceAcceleration(definition, stats,
                 Mathf.Abs(SpeedMps));
@@ -506,6 +526,9 @@ namespace AnimeHillRacing.Vehicle
                       $"chassis={chassisGrounded}({chassisContactRegions}), airborne={Airborne}, " +
                       $"speed={SpeedMps:0.00}, velocity={body.linearVelocity}, wZ={body.angularVelocity.z:0.00}, " +
                       $"compression F/R={frontCompression:0.00}/{rearCompression:0.00}, " +
+                      $"contactPoint F/R={front?.ContactPoint}/{rear?.ContactPoint}, " +
+                      $"contactNormal F/R={front?.ContactNormal}/{rear?.ContactNormal}, " +
+                      $"suspensionForce F/R={front?.LastSuspensionForce:0}/{rear?.LastSuspensionForce:0}N, " +
                       $"rpm F/R={frontRpm:0}/{rearRpm:0}, spring={stats.spring:0}, " +
                       $"compressionDamper={stats.compressionDampingMultiplier:0.00}, " +
                       $"reboundDamper={stats.reboundDampingMultiplier:0.00}, gravity={Physics.gravity}, " +
@@ -516,7 +539,35 @@ namespace AnimeHillRacing.Vehicle
                       $"{(chassisMaterial != null ? chassisMaterial.dynamicFriction : 0f):0.00}/" +
                       $"{(chassisMaterial != null ? chassisMaterial.staticFriction : 0f):0.00}, " +
                       $"impact={chassisImpactVelocity:0.00}, normal={chassisContactNormal}, " +
-                      $"contacts={chassisContactCount}, fixedDt={Time.fixedDeltaTime:0.000}", this);
+                      $"angularDamping={body.angularDamping:0.000}, contacts={chassisContactCount}, " +
+                      $"fixedDt={Time.fixedDeltaTime:0.000}", this);
+        }
+
+        private void OnDrawGizmosSelected()
+        {
+            if (!drawPhysicsGizmos) return;
+            Rigidbody sourceBody = body != null ? body : GetComponent<Rigidbody>();
+            if (sourceBody != null)
+            {
+                Gizmos.color = Color.magenta;
+                Gizmos.DrawSphere(sourceBody.worldCenterOfMass, .08f);
+                Gizmos.DrawLine(sourceBody.worldCenterOfMass,
+                    sourceBody.worldCenterOfMass + sourceBody.transform.up * .35f);
+            }
+
+            SuspensionController[] points = suspensionPoints != null && suspensionPoints.Length > 0
+                ? suspensionPoints : GetComponentsInChildren<SuspensionController>(true);
+            for (int i = 0; i < points.Length; i++)
+            {
+                SuspensionController point = points[i];
+                if (point == null) continue;
+                Gizmos.color = point.IsGrounded ? Color.green : new Color(1f, .55f, 0f);
+                Gizmos.DrawSphere(point.ContactPoint, .055f);
+                Gizmos.DrawLine(point.ContactPoint, point.ContactPoint + point.ContactNormal * .5f);
+                Gizmos.color = Color.cyan;
+                Gizmos.DrawLine(point.SuspensionMountPoint,
+                    point.SuspensionMountPoint + point.AppliedSuspensionForce * gizmoForceScale);
+            }
         }
 
         public override void SetTransmissionMode(TransmissionMode mode)

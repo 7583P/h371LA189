@@ -135,7 +135,7 @@ namespace AnimeHillRacing.UI
                 body.flipX = vehicle.flipBodyX;
                 body.sortingOrder = 10;
                 body.transform.localPosition = new Vector3(vehicle.bodyVisualOffset.x, vehicle.bodyVisualOffset.y, 0f);
-                FitWidth(body.transform, body.sprite, vehicle.visualWidth);
+                body.transform.localScale = vehicle.BodyCustomizationScale(skin);
             }
             if (driver != null) driver.Apply(driverDefinition, vehicle.driverPose,
                 driverDefinition?.FindAccessory(accessoryId), null, false);
@@ -160,7 +160,7 @@ namespace AnimeHillRacing.UI
             previewCamera.Render();
         }
 
-        private static void ApplyWheel(SpriteRenderer renderer, VehicleDefinition.CustomizationOption option,
+        private void ApplyWheel(SpriteRenderer renderer, VehicleDefinition.CustomizationOption option,
             Vector2 position, float diameter)
         {
             if (renderer == null) return;
@@ -168,12 +168,8 @@ namespace AnimeHillRacing.UI
             renderer.transform.localPosition = new Vector3(position.x, position.y, -.02f);
             renderer.sortingOrder = 11;
             renderer.transform.localScale = Vector3.one *
-                                            VehicleDefinition.WheelVisualScale(option, diameter);
+                                            appliedVehicle.WheelCustomizationScale(option, diameter);
         }
 
-        private static void FitWidth(Transform target, Sprite sprite, float width)
-        {
-            target.localScale = Vector3.one * VehicleDefinition.SpriteWidthScale(sprite, width);
-        }
     }
 }

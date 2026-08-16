@@ -29,7 +29,9 @@ MonoBehaviour:
   mountainParallaxX: 0.18
   mountainParallaxY: 0.035
   lockVerticalToCamera: 1
+  coverViewportVertically: 0
   mountainVisualHeight: 15.5
   mountainBaseY: -3.2
   pooledMountainSegments: 5
   seamOverlap: 0.018
+  mirrorAlternatingMountainTiles: 0

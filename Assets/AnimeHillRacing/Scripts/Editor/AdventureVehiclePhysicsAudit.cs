@@ -68,6 +68,7 @@ namespace AnimeHillRacing.Editor
             public float maximumLengthSpan;
             public float maximumRelativeVelocity;
             public float maximumVisualError;
+            public float maximumBodyAngularVelocity;
             public int unexpectedGroundedFrames;
             public float supportedWheelGroundedRatio;
         }
@@ -76,6 +77,190 @@ namespace AnimeHillRacing.Editor
         {
             public float maximumAngularVelocity;
             public float finalSpeedMps;
+        }
+
+        private struct NaturalLandingResult
+        {
+            public bool frontFirst;
+            public bool rearFirst;
+            public bool simultaneousFirst;
+            public bool reachedBothWheels;
+            public int oneWheelFrames;
+            public float peakAngularVelocity;
+            public float maximumPitchDelta;
+        }
+
+        private struct EdgeLandingResult
+        {
+            public bool contacted;
+            public float peakAngularVelocity;
+            public float maximumUnwrappedPitch;
+        }
+
+        [MenuItem("Anime Hill Racing/Validate Natural Landing Dynamics")]
+        public static void ValidateNaturalLandingDynamics()
+        {
+            bool runningInPlayMode = Application.isPlaying;
+            string previousScenePath = UnityEngine.SceneManagement.SceneManager.GetActiveScene().path;
+            try
+            {
+            if (!runningInPlayMode)
+                EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            VehicleDefinition[] vehicles =
+            {
+                Load("MainVehicle.asset"), Load("FormulaVehicle.asset"),
+                Load("RallyVehicle.asset"), Load("SportBikeVehicle.asset")
+            };
+            var failures = new List<string>();
+            var summaries = new List<string>();
+            for (int i = 0; i < vehicles.Length; i++)
+            {
+                VehicleDefinition vehicle = vehicles[i];
+                if (vehicle == null || vehicle.gameplayPrefab2D == null)
+                {
+                    failures.Add($"Vehicle data/prefab missing at index {i}.");
+                    continue;
+                }
+
+                float axleY = (vehicle.frontWheelVisualPosition.y + vehicle.rearWheelVisualPosition.y) * .5f;
+                float comAboveAxle = vehicle.centerOfMass.y - axleY;
+                float minimumComHeight = vehicle.archetype == VehicleArchetype.Formula ? .10f : .25f;
+                if (comAboveAxle < minimumComHeight || vehicle.collisionPitchInertiaMultiplier > 1.6f ||
+                    vehicle.oneWheelAngularDamping >= vehicle.twoWheelAngularDamping ||
+                    vehicle.airAngularDamping > .5f || vehicle.maximumPassiveAngularVelocity < 7f)
+                    failures.Add($"{vehicle.displayName} CONFIG: COM above axle={comAboveAxle:0.00}m, " +
+                        $"pitch inertia={vehicle.collisionPitchInertiaMultiplier:0.00}x, damping " +
+                        $"one/two/air={vehicle.oneWheelAngularDamping:0.00}/" +
+                        $"{vehicle.twoWheelAngularDamping:0.00}/{vehicle.airAngularDamping:0.00}, " +
+                        $"passive cap={vehicle.maximumPassiveAngularVelocity:0.0}rad/s.");
+
+                NaturalLandingResult perfect = SimulateNaturalLanding(vehicle, 0f, 8f, 14f);
+                NaturalLandingResult front = SimulateNaturalLanding(vehicle, -14f, 9f, 18f);
+                NaturalLandingResult rear = SimulateNaturalLanding(vehicle, 14f, 9f, 18f);
+                NaturalLandingResult frontStrong = SimulateNaturalLanding(vehicle, -23f, 14f, 25f);
+                NaturalLandingResult rearStrong = SimulateNaturalLanding(vehicle, 23f, 14f, 25f);
+                EdgeLandingResult edge = SimulateEdgeLanding(vehicle);
+
+                if (!perfect.reachedBothWheels || perfect.oneWheelFrames > 4 ||
+                    perfect.maximumPitchDelta > 14f)
+                    failures.Add($"{vehicle.displayName} PERFECT: both={perfect.reachedBothWheels}, " +
+                        $"oneWheelFrames={perfect.oneWheelFrames}, pitch={perfect.maximumPitchDelta:0.0}deg.");
+                if (!front.frontFirst || front.oneWheelFrames < 1 || !front.reachedBothWheels ||
+                    front.peakAngularVelocity < .30f || front.maximumPitchDelta < 3f)
+                    failures.Add($"{vehicle.displayName} FRONT-FIRST: first={LandingFirst(front)}, " +
+                        $"oneWheelFrames={front.oneWheelFrames}, angular={front.peakAngularVelocity:0.00}rad/s, " +
+                        $"pitch={front.maximumPitchDelta:0.0}deg, both={front.reachedBothWheels}.");
+                if (!rear.rearFirst || rear.oneWheelFrames < 1 || !rear.reachedBothWheels ||
+                    rear.peakAngularVelocity < .30f || rear.maximumPitchDelta < 3f)
+                    failures.Add($"{vehicle.displayName} REAR-FIRST: first={LandingFirst(rear)}, " +
+                        $"oneWheelFrames={rear.oneWheelFrames}, angular={rear.peakAngularVelocity:0.00}rad/s, " +
+                        $"pitch={rear.maximumPitchDelta:0.0}deg, both={rear.reachedBothWheels}.");
+                if (frontStrong.peakAngularVelocity < front.peakAngularVelocity * 1.08f ||
+                    frontStrong.maximumPitchDelta < front.maximumPitchDelta * 1.08f)
+                    failures.Add($"{vehicle.displayName} FRONT PROPORTIONALITY: moderate/strong angular=" +
+                        $"{front.peakAngularVelocity:0.00}/{frontStrong.peakAngularVelocity:0.00}, pitch=" +
+                        $"{front.maximumPitchDelta:0.0}/{frontStrong.maximumPitchDelta:0.0}deg.");
+                if (rearStrong.peakAngularVelocity < rear.peakAngularVelocity * 1.08f ||
+                    rearStrong.maximumPitchDelta < rear.maximumPitchDelta * 1.08f)
+                    failures.Add($"{vehicle.displayName} REAR PROPORTIONALITY: moderate/strong angular=" +
+                        $"{rear.peakAngularVelocity:0.00}/{rearStrong.peakAngularVelocity:0.00}, pitch=" +
+                        $"{rear.maximumPitchDelta:0.0}/{rearStrong.maximumPitchDelta:0.0}deg.");
+                if (!edge.contacted || edge.peakAngularVelocity < 2f || edge.maximumUnwrappedPitch < 45f)
+                    failures.Add($"{vehicle.displayName} EDGE IMPACT: contact={edge.contacted}, angular=" +
+                        $"{edge.peakAngularVelocity:0.00}rad/s, unwrappedPitch=" +
+                        $"{edge.maximumUnwrappedPitch:0.0}deg.");
+
+                summaries.Add($"{vehicle.displayName} perfect={perfect.maximumPitchDelta:0.0}deg; " +
+                    $"front={front.oneWheelFrames}f/{front.peakAngularVelocity:0.00}rad/s/" +
+                    $"{front.maximumPitchDelta:0.0}deg -> strong {frontStrong.peakAngularVelocity:0.00}/" +
+                    $"{frontStrong.maximumPitchDelta:0.0}; rear={rear.oneWheelFrames}f/" +
+                    $"{rear.peakAngularVelocity:0.00}rad/s/{rear.maximumPitchDelta:0.0}deg -> strong " +
+                    $"{rearStrong.peakAngularVelocity:0.00}/{rearStrong.maximumPitchDelta:0.0}; edge=" +
+                    $"{edge.peakAngularVelocity:0.00}rad/s/{edge.maximumUnwrappedPitch:0}deg");
+            }
+
+            if (failures.Count > 0)
+                throw new InvalidOperationException("NATURAL LANDING DYNAMICS FAILED\n- " +
+                    string.Join("\n- ", failures) + "\nMETRICS\n" + string.Join("\n", summaries));
+            Debug.Log("NATURAL LANDING DYNAMICS PASS | " + string.Join(" | ", summaries));
+            }
+            finally
+            {
+                if (!runningInPlayMode && !string.IsNullOrEmpty(previousScenePath) &&
+                    System.IO.File.Exists(previousScenePath))
+                    EditorSceneManager.OpenScene(previousScenePath, OpenSceneMode.Single);
+            }
+        }
+
+        private static string LandingFirst(NaturalLandingResult result) => result.frontFirst ? "FRONT" :
+            result.rearFirst ? "REAR" : result.simultaneousFirst ? "BOTH" : "NONE";
+
+        private static NaturalLandingResult SimulateNaturalLanding(VehicleDefinition source,
+            float pitchDegrees, float downwardSpeed, float forwardSpeed)
+        {
+            using (SimulationRig rig = SimulationRig.Create(source, source.suspensionMaxTunes, false,
+                       new Vector3(0f, 3f, 0f), Quaternion.Euler(0f, 0f, pitchDegrees)))
+            {
+                rig.Controller.Body.linearVelocity = Vector3.right * forwardSpeed + Vector3.down * downwardSpeed;
+                float initialPitch = rig.Controller.Body.rotation.eulerAngles.z;
+                bool contactStarted = false;
+                int framesSinceContact = 0;
+                var result = new NaturalLandingResult();
+                for (int frame = 0; frame < 220; frame++)
+                {
+                    rig.Step();
+                    bool front = rig.Controller.FrontWheelGrounded;
+                    bool rear = rig.Controller.RearWheelGrounded;
+                    if (!contactStarted && (front || rear))
+                    {
+                        contactStarted = true;
+                        result.frontFirst = front && !rear;
+                        result.rearFirst = rear && !front;
+                        result.simultaneousFirst = front && rear;
+                    }
+                    if (!contactStarted) continue;
+                    framesSinceContact++;
+                    if ((front ^ rear) && framesSinceContact <= 80) result.oneWheelFrames++;
+                    if (front && rear) result.reachedBothWheels = true;
+                    if (framesSinceContact <= 80)
+                    {
+                        result.peakAngularVelocity = Mathf.Max(result.peakAngularVelocity,
+                            Mathf.Abs(rig.Controller.Body.angularVelocity.z));
+                        result.maximumPitchDelta = Mathf.Max(result.maximumPitchDelta,
+                            Mathf.Abs(Mathf.DeltaAngle(initialPitch,
+                                rig.Controller.Body.rotation.eulerAngles.z)));
+                    }
+                }
+                return result;
+            }
+        }
+
+        private static EdgeLandingResult SimulateEdgeLanding(VehicleDefinition source)
+        {
+            using (SimulationRig rig = SimulationRig.Create(source, source.suspensionMaxTunes, false,
+                       new Vector3(-3.3f, 2.4f, 0f), Quaternion.Euler(0f, 0f, -16f)))
+            {
+                rig.ConfigureLeadingEdgeGround();
+                rig.Controller.Body.linearVelocity = Vector3.right * 24f + Vector3.down * 12f;
+                float previousAngle = rig.Controller.Body.rotation.eulerAngles.z;
+                float unwrappedPitch = 0f;
+                var result = new EdgeLandingResult();
+                for (int frame = 0; frame < 260; frame++)
+                {
+                    rig.Step();
+                    bool contact = rig.Controller.AnyWheelGrounded || rig.Controller.ChassisGrounded;
+                    result.contacted |= contact;
+                    if (!result.contacted) continue;
+                    float currentAngle = rig.Controller.Body.rotation.eulerAngles.z;
+                    unwrappedPitch += Mathf.DeltaAngle(previousAngle, currentAngle);
+                    previousAngle = currentAngle;
+                    result.maximumUnwrappedPitch = Mathf.Max(result.maximumUnwrappedPitch,
+                        Mathf.Abs(unwrappedPitch));
+                    result.peakAngularVelocity = Mathf.Max(result.peakAngularVelocity,
+                        Mathf.Abs(rig.Controller.Body.angularVelocity.z));
+                }
+                return result;
+            }
         }
 
         [MenuItem("Anime Hill Racing/Validate Tune + Top Speed + Airborne Wheels + Formula")]
@@ -112,6 +297,7 @@ namespace AnimeHillRacing.Editor
                         both.maximumRelativeVelocity > .12f || both.maximumVisualError > .0001f)
                         failures.Add($"{vehicle.displayName} AIRBORNE L{levels[levelIndex]}: " +
                             $"span={both.maximumLengthSpan:0.0000}m, relV={both.maximumRelativeVelocity:0.000}m/s, " +
+                            $"bodyW={both.maximumBodyAngularVelocity:0.00}rad/s, " +
                             $"visual={both.maximumVisualError:0.000000}m, falseGround={both.unexpectedGroundedFrames}.");
                 }
 
@@ -439,22 +625,25 @@ namespace AnimeHillRacing.Editor
             Vector3 pitchedRight = Quaternion.Euler(0f, 0f, 28f) * Vector3.right;
             Vector3 pitchedUp = Quaternion.Euler(0f, 0f, 28f) * Vector3.up;
             Vector3 downforce = VehicleController.EvaluateAerodynamicDownforceVector(pitchedUp, 10f);
-            float oneWheelDamping = VehicleController.EvaluatePitchAngularDamping(true, true, .45f, 1.5f);
-            float settledDamping = VehicleController.EvaluatePitchAngularDamping(true, false, .45f, 1.5f);
-            float airborneDamping = VehicleController.EvaluatePitchAngularDamping(false, false, .45f, 1.5f);
+            float oneWheelDamping = VehicleController.EvaluatePitchAngularDamping(true, false, false,
+                formula.oneWheelAngularDamping, formula.twoWheelAngularDamping, formula.airAngularDamping);
+            float settledDamping = VehicleController.EvaluatePitchAngularDamping(true, true, false,
+                formula.oneWheelAngularDamping, formula.twoWheelAngularDamping, formula.airAngularDamping);
+            float airborneDamping = VehicleController.EvaluatePitchAngularDamping(false, false, false,
+                formula.oneWheelAngularDamping, formula.twoWheelAngularDamping, formula.airAngularDamping);
             if (both != 0f || frontOnly < .10f || frontOnly > .18f ||
                 Mathf.Abs(frontOnly - rearOnly) > .0001f || chassis < .05f || chassis > .15f ||
                 Mathf.Abs(airborne - 1f) > .0001f || otherVehicleOneWheel != 0f ||
-                oneWheelDamping > .15f || Mathf.Abs(settledDamping - .45f) > .0001f ||
-                Mathf.Abs(airborneDamping - 1.5f) > .0001f ||
+                oneWheelDamping > .12f || oneWheelDamping >= settledDamping ||
+                Mathf.Abs(airborneDamping - formula.airAngularDamping) > .0001f ||
                 Mathf.Abs(Vector3.Dot(downforce, pitchedRight)) > .0001f ||
                 Mathf.Abs(downforce.magnitude - 10f) > .0001f)
                 failures.Add($"FORMULA ONE-WHEEL CONTROL: both/front/rear/chassis/air=" +
                     $"{both:0.00}/{frontOnly:0.00}/{rearOnly:0.00}/{chassis:0.00}/{airborne:0.00}, " +
                     $"damping one/both/air={oneWheelDamping:0.000}/{settledDamping:0.000}/" +
                     $"{airborneDamping:0.000}.");
-            if (formula.collisionPitchInertiaMultiplier < 3.5f ||
-                formula.collisionPitchInertiaMultiplier > 5f || Mathf.Abs(formula.centerOfMass.x) > .01f)
+            if (formula.collisionPitchInertiaMultiplier < 1f ||
+                formula.collisionPitchInertiaMultiplier > 1.6f || Mathf.Abs(formula.centerOfMass.x) > .01f)
                 failures.Add($"FORMULA ONE-WHEEL INERTIA: {formula.collisionPitchInertiaMultiplier:0.0}x " +
                     $"COMx={formula.centerOfMass.x:0.00}; must remain stable without suppressing natural " +
                     "front/rear pitch recovery.");
@@ -544,6 +733,7 @@ namespace AnimeHillRacing.Editor
                 }
                 float maximumRelativeVelocity = 0f;
                 float maximumVisualError = 0f;
+                float maximumBodyAngularVelocity = 0f;
                 int unexpectedGroundedFrames = 0;
                 int supportedGroundedFrames = 0;
                 const int frames = 170;
@@ -551,6 +741,8 @@ namespace AnimeHillRacing.Editor
                 for (int frame = 0; frame < frames; frame++)
                 {
                     rig.Step();
+                    maximumBodyAngularVelocity = Mathf.Max(maximumBodyAngularVelocity,
+                        Mathf.Abs(rig.Controller.Body.angularVelocity.z));
                     for (int p = 0; p < rig.Points.Length; p++)
                         InvokePrivate(rig.Points[p], "LateUpdate");
                     if (frame < measurementStart) continue;
@@ -581,6 +773,7 @@ namespace AnimeHillRacing.Editor
                     maximumLengthSpan = maximumSpan,
                     maximumRelativeVelocity = maximumRelativeVelocity,
                     maximumVisualError = maximumVisualError,
+                    maximumBodyAngularVelocity = maximumBodyAngularVelocity,
                     unexpectedGroundedFrames = unexpectedGroundedFrames,
                     supportedWheelGroundedRatio = supportedGroundedFrames / (float)(frames - measurementStart)
                 };
@@ -1185,7 +1378,8 @@ namespace AnimeHillRacing.Editor
             public VehicleInputController Input { get; }
             public SuspensionController[] Points { get; }
 
-            private SimulationRig(VehicleDefinition source, int level, bool rough, Vector3 position)
+            private SimulationRig(VehicleDefinition source, int level, bool rough, Vector3 position,
+                Quaternion rotation)
             {
                 previousMode = Physics.simulationMode;
                 Physics.simulationMode = SimulationMode.Script;
@@ -1194,7 +1388,7 @@ namespace AnimeHillRacing.Editor
                 inputObject = new GameObject("Physics Audit Input");
                 Input = inputObject.AddComponent<VehicleInputController>();
                 Input.SetInputMode(GameModeType.Adventure2_5D);
-                instance = UnityEngine.Object.Instantiate(source.gameplayPrefab2D, position, Quaternion.identity);
+                instance = UnityEngine.Object.Instantiate(source.gameplayPrefab2D, position, rotation);
                 Controller = instance.GetComponent<VehicleController>();
                 Points = instance.GetComponentsInChildren<SuspensionController>(true);
                 Controller.AssignRuntimeReferences(definition, Input, Points);
@@ -1205,8 +1399,8 @@ namespace AnimeHillRacing.Editor
             }
 
             public static SimulationRig Create(VehicleDefinition source, int level, bool rough,
-                Vector3? position = null) => new SimulationRig(source, level, rough,
-                position ?? new Vector3(0f, 1.1f, 0f));
+                Vector3? position = null, Quaternion? rotation = null) => new SimulationRig(source, level, rough,
+                position ?? new Vector3(0f, 1.1f, 0f), rotation ?? Quaternion.identity);
 
             public void Step()
             {
@@ -1228,6 +1422,16 @@ namespace AnimeHillRacing.Editor
                     throw new InvalidOperationException("Rear-only wheel audit requires flat ground.");
                 collider.center = new Vector3(-50f, -.5f, 0f);
                 collider.size = new Vector3(100f, 1f, 20f);
+                Physics.SyncTransforms();
+            }
+
+            public void ConfigureLeadingEdgeGround()
+            {
+                BoxCollider collider = ground != null ? ground.GetComponent<BoxCollider>() : null;
+                if (collider == null)
+                    throw new InvalidOperationException("Edge landing audit requires flat box ground.");
+                collider.center = new Vector3(75f, -.5f, 0f);
+                collider.size = new Vector3(150f, 1f, 20f);
                 Physics.SyncTransforms();
             }
 

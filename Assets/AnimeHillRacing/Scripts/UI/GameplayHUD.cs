@@ -50,6 +50,9 @@ namespace AnimeHillRacing.UI
         private void Awake()
         {
             if (useDefaultFuelGradient) ConfigureDefaultFuelGradient();
+            RemoveDecorativeCardBackground(distanceText, "Distance Card");
+            RemoveDecorativeCardBackground(fuelText, "Fuel Card");
+            RemoveDecorativeCardBackground(coinsText, "Coin Balance Card");
             terrainManager = FindFirstObjectByType<TerrainManager>();
             roadManager = FindFirstObjectByType<RoadTrackGenerator>();
             if (input == null)
@@ -65,6 +68,18 @@ namespace AnimeHillRacing.UI
                 fuelEmptyOffsetMax.x = fuelFillRect.offsetMin.x;
             }
             debugPanel?.SetActive(false);
+        }
+
+        private static void RemoveDecorativeCardBackground(Text content, string expectedCardName)
+        {
+            if (content == null || content.transform.parent == null) return;
+            GameObject card = content.transform.parent.gameObject;
+            if (card.name != expectedCardName) return;
+
+            Image background = card.GetComponent<Image>();
+            if (background != null) background.enabled = false;
+            Outline outline = card.GetComponent<Outline>();
+            if (outline != null) outline.enabled = false;
         }
 
         private void Update()
@@ -202,6 +217,9 @@ namespace AnimeHillRacing.UI
             debugPanel = targetDebugPanel;
             debugText = targetDebugText;
             input = targetInput;
+            RemoveDecorativeCardBackground(distanceText, "Distance Card");
+            RemoveDecorativeCardBackground(fuelText, "Fuel Card");
+            RemoveDecorativeCardBackground(coinsText, "Coin Balance Card");
         }
 
         public void AssignLiquidExposure(GameObject panel, Text label, Image fill)

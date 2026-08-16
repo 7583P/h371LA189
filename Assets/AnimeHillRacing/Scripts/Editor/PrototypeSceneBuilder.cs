@@ -36,13 +36,16 @@ namespace AnimeHillRacing.Editor
         private const string TimeTrialPath = Scenes + "/TimeTrial3D.unity";
         private const string Prefabs = Root + "/Prefabs/Vehicles";
         private const string JeepBodyPath = "Assets/Art/Vehicles/Jeep/Skins/Jeep_Skin_Default.png";
+        private const string JeepRetroSkinPath = "Assets/Art/Vehicles/Jeep/Skins/Retro_Skin.png";
         private const string JeepWheel01Path = "Assets/Art/Vehicles/Jeep/Wheels/Jeep_Wheel_01.png";
         private const string JeepWheel02Path = "Assets/Art/Vehicles/Jeep/Wheels/Jeep_Wheel_02.png";
+        private const string JeepStarryWheelPath = "Assets/Art/Vehicles/Jeep/Wheels/Starry_Wheel.png";
         private const string FormulaBodyPath = "Assets/Art/Vehicles/Formula/Skins/Formula_skin_Default.png";
         private const string FormulaNeonSkinPath = "Assets/Art/Vehicles/Formula/Skins/Neon_Skin.png";
+        private const string FormulaElectricitySkinPath = "Assets/Art/Vehicles/Formula/Skins/Electricity.png";
         private const string FormulaWheel01Path = "Assets/Art/Vehicles/Formula/Wheels/Formula_Wheel_01.png";
         private const string FormulaWheel02Path = "Assets/Art/Vehicles/Formula/Wheels/Formula_Wheel_02.png";
-        private const string FormulaRainbowWheelPath = "Assets/Art/Vehicles/Formula/Wheels/Rainbow_Wheel.png";
+        private const string FormulaLuxuryWheelPath = "Assets/Art/Vehicles/Formula/Wheels/Luxury.png";
         private const string FormulaReferencePath = "Assets/Art/Vehicles/Formula/Formula_Reference.png";
         private const string RallyBodyPath = "Assets/Art/Vehicles/Rally/Vehicle/Rally_Skin_Default.png";
         private const string RallyNoRoofPath = "Assets/Art/Vehicles/Rally/Vehicle/Rally_No_Roof_01.png";
@@ -50,7 +53,6 @@ namespace AnimeHillRacing.Editor
         private const string RallyWheelPath = "Assets/Art/Vehicles/Rally/Wheels/Rally_Wheel_01.png";
         private const string RallyGhostyWheelPath = "Assets/Art/Vehicles/Rally/Wheels/Rally_Wheel_Ghosty.png";
         private const string RallySkyBlueWheelPath = "Assets/Art/Vehicles/Rally/Wheels/SkyBlue_Wheel.png";
-        private const string RallyRainbowWheelPath = "Assets/Art/Vehicles/Rally/Wheels/Rainbow_Wheel.png";
         private const string SportBikeBodyPath = "Assets/Art/Vehicles/Sport Bike/Vehicle/Bike_Skin_Default.png";
         private const string SportBikeRetroPath = "Assets/Art/Vehicles/Sport Bike/Vehicle/Bike_Retro.png";
         private const string SportBikeWheel01Path = "Assets/Art/Vehicles/Sport Bike/Wheels/Bike_Wheel_01.png";
@@ -131,19 +133,21 @@ namespace AnimeHillRacing.Editor
             public VehicleDefinition sportBike;
             public Sprite formulaBody;
             public Sprite formulaNeonSkin;
+            public Sprite formulaElectricitySkin;
             public Sprite formulaWheel01;
             public Sprite formulaWheel02;
-            public Sprite formulaRainbowWheel;
+            public Sprite luxuryWheel;
             public Sprite jeepBody;
+            public Sprite jeepRetroSkin;
             public Sprite jeepWheel01;
             public Sprite jeepWheel02;
+            public Sprite jeepStarryWheel;
             public Sprite rallyBody;
             public Sprite rallyNoRoof;
             public Sprite rallyRoof;
             public Sprite rallyWheel;
             public Sprite rallyGhostyWheel;
             public Sprite rallySkyBlueWheel;
-            public Sprite rallyRainbowWheel;
             public Sprite sportBikeBody;
             public Sprite sportBikeRetro;
             public Sprite sportBikeWheel01;
@@ -929,13 +933,14 @@ namespace AnimeHillRacing.Editor
                         Canvas.ForceUpdateCanvases();
                         RectTransform photoFrame = resultImage != null
                             ? resultImage.transform.parent as RectTransform : null;
-                        AspectRatioFitter photoAspect = resultImage != null
-                            ? resultImage.GetComponent<AspectRatioFitter>() : null;
                         RectTransform statsRect = results.Length == 1 && results[0].StatsText != null
                             ? results[0].StatsText.rectTransform : null;
-                        if (resultImage == null || resultImage.rectTransform.rect.width < 560f ||
+                        Rect photoRect = resultImage != null ? resultImage.rectTransform.rect : default;
+                        bool squarePhoto = photoRect.width >= 560f && photoRect.height >= 560f &&
+                                           Mathf.Abs(photoRect.width - photoRect.height) <= 1f;
+                        if (resultImage == null || !squarePhoto ||
                             photoFrame == null || photoFrame.anchoredPosition.x > -250f ||
-                            photoAspect == null || Mathf.Abs(photoAspect.aspectRatio - 1f) > .001f ||
+                            Mathf.Abs(photoFrame.rect.width - photoFrame.rect.height) > 1f ||
                             statsRect == null || statsRect.anchoredPosition.x < 250f)
                         {
                             Debug.LogError($"{scene.name}: Results must keep an aspect-safe photo on the left " +
@@ -1439,32 +1444,48 @@ namespace AnimeHillRacing.Editor
         {
             if (assets.catalog == null || assets.catalog.vehicles == null || assets.catalog.vehicles.Length != 4)
                 throw new System.InvalidOperationException("Garage requires Jeep, Formula, Rally and Sport Bike.");
-            if (assets.formulaNeonSkin == null || assets.formulaRainbowWheel == null ||
+            if (assets.jeepRetroSkin == null || assets.jeepStarryWheel == null ||
+                assets.formulaNeonSkin == null || assets.formulaElectricitySkin == null || assets.luxuryWheel == null ||
                 assets.rallyGhostyWheel == null || assets.rallySkyBlueWheel == null ||
-                assets.rallyRainbowWheel == null || assets.sportBikeGhostyWheel == null)
+                assets.sportBikeGhostyWheel == null)
                 throw new System.InvalidOperationException("One or more premium garage sprites are missing.");
-            if (assets.jeep.skins == null || assets.jeep.skins.Length != 1 || assets.jeep.wheels == null ||
-                assets.jeep.wheels.Length != 2 || assets.jeep.wheels[0].sprite == assets.jeep.wheels[1].sprite)
-                throw new System.InvalidOperationException("Jeep requires one real skin and two distinct wheel alternatives.");
-            if (assets.formula.skins == null || assets.formula.skins.Length != 2 || assets.formula.wheels == null ||
+            if (assets.jeep.skins == null || assets.jeep.skins.Length != 2 || assets.jeep.wheels == null ||
+                assets.jeep.wheels.Length != 3 || assets.jeep.skins[1].optionId != "jeep-skin-retro" ||
+                assets.jeep.skins[1].sprite != assets.jeepRetroSkin || assets.jeep.skins[1].unlockedByDefault ||
+                assets.jeep.skins[1].gemPrice != 1000 || assets.jeep.wheels[2].optionId != "jeep-wheel-starry" ||
+                assets.jeep.wheels[2].sprite != assets.jeepStarryWheel || assets.jeep.wheels[2].unlockedByDefault ||
+                assets.jeep.wheels[2].gemPrice != 500)
+                throw new System.InvalidOperationException(
+                    "Jeep requires Default/Retro skins and Wheel 01/Wheel 02/Starry Garage options.");
+            if (assets.formula.skins == null || assets.formula.skins.Length != 3 || assets.formula.wheels == null ||
                 assets.formula.wheels.Length != 3 || assets.formula.skins[1].sprite != assets.formulaNeonSkin ||
                 assets.formula.skins[1].unlockedByDefault || assets.formula.skins[1].gemPrice != 1000 ||
+                assets.formula.skins[2].optionId != FormulaElectricSkinEffect.ElectricSkinId ||
+                assets.formula.skins[2].sprite != assets.formulaElectricitySkin ||
+                assets.formula.skins[2].unlockedByDefault || assets.formula.skins[2].gemPrice != 1000 ||
                 assets.formula.wheels[0].sprite != assets.formulaWheel02 ||
                 assets.formula.wheels[1].sprite != assets.formulaWheel01 ||
                 assets.formula.wheels[1].unlockedByDefault || assets.formula.wheels[1].gemPrice != 500 ||
-                assets.formula.wheels[2].sprite != assets.formulaRainbowWheel ||
+                assets.formula.wheels[2].optionId != "formula-wheel-luxury" ||
+                assets.formula.wheels[2].sprite != assets.luxuryWheel ||
+                assets.formula.electricSkinOverlay != assets.formulaElectricitySkin ||
                 assets.formula.wheels[2].unlockedByDefault || assets.formula.wheels[2].gemPrice != 500)
                 throw new System.InvalidOperationException(
-                    "Formula Neon must cost 1000 Gems; Ghosty and Rainbow wheels must cost 500 Gems.");
+                    "Formula Default/Neon/Electricity or Ghosty/Luxury Garage contract is invalid.");
             if (assets.rally.skins == null || assets.rally.skins.Length != 1 || assets.rally.wheels == null ||
                 assets.rally.wheels.Length != 4 || assets.rally.skins[0].sprite != assets.rallyBody ||
                 assets.rally.wheels[1].sprite != assets.rallyGhostyWheel ||
                 assets.rally.wheels[2].sprite != assets.rallySkyBlueWheel ||
-                assets.rally.wheels[3].sprite != assets.rallyRainbowWheel ||
+                assets.rally.wheels[3].optionId != "rally-wheel-luxury" ||
+                assets.rally.wheels[3].sprite != assets.luxuryWheel ||
                 assets.rally.wheels.Skip(1).Any(wheel => wheel.unlockedByDefault || wheel.gemPrice != 500) ||
                 assets.rally.damagedBodySprite != assets.rallyNoRoof || assets.rally.detachableRoofSprite != assets.rallyRoof)
                 throw new System.InvalidOperationException(
-                    "Rally must expose its base wheel plus Ghosty, Sky Blue and Rainbow at 500 Gems each.");
+                    "Rally must expose its base wheel plus Ghosty, Sky Blue and Luxury at 500 Gems each.");
+            if (assets.catalog.vehicles.SelectMany(vehicle => vehicle.wheels).Any(wheel =>
+                    wheel.optionId.IndexOf("rainbow", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    wheel.displayName.IndexOf("rainbow", System.StringComparison.OrdinalIgnoreCase) >= 0))
+                throw new System.InvalidOperationException("Rainbow wheels must not remain selectable.");
             if (assets.sportBike == null || assets.sportBike.skins == null || assets.sportBike.skins.Length != 2 ||
                 assets.sportBike.wheels == null || assets.sportBike.wheels.Length != 4 ||
                 assets.sportBike.skins[1].unlockedByDefault || assets.sportBike.skins[1].gemPrice != 1000 ||
@@ -2862,6 +2883,11 @@ namespace AnimeHillRacing.Editor
             if (rear.sprite != assets.jeepWheel02 || front.sprite != assets.jeepWheel02)
                 throw new System.InvalidOperationException($"Garage Wheel 02 mismatch: rear={rear.sprite?.name}, front={front.sprite?.name}, " +
                     $"option={assets.jeep.wheels[1].sprite?.name}, expected={assets.jeepWheel02?.name}.");
+            preview.Apply(assets.jeep, assets.jeep.skins[1], assets.jeep.wheels[2], assets.stickmanBlack);
+            if (body.sprite != assets.jeepRetroSkin || rear.sprite != assets.jeepStarryWheel ||
+                front.sprite != assets.jeepStarryWheel)
+                throw new System.InvalidOperationException(
+                    "Garage must preview and equip Jeep Retro Skin with Starry Wheel.");
             preview.Apply(assets.formula, assets.formula.skins[0], assets.formula.wheels[0], assets.stickmanBlack);
             if (body.sprite != assets.formulaBody || rear.sprite != assets.formulaWheel02 ||
                 front.sprite != assets.formulaWheel02 || rear.sortingOrder <= body.sortingOrder ||
@@ -2875,6 +2901,35 @@ namespace AnimeHillRacing.Editor
             if (formulaHead == null || !formulaHead.enabled || formulaTorso == null || !formulaTorso.enabled ||
                 formulaLeftThigh == null || formulaLeftThigh.enabled || formulaRightThigh == null || formulaRightThigh.enabled)
                 throw new System.InvalidOperationException("Formula driver pose must show head/torso and hide both thighs.");
+            float expectedFormulaHeadScale = Mathf.Abs(assets.formula.driverPose.head.scale.x) *
+                                             ArticulatedDriver2D.CharacterVisualScaleMultiplier;
+            if (Mathf.Abs(formulaHead.transform.localScale.x - expectedFormulaHeadScale) > .0001f)
+                throw new System.InvalidOperationException("Character render pieces must remain at exactly 1.5x visual scale.");
+            preview.Apply(assets.formula, assets.formula.skins[1], assets.formula.wheels[2], assets.stickmanBlack);
+            Transform electricInternal = body.transform.Find("Formula Electricity - Internal");
+            Transform electricExternal = body.transform.Find("Formula Electricity - External Glow");
+            if (body.sprite != assets.formulaNeonSkin || rear.sprite != assets.luxuryWheel ||
+                front.sprite != assets.luxuryWheel ||
+                (electricInternal != null && electricInternal.gameObject.activeSelf) ||
+                (electricExternal != null && electricExternal.gameObject.activeSelf))
+                throw new System.InvalidOperationException(
+                    "Formula Neon must preview unchanged with Luxury and without electricity animation.");
+            preview.Apply(assets.formula, assets.formula.skins[2], assets.formula.wheels[2], assets.stickmanBlack);
+            electricInternal = body.transform.Find("Formula Electricity - Internal");
+            electricExternal = body.transform.Find("Formula Electricity - External Glow");
+            if (body.sprite != assets.formulaElectricitySkin || electricInternal == null || electricExternal == null ||
+                !electricInternal.gameObject.activeSelf || !electricExternal.gameObject.activeSelf ||
+                rear.sortingOrder <= electricInternal.GetComponent<SpriteRenderer>().sortingOrder ||
+                front.sortingOrder <= electricInternal.GetComponent<SpriteRenderer>().sortingOrder ||
+                rear.sortingOrder <= electricExternal.GetComponent<SpriteRenderer>().sortingOrder ||
+                front.sortingOrder <= electricExternal.GetComponent<SpriteRenderer>().sortingOrder)
+                throw new System.InvalidOperationException(
+                    "Formula Electricity must preview independently with both wheels above its electric layers.");
+            preview.Apply(assets.formula, assets.formula.skins[0], assets.formula.wheels[0], assets.stickmanBlack);
+            if (body.sprite != assets.formulaBody || electricInternal.gameObject.activeSelf ||
+                electricExternal.gameObject.activeSelf)
+                throw new System.InvalidOperationException(
+                    "Formula Default must restore its own appearance and disable electricity animation.");
             preview.Apply(assets.rally, assets.rally.skins[0], assets.rally.wheels[0], assets.stickmanBlack);
             if (body.sprite != assets.rallyBody || rear.sprite != assets.rallyWheel || front.sprite != assets.rallyWheel ||
                 !formulaHead.enabled || formulaTorso.enabled || formulaLeftThigh.enabled || formulaRightThigh.enabled)
@@ -3984,7 +4039,7 @@ namespace AnimeHillRacing.Editor
 
         private static bool AccelerationMatchesDisplayedStat(VehiclePerformanceResult result)
         {
-            float tolerance = Mathf.Max(.35f, result.targetZeroToHundredSeconds * .30f);
+            float tolerance = Mathf.Max(.12f, result.targetZeroToHundredSeconds * .08f);
             return result.zeroToHundredSeconds > 0f &&
                    Mathf.Abs(result.zeroToHundredSeconds - result.targetZeroToHundredSeconds) <= tolerance;
         }
@@ -4369,10 +4424,12 @@ namespace AnimeHillRacing.Editor
         private static BuiltAssets CreateAssets()
         {
             var assets = new BuiltAssets();
-            string[] spritePaths = { JeepBodyPath, JeepWheel01Path, JeepWheel02Path, FormulaBodyPath,
-                FormulaNeonSkinPath, FormulaWheel01Path, FormulaWheel02Path, FormulaRainbowWheelPath,
+            string[] spritePaths = { JeepBodyPath, JeepRetroSkinPath, JeepWheel01Path, JeepWheel02Path,
+                JeepStarryWheelPath, FormulaBodyPath,
+                FormulaNeonSkinPath, FormulaElectricitySkinPath, FormulaWheel01Path, FormulaWheel02Path,
+                FormulaLuxuryWheelPath,
                 FormulaReferencePath, RallyBodyPath, RallyNoRoofPath, RallyRoofPath, RallyWheelPath,
-                RallyGhostyWheelPath, RallySkyBlueWheelPath, RallyRainbowWheelPath, SportBikeBodyPath,
+                RallyGhostyWheelPath, RallySkyBlueWheelPath, SportBikeBodyPath,
                 SportBikeRetroPath, SportBikeWheel01Path, SportBikeWheel02Path, SportBikeGoldWheelPath,
                 SportBikeGhostyWheelPath, NeonSkyPath, NeonBackgroundPath, NeonTerrainPath, NeonGroundPath,
                 NeonLiquidPath, NeonCautionPath, MainMenuBackgroundPath, HomeButtonPath, RaceButtonPath, SettingsButtonPath,
@@ -4399,20 +4456,22 @@ namespace AnimeHillRacing.Editor
             for (int i = 1; i <= 15; i++)
                 ConfigureFormulaSprite($"{CityRoot}/Clouds/Cloud_{i:00}.png", 2048);
             assets.jeepBody = AssetDatabase.LoadAssetAtPath<Sprite>(JeepBodyPath);
+            assets.jeepRetroSkin = AssetDatabase.LoadAssetAtPath<Sprite>(JeepRetroSkinPath);
             assets.jeepWheel01 = AssetDatabase.LoadAssetAtPath<Sprite>(JeepWheel01Path);
             assets.jeepWheel02 = AssetDatabase.LoadAssetAtPath<Sprite>(JeepWheel02Path);
+            assets.jeepStarryWheel = AssetDatabase.LoadAssetAtPath<Sprite>(JeepStarryWheelPath);
             assets.formulaBody = AssetDatabase.LoadAssetAtPath<Sprite>(FormulaBodyPath);
             assets.formulaNeonSkin = AssetDatabase.LoadAssetAtPath<Sprite>(FormulaNeonSkinPath);
+            assets.formulaElectricitySkin = AssetDatabase.LoadAssetAtPath<Sprite>(FormulaElectricitySkinPath);
             assets.formulaWheel01 = AssetDatabase.LoadAssetAtPath<Sprite>(FormulaWheel01Path);
             assets.formulaWheel02 = AssetDatabase.LoadAssetAtPath<Sprite>(FormulaWheel02Path);
-            assets.formulaRainbowWheel = AssetDatabase.LoadAssetAtPath<Sprite>(FormulaRainbowWheelPath);
+            assets.luxuryWheel = AssetDatabase.LoadAssetAtPath<Sprite>(FormulaLuxuryWheelPath);
             assets.rallyBody = AssetDatabase.LoadAssetAtPath<Sprite>(RallyBodyPath);
             assets.rallyNoRoof = AssetDatabase.LoadAssetAtPath<Sprite>(RallyNoRoofPath);
             assets.rallyRoof = AssetDatabase.LoadAssetAtPath<Sprite>(RallyRoofPath);
             assets.rallyWheel = AssetDatabase.LoadAssetAtPath<Sprite>(RallyWheelPath);
             assets.rallyGhostyWheel = AssetDatabase.LoadAssetAtPath<Sprite>(RallyGhostyWheelPath);
             assets.rallySkyBlueWheel = AssetDatabase.LoadAssetAtPath<Sprite>(RallySkyBlueWheelPath);
-            assets.rallyRainbowWheel = AssetDatabase.LoadAssetAtPath<Sprite>(RallyRainbowWheelPath);
             assets.sportBikeBody = AssetDatabase.LoadAssetAtPath<Sprite>(SportBikeBodyPath);
             assets.sportBikeRetro = AssetDatabase.LoadAssetAtPath<Sprite>(SportBikeRetroPath);
             assets.sportBikeWheel01 = AssetDatabase.LoadAssetAtPath<Sprite>(SportBikeWheel01Path);
@@ -4555,13 +4614,18 @@ namespace AnimeHillRacing.Editor
             assets.jeep.oneWheelAngularDamping = .10f; assets.jeep.twoWheelAngularDamping = .34f;
             assets.jeep.maximumPassiveAngularVelocity = 8f;
             assets.jeep.centerOfMass = new Vector3(.08f, -.06f, 0f);
-            assets.jeep.accelerationForceCalibration = 1.02f;
+            assets.jeep.accelerationForceCalibration = .400f;
             assets.jeep.previewSprite = assets.jeepBody;
-            assets.jeep.skins = new[] { Customization("jeep-skin-default", "JEEP DEFAULT", assets.jeepBody) };
+            assets.jeep.skins = new[]
+            {
+                Customization("jeep-skin-default", "JEEP DEFAULT", assets.jeepBody),
+                Customization("jeep-skin-retro", "RETRO SKIN", assets.jeepRetroSkin, false, 1000)
+            };
             assets.jeep.wheels = new[]
             {
                 Customization("jeep-wheel-01", "JEEP WHEEL 01", assets.jeepWheel01),
-                Customization("jeep-wheel-02", "JEEP WHEEL 02", assets.jeepWheel02)
+                Customization("jeep-wheel-02", "JEEP WHEEL 02", assets.jeepWheel02),
+                Customization("jeep-wheel-starry", "STARRY WHEEL", assets.jeepStarryWheel, false, 500)
             };
             assets.jeep.visualWidth = 3.80f;
             assets.jeep.flipBodyX = false;
@@ -4592,7 +4656,7 @@ namespace AnimeHillRacing.Editor
             assets.formula.halfWheelbase = 1.46f; assets.formula.halfTrack = .78f;
             assets.formula.topSpeedMps = 300f / 3.6f;
             assets.formula.brakeForce = 18000f; assets.formula.reverseForce = 6000f;
-            assets.formula.accelerationForceCalibration = 1.01f;
+            assets.formula.accelerationForceCalibration = .377f;
             assets.formula.airControlTorque = 9000f;
             assets.formula.downforceReferenceSpeedMps = 30f;
             assets.formula.maximumDownforceAcceleration = 28f;
@@ -4633,14 +4697,17 @@ namespace AnimeHillRacing.Editor
             assets.formula.skins = new[]
             {
                 Customization("formula-skin-default", "FORMULA DEFAULT", assets.formulaBody),
-                Customization("formula-skin-neon", "NEON SKIN", assets.formulaNeonSkin, false, 1000)
+                Customization("formula-skin-neon", "NEON SKIN", assets.formulaNeonSkin, false, 1000),
+                Customization(FormulaElectricSkinEffect.ElectricSkinId, "ELECTRICITY",
+                    assets.formulaElectricitySkin, false, 1000)
             };
             assets.formula.wheels = new[]
             {
                 Customization("formula-wheel-02", "FORMULA WHEEL 02", assets.formulaWheel02),
                 Customization("formula-wheel-01", "FORMULA GHOSTY WHEELS", assets.formulaWheel01, false, 500),
-                Customization("formula-wheel-rainbow", "RAINBOW WHEEL", assets.formulaRainbowWheel, false, 500)
+                Customization("formula-wheel-luxury", "LUXURY WHEEL", assets.luxuryWheel, false, 500)
             };
+            assets.formula.electricSkinOverlay = assets.formulaElectricitySkin;
             assets.formula.visualWidth = 4.80f;
             assets.formula.flipBodyX = false;
             assets.formula.rearWheelVisualDiameter = 0f; assets.formula.frontWheelVisualDiameter = 0f;
@@ -4669,7 +4736,7 @@ namespace AnimeHillRacing.Editor
             assets.rally.halfWheelbase = 1.35f; assets.rally.halfTrack = .78f;
             assets.rally.topSpeedMps = 280f / 3.6f;
             assets.rally.brakeForce = 16500f; assets.rally.reverseForce = 5800f;
-            assets.rally.accelerationForceCalibration = 1f;
+            assets.rally.accelerationForceCalibration = .361f;
             assets.rally.airControlTorque = 6500f;
             assets.rally.maxAirAngularVelocity = 3.05f; assets.rally.airAngularAcceleration = 20f;
             assets.rally.airAngularDamping = .30f;
@@ -4711,7 +4778,7 @@ namespace AnimeHillRacing.Editor
                 Customization("rally-wheel-01", "RALLY WHEEL 01", assets.rallyWheel),
                 Customization("rally-wheel-ghosty", "RALLY GHOSTY WHEEL", assets.rallyGhostyWheel, false, 500),
                 Customization("rally-wheel-sky-blue", "SKY BLUE WHEEL", assets.rallySkyBlueWheel, false, 500),
-                Customization("rally-wheel-rainbow", "RAINBOW WHEEL", assets.rallyRainbowWheel, false, 500)
+                Customization("rally-wheel-luxury", "LUXURY WHEEL", assets.luxuryWheel, false, 500)
             };
             assets.rally.damagedBodySprite = assets.rallyNoRoof;
             assets.rally.detachableRoofSprite = assets.rallyRoof;
@@ -4758,7 +4825,7 @@ namespace AnimeHillRacing.Editor
             assets.sportBike.airAngularDamping = .20f;
             assets.sportBike.oneWheelAngularDamping = .04f; assets.sportBike.twoWheelAngularDamping = .22f;
             assets.sportBike.maximumPassiveAngularVelocity = 10f;
-            assets.sportBike.accelerationForceCalibration = 1f;
+            assets.sportBike.accelerationForceCalibration = .811f;
             assets.sportBike.centerOfMass = new Vector3(-.015f, -.04f, 0f);
             assets.sportBike.engine.minTorqueNm = 85f;
             assets.sportBike.engine.maxTorqueNm = 260f;
@@ -6435,7 +6502,7 @@ namespace AnimeHillRacing.Editor
             GameObject panel = CreateImage("Results Panel", safe, new Color(0f, 0f, 0f, 0.50f),
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1540f, 820f));
             Outline resultsOutline = panel.AddComponent<Outline>();
-            resultsOutline.effectColor = new Color(.22f, .62f, .94f, .85f);
+            resultsOutline.effectColor = new Color(0f, 0f, 0f, .50f);
             resultsOutline.effectDistance = new Vector2(2f, -2f);
             Text title = CreateText("Result Title", panel.transform, "DRIVER DOWN", 46,
                 TextAnchor.MiddleCenter, new Vector2(.5f, 1f), new Vector2(.5f, 1f),
@@ -6443,17 +6510,14 @@ namespace AnimeHillRacing.Editor
             title.fontStyle = FontStyle.Bold;
             GameObject photoFrame = CreateImage("Result Photo Frame", panel.transform,
                 new Color(.035f, .08f, .14f, 1f), new Vector2(.5f, .5f), new Vector2(.5f, .5f),
-                new Vector2(-390f, -15f), new Vector2(670f, 650f));
+                new Vector2(-390f, -15f), new Vector2(650f, 650f));
             Outline photoOutline = photoFrame.AddComponent<Outline>();
             photoOutline.effectColor = new Color(.18f, .74f, 1f, .9f);
             photoOutline.effectDistance = new Vector2(2f, -2f);
             GameObject photo = UIObject("Result Photo", photoFrame.transform, new Vector2(.5f, .5f),
-                new Vector2(.5f, .5f), Vector2.zero, new Vector2(630f, 610f));
+                new Vector2(.5f, .5f), Vector2.zero, new Vector2(610f, 610f));
             resultImage = photo.AddComponent<RawImage>(); resultImage.color = Color.white;
             resultImage.raycastTarget = false;
-            AspectRatioFitter photoAspect = photo.AddComponent<AspectRatioFitter>();
-            photoAspect.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
-            photoAspect.aspectRatio = 1f;
             Text text = CreateText("Result Stats", panel.transform, "DISTANCE", 27, TextAnchor.UpperLeft,
                 new Vector2(.5f, .5f), new Vector2(.5f, .5f), new Vector2(390f, -5f),
                 new Vector2(610f, 590f));

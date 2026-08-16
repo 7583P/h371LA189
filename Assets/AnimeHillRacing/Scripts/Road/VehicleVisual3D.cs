@@ -41,19 +41,21 @@ namespace AnimeHillRacing.Road
             if (definition == null) return;
             VehicleDefinition.CustomizationOption skin = definition.FindSkin(SaveManager.GetSelectedSkinId(definition));
             VehicleDefinition.CustomizationOption wheel = definition.FindWheel(SaveManager.GetSelectedWheelId(definition));
+            int wheelSortingOrder = FormulaElectricSkinEffect.ResolveWheelSortingOrder(definition, skin);
             if (bodyRenderers != null && skin != null)
                 for (int i = 0; i < bodyRenderers.Length; i++) if (bodyRenderers[i] != null)
                 {
                     bodyRenderers[i].sprite = skin.sprite;
                     bodyRenderers[i].flipX = definition.flipBodyX ^ (i == 1);
                     bodyRenderers[i].transform.localScale = definition.BodyCustomizationScale(skin);
+                    FormulaElectricSkinEffect.Apply(bodyRenderers[i], definition, skin);
                 }
             if (wheelRenderers != null && wheel != null)
                 for (int i = 0; i < wheelRenderers.Length; i++) if (wheelRenderers[i] != null)
                 {
                     SpriteRenderer renderer = wheelRenderers[i];
                     renderer.sprite = wheel.sprite;
-                    renderer.sortingOrder = 11;
+                    renderer.sortingOrder = wheelSortingOrder;
                     bool front = frontWheels != null && i < frontWheels.Length && frontWheels[i];
                     float diameter = front ? definition.FrontWheelDiameter : definition.RearWheelDiameter;
                     renderer.transform.localScale = Vector3.one *

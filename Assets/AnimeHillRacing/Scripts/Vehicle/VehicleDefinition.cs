@@ -91,6 +91,8 @@ namespace AnimeHillRacing.Vehicle
         [Header("Garage / Customize")]
         public CustomizationOption[] skins;
         public CustomizationOption[] wheels;
+        [Tooltip("Animated overlay used exclusively by Formula's Electricity skin in gameplay and previews.")]
+        public Sprite electricSkinOverlay;
         public DriverPose driverPose = new DriverPose();
         [Min(.1f)] public float visualWidth = 3.2f;
         public bool flipBodyX;
@@ -265,7 +267,8 @@ namespace AnimeHillRacing.Vehicle
         [Range(0f, 1f)] public float twoWheelAngularDamping = .35f;
         [Tooltip("RigidBody angular-speed safety limit for collision and landing momentum. This is intentionally independent from the player air-control target.")]
         [Min(1f)] public float maximumPassiveAngularVelocity = 8f;
-        [Range(0.5f, 2f)] public float accelerationForceCalibration = 1f;
+        [Tooltip("Physical-wheel force correction used only by the 2.5D drivetrain. Road vehicles apply the authored acceleration directly.")]
+        [Range(0.25f, 2f)] public float accelerationForceCalibration = 1f;
         public Vector3 centerOfMass = new Vector3(0f, -0.25f, 0f);
 
         [Header("Systems")]
@@ -398,8 +401,7 @@ namespace AnimeHillRacing.Vehicle
                 motorTorqueNm = torque,
                 peakPowerKw = torque * 6200f / 9549f,
                 zeroToHundredTargetSeconds = accelerationTarget,
-                targetAccelerationMps2 = EvaluateZeroToHundredAcceleration(accelerationTarget,
-                    accelerationForceCalibration),
+                targetAccelerationMps2 = EvaluateZeroToHundredAcceleration(accelerationTarget),
                 lowSpeedTorqueMultiplier = Mathf.Lerp(0.82f, 1.15f, accelerationAuthority),
                 shiftRecovery = Mathf.Lerp(0f, 0.30f, accelerationAuthority),
                 suspensionTravel = suspensionTravel,

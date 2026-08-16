@@ -42,6 +42,10 @@ namespace AnimeHillRacing.Core
         private const string DistanceBonusThresholdKey = "AHR.DistanceBonus.NextThreshold";
         private const string DistanceBonusX10MigrationKey = "AHR.Migration.DistanceBonusX10.V1";
         private const string FormulaWheelMigrationKey = "AHR.Migration.FormulaDefaultWheel02.V1";
+        private const string FormulaLegacyWheelId = "formula-wheel-rainbow";
+        private const string FormulaLuxuryWheelId = "formula-wheel-luxury";
+        private const string RallyLegacyWheelId = "rally-wheel-rainbow";
+        private const string RallyLuxuryWheelId = "rally-wheel-luxury";
 
         public static int TotalCoins => TemporaryUnlimitedCurrencyEnabled
             ? UnlimitedCurrencyDisplayAmount : StoredTotalCoins;
@@ -107,6 +111,13 @@ namespace AnimeHillRacing.Core
         {
             if (vehicle == null) return string.Empty;
             string selected = GetVehicleCustomization(vehicle, "Wheel", vehicle.DefaultWheelId);
+            string normalized = NormalizeLegacyWheelId(vehicle.vehicleId, selected);
+            if (normalized != selected)
+            {
+                selected = normalized;
+                PlayerPrefs.SetString($"AHR.Customize.{vehicle.vehicleId}.Wheel", selected);
+                PlayerPrefs.Save();
+            }
             if (vehicle.vehicleId == "formula-01" && !PlayerPrefs.HasKey(FormulaWheelMigrationKey))
             {
                 bool ghostyWasExplicitlyUnlocked = IsCustomizationUnlocked(vehicle.vehicleId, "Wheels",
@@ -126,7 +137,8 @@ namespace AnimeHillRacing.Core
             SetVehicleCustomization(vehicle, "Skin", optionId);
 
         public static void SetSelectedWheelId(VehicleDefinition vehicle, string optionId) =>
-            SetVehicleCustomization(vehicle, "Wheel", optionId);
+            SetVehicleCustomization(vehicle, "Wheel", vehicle != null
+                ? NormalizeLegacyWheelId(vehicle.vehicleId, optionId) : optionId);
 
         public static string GetSelectedDriverId(string defaultDriverId) =>
             PlayerPrefs.GetString(SelectedDriverKey, defaultDriverId ?? string.Empty);
@@ -149,13 +161,27 @@ namespace AnimeHillRacing.Core
         public static bool IsCustomizationUnlocked(string scopeId, string category, string optionId,
             bool unlockedByDefault)
         {
-            string key = $"AHR.Customize.Unlock.{scopeId}.{category}.{optionId}";
+            string normalizedId = category == "Wheels" ? NormalizeLegacyWheelId(scopeId, optionId) : optionId;
+            string key = $"AHR.Customize.Unlock.{scopeId}.{category}.{normalizedId}";
+            if (!PlayerPrefs.HasKey(key))
+            {
+                string legacyId = LegacyWheelId(scopeId, normalizedId);
+                string legacyKey = $"AHR.Customize.Unlock.{scopeId}.{category}.{legacyId}";
+                if (!string.IsNullOrEmpty(legacyId) && PlayerPrefs.HasKey(legacyKey))
+                {
+                    int unlocked = PlayerPrefs.GetInt(legacyKey, 0);
+                    PlayerPrefs.SetInt(key, unlocked);
+                    PlayerPrefs.Save();
+                    return unlocked != 0;
+                }
+            }
             return PlayerPrefs.HasKey(key) ? PlayerPrefs.GetInt(key, 0) != 0 : unlockedByDefault;
         }
 
         public static void UnlockCustomization(string scopeId, string category, string optionId)
         {
-            PlayerPrefs.SetInt($"AHR.Customize.Unlock.{scopeId}.{category}.{optionId}", 1);
+            string normalizedId = category == "Wheels" ? NormalizeLegacyWheelId(scopeId, optionId) : optionId;
+            PlayerPrefs.SetInt($"AHR.Customize.Unlock.{scopeId}.{category}.{normalizedId}", 1);
             PlayerPrefs.Save();
         }
 
@@ -195,7 +221,21 @@ namespace AnimeHillRacing.Core
         public static int GetBlueprintCount(string bundleId)
         {
             if (string.IsNullOrEmpty(bundleId)) return 0;
-            return Mathf.Max(0, PlayerPrefs.GetInt(BlueprintKey(bundleId), 0));
+            string normalizedId = NormalizeLegacyBundleId(bundleId);
+            string key = BlueprintKey(normalizedId);
+            if (!PlayerPrefs.HasKey(key))
+            {
+                string legacyId = LegacyBundleId(normalizedId);
+                string legacyKey = BlueprintKey(legacyId);
+                if (!string.IsNullOrEmpty(legacyId) && PlayerPrefs.HasKey(legacyKey))
+                {
+                    int count = Mathf.Max(0, PlayerPrefs.GetInt(legacyKey, 0));
+                    PlayerPrefs.SetInt(key, count);
+                    PlayerPrefs.Save();
+                    return count;
+                }
+            }
+            return Mathf.Max(0, PlayerPrefs.GetInt(key, 0));
         }
 
         public static int AddBlueprints(BundleDefinition bundle, int amount, out bool unlocked,
@@ -206,7 +246,7 @@ namespace AnimeHillRacing.Core
                 Mathf.Min(GetBlueprintCount(bundle.BundleId), bundle.BlueprintRequirement);
             int total = BlueprintProgressMath.Add(GetBlueprintCount(bundle.BundleId), amount,
                 bundle.BlueprintRequirement);
-            PlayerPrefs.SetInt(BlueprintKey(bundle.BundleId), total);
+            PlayerPrefs.SetInt(BlueprintKey(NormalizeLegacyBundleId(bundle.BundleId)), total);
             if (total >= bundle.BlueprintRequirement)
             {
                 UnlockBundleWithoutSave(bundle);
@@ -264,6 +304,7 @@ namespace AnimeHillRacing.Core
                 result = CustomizationPurchaseResult.InvalidConfiguration;
                 return false;
             }
+            optionId = category == "Wheels" ? NormalizeLegacyWheelId(scopeId, optionId) : optionId;
             string unlockKey = $"AHR.Customize.Unlock.{scopeId}.{category}.{optionId}";
             if (PlayerPrefs.GetInt(unlockKey, 0) != 0)
             {
@@ -563,6 +604,39 @@ namespace AnimeHillRacing.Core
         private static string BlueprintKey(string bundleId) => $"AHR.Blueprints.{bundleId}";
         private static string VehicleUnlockKey(string vehicleId) => $"AHR.Vehicle.Unlock.{vehicleId}";
 
+        private static string NormalizeLegacyWheelId(string vehicleId, string optionId)
+        {
+            if (vehicleId == "formula-01" && optionId == FormulaLegacyWheelId) return FormulaLuxuryWheelId;
+            if (vehicleId == "rally-01" && optionId == RallyLegacyWheelId) return RallyLuxuryWheelId;
+            return optionId ?? string.Empty;
+        }
+
+        private static string LegacyWheelId(string vehicleId, string optionId)
+        {
+            if (vehicleId == "formula-01" && optionId == FormulaLuxuryWheelId) return FormulaLegacyWheelId;
+            if (vehicleId == "rally-01" && optionId == RallyLuxuryWheelId) return RallyLegacyWheelId;
+            return string.Empty;
+        }
+
+        private static string NormalizeLegacyBundleId(string bundleId)
+        {
+            if (string.IsNullOrEmpty(bundleId)) return string.Empty;
+            if (bundleId == $"cosmetic:formula-01:Wheels:{FormulaLegacyWheelId}")
+                return $"cosmetic:formula-01:Wheels:{FormulaLuxuryWheelId}";
+            if (bundleId == $"cosmetic:rally-01:Wheels:{RallyLegacyWheelId}")
+                return $"cosmetic:rally-01:Wheels:{RallyLuxuryWheelId}";
+            return bundleId;
+        }
+
+        private static string LegacyBundleId(string bundleId)
+        {
+            if (bundleId == $"cosmetic:formula-01:Wheels:{FormulaLuxuryWheelId}")
+                return $"cosmetic:formula-01:Wheels:{FormulaLegacyWheelId}";
+            if (bundleId == $"cosmetic:rally-01:Wheels:{RallyLuxuryWheelId}")
+                return $"cosmetic:rally-01:Wheels:{RallyLegacyWheelId}";
+            return string.Empty;
+        }
+
         private static int StoredTotalCoins => Mathf.Max(0, PlayerPrefs.GetInt(TotalCoinsKey, 0));
         private static int StoredTotalGems => Mathf.Max(0, PlayerPrefs.GetInt(TotalGemsKey, 0));
 
@@ -583,7 +657,11 @@ namespace AnimeHillRacing.Core
             if (bundle.Type == BundleType.Vehicle)
                 PlayerPrefs.SetInt(VehicleUnlockKey(bundle.OptionId), 1);
             else
-                PlayerPrefs.SetInt($"AHR.Customize.Unlock.{bundle.ScopeId}.{bundle.Category}.{bundle.OptionId}", 1);
+            {
+                string optionId = bundle.Category == "Wheels"
+                    ? NormalizeLegacyWheelId(bundle.ScopeId, bundle.OptionId) : bundle.OptionId;
+                PlayerPrefs.SetInt($"AHR.Customize.Unlock.{bundle.ScopeId}.{bundle.Category}.{optionId}", 1);
+            }
         }
 
         private static string GetVehicleCustomization(VehicleDefinition vehicle, string category, string fallback)

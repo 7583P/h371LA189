@@ -168,6 +168,7 @@ namespace AnimeHillRacing.Road
             ApplyAntiRoll();
             bool hasWheelContact = groundedWheels > 0;
             ApplyAerodynamics(hasWheelContact);
+            ApplyTopSpeedGovernor(hasWheelContact);
             ApplyAirControl(state, hasWheelContact);
             AccumulateTrackDistance();
         }
@@ -250,8 +251,10 @@ namespace AnimeHillRacing.Road
                     float resistanceCompensation = definition.grip.aerodynamicDrag * forwardSpeed * forwardSpeed +
                                                    definition.mass * Physics.gravity.magnitude *
                                                    definition.grip.rollingResistance;
-                    driveForce = (body.mass * stats.targetAccelerationMps2 + resistanceCompensation) * gas;
-                    if (SpeedMps >= stats.topSpeedMps) driveForce = 0f;
+                    float driveAcceleration = VehicleController.EvaluateDriveAcceleration(
+                        stats.targetAccelerationMps2, forwardSpeed, stats.topSpeedMps);
+                    driveForce = (body.mass * driveAcceleration +
+                                  resistanceCompensation) * gas;
                     break;
             }
             float reverseBoundary = Mathf.Max(initialReverseBoundary,
@@ -374,6 +377,19 @@ namespace AnimeHillRacing.Road
             float drag = definition.grip.aerodynamicDrag * speedSquared;
             float rolling = hasWheelContact ? definition.mass * Physics.gravity.magnitude * definition.grip.rollingResistance : 0f;
             body.AddForce(-velocity.normalized * (drag + rolling), ForceMode.Force);
+        }
+
+        private void ApplyTopSpeedGovernor(bool hasWheelContact)
+        {
+            float forwardSpeed = SpeedMps;
+            if (forwardSpeed <= stats.topSpeedMps) return;
+
+            float downhillAcceleration = hasWheelContact
+                ? Mathf.Max(0f, Vector3.Dot(Physics.gravity, transform.forward)) : 0f;
+            float governorAcceleration = VehicleController.EvaluateTopSpeedGovernorAcceleration(forwardSpeed,
+                stats.topSpeedMps, downhillAcceleration, Physics.gravity.magnitude + 18f);
+            if (governorAcceleration > 0f)
+                body.AddForce(-transform.forward * governorAcceleration, ForceMode.Acceleration);
         }
 
         private void ApplyAirControl(VehicleInputState state, bool hasWheelContact)

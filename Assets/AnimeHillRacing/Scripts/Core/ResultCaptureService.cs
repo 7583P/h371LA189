@@ -16,6 +16,10 @@ namespace AnimeHillRacing.Core
         [SerializeField, Min(5f)] private float sideViewDistance = 20f;
         [SerializeField] private Vector3 localOffset3D = new Vector3(5.5f, 3.5f, -7.5f);
 
+        private const float SideViewMainCameraScale = .78f;
+        private const float MaximumSideViewHeight = 1f;
+        private static readonly Color CaptureBackground = new Color(.005f, .008f, .02f, 1f);
+
         private RenderTexture texture;
 
         public int Resolution => resolution;
@@ -33,6 +37,7 @@ namespace AnimeHillRacing.Core
         {
             Release();
             if (captureCamera == null || target == null) yield break;
+            ConfigureWorldOnlyCamera();
             texture = new RenderTexture(resolution, resolution, 24, RenderTextureFormat.ARGB32)
             {
                 name = "Result Capture 1x1",
@@ -43,9 +48,14 @@ namespace AnimeHillRacing.Core
             if (sideView)
             {
                 captureCamera.orthographic = true;
-                captureCamera.orthographicSize = sideViewOrthographicSize;
+                Camera worldCamera = Camera.main;
+                float framedSize = sideViewOrthographicSize;
+                if (worldCamera != null && worldCamera != captureCamera && worldCamera.orthographic)
+                    framedSize = Mathf.Min(framedSize, worldCamera.orthographicSize * SideViewMainCameraScale);
+                captureCamera.orthographicSize = Mathf.Max(5f, framedSize);
                 captureCamera.transform.position = new Vector3(target.position.x + sideViewForwardBias,
-                    target.position.y + sideViewHeight, target.position.z - sideViewDistance);
+                    target.position.y + Mathf.Min(sideViewHeight, MaximumSideViewHeight),
+                    target.position.z - sideViewDistance);
                 captureCamera.transform.rotation = Quaternion.identity;
             }
             else
@@ -56,11 +66,45 @@ namespace AnimeHillRacing.Core
                 captureCamera.transform.rotation = Quaternion.LookRotation(
                     focus - captureCamera.transform.position, Vector3.up);
             }
-            captureCamera.targetTexture = texture;
-            captureCamera.Render();
-            captureCamera.targetTexture = null;
+            Canvas[] canvases = FindObjectsByType<Canvas>(FindObjectsInactive.Include,
+                FindObjectsSortMode.None);
+            bool[] canvasStates = new bool[canvases.Length];
+            try
+            {
+                // Camera.Render is synchronous. Disabling only Canvas renderers around this call excludes
+                // overlay, camera-space and world-space UI without changing GameObject state or producing a
+                // visible frame where the player's HUD is missing.
+                for (int i = 0; i < canvases.Length; i++)
+                {
+                    canvasStates[i] = canvases[i] != null && canvases[i].enabled;
+                    if (canvasStates[i]) canvases[i].enabled = false;
+                }
+                captureCamera.targetTexture = texture;
+                captureCamera.Render();
+            }
+            finally
+            {
+                captureCamera.targetTexture = null;
+                for (int i = 0; i < canvases.Length; i++)
+                    if (canvases[i] != null) canvases[i].enabled = canvasStates[i];
+            }
             if (resultImage != null) resultImage.texture = texture;
             yield return null;
+        }
+
+        private void ConfigureWorldOnlyCamera()
+        {
+            Camera worldCamera = Camera.main;
+            if (worldCamera != null && worldCamera != captureCamera)
+                captureCamera.cullingMask = worldCamera.cullingMask;
+
+            // A square side-view capture can expose pixels outside the map's camera-sized background.
+            // Clear those pixels to a neutral near-black instead of inheriting the orange gameplay clear.
+            captureCamera.clearFlags = CameraClearFlags.SolidColor;
+            captureCamera.backgroundColor = CaptureBackground;
+
+            int uiLayer = LayerMask.NameToLayer("UI");
+            if (uiLayer >= 0) captureCamera.cullingMask &= ~(1 << uiLayer);
         }
 
         public void Release()

@@ -516,8 +516,10 @@ namespace AnimeHillRacing.Editor
                     turboTune = Mathf.Clamp(levels[i], 1, Mathf.Max(1, vehicle.turboMaxTunes))
                 };
                 ResolvedVehicleStats stats = vehicle.Resolve(upgrades);
-                float below = VehicleController.EvaluateTopSpeedDriveAuthority(stats.topSpeedMps - 1f,
-                    stats.topSpeedMps);
+                const float hundredKmhMps = 100f / 3.6f;
+                float launch = VehicleController.EvaluateTopSpeedDriveAuthority(0f, stats.topSpeedMps);
+                float belowHundred = VehicleController.EvaluateTopSpeedDriveAuthority(
+                    Mathf.Min(hundredKmhMps * .5f, stats.topSpeedMps * .5f), stats.topSpeedMps);
                 float atLimit = VehicleController.EvaluateTopSpeedDriveAuthority(stats.topSpeedMps,
                     stats.topSpeedMps);
                 float noOverspeed = VehicleController.EvaluateTopSpeedGovernorAcceleration(stats.topSpeedMps,
@@ -526,11 +528,56 @@ namespace AnimeHillRacing.Editor
                     stats.topSpeedMps, Physics.gravity.magnitude, 40f);
                 float orientationInvariantSpeed = VehicleController.EvaluateProgressSpeed(
                     new Vector3(stats.topSpeedMps, stats.topSpeedMps * 2f, 0f));
-                if (below < .99f || atLimit > .0001f || noOverspeed > .0001f ||
+                bool invalidDriveCurve = Mathf.Abs(launch - 1f) > .0001f ||
+                                         Mathf.Abs(belowHundred - 1f) > .0001f || atLimit > .0001f;
+                string phaseSummary;
+                if (stats.topSpeedMps > hundredKmhMps + .01f)
+                {
+                    float atHundred = VehicleController.EvaluateTopSpeedDriveAuthority(hundredKmhMps,
+                        stats.topSpeedMps);
+                    float postHundredMiddle = VehicleController.EvaluateTopSpeedDriveAuthority(
+                        Mathf.Lerp(hundredKmhMps, stats.topSpeedMps, .5f), stats.topSpeedMps);
+                    float postHundredMiddleAcceleration = VehicleController.EvaluateDriveAcceleration(
+                        stats.targetAccelerationMps2,
+                        Mathf.Lerp(hundredKmhMps, stats.topSpeedMps, .5f), stats.topSpeedMps);
+                    float nearLimit = VehicleController.EvaluateTopSpeedDriveAuthority(
+                        Mathf.Lerp(hundredKmhMps, stats.topSpeedMps, .9f), stats.topSpeedMps);
+                    float finalPercent = VehicleController.EvaluateTopSpeedDriveAuthority(
+                        Mathf.Lerp(hundredKmhMps, stats.topSpeedMps, .99f), stats.topSpeedMps);
+                    float idealZeroToHundred = IntegrateIdealAccelerationDuration(0f, hundredKmhMps,
+                        stats.targetAccelerationMps2, stats.topSpeedMps);
+                    float expectedZeroToHundred = hundredKmhMps / stats.targetAccelerationMps2;
+                    float postHundredDuration = IntegrateIdealAccelerationDuration(hundredKmhMps,
+                        stats.topSpeedMps, stats.targetAccelerationMps2, stats.topSpeedMps);
+                    float constantAuthorityDuration = (stats.topSpeedMps - hundredKmhMps) /
+                                                      stats.targetAccelerationMps2;
+                    invalidDriveCurve |= Mathf.Abs(atHundred - 1f) > .0001f ||
+                                         postHundredMiddle >= atHundred || postHundredMiddle < .45f ||
+                                         nearLimit >= postHundredMiddle || nearLimit < .079f ||
+                                         finalPercent >= .09f || finalPercent < .079f ||
+                                         postHundredMiddleAcceleration > 3.5f * postHundredMiddle + .001f ||
+                                         Mathf.Abs(idealZeroToHundred - expectedZeroToHundred) > .01f ||
+                                         postHundredDuration < constantAuthorityDuration * 2.5f;
+                    phaseSummary = $"100/mid/90/99%={atHundred:0.000}/{postHundredMiddle:0.000}/" +
+                                   $"{nearLimit:0.000}/{finalPercent:0.000}, ideal 0-100=" +
+                                   $"{idealZeroToHundred:0.00}s, mid acceleration=" +
+                                   $"{postHundredMiddleAcceleration:0.00}m/s2, post-100=" +
+                                   $"{postHundredDuration:0.00}s";
+                }
+                else
+                {
+                    float beforeLimit = VehicleController.EvaluateTopSpeedDriveAuthority(
+                        stats.topSpeedMps * .99f, stats.topSpeedMps);
+                    invalidDriveCurve |= Mathf.Abs(beforeLimit - 1f) > .0001f;
+                    phaseSummary = $"pre-limit={beforeLimit:0.000}";
+                }
+
+                if (invalidDriveCurve || noOverspeed > .0001f ||
                     governed <= Physics.gravity.magnitude ||
                     Mathf.Abs(orientationInvariantSpeed - stats.topSpeedMps) > .0001f)
-                    failures.Add($"{vehicle.displayName} TOP SPEED L{levels[i]}: drive below/limit=" +
-                        $"{below:0.000}/{atLimit:0.000}, governor limit/overspeed=" +
+                    failures.Add($"{vehicle.displayName} TOP SPEED L{levels[i]}: drive 0/below100/limit=" +
+                        $"{launch:0.000}/{belowHundred:0.000}/{atLimit:0.000}, {phaseSummary}, " +
+                        "governor limit/overspeed=" +
                         $"{noOverspeed:0.000}/{governed:0.000}m/s2, progressSpeed=" +
                         $"{orientationInvariantSpeed:0.000}m/s.");
             }
@@ -545,6 +592,22 @@ namespace AnimeHillRacing.Editor
             if (recoveredSpeed > maximumTopSpeed + .5f || recoveredSpeed < maximumTopSpeed * .90f)
                 failures.Add($"{vehicle.displayName} PHYSICAL TOP SPEED: recovered to " +
                     $"{recoveredSpeed * 3.6f:0.0}km/h from 108%, target {maximumTopSpeed * 3.6f:0.0}km/h.");
+        }
+
+        private static float IntegrateIdealAccelerationDuration(float fromSpeed, float toSpeed,
+            float baseAcceleration, float topSpeed)
+        {
+            const int steps = 1000;
+            float speedStep = Mathf.Max(0f, toSpeed - fromSpeed) / steps;
+            float duration = 0f;
+            for (int i = 0; i < steps; i++)
+            {
+                float speed = fromSpeed + (i + .5f) * speedStep;
+                float acceleration = VehicleController.EvaluateDriveAcceleration(baseAcceleration, speed,
+                    topSpeed);
+                duration += speedStep / Mathf.Max(.001f, acceleration);
+            }
+            return duration;
         }
 
         private static void ValidateLongitudinalTuneIndependence(VehicleDefinition vehicle,
@@ -568,9 +631,9 @@ namespace AnimeHillRacing.Editor
             ResolvedVehicleStats speedStats = vehicle.Resolve(speedOnly);
             ResolvedVehicleStats accelerationStats = vehicle.Resolve(accelerationOnly);
             float expectedStockAcceleration = VehicleDefinition.EvaluateZeroToHundredAcceleration(
-                stockStats.zeroToHundredTargetSeconds, vehicle.accelerationForceCalibration);
+                stockStats.zeroToHundredTargetSeconds);
             float expectedMaximumAcceleration = VehicleDefinition.EvaluateZeroToHundredAcceleration(
-                accelerationStats.zeroToHundredTargetSeconds, vehicle.accelerationForceCalibration);
+                accelerationStats.zeroToHundredTargetSeconds);
 
             if (Mathf.Abs(speedStats.zeroToHundredTargetSeconds - stockStats.zeroToHundredTargetSeconds) > .0001f ||
                 Mathf.Abs(accelerationStats.topSpeedMps - stockStats.topSpeedMps) > .0001f ||

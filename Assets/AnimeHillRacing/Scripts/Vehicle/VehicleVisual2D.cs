@@ -39,8 +39,10 @@ namespace AnimeHillRacing.Vehicle
                 bodyRenderer.sortingOrder = 10;
                 bodyRenderer.transform.localScale = definition.BodyCustomizationScale(skin);
             }
-            ApplyWheel(frontWheelRenderer, wheel, definition.FrontWheelDiameter);
-            ApplyWheel(rearWheelRenderer, wheel, definition.RearWheelDiameter);
+            FormulaElectricSkinEffect.Apply(bodyRenderer, definition, skin);
+            int wheelSortingOrder = FormulaElectricSkinEffect.ResolveWheelSortingOrder(definition, skin);
+            ApplyWheel(frontWheelRenderer, wheel, definition.FrontWheelDiameter, wheelSortingOrder);
+            ApplyWheel(rearWheelRenderer, wheel, definition.RearWheelDiameter, wheelSortingOrder);
             if (articulatedDriver != null && fallbackDriver != null)
                 articulatedDriver.Apply(fallbackDriver, definition.driverPose,
                     vehicle != null ? vehicle.GetComponent<Rigidbody>() : GetComponentInParent<Rigidbody>(), true);
@@ -80,11 +82,11 @@ namespace AnimeHillRacing.Vehicle
         }
 
         private void ApplyWheel(SpriteRenderer renderer, VehicleDefinition.CustomizationOption wheel,
-            float diameter)
+            float diameter, int sortingOrder)
         {
             if (renderer == null || wheel == null) return;
             renderer.sprite = wheel.sprite;
-            renderer.sortingOrder = 11;
+            renderer.sortingOrder = sortingOrder;
             renderer.transform.localScale = Vector3.one * definition.WheelCustomizationScale(wheel, diameter);
         }
     }

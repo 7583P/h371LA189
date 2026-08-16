@@ -31,6 +31,15 @@ MonoBehaviour:
     allowsBlueprintProgression: 1
     visibleDiameter: 0
     visibleSize: {x: 25.238234, y: 8.309999}
+  - optionId: jeep-skin-retro
+    displayName: RETRO SKIN
+    sprite: {fileID: 21300000, guid: 9fd49f8cefeaf6943ab915d03f1608ca, type: 3}
+    unlockedByDefault: 0
+    gemPrice: 1000
+    bundleType: 0
+    allowsBlueprintProgression: 1
+    visibleDiameter: 0
+    visibleSize: {x: 21.72, y: 6.925371}
   wheels:
   - optionId: jeep-wheel-01
     displayName: JEEP WHEEL 01
@@ -50,6 +59,16 @@ MonoBehaviour:
     allowsBlueprintProgression: 1
     visibleDiameter: 0
     visibleSize: {x: 14.55, y: 14.41}
+  - optionId: jeep-wheel-starry
+    displayName: STARRY WHEEL
+    sprite: {fileID: 21300000, guid: 5e58201cc30a576429b3087fcdcaf19c, type: 3}
+    unlockedByDefault: 0
+    gemPrice: 500
+    bundleType: 0
+    allowsBlueprintProgression: 1
+    visibleDiameter: 0
+    visibleSize: {x: 12.63, y: 12.4}
+  electricSkinOverlay: {fileID: 0}
   driverPose:
     rootPosition: {x: -0.42, y: 0.24}
     rootScale: 0.96
@@ -157,7 +176,7 @@ MonoBehaviour:
   oneWheelAngularDamping: 0.1
   twoWheelAngularDamping: 0.34
   maximumPassiveAngularVelocity: 8
-  accelerationForceCalibration: 1.02
+  accelerationForceCalibration: 0.4
   centerOfMass: {x: 0.08, y: -0.06, z: 0}
   engine:
     idleRpm: 1100

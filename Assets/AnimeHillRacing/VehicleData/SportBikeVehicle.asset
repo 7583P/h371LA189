@@ -77,6 +77,7 @@ MonoBehaviour:
     allowsBlueprintProgression: 1
     visibleDiameter: 14.56
     visibleSize: {x: 14.4, y: 14.56}
+  electricSkinOverlay: {fileID: 0}
   driverPose:
     rootPosition: {x: -0.33, y: 0.42}
     rootScale: 1
@@ -184,7 +185,7 @@ MonoBehaviour:
   oneWheelAngularDamping: 0.04
   twoWheelAngularDamping: 0.22
   maximumPassiveAngularVelocity: 10
-  accelerationForceCalibration: 1
+  accelerationForceCalibration: 0.811
   centerOfMass: {x: -0.015, y: -0.04, z: 0}
   engine:
     idleRpm: 1100

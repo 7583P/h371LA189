@@ -5,6 +5,9 @@ namespace AnimeHillRacing.Vehicle
 {
     public sealed class ArticulatedDriver2D : MonoBehaviour
     {
+        // Scale only rendered pieces: seat anchors, articulated pose and head-impact collider stay unchanged.
+        public const float CharacterVisualScaleMultiplier = 1.5f;
+
         [SerializeField] private SpriteRenderer torso;
         [SerializeField] private SpriteRenderer head;
         [SerializeField] private SpriteRenderer leftUpperArm;
@@ -170,7 +173,8 @@ namespace AnimeHillRacing.Vehicle
             float fittedScale = option != null ? option.visibleWidth / sourceWidth : 1f;
             float scaleX = Mathf.Abs(pose.scale.x) > .0001f ? Mathf.Abs(pose.scale.x) : 1f;
             float scaleY = Mathf.Abs(pose.scale.y) > .0001f ? Mathf.Abs(pose.scale.y) : scaleX;
-            part.localScale = new Vector3(fittedScale * scaleX, fittedScale * scaleY, 1f);
+            part.localScale = new Vector3(fittedScale * scaleX * CharacterVisualScaleMultiplier,
+                fittedScale * scaleY * CharacterVisualScaleMultiplier, 1f);
         }
 
         private static void ApplyPart(SpriteRenderer renderer, Sprite sprite,
@@ -185,7 +189,8 @@ namespace AnimeHillRacing.Vehicle
             part.localRotation = Quaternion.Euler(0f, 0f, pose.rotation);
             float scaleX = Mathf.Abs(pose.scale.x) > .0001f ? Mathf.Abs(pose.scale.x) : 1f;
             float scaleY = Mathf.Abs(pose.scale.y) > .0001f ? Mathf.Abs(pose.scale.y) : scaleX;
-            part.localScale = new Vector3(scaleX, scaleY, 1f);
+            part.localScale = new Vector3(scaleX * CharacterVisualScaleMultiplier,
+                scaleY * CharacterVisualScaleMultiplier, 1f);
         }
     }
 

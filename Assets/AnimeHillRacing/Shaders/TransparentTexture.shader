@@ -4,6 +4,7 @@ Shader "AnimeHillRacing/Transparent Texture"
     {
         _MainTex ("Texture", 2D) = "white" {}
         _Color ("Tint", Color) = (1,1,1,1)
+        _HorizontalSample ("Horizontal Sample (-1 = tiled)", Range(-1,1)) = -1
     }
 
     SubShader
@@ -42,12 +43,15 @@ Shader "AnimeHillRacing/Transparent Texture"
             sampler2D _MainTex;
             float4 _MainTex_ST;
             fixed4 _Color;
+            float _HorizontalSample;
 
             v2f vert(appdata input)
             {
                 v2f output;
                 output.vertex = UnityObjectToClipPos(input.vertex);
                 output.uv = TRANSFORM_TEX(input.uv, _MainTex);
+                if (_HorizontalSample >= 0.0)
+                    output.uv.x = _HorizontalSample;
                 return output;
             }
 

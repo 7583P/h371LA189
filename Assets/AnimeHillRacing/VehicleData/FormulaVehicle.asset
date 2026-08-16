@@ -40,6 +40,15 @@ MonoBehaviour:
     allowsBlueprintProgression: 1
     visibleDiameter: 0
     visibleSize: {x: 21.571524, y: 5.005781}
+  - optionId: formula-skin-electricity
+    displayName: ELECTRICITY
+    sprite: {fileID: 21300000, guid: e91b5cf2d3564b2fbc32e54d21f25b04, type: 3}
+    unlockedByDefault: 0
+    gemPrice: 1000
+    bundleType: 0
+    allowsBlueprintProgression: 1
+    visibleDiameter: 0
+    visibleSize: {x: 21.72, y: 5.9708786}
   wheels:
   - optionId: formula-wheel-02
     displayName: FORMULA WHEEL 02
@@ -59,15 +68,16 @@ MonoBehaviour:
     allowsBlueprintProgression: 1
     visibleDiameter: 0
     visibleSize: {x: 14.4, y: 14.56}
-  - optionId: formula-wheel-rainbow
-    displayName: RAINBOW WHEEL
+  - optionId: formula-wheel-luxury
+    displayName: LUXURY WHEEL
     sprite: {fileID: 21300000, guid: 2a500d5d83da46f8b00460275d612656, type: 3}
     unlockedByDefault: 0
     gemPrice: 500
     bundleType: 0
     allowsBlueprintProgression: 1
     visibleDiameter: 0
-    visibleSize: {x: 8.43, y: 8.56}
+    visibleSize: {x: 14.63, y: 14.32}
+  electricSkinOverlay: {fileID: 21300000, guid: e91b5cf2d3564b2fbc32e54d21f25b04, type: 3}
   driverPose:
     rootPosition: {x: 0.16, y: 0.18}
     rootScale: 0.86
@@ -175,7 +185,7 @@ MonoBehaviour:
   oneWheelAngularDamping: 0.06
   twoWheelAngularDamping: 0.28
   maximumPassiveAngularVelocity: 9
-  accelerationForceCalibration: 1.01
+  accelerationForceCalibration: 0.377
   centerOfMass: {x: 0, y: -0.17, z: 0}
   engine:
     idleRpm: 1100

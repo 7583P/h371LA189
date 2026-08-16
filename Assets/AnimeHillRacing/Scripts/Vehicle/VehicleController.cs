@@ -19,9 +19,6 @@ namespace AnimeHillRacing.Vehicle
     {
         private const float TopSpeedGovernorResponseSeconds = .45f;
         private const float TopSpeedGovernorMaximumCorrectionAcceleration = 18f;
-        private const float TopSpeedTaperFraction = .01f;
-        private const float TopSpeedTaperMinimumMps = .35f;
-        private const float TopSpeedTaperMaximumMps = 1f;
         private const float OneWheelPitchControlAuthority = .14f;
 
         [SerializeField] private VehicleDefinition definition;
@@ -268,11 +265,15 @@ namespace AnimeHillRacing.Vehicle
                                                    forwardSpeed * forwardSpeed +
                                                    definition.mass * Physics.gravity.magnitude *
                                                    definition.grip.rollingResistance;
-                    float driveAuthority = EvaluateTopSpeedDriveAuthority(forwardSpeed, stats.topSpeedMps);
-                    // targetAccelerationMps2 is the authored 0-100 tune expressed as acceleration. Keeping it
-                    // as the single longitudinal authority preserves every vehicle's exact tune endpoints;
-                    // the legacy engine torque values are not mutually calibrated across the four vehicles.
-                    float requestedDriveForce = (body.mass * stats.targetAccelerationMps2 * driveAuthority +
+                    // Physical wheel/joint leverage differs from the direct-force road drivetrain. Keep its
+                    // measured correction local to 2.5D so the shared tune still means the same 0-100 time.
+                    float calibratedAcceleration = stats.targetAccelerationMps2 *
+                                                   definition.accelerationForceCalibration;
+                    float driveAcceleration = EvaluateDriveAcceleration(calibratedAcceleration,
+                        forwardSpeed, stats.topSpeedMps);
+                    // The authored acceleration remains exact through 100 km/h. Beyond it, a separate cruise
+                    // phase prevents aggressive maximum tunes from carrying their full 0-100 force to Vmax.
+                    float requestedDriveForce = (body.mass * driveAcceleration +
                                                  resistanceCompensation) * gas;
                     requestedWheelTorque = requestedDriveForce * definition.wheelRadius;
                     break;
@@ -379,11 +380,45 @@ namespace AnimeHillRacing.Vehicle
         public static float EvaluateTopSpeedDriveAuthority(float forwardSpeed, float topSpeed)
         {
             float safeTopSpeed = Mathf.Max(1f, topSpeed);
-            // Engine/top-speed tuning owns this window. The independent 0-100 tune must never change where
-            // maximum-speed limiting begins or how strongly an overspeed condition is corrected.
-            float taperWindow = Mathf.Clamp(safeTopSpeed * TopSpeedTaperFraction,
-                TopSpeedTaperMinimumMps, TopSpeedTaperMaximumMps);
-            return Mathf.Clamp01((safeTopSpeed - Mathf.Max(0f, forwardSpeed)) / taperWindow);
+            float safeForwardSpeed = Mathf.Max(0f, forwardSpeed);
+            if (safeForwardSpeed >= safeTopSpeed) return 0f;
+
+            const float hundredKmhMps = 100f / 3.6f;
+            if (safeForwardSpeed <= hundredKmhMps || safeTopSpeed <= hundredKmhMps)
+                return 1f;
+
+            // Acceleration tune is authored specifically as a 0-100 km/h time, so it retains full
+            // authority through that phase. Above 100 km/h a separate soft phase progressively reduces
+            // propulsion, making the tuned maximum arrive substantially later without changing its value.
+            const float minimumHighSpeedAuthority = .08f;
+            float highSpeed01 = Mathf.InverseLerp(hundredKmhMps, safeTopSpeed, safeForwardSpeed);
+            float smoothHighSpeed = Mathf.SmoothStep(0f, 1f, highSpeed01);
+            return Mathf.Lerp(1f, minimumHighSpeedAuthority, smoothHighSpeed);
+        }
+
+        public static float EvaluateDriveAcceleration(float zeroToHundredAcceleration,
+            float forwardSpeed, float topSpeed)
+        {
+            float tunedAcceleration = Mathf.Max(0f, zeroToHundredAcceleration);
+            float safeTopSpeed = Mathf.Max(1f, topSpeed);
+            float safeForwardSpeed = Mathf.Max(0f, forwardSpeed);
+            if (safeForwardSpeed >= safeTopSpeed) return 0f;
+
+            const float hundredKmhMps = 100f / 3.6f;
+            if (safeForwardSpeed <= hundredKmhMps || safeTopSpeed <= hundredKmhMps)
+                return tunedAcceleration;
+
+            // 3.5 m/s2 is the maximum sustained acceleration after 100 km/h. A short smooth transition
+            // removes any torque step while ensuring a 2-second 0-100 tune cannot also reach 300 km/h in
+            // a few more seconds. Acceleration tune still owns 0-100; Speed still owns the unchanged Vmax.
+            const float maximumCruiseAcceleration = 3.5f;
+            const float transitionFraction = .12f;
+            float highSpeed01 = Mathf.InverseLerp(hundredKmhMps, safeTopSpeed, safeForwardSpeed);
+            float transition = Mathf.SmoothStep(0f, 1f,
+                Mathf.Clamp01(highSpeed01 / transitionFraction));
+            float cruiseAcceleration = Mathf.Min(tunedAcceleration, maximumCruiseAcceleration);
+            float phaseAcceleration = Mathf.Lerp(tunedAcceleration, cruiseAcceleration, transition);
+            return phaseAcceleration * EvaluateTopSpeedDriveAuthority(safeForwardSpeed, safeTopSpeed);
         }
 
         public static float EvaluateTopSpeedGovernorAcceleration(float forwardSpeed, float topSpeed,

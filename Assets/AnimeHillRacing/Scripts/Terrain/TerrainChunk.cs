@@ -24,6 +24,9 @@ namespace AnimeHillRacing.Terrain
         private float[] surfaceHeights;
         private float chunkLength;
         private float surfaceWidth;
+        private MaterialPropertyBlock groundProperties;
+
+        private static readonly int HorizontalSampleId = Shader.PropertyToID("_HorizontalSample");
 
         public int Index { get; private set; }
         public bool IsGenerated { get; private set; }
@@ -92,9 +95,20 @@ namespace AnimeHillRacing.Terrain
             meshCollider.sharedMaterial = profile.groundPhysicsMaterial;
             if ((profile.supportsLiquidExposure || profile.useSeparateTerrainMaterials) &&
                 profile.terrainEdgeMaterial != null)
+            {
                 meshRenderer.sharedMaterials = new[] { profile.terrainMaterial, profile.terrainEdgeMaterial };
+                groundProperties ??= new MaterialPropertyBlock();
+                groundProperties.Clear();
+                // City Ground.png contains dark panel separators in the source art. Sampling a clean vertical
+                // cross-section preserves its authored shading while producing one continuous ground ribbon.
+                groundProperties.SetFloat(HorizontalSampleId, profile.useCityHighwayTerrain ? .44f : -1f);
+                meshRenderer.SetPropertyBlock(groundProperties, 1);
+            }
             else
+            {
                 meshRenderer.sharedMaterial = profile.terrainMaterial;
+                meshRenderer.SetPropertyBlock(null);
+            }
             edgeRenderer.sharedMaterial = profile.terrainEdgeMaterial != null
                 ? profile.terrainEdgeMaterial : profile.terrainMaterial;
             edgeRenderer.startWidth = profile.terrainEdgeWidth;

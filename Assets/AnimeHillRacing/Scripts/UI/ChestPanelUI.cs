@@ -17,13 +17,39 @@ namespace AnimeHillRacing.UI
         [SerializeField] private Text pageText;
         [SerializeField] private Text feedbackText;
         [SerializeField] private Image feedbackBundleImage;
+        [SerializeField] private ChestRewardModalUI rewardModal;
+        private static readonly Color GreenProgressColor = new Color(0.16f, 0.86f, 0.32f, 1f);
         private float nextRefresh;
+        private bool outlineConfigured;
+
+        private void Awake()
+        {
+            ConfigureVisualStyles();
+        }
 
         private void OnEnable()
         {
+            ConfigureVisualStyles();
             ChestSystem.RefreshOpeningStates(DateTime.UtcNow);
             ShowFirstUnseenChest();
             Refresh();
+        }
+
+        private void ConfigureVisualStyles()
+        {
+            if (progressFill != null)
+                progressFill.color = GreenProgressColor;
+
+            if (!outlineConfigured && progressText != null)
+            {
+                outlineConfigured = true;
+                if (progressText.GetComponent<Outline>() == null)
+                {
+                    Outline outline = progressText.gameObject.AddComponent<Outline>();
+                    outline.effectColor = new Color(0f, 0f, 0f, 0.95f);
+                    outline.effectDistance = new Vector2(1.5f, -1.5f);
+                }
+            }
         }
 
         private void Update()
@@ -52,20 +78,48 @@ namespace AnimeHillRacing.UI
             {
                 SetFeedback("OPENING  " + ChestSystem.FormatRemaining(chest.ReadyUtc, DateTime.UtcNow), null);
             }
-            else if (chest.state == ChestState.ReadyToClaim &&
-                     ChestSystem.Claim(chest.chestId, catalog, DateTime.UtcNow, out ChestClaimResult claim))
+            else if (chest.state == ChestState.ReadyToClaim)
             {
-                BundleDefinition bundle = PremiumBundleCatalog.Find(catalog, claim.BundleId);
-                string blueprintLine = claim.Blueprints > 0
-                    ? $"\n{claim.BundleName}\n+{claim.Blueprints} BLUEPRINTS\n" +
-                      $"{claim.BlueprintTotal} / {claim.BlueprintRequirement}" +
-                      (claim.BundleUnlocked ? "  UNLOCKED!" : string.Empty)
-                    : claim.Type == ChestType.Master || claim.Type == ChestType.Legendary
-                        ? "\nNO ELIGIBLE BLUEPRINT BUNDLE" : string.Empty;
-                SetFeedback($"{claim.Type.ToString().ToUpperInvariant()} CHEST OPENED\n+{claim.Coins:N0} COINS" +
-                    blueprintLine, bundle?.Thumbnail);
+                ChestDefinition definition = catalog.chestCatalog?.Find(chest.type);
+                if (ChestSystem.Claim(chest.chestId, catalog, DateTime.UtcNow, out ChestClaimResult claim))
+                {
+                    BundleDefinition bundle = PremiumBundleCatalog.Find(catalog, claim.BundleId);
+                    string blueprintLine = claim.Blueprints > 0
+                        ? $"\n{claim.BundleName}\n+{claim.Blueprints} BLUEPRINTS\n" +
+                          $"{claim.BlueprintTotal} / {claim.BlueprintRequirement}" +
+                          (claim.BundleUnlocked ? "  UNLOCKED!" : string.Empty)
+                        : claim.Type == ChestType.Master || claim.Type == ChestType.Legendary
+                            ? "\nNO ELIGIBLE BLUEPRINT BUNDLE" : string.Empty;
+                    SetFeedback($"{claim.Type.ToString().ToUpperInvariant()} CHEST OPENED\n+{claim.Coins:N0} COINS" +
+                        blueprintLine, bundle?.Thumbnail);
+
+                    EnsureRewardModal();
+                    if (rewardModal != null)
+                    {
+                        Sprite coinIcon = catalog.chestCatalog?.coinsChestSprite;
+                        rewardModal.Open(definition, claim, bundle, coinIcon, Refresh);
+                    }
+                }
             }
             Refresh();
+        }
+
+        private void EnsureRewardModal()
+        {
+            if (rewardModal != null) return;
+            rewardModal = GetComponentInChildren<ChestRewardModalUI>(true);
+            if (rewardModal != null) return;
+
+            var canvas = GetComponentInParent<Canvas>();
+            if (canvas != null)
+                rewardModal = canvas.GetComponentInChildren<ChestRewardModalUI>(true);
+
+            if (rewardModal == null)
+            {
+                GameObject modalGo = new GameObject("Chest Reward Modal Controller", typeof(ChestRewardModalUI));
+                modalGo.transform.SetParent(transform, false);
+                rewardModal = modalGo.GetComponent<ChestRewardModalUI>();
+            }
         }
 
         private void Refresh()

@@ -46,6 +46,7 @@ namespace AnimeHillRacing.UI
         private Vector2 fuelFullAnchorMax;
         private Vector2 fuelFullOffsetMax;
         private Vector2 fuelEmptyOffsetMax;
+        private int displayedDistance;
 
         private void Awake()
         {
@@ -53,6 +54,11 @@ namespace AnimeHillRacing.UI
             RemoveDecorativeCardBackground(distanceText, "Distance Card");
             RemoveDecorativeCardBackground(fuelText, "Fuel Card");
             RemoveDecorativeCardBackground(coinsText, "Coin Balance Card");
+            RemoveDecorativeCardBackground(bestText, "Best Card");
+            AddTextOutline(distanceText);
+            AddTextOutline(fuelText);
+            AddTextOutline(coinsText);
+            AddTextOutline(bestText);
             terrainManager = FindFirstObjectByType<TerrainManager>();
             roadManager = FindFirstObjectByType<RoadTrackGenerator>();
             if (input == null)
@@ -99,7 +105,15 @@ namespace AnimeHillRacing.UI
             VehicleRuntimeBase vehicle = gameManager.Vehicle;
             TransmissionController transmission = vehicle.Transmission;
 
-            if (distanceText != null) distanceText.text = $"DISTANCE\n{gameManager.Distance:N0} m";
+            if (distanceText != null)
+            {
+                int realMeters = Mathf.FloorToInt(gameManager.Distance);
+                if (realMeters != displayedDistance)
+                {
+                    displayedDistance = realMeters;
+                    distanceText.text = $"DISTANCE: {displayedDistance}m";
+                }
+            }
             if (bestText != null) bestText.text = $"BEST\n{Mathf.Max(gameManager.BestDistance, gameManager.Distance):N0} m";
             if (coinsText != null) coinsText.text = $"{gameManager.DisplayCoins:N0}";
             if (nextFuelText != null)
@@ -192,6 +206,7 @@ namespace AnimeHillRacing.UI
         public void RefreshImmediate(GameManager gameManager)
         {
             nextRefresh = float.NegativeInfinity;
+            displayedDistance = Mathf.FloorToInt(gameManager.Distance);
             Refresh(gameManager);
         }
 
@@ -220,6 +235,11 @@ namespace AnimeHillRacing.UI
             RemoveDecorativeCardBackground(distanceText, "Distance Card");
             RemoveDecorativeCardBackground(fuelText, "Fuel Card");
             RemoveDecorativeCardBackground(coinsText, "Coin Balance Card");
+            RemoveDecorativeCardBackground(bestText, "Best Card");
+            AddTextOutline(distanceText);
+            AddTextOutline(fuelText);
+            AddTextOutline(coinsText);
+            AddTextOutline(bestText);
         }
 
         public void AssignLiquidExposure(GameObject panel, Text label, Image fill)
@@ -237,6 +257,20 @@ namespace AnimeHillRacing.UI
         }
 
         public void AssignPickupPool(PickupPool pool) => pickupPool = pool;
+
+        public void ResetDisplayedDistance() => displayedDistance = 0;
+
+        private static void AddTextOutline(Text text)
+        {
+            if (text == null) return;
+            text.horizontalOverflow = HorizontalWrapMode.Overflow;
+            if (text.GetComponent<Outline>() == null)
+            {
+                Outline outline = text.gameObject.AddComponent<Outline>();
+                outline.effectColor = new Color(0f, 0f, 0f, 0.9f);
+                outline.effectDistance = new Vector2(1.5f, -1.5f);
+            }
+        }
 
         private void ConfigureDefaultFuelGradient()
         {

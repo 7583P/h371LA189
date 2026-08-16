@@ -22,7 +22,11 @@ namespace AnimeHillRacing.UI
         [SerializeField] private Text mapText;
         [SerializeField] private Image mapSkyPreview;
         [SerializeField] private Image mapBackgroundPreview;
+        [SerializeField] private Image mapGroundPreview;
+        [SerializeField] private Text trackTitleText;
+        [SerializeField] private Text trackBestDistanceText;
         [SerializeField] private GameObject adventureTrackSelector;
+        [SerializeField] private GameObject comingSoonPanel;
         [SerializeField] private Text vehicleText;
         [SerializeField] private Image vehiclePreviewImage;
         [SerializeField] private GaragePreviewRenderer vehiclePreviewRenderer;
@@ -39,23 +43,378 @@ namespace AnimeHillRacing.UI
         [SerializeField] private Text tuningCoinsText;
 
         private Step step;
-        private GameModeType mode;
+        private GameModeType mode = GameModeType.Adventure2_5D;
         private int mapIndex;
         private int vehicleIndex;
+        private bool outlinesConfigured;
 
         private VehicleDefinition CurrentVehicle => catalog != null && catalog.vehicles != null && catalog.vehicles.Length > 0
             ? catalog.vehicles[Mathf.Clamp(vehicleIndex, 0, catalog.vehicles.Length - 1)] : null;
         private MapDefinition CurrentMap => catalog?.GetCompatibleMap(mode, mapIndex);
 
+        private void Awake()
+        {
+            EnsureModernLayout();
+        }
+
         private void Start()
         {
+            EnsureModernLayout();
             ResolveMapPreviewImages();
-            mode = GameSession.SelectedGameMode;
+            mode = GameModeType.Adventure2_5D;
             FindSavedVehicle();
             FindSavedMap();
             GameSession.OpenTuningOnPreStart = false;
             GameSession.SelectedTransmission = TransmissionMode.Auto;
             ShowStep(Step.Mode);
+        }
+
+        private void EnsureModernLayout()
+        {
+            if (stepPanels == null || stepPanels.Length == 0 || stepPanels[0] == null) return;
+            Transform step1 = stepPanels[0].transform;
+
+            // 1. If old Mode Card Grid exists:
+            Transform gridTransform = step1.Find("Mode Card Grid");
+            if (gridTransform != null)
+            {
+                var gridLayout = gridTransform.GetComponent<GridLayoutGroup>();
+                if (gridLayout != null) gridLayout.enabled = false;
+
+                // Hide 3D and Time Trial cards
+                for (int i = 1; i < gridTransform.childCount; i++)
+                {
+                    gridTransform.GetChild(i).gameObject.SetActive(false);
+                }
+
+                // Reshape Adventure card to compact horizontal badge
+                if (gridTransform.childCount > 0)
+                {
+                    Transform advCard = gridTransform.GetChild(0);
+                    var advRt = advCard.GetComponent<RectTransform>();
+                    if (advRt != null)
+                    {
+                        advRt.anchorMin = new Vector2(0.5f, 1f);
+                        advRt.anchorMax = new Vector2(0.5f, 1f);
+                        advRt.anchoredPosition = new Vector2(0f, -95f);
+                        advRt.sizeDelta = new Vector2(320f, 48f);
+                    }
+                    var cardImg = advCard.GetComponent<Image>();
+                    if (cardImg != null) cardImg.color = new Color(0.08f, 0.22f, 0.42f, 0.95f);
+                    var cardOutline = advCard.GetComponent<Outline>();
+                    if (cardOutline != null) cardOutline.effectColor = new Color(0.30f, 0.85f, 1f, 0.90f);
+
+                    // Update inner texts
+                    Text[] cardTexts = advCard.GetComponentsInChildren<Text>(true);
+                    for (int t = 0; t < cardTexts.Length; t++)
+                    {
+                        if (t == 0)
+                        {
+                            cardTexts[t].text = "ADVENTURE";
+                            cardTexts[t].fontSize = 24;
+                            cardTexts[t].fontStyle = FontStyle.Bold;
+                            cardTexts[t].color = new Color(0.45f, 0.92f, 1f, 1f);
+                            cardTexts[t].alignment = TextAnchor.MiddleCenter;
+                            var textRt = cardTexts[t].GetComponent<RectTransform>();
+                            if (textRt != null)
+                            {
+                                textRt.anchorMin = Vector2.zero;
+                                textRt.anchorMax = Vector2.one;
+                                textRt.anchoredPosition = Vector2.zero;
+                                textRt.sizeDelta = Vector2.zero;
+                            }
+                        }
+                        else
+                        {
+                            cardTexts[t].gameObject.SetActive(false);
+                        }
+                    }
+                }
+            }
+
+            // 2. Coming Soon Badge (Top-Right)
+            if (comingSoonPanel == null && step1.Find("Coming Soon Panel") == null)
+            {
+                var csGo = new GameObject("Coming Soon Panel", typeof(RectTransform), typeof(Image), typeof(Outline));
+                csGo.transform.SetParent(step1, false);
+                var csRt = csGo.GetComponent<RectTransform>();
+                csRt.anchorMin = new Vector2(1f, 1f);
+                csRt.anchorMax = new Vector2(1f, 1f);
+                csRt.anchoredPosition = new Vector2(-165f, -50f);
+                csRt.sizeDelta = new Vector2(240f, 62f);
+                var csImg = csGo.GetComponent<Image>();
+                csImg.color = new Color(0.05f, 0.09f, 0.16f, 0.85f);
+                var csOut = csGo.GetComponent<Outline>();
+                csOut.effectColor = new Color(0.35f, 0.42f, 0.52f, 0.65f);
+                csOut.effectDistance = new Vector2(1.5f, -1.5f);
+
+                var headerGo = new GameObject("CS Header", typeof(RectTransform), typeof(Text));
+                headerGo.transform.SetParent(csGo.transform, false);
+                var hRt = headerGo.GetComponent<RectTransform>();
+                hRt.anchorMin = new Vector2(0f, 0.45f);
+                hRt.anchorMax = new Vector2(1f, 1f);
+                hRt.anchoredPosition = Vector2.zero;
+                hRt.sizeDelta = Vector2.zero;
+                var hTxt = headerGo.GetComponent<Text>();
+                hTxt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf") ?? Resources.GetBuiltinResource<Font>("Arial.ttf");
+                hTxt.text = "COMING SOON...";
+                hTxt.fontSize = 15;
+                hTxt.fontStyle = FontStyle.Bold;
+                hTxt.alignment = TextAnchor.MiddleCenter;
+                hTxt.color = new Color(0.90f, 0.85f, 0.45f, 1f);
+
+                var subGo = new GameObject("CS Sub", typeof(RectTransform), typeof(Text));
+                subGo.transform.SetParent(csGo.transform, false);
+                var sRt = subGo.GetComponent<RectTransform>();
+                sRt.anchorMin = new Vector2(0f, 0f);
+                sRt.anchorMax = new Vector2(1f, 0.52f);
+                sRt.anchoredPosition = Vector2.zero;
+                sRt.sizeDelta = Vector2.zero;
+                var sTxt = subGo.GetComponent<Text>();
+                sTxt.font = hTxt.font;
+                sTxt.text = "3D  •  TIME TRIAL";
+                sTxt.fontSize = 13;
+                sTxt.alignment = TextAnchor.MiddleCenter;
+                sTxt.color = new Color(0.55f, 0.65f, 0.78f, 0.90f);
+
+                comingSoonPanel = csGo;
+            }
+
+            // 3. Central Track Preview Frame
+            Transform frameTransform = step1.Find("Track Preview Frame");
+            if (frameTransform == null)
+            {
+                var frameGo = new GameObject("Track Preview Frame", typeof(RectTransform), typeof(Image), typeof(RectMask2D), typeof(Outline), typeof(Shadow));
+                frameGo.transform.SetParent(step1, false);
+                var frameRt = frameGo.GetComponent<RectTransform>();
+                frameRt.anchorMin = new Vector2(0.5f, 0.5f);
+                frameRt.anchorMax = new Vector2(0.5f, 0.5f);
+                frameRt.anchoredPosition = new Vector2(0f, 30f);
+                frameRt.sizeDelta = new Vector2(620f, 340f);
+                var frameImg = frameGo.GetComponent<Image>();
+                frameImg.color = new Color(0.02f, 0.05f, 0.10f, 0.95f);
+                var frameOutline = frameGo.GetComponent<Outline>();
+                frameOutline.effectColor = new Color(0.25f, 0.72f, 1f, 0.85f);
+                frameOutline.effectDistance = new Vector2(2f, -2f);
+                var frameShadow = frameGo.GetComponent<Shadow>();
+                frameShadow.effectColor = new Color(0f, 0f, 0f, 0.75f);
+                frameShadow.effectDistance = new Vector2(0f, -6f);
+                frameTransform = frameGo.transform;
+            }
+            else
+            {
+                if (frameTransform.GetComponent<RectMask2D>() == null)
+                    frameTransform.gameObject.AddComponent<RectMask2D>();
+            }
+
+            Transform skyTr = frameTransform.Find("Sky Preview");
+            if (skyTr == null)
+            {
+                var skyGo = new GameObject("Sky Preview", typeof(RectTransform), typeof(Image));
+                skyGo.transform.SetParent(frameTransform, false);
+                var skyRt = skyGo.GetComponent<RectTransform>();
+                skyRt.anchorMin = Vector2.zero;
+                skyRt.anchorMax = Vector2.one;
+                skyRt.anchoredPosition = Vector2.zero;
+                skyRt.sizeDelta = Vector2.zero;
+                mapSkyPreview = skyGo.GetComponent<Image>();
+                mapSkyPreview.color = Color.clear;
+                mapSkyPreview.preserveAspect = false;
+                mapSkyPreview.raycastTarget = false;
+                mapSkyPreview.enabled = false;
+            }
+            else
+            {
+                mapSkyPreview = skyTr.GetComponent<Image>();
+            }
+
+            Transform bgTr = frameTransform.Find("Mountains Preview");
+            if (bgTr == null)
+            {
+                var bgGo = new GameObject("Mountains Preview", typeof(RectTransform), typeof(Image));
+                bgGo.transform.SetParent(frameTransform, false);
+                var bgRt = bgGo.GetComponent<RectTransform>();
+                bgRt.anchorMin = new Vector2(0f, 0.08f);
+                bgRt.anchorMax = new Vector2(1f, 0.92f);
+                bgRt.anchoredPosition = Vector2.zero;
+                bgRt.sizeDelta = Vector2.zero;
+                mapBackgroundPreview = bgGo.GetComponent<Image>();
+                mapBackgroundPreview.color = Color.clear;
+                mapBackgroundPreview.preserveAspect = false;
+                mapBackgroundPreview.raycastTarget = false;
+                mapBackgroundPreview.enabled = false;
+            }
+            else
+            {
+                mapBackgroundPreview = bgTr.GetComponent<Image>();
+            }
+
+            Transform groundTr = frameTransform.Find("Ground Preview");
+            if (groundTr == null)
+            {
+                var groundGo = new GameObject("Ground Preview", typeof(RectTransform), typeof(Image));
+                groundGo.transform.SetParent(frameTransform, false);
+                var groundRt = groundGo.GetComponent<RectTransform>();
+                groundRt.anchorMin = new Vector2(0f, 0f);
+                groundRt.anchorMax = new Vector2(1f, 0.40f);
+                groundRt.anchoredPosition = Vector2.zero;
+                groundRt.sizeDelta = Vector2.zero;
+                mapGroundPreview = groundGo.GetComponent<Image>();
+                mapGroundPreview.color = Color.clear;
+                mapGroundPreview.preserveAspect = false;
+                mapGroundPreview.raycastTarget = false;
+                mapGroundPreview.enabled = false;
+            }
+            else
+            {
+                mapGroundPreview = groundTr.GetComponent<Image>();
+            }
+
+            // 4. Style Track Selector & Gray Arrows
+            Transform selectorTr = step1.Find("Adventure Track Selector");
+            if (selectorTr != null)
+            {
+                Transform prevBtnTr = selectorTr.Find("Previous Adventure Track");
+                if (prevBtnTr != null)
+                {
+                    var rt = prevBtnTr.GetComponent<RectTransform>();
+                    if (rt != null)
+                    {
+                        rt.anchoredPosition = new Vector2(-365f, 30f);
+                        rt.sizeDelta = new Vector2(68f, 85f);
+                    }
+                    ApplyGrayButtonStyle(prevBtnTr.gameObject);
+                }
+
+                Transform nextBtnTr = selectorTr.Find("Next Adventure Track");
+                if (nextBtnTr != null)
+                {
+                    var rt = nextBtnTr.GetComponent<RectTransform>();
+                    if (rt != null)
+                    {
+                        rt.anchoredPosition = new Vector2(365f, 30f);
+                        rt.sizeDelta = new Vector2(68f, 85f);
+                    }
+                    ApplyGrayButtonStyle(nextBtnTr.gameObject);
+                }
+
+                Transform selectedTrackTr = selectorTr.Find("Selected Adventure Track");
+                if (selectedTrackTr != null)
+                {
+                    selectedTrackTr.gameObject.SetActive(false);
+                }
+            }
+
+            // 5. Track Title & Best Distance
+            Transform titleTr = step1.Find("Track Title");
+            if (titleTr == null)
+            {
+                var titleGo = new GameObject("Track Title", typeof(RectTransform), typeof(Text), typeof(Outline));
+                titleGo.transform.SetParent(step1, false);
+                var rt = titleGo.GetComponent<RectTransform>();
+                rt.anchorMin = new Vector2(0.5f, 0.5f);
+                rt.anchorMax = new Vector2(0.5f, 0.5f);
+                rt.anchoredPosition = new Vector2(0f, -180f);
+                rt.sizeDelta = new Vector2(500f, 44f);
+                trackTitleText = titleGo.GetComponent<Text>();
+                trackTitleText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf") ?? Resources.GetBuiltinResource<Font>("Arial.ttf");
+                trackTitleText.fontSize = 32;
+                trackTitleText.fontStyle = FontStyle.Bold;
+                trackTitleText.color = Color.white;
+                trackTitleText.alignment = TextAnchor.MiddleCenter;
+                AddBlackOutline(trackTitleText);
+            }
+            else
+            {
+                trackTitleText = titleTr.GetComponent<Text>();
+                AddBlackOutline(trackTitleText);
+            }
+
+            Transform bestTr = step1.Find("Track Best Distance");
+            if (bestTr == null)
+            {
+                var bestGo = new GameObject("Track Best Distance", typeof(RectTransform), typeof(Text), typeof(Outline));
+                bestGo.transform.SetParent(step1, false);
+                var rt = bestGo.GetComponent<RectTransform>();
+                rt.anchorMin = new Vector2(0.5f, 0.5f);
+                rt.anchorMax = new Vector2(0.5f, 0.5f);
+                rt.anchoredPosition = new Vector2(0f, -224f);
+                rt.sizeDelta = new Vector2(400f, 36f);
+                trackBestDistanceText = bestGo.GetComponent<Text>();
+                trackBestDistanceText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf") ?? Resources.GetBuiltinResource<Font>("Arial.ttf");
+                trackBestDistanceText.fontSize = 22;
+                trackBestDistanceText.fontStyle = FontStyle.Bold;
+                trackBestDistanceText.color = new Color(1f, 0.88f, 0.28f, 1f);
+                trackBestDistanceText.alignment = TextAnchor.MiddleCenter;
+                AddBlackOutline(trackBestDistanceText);
+            }
+            else
+            {
+                trackBestDistanceText = bestTr.GetComponent<Text>();
+                AddBlackOutline(trackBestDistanceText);
+            }
+
+            // 6. Vehicle Step Arrows
+            if (stepPanels.Length > 1 && stepPanels[1] != null)
+            {
+                Transform step2 = stepPanels[1].transform;
+                Transform prevVeh = step2.Find("Previous Vehicle");
+                if (prevVeh != null)
+                {
+                    var rt = prevVeh.GetComponent<RectTransform>();
+                    if (rt != null)
+                    {
+                        rt.anchoredPosition = new Vector2(-710f, -20f);
+                        rt.sizeDelta = new Vector2(76f, 95f);
+                    }
+                    ApplyGrayButtonStyle(prevVeh.gameObject);
+                }
+                Transform nextVeh = step2.Find("Next Vehicle");
+                if (nextVeh != null)
+                {
+                    var rt = nextVeh.GetComponent<RectTransform>();
+                    if (rt != null)
+                    {
+                        rt.anchoredPosition = new Vector2(710f, -20f);
+                        rt.sizeDelta = new Vector2(76f, 95f);
+                    }
+                    ApplyGrayButtonStyle(nextVeh.gameObject);
+                }
+            }
+        }
+
+        private static void ApplyGrayButtonStyle(GameObject buttonGo)
+        {
+            if (buttonGo == null) return;
+            var img = buttonGo.GetComponent<Image>();
+            if (img != null)
+            {
+                img.color = new Color(0.18f, 0.22f, 0.28f, 0.82f);
+            }
+            var outline = buttonGo.GetComponent<Outline>();
+            if (outline != null)
+            {
+                outline.effectColor = new Color(0.45f, 0.52f, 0.62f, 0.75f);
+                outline.effectDistance = new Vector2(1.5f, -1.5f);
+            }
+            var btn = buttonGo.GetComponent<Button>();
+            if (btn != null)
+            {
+                ColorBlock cb = btn.colors;
+                cb.normalColor = Color.white;
+                cb.highlightedColor = new Color(1.15f, 1.15f, 1.15f, 1f);
+                cb.pressedColor = new Color(0.62f, 0.68f, 0.76f, 1f);
+                cb.selectedColor = Color.white;
+                btn.colors = cb;
+            }
+            var text = buttonGo.GetComponentInChildren<Text>();
+            if (text != null)
+            {
+                text.fontSize = 36;
+                text.fontStyle = FontStyle.Bold;
+                text.color = new Color(0.92f, 0.94f, 0.97f, 1f);
+                AddBlackOutline(text);
+            }
         }
 
         public void SelectAdventure2_5D() => SelectMode(GameModeType.Adventure2_5D);
@@ -171,30 +530,115 @@ namespace AnimeHillRacing.UI
             Refresh();
         }
 
+        private static readonly System.Collections.Generic.Dictionary<Texture2D, Sprite> _textureSpriteCache = new System.Collections.Generic.Dictionary<Texture2D, Sprite>();
+
+        private Sprite GetOrCreateSpriteFromTexture(Texture2D texture)
+        {
+            if (texture == null) return null;
+            if (_textureSpriteCache.TryGetValue(texture, out var cached) && cached != null)
+                return cached;
+            var sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+            _textureSpriteCache[texture] = sprite;
+            return sprite;
+        }
+
         private void Refresh()
         {
+            ResolveMapPreviewImages();
+
             MapDefinition map = CurrentMap;
             VehicleDefinition vehicle = CurrentVehicle;
             if (coinsText != null) coinsText.text = $"COINS  {SaveManager.TotalCoins:N0}";
             if (progressText != null) progressText.text = ProgressLabel();
             if (modeText != null) modeText.text = GameModeNames.DisplayName(mode);
             if (adventureTrackSelector != null)
-                adventureTrackSelector.SetActive(mode == GameModeType.Adventure2_5D);
+                adventureTrackSelector.SetActive(true);
+
+            string bestDist = map != null
+                ? (mode == GameModeType.TimeTrial3D
+                    ? $"BEST  {FormatTime(SaveManager.GetBestTime(map.mapId))}"
+                    : $"BEST: {SaveManager.GetBestDistance(mode, map.mapId):N0}m")
+                : "BEST: 0m";
+
+            if (trackTitleText != null)
+            {
+                trackTitleText.text = map != null ? map.displayName.ToUpperInvariant() : "NO TRACK";
+                trackTitleText.gameObject.SetActive(true);
+            }
+            if (trackBestDistanceText != null)
+            {
+                trackBestDistanceText.text = bestDist;
+                trackBestDistanceText.gameObject.SetActive(true);
+            }
+
             if (mapText != null)
             {
-                string best = mode == GameModeType.TimeTrial3D
-                    ? $"BEST  {FormatTime(SaveManager.GetBestTime(map != null ? map.mapId : string.Empty))}"
-                    : $"BEST  {SaveManager.GetBestDistance(mode, map != null ? map.mapId : string.Empty):N0} m";
-                mapText.text = map == null ? "NO COMPATIBLE MAP" :
-                    mode == GameModeType.Adventure2_5D
-                        ? $"TRACK\n{map.displayName.ToUpperInvariant()}\n{best}"
-                        : $"{map.displayName.ToUpperInvariant()}\nDIFFICULTY  NORMAL\n{best}";
+                if (trackTitleText != null)
+                {
+                    mapText.gameObject.SetActive(false);
+                }
+                else
+                {
+                    mapText.text = map == null ? "NO COMPATIBLE MAP" :
+                        mode == GameModeType.Adventure2_5D
+                            ? $"TRACK\n{map.displayName.ToUpperInvariant()}\n{bestDist}"
+                            : $"{map.displayName.ToUpperInvariant()}\nDIFFICULTY  NORMAL\n{bestDist}";
+                }
             }
+
+            ConfigureTrackTextOutlines();
+
             MapProfile mapProfile = map as MapProfile;
+            Sprite skySprite = null;
+            Sprite bgSprite = null;
+            Sprite groundSprite = null;
+
+            if (mapProfile != null)
+            {
+                if (mapProfile.environment != null)
+                {
+                    skySprite = mapProfile.environment.sky;
+                    bgSprite = mapProfile.environment.mountains;
+                }
+
+                if (mapProfile.terrainEdgeMaterial != null && mapProfile.terrainEdgeMaterial.mainTexture is Texture2D edgeTex)
+                {
+                    groundSprite = GetOrCreateSpriteFromTexture(edgeTex);
+                }
+                else if (mapProfile.terrainMaterial != null && mapProfile.terrainMaterial.mainTexture is Texture2D terrainTex)
+                {
+                    groundSprite = GetOrCreateSpriteFromTexture(terrainTex);
+                }
+                else if (mapProfile.liquidChallenges != null && mapProfile.liquidChallenges.liquidSprite != null)
+                {
+                    groundSprite = mapProfile.liquidChallenges.liquidSprite;
+                }
+            }
+            else if (map is AnimeHillRacing.Road.RoadMapProfile roadMap)
+            {
+                if (roadMap.roadMaterial != null && roadMap.roadMaterial.mainTexture is Texture2D roadTex)
+                    groundSprite = GetOrCreateSpriteFromTexture(roadTex);
+            }
+
             if (mapSkyPreview != null)
-                mapSkyPreview.sprite = mapProfile != null ? mapProfile.environment?.sky : null;
+            {
+                mapSkyPreview.sprite = skySprite;
+                mapSkyPreview.enabled = skySprite != null;
+                mapSkyPreview.color = skySprite != null ? Color.white : Color.clear;
+            }
             if (mapBackgroundPreview != null)
-                mapBackgroundPreview.sprite = mapProfile != null ? mapProfile.environment?.mountains : null;
+            {
+                mapBackgroundPreview.sprite = bgSprite;
+                mapBackgroundPreview.enabled = bgSprite != null;
+                mapBackgroundPreview.color = bgSprite != null ? Color.white : Color.clear;
+            }
+            if (mapGroundPreview != null)
+            {
+                mapGroundPreview.sprite = groundSprite;
+                mapGroundPreview.enabled = groundSprite != null;
+                mapGroundPreview.color = groundSprite != null ? Color.white : Color.clear;
+            }
+
             if (vehicleText != null) vehicleText.text = vehicle != null ? vehicle.displayName.ToUpperInvariant() : "NO VEHICLE";
             if (vehiclePreviewImage != null)
             {
@@ -235,25 +679,70 @@ namespace AnimeHillRacing.UI
             }
         }
 
+        private void ConfigureTrackTextOutlines()
+        {
+            if (outlinesConfigured) return;
+            outlinesConfigured = true;
+            AddBlackOutline(trackTitleText);
+            AddBlackOutline(trackBestDistanceText);
+            AddBlackOutline(mapText);
+        }
+
+        private static void AddBlackOutline(Text target)
+        {
+            if (target == null) return;
+            if (target.GetComponent<Outline>() == null)
+            {
+                Outline outline = target.gameObject.AddComponent<Outline>();
+                outline.effectColor = new Color(0f, 0f, 0f, 0.95f);
+                outline.effectDistance = new Vector2(1.5f, -1.5f);
+            }
+        }
+
         private void ResolveMapPreviewImages()
         {
-            if (mapSkyPreview != null && mapBackgroundPreview != null) return;
-            Image[] images = GetComponentsInChildren<Image>(true);
+            if (mapSkyPreview != null && mapBackgroundPreview != null && mapGroundPreview != null && trackTitleText != null && trackBestDistanceText != null) return;
+            Transform searchRoot = stepPanels != null && stepPanels.Length > 0 && stepPanels[0] != null ? stepPanels[0].transform.root : transform.root;
+            Image[] images = searchRoot.GetComponentsInChildren<Image>(true);
             for (int i = 0; i < images.Length; i++)
             {
                 if (mapSkyPreview == null && images[i].name.Contains("Sky Preview")) mapSkyPreview = images[i];
-                if (mapBackgroundPreview == null && images[i].name.Contains("Mountains Preview"))
+                if (mapBackgroundPreview == null && (images[i].name.Contains("Mountains Preview") || images[i].name.Contains("Background Preview")))
                     mapBackgroundPreview = images[i];
+                if (mapGroundPreview == null && images[i].name.Contains("Ground Preview"))
+                    mapGroundPreview = images[i];
+            }
+            Text[] texts = searchRoot.GetComponentsInChildren<Text>(true);
+            for (int i = 0; i < texts.Length; i++)
+            {
+                if (trackTitleText == null && texts[i].name.Contains("Track Title")) trackTitleText = texts[i];
+                if (trackBestDistanceText == null && texts[i].name.Contains("Track Best Distance")) trackBestDistanceText = texts[i];
             }
         }
 
         private void RefreshModeCards()
         {
-            int count = modeCards != null ? modeCards.Length : 0;
+            if (modeCards == null || modeCards.Length == 0) return;
+            if (comingSoonPanel != null || (stepPanels != null && stepPanels.Length > 0 && stepPanels[0] != null && stepPanels[0].transform.Find("Coming Soon Panel") != null))
+            {
+                if (modeCards.Length > 0 && modeCards[0] != null)
+                {
+                    modeCards[0].color = new Color(0.08f, 0.22f, 0.42f, 0.95f);
+                    Outline outline = modeCards[0].GetComponent<Outline>();
+                    if (outline != null)
+                    {
+                        outline.effectColor = new Color(0.30f, 0.85f, 1f, 0.90f);
+                        outline.effectDistance = new Vector2(1.5f, -1.5f);
+                    }
+                }
+                return;
+            }
+
+            int count = modeCards.Length;
             for (int i = 0; i < count; i++)
             {
                 bool selected = i == (int)mode;
-                if (modeCards != null && i < modeCards.Length && modeCards[i] != null)
+                if (modeCards[i] != null)
                 {
                     modeCards[i].color = selected ? new Color(0.18f, 0.48f, 0.76f, 1f) : new Color(0.055f, 0.10f, 0.18f, 0.98f);
                     Outline outline = modeCards[i].GetComponent<Outline>();

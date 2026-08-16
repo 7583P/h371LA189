@@ -5330,10 +5330,10 @@ namespace AnimeHillRacing.Editor
                 new Vector2(.5f, .5f), new Vector2(0f, -52f), new Vector2(790f, 390f)).AddComponent<RawImage>();
             previewImage.color = Color.white;
             previewImage.raycastTarget = false;
-            Button previous = CreateButton("Previous Vehicle", safe, "<", new Vector2(-350f, -45f),
-                new Vector2(88f, 110f));
-            Button next = CreateButton("Next Vehicle", safe, ">", new Vector2(470f, -45f),
-                new Vector2(88f, 110f));
+            Button previous = CreateGrayNavButton("Previous Vehicle", safe, "<", new Vector2(-420f, -50f),
+                new Vector2(72f, 85f));
+            Button next = CreateGrayNavButton("Next Vehicle", safe, ">", new Vector2(420f, -50f),
+                new Vector2(72f, 85f));
 
             // Quarter-width anchors keep the four footer actions separated on both 16:9 and 4:3 canvases.
             Button vehicle = CreateSpriteButton("Vehicle", safe, assets.vehicleButton, new Vector2(.125f, 0f),
@@ -5350,7 +5350,7 @@ namespace AnimeHillRacing.Editor
             Bind(vehicle, menu.Vehicle); Bind(tuning, menu.Tuning); Bind(upgrade, menu.Upgrade); Bind(race, menu.Race);
             GaragePreviewRenderer preview = CreateGarageVehiclePreview(assets, previewImage, "Home");
             GameObject chestPanel = CreateImage("Chest Stand", safe, Color.clear,
-                new Vector2(.01f, .12f), new Vector2(.32f, .88f), Vector2.zero, Vector2.zero);
+                new Vector2(.005f, .12f), new Vector2(.285f, .88f), Vector2.zero, Vector2.zero);
             chestPanel.GetComponent<Image>().raycastTarget = false;
             CreateText("Chest Title", chestPanel.transform, "CHESTS", 30, TextAnchor.MiddleCenter,
                 new Vector2(.28f, .93f), new Vector2(.72f, .995f), Vector2.zero, Vector2.zero).fontStyle = FontStyle.Bold;
@@ -5375,18 +5375,24 @@ namespace AnimeHillRacing.Editor
                 chestImages[i].enabled = false;
                 chestLabels[i] = CreateText("Status", chestSlots[i].transform, "", 13, TextAnchor.LowerCenter,
                     new Vector2(.02f, .01f), new Vector2(.98f, .18f), Vector2.zero, Vector2.zero);
+                Outline labelOutline = chestLabels[i].gameObject.AddComponent<Outline>();
+                labelOutline.effectColor = new Color(0f, 0f, 0f, 0.95f);
+                labelOutline.effectDistance = new Vector2(1f, -1f);
                 Bind(chestSlots[i], chestActions[i]);
                 chestSlots[i].gameObject.SetActive(false);
             }
             GameObject progressBack = CreateImage("Next Chest Progress", chestPanel.transform,
                 new Color(.05f, .08f, .13f, .88f), new Vector2(.10f, .045f), new Vector2(.90f, .075f),
                 Vector2.zero, Vector2.zero);
-            Image progressFill = CreateImage("Fill", progressBack.transform, new Color(.20f, .82f, 1f, 1f),
+            Image progressFill = CreateImage("Fill", progressBack.transform, new Color(0.16f, 0.86f, 0.32f, 1f),
                 Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero).GetComponent<Image>();
             progressFill.type = Image.Type.Filled; progressFill.fillMethod = Image.FillMethod.Horizontal;
             progressFill.fillOrigin = 0; progressFill.fillAmount = 0f;
             Text progressText = CreateText("Next Chest Text", chestPanel.transform, "NEXT CHEST  30:00", 16,
                 TextAnchor.MiddleCenter, new Vector2(.04f, .075f), new Vector2(.96f, .115f), Vector2.zero, Vector2.zero);
+            Outline timerOutline = progressText.gameObject.AddComponent<Outline>();
+            timerOutline.effectColor = new Color(0f, 0f, 0f, 0.95f);
+            timerOutline.effectDistance = new Vector2(1.5f, -1.5f);
             Text pageText = CreateText("Inventory Count", chestPanel.transform, "INVENTORY  0", 13, TextAnchor.MiddleCenter,
                 new Vector2(.34f, .005f), new Vector2(.66f, .04f), Vector2.zero, Vector2.zero);
             Text chestFeedback = CreateText("Chest Feedback", chestPanel.transform, "", 13, TextAnchor.MiddleLeft,
@@ -5817,42 +5823,89 @@ namespace AnimeHillRacing.Editor
                 panels[i] = UIObject($"Step {i + 1}", safe, Vector2.zero, Vector2.one,
                     new Vector2(0f, -20f), new Vector2(-80f, -180f));
 
-            CreateText("Title", panels[0].transform, "SELECT RACE MODE", 45, TextAnchor.MiddleCenter,
-                new Vector2(.5f, 1f), new Vector2(.5f, 1f), new Vector2(0f, -52f), new Vector2(700f, 72f));
-            GameObject gridRoot = UIObject("Mode Card Grid", panels[0].transform, new Vector2(.5f, .5f),
-                new Vector2(.5f, .5f), new Vector2(0f, -15f), new Vector2(1510f, 535f));
-            GridLayoutGroup grid = gridRoot.AddComponent<GridLayoutGroup>();
-            grid.cellSize = new Vector2(455f, 510f); grid.spacing = new Vector2(42f, 0f);
-            grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount; grid.constraintCount = 3;
-            grid.childAlignment = TextAnchor.MiddleCenter;
-            var cards = new Image[3]; var cardRects = new RectTransform[3]; var statuses = new Text[3];
-            CreateModeCard(gridRoot.transform, "Adventure", "SIDE-VIEW CLIMB",
-                "COUNTRYSIDE / NEON CITY\nDISTANCE RUN\n2.5D CAMERA", menu.SelectAdventure2_5D,
-                out cards[0], out cardRects[0], out statuses[0]);
-            CreateModeCard(gridRoot.transform, "3D", "OPEN ROAD",
-                "COUNTRYSIDE\nDISTANCE RUN\nCHASE CAMERA", menu.SelectAdventure3D,
-                out cards[1], out cardRects[1], out statuses[1]);
-            CreateModeCard(gridRoot.transform, "Time Trial", "PROCEDURAL CIRCUIT",
-                "ONE LAP\nBEST TIME\nCHASE CAMERA", menu.SelectTimeTrial3D,
-                out cards[2], out cardRects[2], out statuses[2]);
-            Text mode = CreateText("Selected Mode", panels[0].transform, "ADVENTURE", 22,
-                TextAnchor.MiddleCenter, new Vector2(.5f, .5f), new Vector2(.5f, .5f),
-                new Vector2(-555f, -300f), new Vector2(250f, 90f));
+            // --- STEP 1: SELECT MODE & TRACK ---
+            CreateText("Title", panels[0].transform, "SELECT MODE", 42, TextAnchor.MiddleCenter,
+                new Vector2(.5f, 1f), new Vector2(.5f, 1f), new Vector2(0f, -42f), new Vector2(600f, 52f))
+                .fontStyle = FontStyle.Bold;
+
+            // Compact Adventure Card
+            GameObject advCard = CreateImage("Adventure Mode Card", panels[0].transform,
+                new Color(0.08f, 0.22f, 0.42f, 0.95f), new Vector2(.5f, 1f), new Vector2(.5f, 1f),
+                new Vector2(0f, -95f), new Vector2(320f, 48f));
+            Outline advOutline = advCard.AddComponent<Outline>();
+            advOutline.effectColor = new Color(0.30f, 0.85f, 1f, 0.90f);
+            advOutline.effectDistance = new Vector2(1.5f, -1.5f);
+            Text advText = CreateText("Mode Name", advCard.transform, "ADVENTURE", 24, TextAnchor.MiddleCenter,
+                Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            advText.fontStyle = FontStyle.Bold;
+            advText.color = new Color(0.45f, 0.92f, 1f, 1f);
+
+            // Coming Soon Panel (Top-Right Corner)
+            GameObject comingSoon = CreateImage("Coming Soon Panel", panels[0].transform,
+                new Color(0.05f, 0.09f, 0.16f, 0.85f), new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(-165f, -50f), new Vector2(240f, 62f));
+            Outline csOutline = comingSoon.AddComponent<Outline>();
+            csOutline.effectColor = new Color(0.35f, 0.42f, 0.52f, 0.65f);
+            csOutline.effectDistance = new Vector2(1.5f, -1.5f);
+            Text csHeader = CreateText("CS Header", comingSoon.transform, "COMING SOON...", 15, TextAnchor.MiddleCenter,
+                new Vector2(0f, .45f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
+            csHeader.fontStyle = FontStyle.Bold;
+            csHeader.color = new Color(0.90f, 0.85f, 0.45f, 1f);
+            Text csSub = CreateText("CS Sub", comingSoon.transform, "3D  •  TIME TRIAL", 13, TextAnchor.MiddleCenter,
+                new Vector2(0f, 0f), new Vector2(1f, .52f), Vector2.zero, Vector2.zero);
+            csSub.color = new Color(0.55f, 0.65f, 0.78f, 0.90f);
+
+            // Center Track Preview Card
+            GameObject previewFrame = CreateImage("Track Preview Frame", panels[0].transform,
+                new Color(0.02f, 0.05f, 0.10f, 0.95f), new Vector2(.5f, .5f), new Vector2(.5f, .5f),
+                new Vector2(0f, 30f), new Vector2(620f, 340f));
+            previewFrame.AddComponent<RectMask2D>();
+            Outline frameOutline = previewFrame.AddComponent<Outline>();
+            frameOutline.effectColor = new Color(0.25f, 0.72f, 1f, 0.85f);
+            frameOutline.effectDistance = new Vector2(2f, -2f);
+            Shadow frameShadow = previewFrame.AddComponent<Shadow>();
+            frameShadow.effectColor = new Color(0f, 0f, 0f, 0.75f);
+            frameShadow.effectDistance = new Vector2(0f, -6f);
+
+            // Layered Composite Real Track Assets
+            Image skyImg = CreateImage("Sky Preview", previewFrame.transform, Color.clear,
+                Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero).GetComponent<Image>();
+            skyImg.preserveAspect = false; skyImg.raycastTarget = false; skyImg.enabled = false;
+
+            Image bgImg = CreateImage("Mountains Preview", previewFrame.transform, Color.clear,
+                new Vector2(0f, 0.08f), new Vector2(1f, 0.92f), Vector2.zero, Vector2.zero).GetComponent<Image>();
+            bgImg.preserveAspect = false; bgImg.raycastTarget = false; bgImg.enabled = false;
+
+            Image groundImg = CreateImage("Ground Preview", previewFrame.transform, Color.clear,
+                new Vector2(0f, 0f), new Vector2(1f, 0.40f), Vector2.zero, Vector2.zero).GetComponent<Image>();
+            groundImg.preserveAspect = false; groundImg.raycastTarget = false; groundImg.enabled = false;
+
+            // Track Selector & Gray Arrows
             GameObject trackSelector = UIObject("Adventure Track Selector", panels[0].transform,
                 Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-            Button previousTrack = CreateButton("Previous Adventure Track", trackSelector.transform, "<",
-                new Vector2(-270f, -300f), new Vector2(76f, 68f));
-            Text map = CreateText("Selected Adventure Track", trackSelector.transform,
-                "TRACK\nCOUNTRYSIDE", 23, TextAnchor.MiddleCenter,
-                new Vector2(.5f, .5f), new Vector2(.5f, .5f), new Vector2(0f, -300f),
-                new Vector2(380f, 100f));
-            Button nextTrack = CreateButton("Next Adventure Track", trackSelector.transform, ">",
-                new Vector2(270f, -300f), new Vector2(76f, 68f));
+            Button previousTrack = CreateGrayNavButton("Previous Adventure Track", trackSelector.transform, "<",
+                new Vector2(-365f, 28f), new Vector2(68f, 85f));
+            Button nextTrack = CreateGrayNavButton("Next Adventure Track", trackSelector.transform, ">",
+                new Vector2(365f, 28f), new Vector2(68f, 85f));
+
+            // Track Info under Preview
+            Text trackTitle = CreateText("Track Title", panels[0].transform, "COUNTRYSIDE", 32, TextAnchor.MiddleCenter,
+                new Vector2(.5f, .5f), new Vector2(.5f, .5f), new Vector2(0f, -182f), new Vector2(500f, 44f));
+            trackTitle.fontStyle = FontStyle.Bold;
+            trackTitle.color = Color.white;
+
+            Text trackBestDist = CreateText("Track Best Distance", panels[0].transform, "BEST: 0m", 21, TextAnchor.MiddleCenter,
+                new Vector2(.5f, .5f), new Vector2(.5f, .5f), new Vector2(0f, -224f), new Vector2(400f, 36f));
+            trackBestDist.fontStyle = FontStyle.Bold;
+            trackBestDist.color = new Color(1f, 0.88f, 0.28f, 1f);
+
             Button continueMode = CreateButton("Continue", panels[0].transform, "CONTINUE",
-                new Vector2(0f, -395f), new Vector2(310f, 72f));
+                new Vector2(0f, -385f), new Vector2(320f, 72f));
+
             Bind(previousTrack, menu.PreviousMap); Bind(nextTrack, menu.NextMap);
             Bind(home, menu.BackStep); Bind(continueMode, menu.ContinueStep);
 
+            // --- STEP 2: SELECT VEHICLE ---
             CreateText("Title", panels[1].transform, "SELECT VEHICLE", 45, TextAnchor.MiddleCenter,
                 new Vector2(.5f, 1f), new Vector2(.5f, 1f), new Vector2(0f, -52f), new Vector2(700f, 72f));
             GameObject vehicleCard = CreateImage("Vehicle Card", panels[1].transform,
@@ -5868,10 +5921,10 @@ namespace AnimeHillRacing.Editor
             CreateText("Transmission", vehicleCard.transform, "AUTOMATIC TRANSMISSION", 21,
                 TextAnchor.MiddleCenter, new Vector2(.61f, .05f), new Vector2(.95f, .15f), Vector2.zero, Vector2.zero)
                 .color = new Color(.38f, .88f, 1f);
-            Button previous = CreateButton("Previous Vehicle", panels[1].transform, "<",
-                new Vector2(-730f, -20f), new Vector2(90f, 110f));
-            Button next = CreateButton("Next Vehicle", panels[1].transform, ">",
-                new Vector2(730f, -20f), new Vector2(90f, 110f));
+            Button previous = CreateGrayNavButton("Previous Vehicle", panels[1].transform, "<",
+                new Vector2(-710f, -20f), new Vector2(76f, 95f));
+            Button next = CreateGrayNavButton("Next Vehicle", panels[1].transform, ">",
+                new Vector2(710f, -20f), new Vector2(76f, 95f));
             Button back = CreateButton("Back", panels[1].transform, "BACK",
                 new Vector2(-520f, -365f), new Vector2(250f, 68f));
             Button start = CreateButton("Start Race", panels[1].transform, "START RACE",
@@ -5879,7 +5932,10 @@ namespace AnimeHillRacing.Editor
             Bind(previous, menu.PreviousVehicle); Bind(next, menu.NextVehicle);
             Bind(back, menu.BackStep); Bind(start, menu.ContinueStep);
             GaragePreviewRenderer preview = CreateGarageVehiclePreview(assets, previewImage, "PreStart");
-            menu.Assign(assets.catalog, coins, progress, panels, cards, cardRects, statuses, mode, map, vehicle,
+            var modeCardsArray = new Image[] { advCard.GetComponent<Image>(), comingSoon.GetComponent<Image>(), comingSoon.GetComponent<Image>() };
+            var modeCardRectsArray = new RectTransform[] { advCard.GetComponent<RectTransform>(), comingSoon.GetComponent<RectTransform>(), comingSoon.GetComponent<RectTransform>() };
+            var modeCardStatusTextsArray = new Text[] { advText, csHeader, csSub };
+            menu.Assign(assets.catalog, coins, progress, panels, modeCardsArray, modeCardRectsArray, modeCardStatusTextsArray, advText, trackTitle, vehicle,
                 null, null, stats, null, null, null, null, null, null, null, null, null, preview, trackSelector);
             CreateEventSystem();
             EditorSceneManager.SaveScene(scene, PreStartPath);
@@ -7061,6 +7117,41 @@ namespace AnimeHillRacing.Editor
             Text text = CreateText("Label", gameObject.transform,
                 label, 28, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             text.fontStyle = FontStyle.Bold; return button;
+        }
+
+        private static Button CreateGrayNavButton(string name, Transform parent, string label, Vector2 position, Vector2 size,
+            Vector2? anchor = null)
+        {
+            Vector2 selectedAnchor = anchor ?? new Vector2(0.5f, 0.5f);
+            GameObject gameObject = CreateImage(name, parent, new Color(0.18f, 0.22f, 0.28f, 0.82f),
+                selectedAnchor, selectedAnchor, position, size);
+            Image image = gameObject.GetComponent<Image>();
+            image.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
+            image.type = Image.Type.Sliced;
+            Button button = gameObject.AddComponent<Button>();
+            ColorBlock colors = button.colors;
+            colors.normalColor = Color.white;
+            colors.highlightedColor = new Color(1.15f, 1.15f, 1.15f, 1f);
+            colors.pressedColor = new Color(0.62f, 0.68f, 0.76f, 1f);
+            colors.selectedColor = Color.white;
+            colors.disabledColor = new Color(0.32f, 0.36f, 0.42f, 0.5f);
+            colors.fadeDuration = 0.06f;
+            button.colors = colors;
+            Outline outline = gameObject.AddComponent<Outline>();
+            outline.effectColor = new Color(0.45f, 0.52f, 0.62f, 0.75f);
+            outline.effectDistance = new Vector2(1.5f, -1.5f);
+            Shadow shadow = gameObject.AddComponent<Shadow>();
+            shadow.effectColor = new Color(0f, 0f, 0f, 0.65f);
+            shadow.effectDistance = new Vector2(0f, -4f);
+            gameObject.AddComponent<ButtonPressFeedback>();
+            Text text = CreateText("Label", gameObject.transform,
+                label, 36, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            text.fontStyle = FontStyle.Bold;
+            text.color = new Color(0.92f, 0.94f, 0.97f, 1f);
+            Outline textOutline = text.gameObject.AddComponent<Outline>();
+            textOutline.effectColor = new Color(0f, 0f, 0f, 0.95f);
+            textOutline.effectDistance = new Vector2(1.5f, -1.5f);
+            return button;
         }
 
         private static Button CreateModernMenuButton(string name, Transform parent, string label, Vector2 position)

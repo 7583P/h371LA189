@@ -198,8 +198,7 @@ namespace AnimeHillRacing.Vehicle
 
         private void ApplyAerodynamicDownforce()
         {
-            if (definition.archetype != VehicleArchetype.Formula ||
-                stats.airborneDownforceAcceleration <= .001f) return;
+            if (stats.airborneDownforceAcceleration <= .001f) return;
             float acceleration = EvaluateAerodynamicDownforceAcceleration(definition, stats,
                 Mathf.Abs(SpeedMps));
             if (acceleration > .001f)
@@ -214,7 +213,7 @@ namespace AnimeHillRacing.Vehicle
         public static float EvaluateAerodynamicDownforceAcceleration(VehicleDefinition source,
             ResolvedVehicleStats resolved, float speedMps)
         {
-            if (source == null || source.archetype != VehicleArchetype.Formula) return 0f;
+            if (source == null) return 0f;
             float speed01 = Mathf.Clamp01(Mathf.Max(0f, speedMps) /
                                           Mathf.Max(1f, source.downforceReferenceSpeedMps));
             return Mathf.Min(source.maximumDownforceAcceleration,

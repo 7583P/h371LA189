@@ -37,9 +37,11 @@ namespace AnimeHillRacing.Vehicle
                 bodyRenderer.sprite = skin.sprite;
                 bodyRenderer.flipX = definition.flipBodyX;
                 bodyRenderer.sortingOrder = 10;
+                bodyRenderer.transform.localPosition = definition.BodyCustomizationOffset(skin);
                 bodyRenderer.transform.localScale = definition.BodyCustomizationScale(skin);
             }
             FormulaElectricSkinEffect.Apply(bodyRenderer, definition, skin);
+            HillAdventurerSkinEffect.Apply(bodyRenderer, definition, skin);
             int wheelSortingOrder = FormulaElectricSkinEffect.ResolveWheelSortingOrder(definition, skin);
             ApplyWheel(frontWheelRenderer, wheel, definition.FrontWheelDiameter, wheelSortingOrder);
             ApplyWheel(rearWheelRenderer, wheel, definition.RearWheelDiameter, wheelSortingOrder);
@@ -54,40 +56,77 @@ namespace AnimeHillRacing.Vehicle
             ApplySavedCustomization();
         }
 
-        private void LateUpdate()
+        public void ApplyCustomization(VehicleDefinition vehicleDefinition,
+            VehicleDefinition.CustomizationOption skin, VehicleDefinition.CustomizationOption wheel,
+            DriverDefinition driver = null)
         {
-            // Physical 2.5D wheel pose is synchronized by each SuspensionController. Road-mode wheels have
-            // their own VehicleVisual3D component, so no speed-derived visual rotation is needed here.
+            definition = vehicleDefinition;
+            if (driver != null) fallbackDriver = driver;
+            if (definition == null) return;
+            if (bodyRenderer != null && skin != null)
+            {
+                bodyRenderer.sprite = skin.sprite;
+                bodyRenderer.flipX = definition.flipBodyX;
+                bodyRenderer.sortingOrder = 10;
+                bodyRenderer.transform.localPosition = definition.BodyCustomizationOffset(skin);
+                bodyRenderer.transform.localScale = definition.BodyCustomizationScale(skin);
+            }
+            FormulaElectricSkinEffect.Apply(bodyRenderer, definition, skin);
+            HillAdventurerSkinEffect.Apply(bodyRenderer, definition, skin);
+            int wheelSortingOrder = FormulaElectricSkinEffect.ResolveWheelSortingOrder(definition, skin);
+            ApplyWheel(frontWheelRenderer, wheel, definition.FrontWheelDiameter, wheelSortingOrder);
+            ApplyWheel(rearWheelRenderer, wheel, definition.RearWheelDiameter, wheelSortingOrder);
+            if (articulatedDriver != null && fallbackDriver != null)
+                articulatedDriver.Apply(fallbackDriver, definition.driverPose,
+                    vehicle != null ? vehicle.GetComponent<Rigidbody>() : GetComponentInParent<Rigidbody>(), true);
         }
 
-        public void Assign(VehicleRuntimeBase targetVehicle, Transform body, Transform frontWheel,
-            Transform rearWheel, Transform targetDriverAnchor, float radius)
+        public void Assign(VehicleRuntimeBase vehicleController, Transform bodyTransform,
+            Transform frontWheelTransform, Transform rearWheelTransform, Transform driverAnchorTransform,
+            float radius)
         {
-            vehicle = targetVehicle;
-            bodySprite = body;
-            frontWheelSprite = frontWheel;
-            rearWheelSprite = rearWheel;
-            driverAnchor = targetDriverAnchor;
+            vehicle = vehicleController;
+            bodySprite = bodyTransform;
+            frontWheelSprite = frontWheelTransform;
+            rearWheelSprite = rearWheelTransform;
+            driverAnchor = driverAnchorTransform;
             wheelRadius = radius;
+        }
+
+        public void Assign(VehicleDefinition vehicleDefinition, SpriteRenderer bodyImage,
+            SpriteRenderer frontWheelImage, SpriteRenderer rearWheelImage, ArticulatedDriver2D driver,
+            DriverDefinition defaultDriver = null)
+        {
+            definition = vehicleDefinition;
+            bodyRenderer = bodyImage;
+            frontWheelRenderer = frontWheelImage;
+            rearWheelRenderer = rearWheelImage;
+            articulatedDriver = driver;
+            fallbackDriver = defaultDriver;
+            ApplySavedCustomization();
         }
 
         public void AssignCustomization(VehicleDefinition vehicleDefinition, SpriteRenderer bodyImage,
             SpriteRenderer frontWheelImage, SpriteRenderer rearWheelImage, ArticulatedDriver2D driver,
-            DriverDefinition defaultDriver)
+            DriverDefinition defaultDriver = null)
         {
-            definition = vehicleDefinition; bodyRenderer = bodyImage;
-            frontWheelRenderer = frontWheelImage; rearWheelRenderer = rearWheelImage;
-            articulatedDriver = driver; fallbackDriver = defaultDriver;
+            definition = vehicleDefinition;
+            bodyRenderer = bodyImage;
+            frontWheelRenderer = frontWheelImage;
+            rearWheelRenderer = rearWheelImage;
+            articulatedDriver = driver;
+            fallbackDriver = defaultDriver;
             ApplySavedCustomization();
         }
 
-        private void ApplyWheel(SpriteRenderer renderer, VehicleDefinition.CustomizationOption wheel,
+        private void ApplyWheel(SpriteRenderer renderer, VehicleDefinition.CustomizationOption option,
             float diameter, int sortingOrder)
         {
-            if (renderer == null || wheel == null) return;
-            renderer.sprite = wheel.sprite;
+            if (renderer == null) return;
+            renderer.sprite = option != null ? option.sprite : null;
             renderer.sortingOrder = sortingOrder;
-            renderer.transform.localScale = Vector3.one * definition.WheelCustomizationScale(wheel, diameter);
+            renderer.transform.localScale = Vector3.one *
+                                            definition.WheelCustomizationScale(option, diameter);
         }
     }
 }

@@ -48,6 +48,8 @@ namespace AnimeHillRacing.Editor
         private const string FormulaLuxuryWheelPath = "Assets/Art/Vehicles/Formula/Wheels/Luxury.png";
         private const string FormulaReferencePath = "Assets/Art/Vehicles/Formula/Formula_Reference.png";
         private const string RallyBodyPath = "Assets/Art/Vehicles/Rally/Vehicle/Rally_Skin_Default.png";
+        private const string RallyHillAdventurerPath = "Assets/Art/Vehicles/Rally/Vehicle/Hill Adventurer.png";
+        private const string RallyNeoPath = "Assets/Art/Vehicles/Rally/Vehicle/Neo_Rally.png";
         private const string RallyNoRoofPath = "Assets/Art/Vehicles/Rally/Vehicle/Rally_No_Roof_01.png";
         private const string RallyRoofPath = "Assets/Art/Vehicles/Rally/Vehicle/Rally_Roof_01.png";
         private const string RallyWheelPath = "Assets/Art/Vehicles/Rally/Wheels/Rally_Wheel_01.png";
@@ -55,6 +57,7 @@ namespace AnimeHillRacing.Editor
         private const string RallySkyBlueWheelPath = "Assets/Art/Vehicles/Rally/Wheels/SkyBlue_Wheel.png";
         private const string SportBikeBodyPath = "Assets/Art/Vehicles/Sport Bike/Vehicle/Bike_Skin_Default.png";
         private const string SportBikeRetroPath = "Assets/Art/Vehicles/Sport Bike/Vehicle/Bike_Retro.png";
+        private const string SportBikeSunRayPath = "Assets/Art/Vehicles/Sport Bike/Vehicle/Sun_Ray.png";
         private const string SportBikeWheel01Path = "Assets/Art/Vehicles/Sport Bike/Wheels/Bike_Wheel_01.png";
         private const string SportBikeWheel02Path = "Assets/Art/Vehicles/Sport Bike/Wheels/Bike_Wheel_02.png";
         private const string SportBikeGoldWheelPath = "Assets/Art/Vehicles/Sport Bike/Wheels/Gold_Wheel.png";
@@ -110,9 +113,10 @@ namespace AnimeHillRacing.Editor
         private const string DriverForearmPath = DriverRoot + "/Arms/Stickman_Black_Forearm.png";
         private const string DriverThighPath = DriverRoot + "/Legs/Stickman_Black_Thigh.png";
         private const string DriverLowerLegPath = DriverRoot + "/Legs/Stickman_Black_LowerLeg.png";
-        private const string DriverAccessoryRoot = DriverRoot + "/Accesory";
+        private const string DriverAccessoryRoot = "Assets/Art/Characters/Accesory";
         private const string DriverGlassesPath = DriverAccessoryRoot + "/Glasses.png";
         private const string DriverFireGlassesPath = DriverAccessoryRoot + "/Fire Glasses.png";
+        private const string DriverScarfPath = DriverAccessoryRoot + "/Scarf.png";
         private const string CountrysideRoot = "Assets/Art/Backgrounds/Countryside";
         private const string CountrysideSkyPath = CountrysideRoot + "/Countryside_Sky.png";
         private const string CountrysideMountainsPath = CountrysideRoot + "/Countryside_Mountains.png";
@@ -143,6 +147,8 @@ namespace AnimeHillRacing.Editor
             public Sprite jeepWheel02;
             public Sprite jeepStarryWheel;
             public Sprite rallyBody;
+            public Sprite rallyHillAdventurer;
+            public Sprite rallyNeo;
             public Sprite rallyNoRoof;
             public Sprite rallyRoof;
             public Sprite rallyWheel;
@@ -150,10 +156,14 @@ namespace AnimeHillRacing.Editor
             public Sprite rallySkyBlueWheel;
             public Sprite sportBikeBody;
             public Sprite sportBikeRetro;
+            public Sprite sportBikeSunRay;
             public Sprite sportBikeWheel01;
             public Sprite sportBikeWheel02;
             public Sprite sportBikeGoldWheel;
             public Sprite sportBikeGhostyWheel;
+            public Sprite driverGlasses;
+            public Sprite driverFireGlasses;
+            public Sprite driverScarf;
             public Sprite neonSky;
             public Sprite neonBackground;
             public Sprite neonTerrain;
@@ -190,7 +200,6 @@ namespace AnimeHillRacing.Editor
             public Sprite bronzeChestClosed, bronzeChestOpen, silverChestClosed, silverChestOpen;
             public Sprite goldChestClosed, goldChestOpen, masterChestClosed, masterChestOpen;
             public Sprite legendaryChestClosed, legendaryChestOpen, coinsChest, chestShelf;
-            public Sprite driverGlasses, driverFireGlasses;
             public DriverDefinition stickmanBlack;
             public EnvironmentDefinition countrysideEnvironment;
             public EnvironmentDefinition neonCityEnvironment;
@@ -1396,13 +1405,16 @@ namespace AnimeHillRacing.Editor
         }
 
         private static VehicleDefinition.CustomizationOption Customization(string id, string name, Sprite sprite,
-            bool unlockedByDefault = true, int gemPrice = 0, float visibleDiameter = 0f) =>
+            bool unlockedByDefault = true, int gemPrice = 0, float visibleDiameter = 0f, Vector2 visibleSize = default,
+            Vector2 visualOffset = default) =>
             new VehicleDefinition.CustomizationOption
             {
                 optionId = id, displayName = name, sprite = sprite,
                 unlockedByDefault = unlockedByDefault, gemPrice = gemPrice,
                 bundleType = BundleType.Cosmetic, allowsBlueprintProgression = true,
-                visibleDiameter = visibleDiameter
+                visibleDiameter = visibleDiameter,
+                visibleSize = visibleSize,
+                visualOffset = visualOffset
             };
 
         private static Vector2 VisibleSpriteSize(Sprite sprite)
@@ -1472,21 +1484,20 @@ namespace AnimeHillRacing.Editor
                 assets.formula.wheels[2].unlockedByDefault || assets.formula.wheels[2].gemPrice != 500)
                 throw new System.InvalidOperationException(
                     "Formula Default/Neon/Electricity or Ghosty/Luxury Garage contract is invalid.");
-            if (assets.rally.skins == null || assets.rally.skins.Length != 1 || assets.rally.wheels == null ||
+            if (assets.rally.skins == null || assets.rally.skins.Length < 1 || assets.rally.wheels == null ||
                 assets.rally.wheels.Length != 4 || assets.rally.skins[0].sprite != assets.rallyBody ||
                 assets.rally.wheels[1].sprite != assets.rallyGhostyWheel ||
                 assets.rally.wheels[2].sprite != assets.rallySkyBlueWheel ||
                 assets.rally.wheels[3].optionId != "rally-wheel-luxury" ||
                 assets.rally.wheels[3].sprite != assets.luxuryWheel ||
-                assets.rally.wheels.Skip(1).Any(wheel => wheel.unlockedByDefault || wheel.gemPrice != 500) ||
-                assets.rally.damagedBodySprite != assets.rallyNoRoof || assets.rally.detachableRoofSprite != assets.rallyRoof)
+                assets.rally.wheels.Skip(1).Any(wheel => wheel.unlockedByDefault || wheel.gemPrice != 500))
                 throw new System.InvalidOperationException(
                     "Rally must expose its base wheel plus Ghosty, Sky Blue and Luxury at 500 Gems each.");
             if (assets.catalog.vehicles.SelectMany(vehicle => vehicle.wheels).Any(wheel =>
                     wheel.optionId.IndexOf("rainbow", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
                     wheel.displayName.IndexOf("rainbow", System.StringComparison.OrdinalIgnoreCase) >= 0))
                 throw new System.InvalidOperationException("Rainbow wheels must not remain selectable.");
-            if (assets.sportBike == null || assets.sportBike.skins == null || assets.sportBike.skins.Length != 2 ||
+            if (assets.sportBike == null || assets.sportBike.skins == null || assets.sportBike.skins.Length < 2 ||
                 assets.sportBike.wheels == null || assets.sportBike.wheels.Length != 4 ||
                 assets.sportBike.skins[1].unlockedByDefault || assets.sportBike.skins[1].gemPrice != 1000 ||
                 assets.sportBike.wheels[2].unlockedByDefault || assets.sportBike.wheels[2].gemPrice != 500 ||
@@ -4428,9 +4439,9 @@ namespace AnimeHillRacing.Editor
                 JeepStarryWheelPath, FormulaBodyPath,
                 FormulaNeonSkinPath, FormulaElectricitySkinPath, FormulaWheel01Path, FormulaWheel02Path,
                 FormulaLuxuryWheelPath,
-                FormulaReferencePath, RallyBodyPath, RallyNoRoofPath, RallyRoofPath, RallyWheelPath,
+                FormulaReferencePath, RallyBodyPath, RallyHillAdventurerPath, RallyNeoPath, RallyNoRoofPath, RallyRoofPath, RallyWheelPath,
                 RallyGhostyWheelPath, RallySkyBlueWheelPath, SportBikeBodyPath,
-                SportBikeRetroPath, SportBikeWheel01Path, SportBikeWheel02Path, SportBikeGoldWheelPath,
+                SportBikeRetroPath, SportBikeSunRayPath, SportBikeWheel01Path, SportBikeWheel02Path, SportBikeGoldWheelPath,
                 SportBikeGhostyWheelPath, NeonSkyPath, NeonBackgroundPath, NeonTerrainPath, NeonGroundPath,
                 NeonLiquidPath, NeonCautionPath, MainMenuBackgroundPath, HomeButtonPath, RaceButtonPath, SettingsButtonPath,
                 SkinsButtonPath, StoreButtonPath, TuningButtonPath, UpgradeButtonPath, VehicleButtonPath,
@@ -4438,7 +4449,7 @@ namespace AnimeHillRacing.Editor
                 RpmGaugePath, RpmNeedlePath, SpeedGaugePath, SpeedNeedlePath,
                 DriverPreviewPath, DriverHeadPath, DriverTorsoPath,
                 DriverUpperArmPath, DriverForearmPath, DriverThighPath, DriverLowerLegPath,
-                DriverGlassesPath, DriverFireGlassesPath,
+                DriverGlassesPath, DriverFireGlassesPath, DriverScarfPath,
                  CountrysideSkyPath, CountrysideMountainsPath, CountrysideTerrainPath, CountrysideGroundPath,
                  CitySkyPath, CityBackgroundPath,
                 CityTerrainPath, CityGroundPath, FuelCanPath, Coin01Path, Coin05Path,
@@ -4467,6 +4478,8 @@ namespace AnimeHillRacing.Editor
             assets.formulaWheel02 = AssetDatabase.LoadAssetAtPath<Sprite>(FormulaWheel02Path);
             assets.luxuryWheel = AssetDatabase.LoadAssetAtPath<Sprite>(FormulaLuxuryWheelPath);
             assets.rallyBody = AssetDatabase.LoadAssetAtPath<Sprite>(RallyBodyPath);
+            assets.rallyHillAdventurer = AssetDatabase.LoadAssetAtPath<Sprite>(RallyHillAdventurerPath);
+            assets.rallyNeo = AssetDatabase.LoadAssetAtPath<Sprite>(RallyNeoPath);
             assets.rallyNoRoof = AssetDatabase.LoadAssetAtPath<Sprite>(RallyNoRoofPath);
             assets.rallyRoof = AssetDatabase.LoadAssetAtPath<Sprite>(RallyRoofPath);
             assets.rallyWheel = AssetDatabase.LoadAssetAtPath<Sprite>(RallyWheelPath);
@@ -4474,12 +4487,14 @@ namespace AnimeHillRacing.Editor
             assets.rallySkyBlueWheel = AssetDatabase.LoadAssetAtPath<Sprite>(RallySkyBlueWheelPath);
             assets.sportBikeBody = AssetDatabase.LoadAssetAtPath<Sprite>(SportBikeBodyPath);
             assets.sportBikeRetro = AssetDatabase.LoadAssetAtPath<Sprite>(SportBikeRetroPath);
+            assets.sportBikeSunRay = AssetDatabase.LoadAssetAtPath<Sprite>(SportBikeSunRayPath);
             assets.sportBikeWheel01 = AssetDatabase.LoadAssetAtPath<Sprite>(SportBikeWheel01Path);
             assets.sportBikeWheel02 = AssetDatabase.LoadAssetAtPath<Sprite>(SportBikeWheel02Path);
             assets.sportBikeGoldWheel = AssetDatabase.LoadAssetAtPath<Sprite>(SportBikeGoldWheelPath);
             assets.sportBikeGhostyWheel = AssetDatabase.LoadAssetAtPath<Sprite>(SportBikeGhostyWheelPath);
             assets.driverGlasses = AssetDatabase.LoadAssetAtPath<Sprite>(DriverGlassesPath);
             assets.driverFireGlasses = AssetDatabase.LoadAssetAtPath<Sprite>(DriverFireGlassesPath);
+            assets.driverScarf = AssetDatabase.LoadAssetAtPath<Sprite>(DriverScarfPath);
             assets.neonSky = AssetDatabase.LoadAssetAtPath<Sprite>(NeonSkyPath);
             assets.neonBackground = AssetDatabase.LoadAssetAtPath<Sprite>(NeonBackgroundPath);
             assets.neonTerrain = AssetDatabase.LoadAssetAtPath<Sprite>(NeonTerrainPath);
@@ -4772,7 +4787,12 @@ namespace AnimeHillRacing.Editor
             assets.rally.grip.rollingResistance = .014f; assets.rally.grip.aerodynamicDrag = .34f;
             assets.rally.fuel.capacityUnits = 100f; assets.rally.fuel.minimumRunDurationSeconds = 50f;
             assets.rally.fuel.maximumRunDurationSeconds = 50f; assets.rally.fuel.referenceRunDurationSeconds = 50f;
-            assets.rally.skins = new[] { Customization("rally-skin-default", "RALLY DEFAULT", assets.rallyBody) };
+            assets.rally.skins = new[]
+            {
+                Customization("rally-skin-default", "RALLY DEFAULT", assets.rallyBody, true, 0, 0f, new Vector2(24.11f, 8.67f), new Vector2(0f, 0.005f)),
+                Customization("rally-skin-hill-adventurer", "HILL ADVENTURER", assets.rallyHillAdventurer, false, 1000, 0f, new Vector2(18.41f, 6.71f), new Vector2(0.02f, 0.22f)),
+                Customization("rally-skin-neo-rally", "NEO RALLY", assets.rallyNeo, false, 1000, 0f, new Vector2(17.72f, 6.88f), new Vector2(0.005f, -0.02f))
+            };
             assets.rally.wheels = new[]
             {
                 Customization("rally-wheel-01", "RALLY WHEEL 01", assets.rallyWheel),
@@ -4786,8 +4806,8 @@ namespace AnimeHillRacing.Editor
             assets.rally.flipBodyX = false;
             assets.rally.rearWheelVisualDiameter = 0f; assets.rally.frontWheelVisualDiameter = 0f;
             assets.rally.bodyVisualOffset = new Vector2(0f, .16f);
-            assets.rally.rearWheelVisualPosition = new Vector2(-1.32f, -.49f);
-            assets.rally.frontWheelVisualPosition = new Vector2(1.34f, -.49f);
+            assets.rally.rearWheelVisualPosition = new Vector2(-1.37f, -.49f);
+            assets.rally.frontWheelVisualPosition = new Vector2(1.29f, -.49f);
             assets.rally.wheelVisualDiameter = 1.02f;
             assets.rally.driverPose = CreateRallyDriverPose();
             EditorUtility.SetDirty(assets.rally);
@@ -4871,8 +4891,9 @@ namespace AnimeHillRacing.Editor
             assets.sportBike.fuel.referenceRunDurationSeconds = 45f;
             assets.sportBike.skins = new[]
             {
-                Customization("sport-bike-default", "SPORT BIKE DEFAULT", assets.sportBikeBody),
-                Customization("sport-bike-retro", "BIKE RETRO", assets.sportBikeRetro, false, 1000)
+                Customization("sport-bike-default", "SPORT BIKE DEFAULT", assets.sportBikeBody, true, 0, 0f, new Vector2(14.96f, 7.86f), new Vector2(0.015f, 0.075f)),
+                Customization("sport-bike-retro", "BIKE RETRO", assets.sportBikeRetro, false, 1000, 0f, new Vector2(15.12f, 8.45f), new Vector2(0.115f, 0.10f)),
+                Customization("sport-bike-sun-ray", "SUN RAY", assets.sportBikeSunRay, false, 1000, 0f, new Vector2(15.03f, 8.08f), new Vector2(0.05f, 0.235f))
             };
             assets.sportBike.wheels = new[]
             {
@@ -4929,6 +4950,13 @@ namespace AnimeHillRacing.Editor
                     accessoryId = "fire-glasses", displayName = "FIRE GLASSES",
                     sprite = assets.driverFireGlasses, unlockedByDefault = true, gemPrice = 0,
                     visibleWidth = .52f, anchorOffset = new Vector2(.28f, 0f),
+                    allowsBlueprintProgression = true
+                },
+                new DriverDefinition.CharacterAccessoryOption
+                {
+                    accessoryId = "scarf", displayName = "SCARF",
+                    sprite = assets.driverScarf, unlockedByDefault = true, gemPrice = 0,
+                    visibleWidth = .68f, anchorOffset = new Vector2(.04f, -.04f),
                     allowsBlueprintProgression = true
                 }
             };

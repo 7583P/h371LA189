@@ -31,6 +31,7 @@ MonoBehaviour:
     allowsBlueprintProgression: 1
     visibleDiameter: 0
     visibleSize: {x: 14.94, y: 7.86}
+    visualOffset: {x: 0.015, y: 0.075}
   - optionId: sport-bike-retro
     displayName: BIKE RETRO
     sprite: {fileID: 21300000, guid: 0e7562ba344fa6d4799299e109ffa29f, type: 3}
@@ -40,6 +41,17 @@ MonoBehaviour:
     allowsBlueprintProgression: 1
     visibleDiameter: 0
     visibleSize: {x: 15.12, y: 8.45}
+    visualOffset: {x: 0.115, y: 0.1}
+  - optionId: sport-bike-sun-ray
+    displayName: SUN RAY
+    sprite: {fileID: 21300000, guid: 3f8a87a88228171449eb0652c185cff4, type: 3}
+    unlockedByDefault: 0
+    gemPrice: 1000
+    bundleType: 0
+    allowsBlueprintProgression: 1
+    visibleDiameter: 0
+    visibleSize: {x: 15.03, y: 8.08}
+    visualOffset: {x: 0.05, y: 0.235}
   wheels:
   - optionId: sport-bike-wheel-01
     displayName: BIKE WHEEL 01
@@ -50,6 +62,7 @@ MonoBehaviour:
     allowsBlueprintProgression: 1
     visibleDiameter: 9.94
     visibleSize: {x: 9.76, y: 9.82}
+    visualOffset: {x: 0, y: 0}
   - optionId: sport-bike-wheel-02
     displayName: BIKE WHEEL 02
     sprite: {fileID: 21300000, guid: af538f9d995160d4694bb0730040cc10, type: 3}
@@ -59,6 +72,7 @@ MonoBehaviour:
     allowsBlueprintProgression: 1
     visibleDiameter: 10.1
     visibleSize: {x: 9.89, y: 10.03}
+    visualOffset: {x: 0, y: 0}
   - optionId: sport-bike-gold-wheel
     displayName: GOLD WHEEL
     sprite: {fileID: 21300000, guid: 3cc7d30b0562aa14086730a762a3630c, type: 3}
@@ -68,6 +82,7 @@ MonoBehaviour:
     allowsBlueprintProgression: 1
     visibleDiameter: 14.08
     visibleSize: {x: 14.08, y: 14.06}
+    visualOffset: {x: 0, y: 0}
   - optionId: sport-bike-wheel-ghosty
     displayName: SPORT BIKE GHOSTY WHEEL
     sprite: {fileID: 21300000, guid: 529eb95340d64bc38e96a34f19afc3be, type: 3}
@@ -77,6 +92,7 @@ MonoBehaviour:
     allowsBlueprintProgression: 1
     visibleDiameter: 14.56
     visibleSize: {x: 14.4, y: 14.56}
+    visualOffset: {x: 0, y: 0}
   electricSkinOverlay: {fileID: 0}
   driverPose:
     rootPosition: {x: -0.33, y: 0.42}

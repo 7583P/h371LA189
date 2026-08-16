@@ -1065,7 +1065,7 @@ Transform:
   m_GameObject: {fileID: 3976651019300757175}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1.34, y: -0.49, z: -0.04}
+  m_LocalPosition: {x: 1.29, y: -0.49, z: -0.04}
   m_LocalScale: {x: 0.07005495, y: 0.07005495, z: 0.07005495}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1520,8 +1520,8 @@ Transform:
   m_GameObject: {fileID: 5142205484382902611}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.16, z: 0}
-  m_LocalScale: {x: 0.19256206, y: 0.19256206, z: 1}
+  m_LocalPosition: {x: -0.005043641, y: 0.10622467, z: 0}
+  m_LocalScale: {x: 0.25218207, y: 0.2488097, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 6657497803075097857}
@@ -1575,7 +1575,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 10
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: d4d4611165280484284001211545bc55, type: 3}
+  m_Sprite: {fileID: 21300000, guid: b91982aac8492f149a9541f23b13f0b2, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -1704,7 +1704,7 @@ Transform:
   m_GameObject: {fileID: 6100984115790103303}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1.32, y: -0.56, z: 0}
+  m_LocalPosition: {x: -1.37, y: -0.56, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1881,6 +1881,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2755363269318017293}
   - component: {fileID: 9011610185156016836}
+  - component: {fileID: 8805647597962822398}
   m_Layer: 0
   m_Name: Accessory Anchor
   m_TagString: Untagged
@@ -1897,8 +1898,8 @@ Transform:
   m_GameObject: {fileID: 7060612412433845486}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: -0.02617695, w: 0.99965733}
-  m_LocalPosition: {x: -0.050000012, y: 0.51, z: 0}
-  m_LocalScale: {x: 0.027906973, y: 0.027906973, z: 1}
+  m_LocalPosition: {x: 0.029199999, y: 0.14719999, z: 0}
+  m_LocalScale: {x: 0.05049505, y: 0.05049505, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 3003340692604576345}
@@ -1952,16 +1953,31 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 9
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 2ddc42a8eb119a74dad3306658f18814, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 995dc88859f9d7b44aedea475488dd4c, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
-  m_Size: {x: 27.95, y: 7.506104}
+  m_Size: {x: 20.2, y: 10.38}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
+--- !u!114 &8805647597962822398
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7060612412433845486}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1f64d0edfa581164fa0d3b19034b6e7c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AnimeHillRacing.Vehicle.CharacterScarfDynamics
+  scarfRenderer: {fileID: 9011610185156016836}
+  neckPivot: {fileID: 3194030306537392441}
+  vehicleBody: {fileID: 8475253601280800612}
 --- !u!1 &7751419414927292793
 GameObject:
   m_ObjectHideFlags: 0
@@ -1990,7 +2006,7 @@ Transform:
   m_GameObject: {fileID: 7751419414927292793}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1.34, y: -0.56, z: 0}
+  m_LocalPosition: {x: 1.29, y: -0.56, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2092,7 +2108,7 @@ Transform:
   m_GameObject: {fileID: 7849227747244094436}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1.32, y: -0.49, z: -0.04}
+  m_LocalPosition: {x: -1.37, y: -0.49, z: -0.04}
   m_LocalScale: {x: 0.07005495, y: 0.07005495, z: 0.07005495}
   m_ConstrainProportionsScale: 0
   m_Children: []

@@ -24,6 +24,7 @@ namespace AnimeHillRacing.UI
         private string appliedAccessoryId;
         private Vector2 lastTargetSize;
         private bool animateElectricSkin;
+        private bool animateHillAdventurerSkin;
 
         public SpriteRenderer BodyRenderer => body;
         public SpriteRenderer RearWheelRenderer => rearWheel;
@@ -42,7 +43,7 @@ namespace AnimeHillRacing.UI
         private void LateUpdate()
         {
             if (targetImage == null) return;
-            if (animateElectricSkin)
+            if (animateElectricSkin || animateHillAdventurerSkin)
             {
                 RenderNow();
                 return;
@@ -51,31 +52,6 @@ namespace AnimeHillRacing.UI
             if ((targetSize - lastTargetSize).sqrMagnitude < 1f) return;
             lastTargetSize = targetSize;
             RenderNow();
-        }
-
-        private void EnsureTexture()
-        {
-            if (previewCamera == null || targetImage == null) return;
-            Vector2Int targetSize = GetRenderTextureSize();
-            if (texture != null && texture.IsCreated() && texture.width == targetSize.x &&
-                texture.height == targetSize.y)
-            {
-                previewCamera.targetTexture = texture;
-                previewCamera.enabled = false;
-                targetImage.texture = texture;
-                return;
-            }
-
-            ReleaseTexture();
-            texture = new RenderTexture(targetSize.x, targetSize.y, 16, RenderTextureFormat.ARGB32)
-            {
-                name = "Garage Preview (Reusable)", antiAliasing = 2,
-                hideFlags = HideFlags.DontSave
-            };
-            texture.Create();
-            if (previewCamera != null) previewCamera.targetTexture = texture;
-            if (previewCamera != null) previewCamera.enabled = false;
-            if (targetImage != null) targetImage.texture = texture;
         }
 
         private void OnDestroy()
@@ -118,6 +94,31 @@ namespace AnimeHillRacing.UI
             return new Vector2Int(width, height);
         }
 
+        private void EnsureTexture()
+        {
+            if (previewCamera == null || targetImage == null) return;
+            Vector2Int targetSize = GetRenderTextureSize();
+            if (texture != null && texture.IsCreated() && texture.width == targetSize.x &&
+                texture.height == targetSize.y)
+            {
+                previewCamera.targetTexture = texture;
+                previewCamera.enabled = false;
+                targetImage.texture = texture;
+                return;
+            }
+
+            ReleaseTexture();
+            texture = new RenderTexture(targetSize.x, targetSize.y, 16, RenderTextureFormat.ARGB32)
+            {
+                name = "Garage Preview (Reusable)", antiAliasing = 2,
+                hideFlags = HideFlags.DontSave
+            };
+            texture.Create();
+            if (previewCamera != null) previewCamera.targetTexture = texture;
+            if (previewCamera != null) previewCamera.enabled = false;
+            if (targetImage != null) targetImage.texture = texture;
+        }
+
         public void Apply(VehicleDefinition vehicle, VehicleDefinition.CustomizationOption skin,
             VehicleDefinition.CustomizationOption wheelOption, DriverDefinition driverDefinition)
         {
@@ -140,10 +141,12 @@ namespace AnimeHillRacing.UI
                 body.sprite = skinSprite;
                 body.flipX = vehicle.flipBodyX;
                 body.sortingOrder = 10;
-                body.transform.localPosition = new Vector3(vehicle.bodyVisualOffset.x, vehicle.bodyVisualOffset.y, 0f);
+                body.transform.localPosition = vehicle.BodyCustomizationOffset(skin);
                 body.transform.localScale = vehicle.BodyCustomizationScale(skin);
             }
             animateElectricSkin = FormulaElectricSkinEffect.Apply(body, vehicle, skin);
+            HillAdventurerSkinEffect.Apply(body, vehicle, skin);
+            animateHillAdventurerSkin = HillAdventurerSkinEffect.IsHillAdventurer(vehicle, skin);
             int wheelSortingOrder = FormulaElectricSkinEffect.ResolveWheelSortingOrder(vehicle, skin);
             if (driver != null) driver.Apply(driverDefinition, vehicle.driverPose,
                 driverDefinition?.FindAccessory(accessoryId), null, false);
@@ -180,6 +183,5 @@ namespace AnimeHillRacing.UI
             renderer.transform.localScale = Vector3.one *
                                             appliedVehicle.WheelCustomizationScale(option, diameter);
         }
-
     }
 }

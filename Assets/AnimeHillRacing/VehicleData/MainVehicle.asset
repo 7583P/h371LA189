@@ -31,6 +31,7 @@ MonoBehaviour:
     allowsBlueprintProgression: 1
     visibleDiameter: 0
     visibleSize: {x: 25.238234, y: 8.309999}
+    visualOffset: {x: 0, y: 0}
   - optionId: jeep-skin-retro
     displayName: RETRO SKIN
     sprite: {fileID: 21300000, guid: 9fd49f8cefeaf6943ab915d03f1608ca, type: 3}
@@ -40,6 +41,7 @@ MonoBehaviour:
     allowsBlueprintProgression: 1
     visibleDiameter: 0
     visibleSize: {x: 21.72, y: 6.925371}
+    visualOffset: {x: 0, y: 0}
   wheels:
   - optionId: jeep-wheel-01
     displayName: JEEP WHEEL 01
@@ -50,6 +52,7 @@ MonoBehaviour:
     allowsBlueprintProgression: 1
     visibleDiameter: 0
     visibleSize: {x: 14.44, y: 14.51}
+    visualOffset: {x: 0, y: 0}
   - optionId: jeep-wheel-02
     displayName: JEEP WHEEL 02
     sprite: {fileID: 21300000, guid: 47ef4f3c95d4b1b4eb6eb0575cd73c28, type: 3}
@@ -59,6 +62,7 @@ MonoBehaviour:
     allowsBlueprintProgression: 1
     visibleDiameter: 0
     visibleSize: {x: 14.55, y: 14.41}
+    visualOffset: {x: 0, y: 0}
   - optionId: jeep-wheel-starry
     displayName: STARRY WHEEL
     sprite: {fileID: 21300000, guid: 5e58201cc30a576429b3087fcdcaf19c, type: 3}
@@ -68,6 +72,7 @@ MonoBehaviour:
     allowsBlueprintProgression: 1
     visibleDiameter: 0
     visibleSize: {x: 12.63, y: 12.4}
+    visualOffset: {x: 0, y: 0}
   electricSkinOverlay: {fileID: 0}
   driverPose:
     rootPosition: {x: -0.42, y: 0.24}

@@ -47,8 +47,10 @@ namespace AnimeHillRacing.Road
                 {
                     bodyRenderers[i].sprite = skin.sprite;
                     bodyRenderers[i].flipX = definition.flipBodyX ^ (i == 1);
+                    bodyRenderers[i].transform.localPosition = definition.BodyCustomizationOffset(skin);
                     bodyRenderers[i].transform.localScale = definition.BodyCustomizationScale(skin);
                     FormulaElectricSkinEffect.Apply(bodyRenderers[i], definition, skin);
+                    HillAdventurerSkinEffect.Apply(bodyRenderers[i], definition, skin);
                 }
             if (wheelRenderers != null && wheel != null)
                 for (int i = 0; i < wheelRenderers.Length; i++) if (wheelRenderers[i] != null)

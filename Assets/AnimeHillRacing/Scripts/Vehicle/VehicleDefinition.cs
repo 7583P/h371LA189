@@ -34,6 +34,8 @@ namespace AnimeHillRacing.Vehicle
             [Tooltip("Alpha-bounded visible sprite size in world units. Populated automatically in the editor; " +
                      "transparent canvas padding is excluded.")]
             public Vector2 visibleSize;
+            [Tooltip("Alpha-bounded center offset in world units from sprite pivot to align different skins.")]
+            public Vector2 visualOffset;
         }
 
         [Serializable]
@@ -318,6 +320,20 @@ namespace AnimeHillRacing.Vehicle
             return new Vector3(
                 targetVisible.x / Mathf.Max(.001f, selectedVisible.x),
                 targetVisible.y / Mathf.Max(.001f, selectedVisible.y), 1f);
+        }
+
+        public Vector3 BodyCustomizationOffset(CustomizationOption option)
+        {
+            CustomizationOption defaultOption = skins != null && skins.Length > 0 ? skins[0] : null;
+            Vector2 defaultOffset = defaultOption != null ? defaultOption.visualOffset : Vector2.zero;
+            Vector2 selectedOffset = option != null ? option.visualOffset : Vector2.zero;
+            Vector3 defaultScale = BodyCustomizationScale(defaultOption);
+            Vector3 selectedScale = BodyCustomizationScale(option);
+
+            float signX = flipBodyX ? -1f : 1f;
+            float offsetX = bodyVisualOffset.x + signX * (defaultOffset.x * defaultScale.x - selectedOffset.x * selectedScale.x);
+            float offsetY = bodyVisualOffset.y + (defaultOffset.y * defaultScale.y - selectedOffset.y * selectedScale.y);
+            return new Vector3(offsetX, offsetY, 0f);
         }
 
         public float WheelCustomizationScale(CustomizationOption option, float canonicalDiameter)

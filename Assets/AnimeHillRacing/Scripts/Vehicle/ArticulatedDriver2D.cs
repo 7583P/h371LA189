@@ -163,18 +163,47 @@ namespace AnimeHillRacing.Vehicle
             Sprite sprite = option != null ? option.sprite : null;
             accessory.sprite = sprite;
             accessory.enabled = pose.visible && sprite != null;
-            accessory.sortingOrder = pose.sortingOrder;
+
+            bool isScarf = option != null && (option.accessoryId == "scarf" ||
+                option.displayName.IndexOf("scarf", System.StringComparison.OrdinalIgnoreCase) >= 0);
+
             Transform part = accessory.transform;
             Vector2 sharedOffset = option != null ? option.anchorOffset : Vector2.zero;
-            part.localPosition = new Vector3(pose.position.x + sharedOffset.x,
-                pose.position.y + sharedOffset.y, part.localPosition.z);
-            part.localRotation = Quaternion.Euler(0f, 0f, pose.rotation);
+
+            if (isScarf && torso != null && head != null)
+            {
+                // Position at the neck base, sitting cleanly right above the upper torso
+                Vector3 neckPos = Vector3.Lerp(torso.transform.localPosition, head.transform.localPosition, 0.36f);
+                part.localPosition = new Vector3(neckPos.x + sharedOffset.x, neckPos.y + sharedOffset.y, part.localPosition.z);
+                part.localRotation = Quaternion.Euler(0f, 0f, pose.rotation);
+                accessory.sortingOrder = Mathf.Max(torso.sortingOrder, head.sortingOrder) + 1;
+            }
+            else
+            {
+                accessory.sortingOrder = pose.sortingOrder;
+                part.localPosition = new Vector3(pose.position.x + sharedOffset.x,
+                    pose.position.y + sharedOffset.y, part.localPosition.z);
+                part.localRotation = Quaternion.Euler(0f, 0f, pose.rotation);
+            }
+
             float sourceWidth = sprite != null ? Mathf.Max(.001f, sprite.bounds.size.x) : 1f;
             float fittedScale = option != null ? option.visibleWidth / sourceWidth : 1f;
             float scaleX = Mathf.Abs(pose.scale.x) > .0001f ? Mathf.Abs(pose.scale.x) : 1f;
             float scaleY = Mathf.Abs(pose.scale.y) > .0001f ? Mathf.Abs(pose.scale.y) : scaleX;
             part.localScale = new Vector3(fittedScale * scaleX * CharacterVisualScaleMultiplier,
                 fittedScale * scaleY * CharacterVisualScaleMultiplier, 1f);
+
+            var dynamics = accessory.GetComponent<CharacterScarfDynamics>();
+            if (isScarf && accessory.enabled)
+            {
+                if (dynamics == null) dynamics = accessory.gameObject.AddComponent<CharacterScarfDynamics>();
+                dynamics.enabled = true;
+                dynamics.Initialize(accessory, vehicleBody, torso != null ? torso.transform : transform);
+            }
+            else if (dynamics != null)
+            {
+                dynamics.enabled = false;
+            }
         }
 
         private static void ApplyPart(SpriteRenderer renderer, Sprite sprite,

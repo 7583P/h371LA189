@@ -153,12 +153,12 @@ MonoBehaviour:
       scale: {x: 1, y: 1}
       visible: 1
       sortingOrder: 16
-  visualWidth: 4.8
+  visualWidth: 5.6
   flipBodyX: 0
-  bodyVisualOffset: {x: 0, y: 0.1}
-  rearWheelVisualPosition: {x: -1.46, y: -0.33}
-  frontWheelVisualPosition: {x: 1.46, y: -0.33}
-  wheelVisualDiameter: 0.96
+  bodyVisualOffset: {x: 0, y: 0.08}
+  rearWheelVisualPosition: {x: -1.75, y: -0.28}
+  frontWheelVisualPosition: {x: 1.75, y: -0.28}
+  wheelVisualDiameter: 1.08
   rearWheelVisualDiameter: 0
   frontWheelVisualDiameter: 0
   engineMaxTunes: 20
@@ -174,20 +174,20 @@ MonoBehaviour:
   mass: 780
   wheelMass: 28
   wheelRadius: 0.48
-  halfWheelbase: 1.46
+  halfWheelbase: 1.75
   halfTrack: 0.78
   topSpeedMps: 83.333336
   brakeForce: 18000
   reverseForce: 6000
-  airControlTorque: 9000
+  airControlTorque: 3800
   downforceReferenceSpeedMps: 30
   maximumDownforceAcceleration: 28
   collisionPitchInertiaMultiplier: 1.35
   maximumDepenetrationVelocity: 1.5
   chassisAirControlMultiplier: 0.08
-  maxAirAngularVelocity: 3.5
-  airAngularAcceleration: 24
-  airAngularDamping: 0.26
+  maxAirAngularVelocity: 1.8
+  airAngularAcceleration: 11
+  airAngularDamping: 0.5
   oneWheelAngularDamping: 0.06
   twoWheelAngularDamping: 0.28
   maximumPassiveAngularVelocity: 9

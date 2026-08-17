@@ -189,17 +189,17 @@ MonoBehaviour:
   topSpeedMps: 100
   brakeForce: 9800
   reverseForce: 3300
-  airControlTorque: 7600
+  airControlTorque: 8200
   downforceReferenceSpeedMps: 30
   maximumDownforceAcceleration: 14
   collisionPitchInertiaMultiplier: 1
   maximumDepenetrationVelocity: 1.4
   chassisAirControlMultiplier: 0.07
-  maxAirAngularVelocity: 3.2
-  airAngularAcceleration: 21
-  airAngularDamping: 0.2
-  oneWheelAngularDamping: 0.04
-  twoWheelAngularDamping: 0.22
+  maxAirAngularVelocity: 3.6
+  airAngularAcceleration: 24
+  airAngularDamping: 0.18
+  oneWheelAngularDamping: 0.03
+  twoWheelAngularDamping: 0.16
   maximumPassiveAngularVelocity: 10
   accelerationForceCalibration: 0.811
   centerOfMass: {x: -0.015, y: -0.04, z: 0}
@@ -349,11 +349,11 @@ MonoBehaviour:
     maximumAcceleration: 20
     maximumReboundAcceleration: 1.2
   grip:
-    minGrip: 0.14
-    maxGrip: 2.2
-    slipThreshold: 0.14
-    slidingGripMultiplier: 0.44
-    tractionRecoveryPerSecond: 4.3
+    minGrip: 0.12
+    maxGrip: 1.85
+    slipThreshold: 0.13
+    slidingGripMultiplier: 0.4
+    tractionRecoveryPerSecond: 4
     rollingResistance: 0.01
     aerodynamicDrag: 0.2
   fuel:

@@ -9,7 +9,8 @@ namespace AnimeHillRacing.Vehicle
         Jeep,
         Formula,
         Rally,
-        SportBike
+        SportBike,
+        HillAdventurer
     }
 
     [CreateAssetMenu(menuName = "Anime Hill Racing/Vehicle Definition", fileName = "MainVehicle")]

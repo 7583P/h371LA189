@@ -189,15 +189,15 @@ MonoBehaviour:
   topSpeedMps: 77.77778
   brakeForce: 16500
   reverseForce: 5800
-  airControlTorque: 6500
+  airControlTorque: 4200
   downforceReferenceSpeedMps: 30
   maximumDownforceAcceleration: 14
   collisionPitchInertiaMultiplier: 1.2
   maximumDepenetrationVelocity: 1.6
   chassisAirControlMultiplier: 0.09
-  maxAirAngularVelocity: 3.05
-  airAngularAcceleration: 20
-  airAngularDamping: 0.3
+  maxAirAngularVelocity: 2.2
+  airAngularAcceleration: 13
+  airAngularDamping: 0.45
   oneWheelAngularDamping: 0.08
   twoWheelAngularDamping: 0.32
   maximumPassiveAngularVelocity: 8.5

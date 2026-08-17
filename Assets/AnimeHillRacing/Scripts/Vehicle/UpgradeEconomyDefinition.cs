@@ -36,11 +36,37 @@ namespace AnimeHillRacing.Vehicle
         [Range(1f, 3f)] public float costExponent = 1.45f;
         [Min(1)] public int roundingStep = 250;
 
+        private static readonly int[] s_hillAdventurerSpeedCosts = { 300, 500, 550, 650, 800, 950, 1100, 1250, 1450, 1650, 1850, 2100, 2350, 2600, 2850, 3150, 3400, 3700, 3800 };
+        private static readonly int[] s_hillAdventurerFuelCosts = { 300, 500, 550, 650, 800, 950, 1100, 1250, 1450, 1650, 1850, 2050, 2300, 2550, 2800, 3050, 3200 };
+        private static readonly int[] s_hillAdventurerAccelCosts = { 350, 450, 600, 750, 950, 1150, 1350, 1700, 1950, 2250, 2550, 2850, 3100 };
+        private static readonly int[] s_hillAdventurerSuspCosts = { 350, 450, 600, 750, 900, 1100, 1400, 1650, 1900, 2150, 2450, 2800, 3000 };
+        private static readonly int[] s_hillAdventurerGripCosts = { 350, 450, 550, 750, 900, 1100, 1300, 1550, 1800, 2050, 2300, 2600, 2800 };
+
         public int GetCostForNextTune(VehicleDefinition vehicle, VehicleUpgradeType type, int currentLevel)
         {
             if (vehicle == null) return -1;
             int maximum = vehicle.GetMaxTunes(type);
             if (maximum <= 1 || currentLevel < 1 || currentLevel >= maximum) return -1;
+            if (vehicle.archetype == VehicleArchetype.HillAdventurer)
+            {
+                int index = currentLevel - 1;
+                switch (type)
+                {
+                    case VehicleUpgradeType.Engine:
+                        return index >= 0 && index < s_hillAdventurerSpeedCosts.Length ? s_hillAdventurerSpeedCosts[index] : -1;
+                    case VehicleUpgradeType.Fuel:
+                        return index >= 0 && index < s_hillAdventurerFuelCosts.Length ? s_hillAdventurerFuelCosts[index] : -1;
+                    case VehicleUpgradeType.Acceleration:
+                    case VehicleUpgradeType.Turbo:
+                        return index >= 0 && index < s_hillAdventurerAccelCosts.Length ? s_hillAdventurerAccelCosts[index] : -1;
+                    case VehicleUpgradeType.Suspension:
+                        return index >= 0 && index < s_hillAdventurerSuspCosts.Length ? s_hillAdventurerSuspCosts[index] : -1;
+                    case VehicleUpgradeType.Grip:
+                        return index >= 0 && index < s_hillAdventurerGripCosts.Length ? s_hillAdventurerGripCosts[index] : -1;
+                    default:
+                        return -1;
+                }
+            }
             int first = FirstCost(vehicle.archetype);
             int final = FinalCost(vehicle.archetype);
             float t = maximum <= 2 ? 1f : Mathf.Clamp01((currentLevel - 1f) / (maximum - 2f));

@@ -135,6 +135,9 @@ namespace AnimeHillRacing.Editor
             public VehicleDefinition formula;
             public VehicleDefinition rally;
             public VehicleDefinition sportBike;
+            public VehicleDefinition hillAdventurer;
+            public Sprite hillAdventurerSkin;
+            public Sprite hillAdventurerWheel;
             public Sprite formulaBody;
             public Sprite formulaNeonSkin;
             public Sprite formulaElectricitySkin;
@@ -1454,7 +1457,7 @@ namespace AnimeHillRacing.Editor
 
         private static void ValidateCustomizationContract(BuiltAssets assets)
         {
-            if (assets.catalog == null || assets.catalog.vehicles == null || assets.catalog.vehicles.Length != 4)
+            if (assets.catalog == null || assets.catalog.vehicles == null || assets.catalog.vehicles.Length < 4)
                 throw new System.InvalidOperationException("Garage requires Jeep, Formula, Rally and Sport Bike.");
             if (assets.jeepRetroSkin == null || assets.jeepStarryWheel == null ||
                 assets.formulaNeonSkin == null || assets.formulaElectricitySkin == null || assets.luxuryWheel == null ||
@@ -3214,6 +3217,13 @@ namespace AnimeHillRacing.Editor
             EditorUtility.SetDirty(assets.formula);
             EditorUtility.SetDirty(assets.rally);
             EditorUtility.SetDirty(assets.sportBike);
+            assets.hillAdventurer.gameplayPrefab2D = SaveVehiclePrefab(
+                CreateClimbVehicle(assets.hillAdventurer, null, null, assets.chassisPhysics, assets.tirePhysics).gameObject,
+                Prefabs + "/HillAdventurer_2D.prefab");
+            assets.hillAdventurer.gameplayPrefab3D = SaveVehiclePrefab(
+                CreateRoadVehicle(assets.hillAdventurer, null, null, assets.chassisPhysics).gameObject,
+                Prefabs + "/HillAdventurer_3D.prefab");
+            EditorUtility.SetDirty(assets.hillAdventurer);
         }
 
         private static GameObject SaveVehiclePrefab(GameObject root, string path)
@@ -3634,6 +3644,7 @@ namespace AnimeHillRacing.Editor
                 }
                 float[] maximumLevelSpeeds = vehicle.archetype == VehicleArchetype.Jeep
                     ? new[] { 100f }
+                    : vehicle.archetype == VehicleArchetype.HillAdventurer ? new[] { 150f, 190f }
                     : vehicle.archetype == VehicleArchetype.Rally ? new[] { 200f, 280f }
                     : vehicle.archetype == VehicleArchetype.SportBike ? new[] { 200f, 360f }
                     : new[] { 200f, 300f };
@@ -4492,6 +4503,8 @@ namespace AnimeHillRacing.Editor
             assets.sportBikeWheel02 = AssetDatabase.LoadAssetAtPath<Sprite>(SportBikeWheel02Path);
             assets.sportBikeGoldWheel = AssetDatabase.LoadAssetAtPath<Sprite>(SportBikeGoldWheelPath);
             assets.sportBikeGhostyWheel = AssetDatabase.LoadAssetAtPath<Sprite>(SportBikeGhostyWheelPath);
+            assets.hillAdventurerSkin = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Vehicles/Hill Adventurer 4x4/Skins/Default.png");
+            assets.hillAdventurerWheel = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Vehicles/Hill Adventurer 4x4/Wheels/Default.png");
             assets.driverGlasses = AssetDatabase.LoadAssetAtPath<Sprite>(DriverGlassesPath);
             assets.driverFireGlasses = AssetDatabase.LoadAssetAtPath<Sprite>(DriverFireGlassesPath);
             assets.driverScarf = AssetDatabase.LoadAssetAtPath<Sprite>(DriverScarfPath);
@@ -4668,15 +4681,15 @@ namespace AnimeHillRacing.Editor
             assets.formula.collisionPitchInertiaMultiplier = 1.35f;
             assets.formula.maximumDepenetrationVelocity = 1.5f;
             assets.formula.chassisAirControlMultiplier = .08f;
-            assets.formula.halfWheelbase = 1.46f; assets.formula.halfTrack = .78f;
+            assets.formula.halfWheelbase = 1.75f; assets.formula.halfTrack = .78f;
             assets.formula.topSpeedMps = 300f / 3.6f;
             assets.formula.brakeForce = 18000f; assets.formula.reverseForce = 6000f;
             assets.formula.accelerationForceCalibration = .377f;
-            assets.formula.airControlTorque = 9000f;
+            assets.formula.airControlTorque = 3800f;
             assets.formula.downforceReferenceSpeedMps = 30f;
             assets.formula.maximumDownforceAcceleration = 28f;
-            assets.formula.maxAirAngularVelocity = 3.5f; assets.formula.airAngularAcceleration = 24f;
-            assets.formula.airAngularDamping = .26f;
+            assets.formula.maxAirAngularVelocity = 1.8f; assets.formula.airAngularAcceleration = 11f;
+            assets.formula.airAngularDamping = .50f;
             assets.formula.oneWheelAngularDamping = .06f; assets.formula.twoWheelAngularDamping = .28f;
             assets.formula.maximumPassiveAngularVelocity = 9f;
             assets.formula.centerOfMass = new Vector3(0f, -.17f, 0f);
@@ -4723,13 +4736,13 @@ namespace AnimeHillRacing.Editor
                 Customization("formula-wheel-luxury", "LUXURY WHEEL", assets.luxuryWheel, false, 500)
             };
             assets.formula.electricSkinOverlay = assets.formulaElectricitySkin;
-            assets.formula.visualWidth = 4.80f;
+            assets.formula.visualWidth = 5.60f;
             assets.formula.flipBodyX = false;
             assets.formula.rearWheelVisualDiameter = 0f; assets.formula.frontWheelVisualDiameter = 0f;
-            assets.formula.bodyVisualOffset = new Vector2(0f, .10f);
-            assets.formula.rearWheelVisualPosition = new Vector2(-1.46f, -.33f);
-            assets.formula.frontWheelVisualPosition = new Vector2(1.46f, -.33f);
-            assets.formula.wheelVisualDiameter = .96f;
+            assets.formula.bodyVisualOffset = new Vector2(0f, .08f);
+            assets.formula.rearWheelVisualPosition = new Vector2(-1.75f, -.28f);
+            assets.formula.frontWheelVisualPosition = new Vector2(1.75f, -.28f);
+            assets.formula.wheelVisualDiameter = 1.08f;
             assets.formula.driverPose = CreateFormulaDriverPose();
             EditorUtility.SetDirty(assets.formula);
 
@@ -4752,9 +4765,9 @@ namespace AnimeHillRacing.Editor
             assets.rally.topSpeedMps = 280f / 3.6f;
             assets.rally.brakeForce = 16500f; assets.rally.reverseForce = 5800f;
             assets.rally.accelerationForceCalibration = .361f;
-            assets.rally.airControlTorque = 6500f;
-            assets.rally.maxAirAngularVelocity = 3.05f; assets.rally.airAngularAcceleration = 20f;
-            assets.rally.airAngularDamping = .30f;
+            assets.rally.airControlTorque = 4200f;
+            assets.rally.maxAirAngularVelocity = 2.2f; assets.rally.airAngularAcceleration = 13f;
+            assets.rally.airAngularDamping = .45f;
             assets.rally.oneWheelAngularDamping = .08f; assets.rally.twoWheelAngularDamping = .32f;
             assets.rally.maximumPassiveAngularVelocity = 8.5f;
             assets.rally.centerOfMass = new Vector3(.06f, -.07f, 0f);
@@ -4836,14 +4849,14 @@ namespace AnimeHillRacing.Editor
             assets.sportBike.topSpeedMps = 360f / 3.6f;
             assets.sportBike.brakeForce = 9800f;
             assets.sportBike.reverseForce = 3300f;
-            assets.sportBike.airControlTorque = 7600f;
+            assets.sportBike.airControlTorque = 8200f;
             assets.sportBike.collisionPitchInertiaMultiplier = 1f;
             assets.sportBike.maximumDepenetrationVelocity = 1.4f;
             assets.sportBike.chassisAirControlMultiplier = .07f;
-            assets.sportBike.maxAirAngularVelocity = 3.2f;
-            assets.sportBike.airAngularAcceleration = 21f;
-            assets.sportBike.airAngularDamping = .20f;
-            assets.sportBike.oneWheelAngularDamping = .04f; assets.sportBike.twoWheelAngularDamping = .22f;
+            assets.sportBike.maxAirAngularVelocity = 3.6f;
+            assets.sportBike.airAngularAcceleration = 24f;
+            assets.sportBike.airAngularDamping = .18f;
+            assets.sportBike.oneWheelAngularDamping = .03f; assets.sportBike.twoWheelAngularDamping = .16f;
             assets.sportBike.maximumPassiveAngularVelocity = 10f;
             assets.sportBike.accelerationForceCalibration = .811f;
             assets.sportBike.centerOfMass = new Vector3(-.015f, -.04f, 0f);
@@ -4878,11 +4891,11 @@ namespace AnimeHillRacing.Editor
             assets.sportBike.suspension.hardStopSpringMultiplier = 7f;
             assets.sportBike.suspension.maximumAcceleration = 20f;
             assets.sportBike.suspension.maximumReboundAcceleration = 1.2f;
-            assets.sportBike.grip.minGrip = .14f;
-            assets.sportBike.grip.maxGrip = 2.20f;
-            assets.sportBike.grip.slipThreshold = .14f;
-            assets.sportBike.grip.slidingGripMultiplier = .44f;
-            assets.sportBike.grip.tractionRecoveryPerSecond = 4.3f;
+            assets.sportBike.grip.minGrip = .12f;
+            assets.sportBike.grip.maxGrip = 1.85f;
+            assets.sportBike.grip.slipThreshold = .13f;
+            assets.sportBike.grip.slidingGripMultiplier = .40f;
+            assets.sportBike.grip.tractionRecoveryPerSecond = 4.0f;
             assets.sportBike.grip.rollingResistance = .010f;
             assets.sportBike.grip.aerodynamicDrag = .20f;
             assets.sportBike.fuel.capacityUnits = 100f;
@@ -4918,6 +4931,105 @@ namespace AnimeHillRacing.Editor
             assets.sportBike.frontWheelVisualDiameter = .90f;
             assets.sportBike.driverPose = CreateSportBikeDriverPose();
             EditorUtility.SetDirty(assets.sportBike);
+
+            assets.hillAdventurer = LoadOrCreate<VehicleDefinition>(Root + "/VehicleData/HillAdventurerVehicle.asset");
+            assets.hillAdventurer.vehicleId = "hill-adventurer-01";
+            assets.hillAdventurer.displayName = "HILL ADVENTURER 4x4";
+            assets.hillAdventurer.unlockedByDefault = true;
+            assets.hillAdventurer.gemPrice = 0;
+            assets.hillAdventurer.allowsBlueprintProgression = true;
+            assets.hillAdventurer.archetype = VehicleArchetype.HillAdventurer;
+            assets.hillAdventurer.previewSprite = assets.hillAdventurerSkin != null ? assets.hillAdventurerSkin : AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Vehicles/Hill Adventurer 4x4/Skins/Default.png");
+            assets.hillAdventurer.engineMaxTunes = 20;
+            assets.hillAdventurer.accelerationMaxTunes = 14;
+            assets.hillAdventurer.suspensionMaxTunes = 14;
+            assets.hillAdventurer.gripMaxTunes = 14;
+            assets.hillAdventurer.airControlMaxTunes = 0;
+            assets.hillAdventurer.downforceMaxTunes = 0;
+            assets.hillAdventurer.fuelMaxTunes = 18;
+            assets.hillAdventurer.turboMaxTunes = 0;
+            assets.hillAdventurer.tuneTargets = CreateHillAdventurerTuneTargets();
+            assets.hillAdventurer.mass = 1280f;
+            assets.hillAdventurer.wheelMass = 48f;
+            assets.hillAdventurer.wheelRadius = .55f;
+            assets.hillAdventurer.halfWheelbase = 1.99f;
+            assets.hillAdventurer.halfTrack = .82f;
+            assets.hillAdventurer.topSpeedMps = 190f / 3.6f;
+            assets.hillAdventurer.brakeForce = 15000f;
+            assets.hillAdventurer.reverseForce = 5200f;
+            assets.hillAdventurer.accelerationForceCalibration = .380f;
+            assets.hillAdventurer.airControlTorque = 3400f;
+            assets.hillAdventurer.collisionPitchInertiaMultiplier = 1.25f;
+            assets.hillAdventurer.maximumDepenetrationVelocity = 1.6f;
+            assets.hillAdventurer.chassisAirControlMultiplier = .10f;
+            assets.hillAdventurer.maxAirAngularVelocity = 2.0f;
+            assets.hillAdventurer.airAngularAcceleration = 12f;
+            assets.hillAdventurer.airAngularDamping = .40f;
+            assets.hillAdventurer.oneWheelAngularDamping = .09f;
+            assets.hillAdventurer.twoWheelAngularDamping = .34f;
+            assets.hillAdventurer.maximumPassiveAngularVelocity = 8.0f;
+            assets.hillAdventurer.centerOfMass = new Vector3(.05f, -.10f, 0f);
+            assets.hillAdventurer.engine.idleRpm = 1100f;
+            assets.hillAdventurer.engine.redlineRpm = 7000f;
+            assets.hillAdventurer.engine.limiterRpm = 7400f;
+            assets.hillAdventurer.engine.minTorqueNm = 240f;
+            assets.hillAdventurer.engine.maxTorqueNm = 520f;
+            assets.hillAdventurer.engine.drivetrainEfficiency = .84f;
+            assets.hillAdventurer.engine.speedTorqueCurve = ArcadeSpeedTorqueCurve();
+            assets.hillAdventurer.transmission.forwardGearRatios = new[] { 4.50f, 3.30f, 2.60f, 2.15f, 1.85f, 1.62f, 1.40f };
+            assets.hillAdventurer.transmission.reverseRatio = 3.20f;
+            assets.hillAdventurer.transmission.finalDrive = 3.45f;
+            assets.hillAdventurer.suspension.restLength = .62f;
+            assets.hillAdventurer.suspension.minTravel = .24f;
+            assets.hillAdventurer.suspension.maxTravel = .38f;
+            assets.hillAdventurer.suspension.compressionTravelRatio = .90f;
+            assets.hillAdventurer.suspension.targetSag01 = .30f;
+            assets.hillAdventurer.suspension.stiffnessTuneScale = new Vector2(.84f, 1.05f);
+            assets.hillAdventurer.suspension.dampingRatio = new Vector2(.75f, 1.10f);
+            assets.hillAdventurer.suspension.compressionDampingMultiplier = .85f;
+            assets.hillAdventurer.suspension.reboundDampingMultiplier = 1.20f;
+            assets.hillAdventurer.suspension.compressionDampingTuneScale = new Vector2(.76f, 1.10f);
+            assets.hillAdventurer.suspension.reboundDampingTuneScale = new Vector2(.88f, 1.45f);
+            assets.hillAdventurer.suspension.reboundAccelerationTune = new Vector2(1.8f, .60f);
+            assets.hillAdventurer.suspension.wheelContactTolerance = new Vector2(.01f, .024f);
+            assets.hillAdventurer.suspension.landingDampingScale = new Vector2(1.05f, 1.40f);
+            assets.hillAdventurer.suspension.landingDampingDuration = .16f;
+            assets.hillAdventurer.suspension.springMin = 32000f;
+            assets.hillAdventurer.suspension.springMax = 46000f;
+            assets.hillAdventurer.suspension.dampingMin = 4500f;
+            assets.hillAdventurer.suspension.dampingMax = 6500f;
+            assets.hillAdventurer.suspension.bumpStopStart = .70f;
+            assets.hillAdventurer.suspension.progressiveSpringMultiplier = 2.0f;
+            assets.hillAdventurer.suspension.hardStopSpringMultiplier = 7.5f;
+            assets.hillAdventurer.suspension.maximumAcceleration = 28f;
+            assets.hillAdventurer.suspension.maximumReboundAcceleration = 1.0f;
+            assets.hillAdventurer.grip.minGrip = .14f;
+            assets.hillAdventurer.grip.maxGrip = 2.20f;
+            assets.hillAdventurer.grip.slipThreshold = .17f;
+            assets.hillAdventurer.grip.slidingGripMultiplier = .48f;
+            assets.hillAdventurer.grip.tractionRecoveryPerSecond = 4.5f;
+            assets.hillAdventurer.grip.rollingResistance = .016f;
+            assets.hillAdventurer.grip.aerodynamicDrag = .42f;
+            assets.hillAdventurer.fuel.capacityUnits = 100f;
+            assets.hillAdventurer.fuel.minimumRunDurationSeconds = 28f;
+            assets.hillAdventurer.fuel.maximumRunDurationSeconds = 55f;
+            assets.hillAdventurer.fuel.referenceRunDurationSeconds = 55f;
+            assets.hillAdventurer.skins = new[]
+            {
+                Customization("hill-adventurer-skin-default", "DEFAULT", assets.hillAdventurerSkin != null ? assets.hillAdventurerSkin : AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Vehicles/Hill Adventurer 4x4/Skins/Default.png"), true, 0, 0f, new Vector2(21.72f, 6.91f), Vector2.zero)
+            };
+            assets.hillAdventurer.wheels = new[]
+            {
+                Customization("hill-adventurer-wheel-default", "DEFAULT WHEEL", assets.hillAdventurerWheel != null ? assets.hillAdventurerWheel : AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Vehicles/Hill Adventurer 4x4/Wheels/Default.png"), true, 0, 0f, new Vector2(7.45f, 7.57f), Vector2.zero)
+            };
+            assets.hillAdventurer.visualWidth = 6.20f;
+            assets.hillAdventurer.flipBodyX = false;
+            assets.hillAdventurer.bodyVisualOffset = new Vector2(0f, .35f);
+            assets.hillAdventurer.rearWheelVisualPosition = new Vector2(-1.88f, -.65f);
+            assets.hillAdventurer.frontWheelVisualPosition = new Vector2(2.10f, -.65f);
+            assets.hillAdventurer.wheelVisualDiameter = 1.38f;
+            assets.hillAdventurer.driverPose = CreateHillAdventurerDriverPose();
+            EditorUtility.SetDirty(assets.hillAdventurer);
 
             assets.stickmanBlack = LoadOrCreate<DriverDefinition>(Root + "/VehicleData/StickmanBlack.asset");
             assets.stickmanBlack.driverId = "stickman-black";
@@ -5301,7 +5413,7 @@ namespace AnimeHillRacing.Editor
                     assets.countrysideRoad, assets.testCircuit }
                 : new MapDefinition[] { assets.countryside, assets.neonCity, assets.city,
                     assets.countrysideRoad, assets.testCircuit };
-            assets.catalog.vehicles = new[] { assets.jeep, assets.formula, assets.rally, assets.sportBike };
+            assets.catalog.vehicles = new[] { assets.jeep, assets.formula, assets.rally, assets.sportBike, assets.hillAdventurer };
             assets.catalog.drivers = new[] { assets.stickmanBlack };
             assets.catalog.upgradeEconomy = assets.economy;
             assets.catalog.chestCatalog = assets.chestCatalog;
@@ -6418,9 +6530,8 @@ namespace AnimeHillRacing.Editor
             SpriteRenderer rightLowerLeg = Part("Right Lower Leg");
             SpriteRenderer accessory = Part("Accessory Anchor");
             GameObject impactObject = new GameObject("Head Terrain Reaction Trigger");
-            impactObject.transform.SetParent(root, false);
-            impactObject.transform.localPosition = new Vector3(vehicle.driverPose.head.position.x,
-                vehicle.driverPose.head.position.y, 0f);
+            impactObject.transform.SetParent(head.transform, false);
+            impactObject.transform.localPosition = Vector3.zero;
             SphereCollider impactCollider = impactObject.AddComponent<SphereCollider>();
             impactCollider.isTrigger = true; impactCollider.radius = .27f;
             DriverHeadImpact impact = impactObject.AddComponent<DriverHeadImpact>();
@@ -7214,6 +7325,55 @@ namespace AnimeHillRacing.Editor
         {
             UnityEventTools.AddPersistentListener(button.onClick, action);
             EditorUtility.SetDirty(button);
+        }
+
+        private static VehicleDefinition.TuneTargets CreateHillAdventurerTuneTargets()
+        {
+            return new VehicleDefinition.TuneTargets
+            {
+                engineTopSpeedKmh = new float[]
+                {
+                    110f, 115f, 120f, 125f, 130f, 135f, 140f, 145f, 150f, 155f,
+                    160f, 165f, 170f, 175f, 180f, 183f, 186f, 188f, 189f, 190f
+                },
+                accelerationZeroToHundredSeconds = new float[]
+                {
+                    8.8f, 8.4f, 8.0f, 7.6f, 7.2f, 6.8f, 6.4f, 6.0f, 5.6f, 5.3f,
+                    5.0f, 4.8f, 4.7f, 4.6f
+                },
+                gripRatings = new float[]
+                {
+                    180f, 215f, 250f, 290f, 330f, 375f, 420f, 465f, 510f, 550f,
+                    580f, 600f, 612f, 620f
+                },
+                airControlTorque = new float[] { 3400f },
+                airborneDownforceAcceleration = new float[] { 0f },
+                fuelRunDurationSeconds = new float[]
+                {
+                    28f, 29f, 30f, 31f, 33f, 35f, 37f, 39f, 41f, 43f,
+                    45f, 47f, 49f, 51f, 52f, 53f, 54f, 55f
+                }
+            };
+        }
+
+        private static VehicleDefinition.DriverPose CreateHillAdventurerDriverPose()
+        {
+            return new VehicleDefinition.DriverPose
+            {
+                rootPosition = new Vector2(-0.25f, 0.32f),
+                rootScale = 0.92f,
+                torso = VehicleDefinition.DriverPartPose.Create(-0.01f, 0.22f, -8f, 0.029f, 0.031f, true, 3),
+                head = VehicleDefinition.DriverPartPose.Create(-0.03f, 0.62f, -3f, 0.031f, 0.033f, true, 5),
+                leftUpperArm = VehicleDefinition.DriverPartPose.Create(0.18f, 0.34f, -6f, 0.038f, 0.029f, true, 4),
+                leftForearm = VehicleDefinition.DriverPartPose.Create(0.36f, 0.24f, 0f, 0.036f, 0.029f, true, 4),
+                rightUpperArm = VehicleDefinition.DriverPartPose.Create(0.10f, 0.30f, 2f, 0.038f, 0.029f, true, 2),
+                rightForearm = VehicleDefinition.DriverPartPose.Create(0.28f, 0.20f, 6f, 0.036f, 0.029f, true, 2),
+                leftThigh = VehicleDefinition.DriverPartPose.Create(0.12f, -0.06f, 12f, 0.038f, 0.029f, true, 1),
+                leftLowerLeg = VehicleDefinition.DriverPartPose.Create(0.26f, -0.32f, -14f, 0.036f, 0.029f, true, 1),
+                rightThigh = VehicleDefinition.DriverPartPose.Create(0.06f, -0.08f, 16f, 0.038f, 0.029f, true, 0),
+                rightLowerLeg = VehicleDefinition.DriverPartPose.Create(0.20f, -0.34f, -10f, 0.036f, 0.029f, true, 0),
+                accessory = VehicleDefinition.DriverPartPose.Create(-0.03f, 0.62f, -3f, 1f, 1f, true, 6)
+            };
         }
 
         private static void EnsureFolders()

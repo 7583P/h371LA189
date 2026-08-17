@@ -65,7 +65,10 @@ namespace AnimeHillRacing.Vehicle
         private int chassisContactCountSinceLastStep;
         private float nextPhysicsDiagnosticTime;
         private float surfaceGripMultiplier = 1f;
+        private float currentFrontTorqueRatio = 0.5f;
 
+        public float FrontTorqueRatio => currentFrontTorqueRatio;
+        public float RearTorqueRatio => 1f - currentFrontTorqueRatio;
         public override float SpeedMps => body != null ? EvaluateProgressSpeed(body.linearVelocity) : 0f;
         public override float ProgressPosition => body != null ? body.position.x : 0f;
         public float FurthestDistanceReached => furthestDistanceReached;
@@ -290,18 +293,54 @@ namespace AnimeHillRacing.Vehicle
             }
 
             int wheelCount = Mathf.Max(1, suspensionPoints.Length);
-            float perWheelTorque = requestedWheelTorque / wheelCount;
             float perWheelBrakeTorque = requestedBrakeTorque / wheelCount;
             float slip = 0f;
             int groundedCount = 0;
-            for (int i = 0; i < suspensionPoints.Length; i++)
+
+            bool isAdaptive4x4 = definition != null && definition.archetype == VehicleArchetype.HillAdventurer;
+            if (isAdaptive4x4 && frontSuspensionIndex >= 0 && rearSuspensionIndex >= 0 && frontSuspensionIndex != rearSuspensionIndex)
             {
-                suspensionPoints[i].ApplyMotorTorque(perWheelTorque, stats.grip * surfaceGripMultiplier);
-                suspensionPoints[i].ApplyBrakeTorque(perWheelBrakeTorque);
-                if (suspensionPoints[i].IsGrounded)
+                // Adaptive 4x4 dynamic torque distribution:
+                // Both grounded: 50% front / 50% rear
+                // Front loses contact: 25% front / 75% rear
+                // Rear loses contact: 75% front / 25% rear
+                // Both airborne: 50% front / 50% rear (wheel bodies spin, zero chassis propulsion)
+                float targetFrontRatio = 0.5f;
+                if (frontWheelGrounded && !rearWheelGrounded)
+                    targetFrontRatio = 0.75f;
+                else if (!frontWheelGrounded && rearWheelGrounded)
+                    targetFrontRatio = 0.25f;
+                else
+                    targetFrontRatio = 0.5f;
+
+                currentFrontTorqueRatio = Mathf.MoveTowards(currentFrontTorqueRatio, targetFrontRatio, 4f * Time.fixedDeltaTime);
+                float frontTorque = requestedWheelTorque * currentFrontTorqueRatio;
+                float rearTorque = requestedWheelTorque * (1f - currentFrontTorqueRatio);
+
+                for (int i = 0; i < suspensionPoints.Length; i++)
                 {
-                    slip += suspensionPoints[i].Slip01;
-                    groundedCount++;
+                    float torque = i == frontSuspensionIndex ? frontTorque : (i == rearSuspensionIndex ? rearTorque : requestedWheelTorque / wheelCount);
+                    suspensionPoints[i].ApplyMotorTorque(torque, stats.grip * surfaceGripMultiplier);
+                    suspensionPoints[i].ApplyBrakeTorque(perWheelBrakeTorque);
+                    if (suspensionPoints[i].IsGrounded)
+                    {
+                        slip += suspensionPoints[i].Slip01;
+                        groundedCount++;
+                    }
+                }
+            }
+            else
+            {
+                float perWheelTorque = requestedWheelTorque / wheelCount;
+                for (int i = 0; i < suspensionPoints.Length; i++)
+                {
+                    suspensionPoints[i].ApplyMotorTorque(perWheelTorque, stats.grip * surfaceGripMultiplier);
+                    suspensionPoints[i].ApplyBrakeTorque(perWheelBrakeTorque);
+                    if (suspensionPoints[i].IsGrounded)
+                    {
+                        slip += suspensionPoints[i].Slip01;
+                        groundedCount++;
+                    }
                 }
             }
             wheelSlip = groundedCount > 0 ? slip / groundedCount : 0f;
@@ -557,6 +596,7 @@ namespace AnimeHillRacing.Vehicle
             float extraVerticalAcceleration = -EvaluateAppliedDownforceVector(transform.up, evaluatedDownforce,
                 anyWheelGrounded, chassisGrounded).y;
             Debug.Log($"{definition.displayName} PHYSICS | front={frontWheelGrounded}, rear={rearWheelGrounded}, " +
+                      $"torqueRatio F/R={FrontTorqueRatio:0.00}/{RearTorqueRatio:0.00}, " +
                       $"chassis={chassisGrounded}({chassisContactRegions}), airborne={Airborne}, " +
                       $"speed={SpeedMps:0.00}, velocity={body.linearVelocity}, wZ={body.angularVelocity.z:0.00}, " +
                       $"compression F/R={frontCompression:0.00}/{rearCompression:0.00}, " +

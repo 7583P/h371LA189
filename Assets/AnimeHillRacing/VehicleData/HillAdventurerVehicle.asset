@@ -1,0 +1,388 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 79e49c79029be8f41b7653175721022c, type: 3}
+  m_Name: HillAdventurerVehicle
+  m_EditorClassIdentifier: Assembly-CSharp::AnimeHillRacing.Vehicle.VehicleDefinition
+  vehicleId: hill-adventurer-01
+  displayName: HILL ADVENTURER 4x4
+  archetype: 4
+  gameplayPrefab2D: {fileID: 1572134586860849458, guid: b4a11ad1000000000000000000000002, type: 3}
+  gameplayPrefab3D: {fileID: 6511771755567349996, guid: b4a11ad1000000000000000000000003, type: 3}
+  previewSprite: {fileID: 21300000, guid: 02384e621396f0747a4250c04806ddd4, type: 3}
+  unlockedByDefault: 1
+  gemPrice: 0
+  allowsBlueprintProgression: 1
+  skins:
+  - optionId: hill-adventurer-skin-default
+    displayName: DEFAULT
+    sprite: {fileID: 21300000, guid: 02384e621396f0747a4250c04806ddd4, type: 3}
+    unlockedByDefault: 1
+    gemPrice: 0
+    bundleType: 0
+    allowsBlueprintProgression: 1
+    visibleDiameter: 0
+    visibleSize: {x: 21.72, y: 6.91}
+    visualOffset: {x: 0, y: 0}
+  wheels:
+  - optionId: hill-adventurer-wheel-default
+    displayName: DEFAULT WHEEL
+    sprite: {fileID: 21300000, guid: 5e06b33c2683e754bba81bff03cd7266, type: 3}
+    unlockedByDefault: 1
+    gemPrice: 0
+    bundleType: 0
+    allowsBlueprintProgression: 1
+    visibleDiameter: 0
+    visibleSize: {x: 7.45, y: 7.57}
+    visualOffset: {x: 0, y: 0}
+  electricSkinOverlay: {fileID: 0}
+  driverPose:
+    rootPosition: {x: -0.25, y: 0.32}
+    rootScale: 0.92
+    torso:
+      position: {x: -0.01, y: 0.22}
+      rotation: -8
+      scale: {x: 0.029, y: 0.031}
+      visible: 1
+      sortingOrder: 3
+    head:
+      position: {x: -0.03, y: 0.62}
+      rotation: -3
+      scale: {x: 0.031, y: 0.033}
+      visible: 1
+      sortingOrder: 5
+    leftUpperArm:
+      position: {x: 0.18, y: 0.34}
+      rotation: -6
+      scale: {x: 0.038, y: 0.029}
+      visible: 1
+      sortingOrder: 4
+    leftForearm:
+      position: {x: 0.36, y: 0.24}
+      rotation: 0
+      scale: {x: 0.036, y: 0.029}
+      visible: 1
+      sortingOrder: 4
+    rightUpperArm:
+      position: {x: 0.1, y: 0.3}
+      rotation: 2
+      scale: {x: 0.038, y: 0.029}
+      visible: 1
+      sortingOrder: 2
+    rightForearm:
+      position: {x: 0.28, y: 0.2}
+      rotation: 6
+      scale: {x: 0.036, y: 0.029}
+      visible: 1
+      sortingOrder: 2
+    leftThigh:
+      position: {x: 0.12, y: -0.06}
+      rotation: 12
+      scale: {x: 0.038, y: 0.029}
+      visible: 1
+      sortingOrder: 1
+    leftLowerLeg:
+      position: {x: 0.26, y: -0.32}
+      rotation: -14
+      scale: {x: 0.036, y: 0.029}
+      visible: 1
+      sortingOrder: 1
+    rightThigh:
+      position: {x: 0.06, y: -0.08}
+      rotation: 16
+      scale: {x: 0.038, y: 0.029}
+      visible: 1
+      sortingOrder: 0
+    rightLowerLeg:
+      position: {x: 0.2, y: -0.34}
+      rotation: -10
+      scale: {x: 0.036, y: 0.029}
+      visible: 1
+      sortingOrder: 0
+    accessory:
+      position: {x: -0.03, y: 0.62}
+      rotation: -3
+      scale: {x: 1, y: 1}
+      visible: 1
+      sortingOrder: 6
+  visualWidth: 6.2
+  flipBodyX: 0
+  bodyVisualOffset: {x: 0, y: 0.35}
+  rearWheelVisualPosition: {x: -1.88, y: -0.65}
+  frontWheelVisualPosition: {x: 2.1, y: -0.65}
+  wheelVisualDiameter: 1.38
+  rearWheelVisualDiameter: 0
+  frontWheelVisualDiameter: 0
+  engineMaxTunes: 20
+  accelerationMaxTunes: 14
+  suspensionMaxTunes: 14
+  gripMaxTunes: 14
+  airControlMaxTunes: 0
+  downforceMaxTunes: 0
+  fuelMaxTunes: 18
+  turboMaxTunes: 0
+  damagedBodySprite: {fileID: 0}
+  detachableRoofSprite: {fileID: 0}
+  mass: 1280
+  wheelMass: 48
+  wheelRadius: 0.55
+  halfWheelbase: 1.99
+  halfTrack: 0.82
+  topSpeedMps: 52.77778
+  brakeForce: 15000
+  reverseForce: 5200
+  airControlTorque: 3400
+  downforceReferenceSpeedMps: 30
+  maximumDownforceAcceleration: 0
+  collisionPitchInertiaMultiplier: 1.25
+  maximumDepenetrationVelocity: 1.6
+  chassisAirControlMultiplier: 0.1
+  maxAirAngularVelocity: 2
+  airAngularAcceleration: 12
+  airAngularDamping: 0.4
+  oneWheelAngularDamping: 0.09
+  twoWheelAngularDamping: 0.34
+  maximumPassiveAngularVelocity: 8
+  accelerationForceCalibration: 0.38
+  centerOfMass: {x: 0.05, y: -0.1, z: 0}
+  engine:
+    idleRpm: 1100
+    redlineRpm: 7000
+    limiterRpm: 7400
+    torqueCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 0.75
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 0.3
+        value: 0.98
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 0.6
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1
+        value: 0.7
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    speedTorqueCurve:
+      serializedVersion: 2
+      m_Curve:
+      - serializedVersion: 3
+        time: 0
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 0.55
+        value: 1
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 0.82
+        value: 0.68
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 0.96
+        value: 0.22
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      - serializedVersion: 3
+        time: 1.04
+        value: 0
+        inSlope: 0
+        outSlope: 0
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    minTorqueNm: 240
+    maxTorqueNm: 520
+    drivetrainEfficiency: 0.84
+  transmission:
+    forwardGearRatios:
+    - 4.5
+    - 3.3
+    - 2.6
+    - 2.15
+    - 1.85
+    - 1.62
+    - 1.4
+    reverseRatio: 3.2
+    finalDrive: 3.45
+    autoShiftDuration: 0.35
+    autoTorqueDuringShift: 0.15
+    autoUpshiftRpm: 6400
+    autoDownshiftRpm: 2700
+    perfectShiftDuration: 0.16
+    badShiftDuration: 0.4
+    perfectTorqueDuringShift: 0.45
+    badTorqueDuringShift: 0.05
+    perfectRpmWindow: {x: 5900, y: 6700}
+  suspension:
+    restLength: 0.62
+    compressionTravelRatio: 0.9
+    minTravel: 0.24
+    maxTravel: 0.38
+    springMin: 32000
+    springMax: 46000
+    dampingMin: 4500
+    dampingMax: 6500
+    targetSag01: 0.3
+    stiffnessTuneScale: {x: 0.84, y: 1.05}
+    dampingRatio: {x: 0.75, y: 1.1}
+    compressionDampingMultiplier: 0.85
+    reboundDampingMultiplier: 1.2
+    compressionDampingTuneScale: {x: 0.76, y: 1.1}
+    reboundDampingTuneScale: {x: 0.88, y: 1.45}
+    reboundAccelerationTune: {x: 1.8, y: 0.6}
+    wheelContactTolerance: {x: 0.01, y: 0.024}
+    landingDampingScale: {x: 1.05, y: 1.4}
+    landingDampingDuration: 0.16
+    bumpStopStart: 0.7
+    progressiveSpringMultiplier: 2
+    hardStopSpringMultiplier: 7.5
+    maximumAcceleration: 28
+    maximumReboundAcceleration: 1
+  grip:
+    minGrip: 0.14
+    maxGrip: 2.2
+    slipThreshold: 0.17
+    slidingGripMultiplier: 0.48
+    tractionRecoveryPerSecond: 4.5
+    rollingResistance: 0.016
+    aerodynamicDrag: 0.42
+  fuel:
+    capacityUnits: 100
+    minimumRunDurationSeconds: 28
+    maximumRunDurationSeconds: 55
+    referenceRunDurationSeconds: 55
+  tuneTargets:
+    engineTopSpeedKmh:
+    - 110
+    - 115
+    - 120
+    - 125
+    - 130
+    - 135
+    - 140
+    - 145
+    - 150
+    - 155
+    - 160
+    - 165
+    - 170
+    - 175
+    - 180
+    - 183
+    - 186
+    - 188
+    - 189
+    - 190
+    accelerationZeroToHundredSeconds:
+    - 8.8
+    - 8.4
+    - 8
+    - 7.6
+    - 7.2
+    - 6.8
+    - 6.4
+    - 6
+    - 5.6
+    - 5.3
+    - 5
+    - 4.8
+    - 4.7
+    - 4.6
+    gripRatings:
+    - 180
+    - 215
+    - 250
+    - 290
+    - 330
+    - 375
+    - 420
+    - 465
+    - 510
+    - 550
+    - 580
+    - 600
+    - 612
+    - 620
+    airControlTorque:
+    - 3400
+    airborneDownforceAcceleration:
+    - 0
+    fuelRunDurationSeconds:
+    - 28
+    - 29
+    - 30
+    - 31
+    - 33
+    - 35
+    - 37
+    - 39
+    - 41
+    - 43
+    - 45
+    - 47
+    - 49
+    - 51
+    - 52
+    - 53
+    - 54
+    - 55

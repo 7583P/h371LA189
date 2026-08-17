@@ -5,10 +5,10 @@ Shader "AnimeHillRacing/VehicleAnimatedLightSweep"
         [PerRendererData] _MainTex ("Sprite Texture", 2D) = "white" {}
         _Color ("Tint", Color) = (1,1,1,1)
         _GlowColor ("Glow Highlight Color", Color) = (0.45, 0.88, 1.0, 1.0)
-        _GlowIntensity ("Glow Intensity", Range(0, 3)) = 1.35
-        _SweepSpeed ("Sweep Speed (Hz)", Float) = 0.45
-        _SweepWidth ("Sweep Band Width", Range(0.05, 0.5)) = 0.22
-        _LuminanceThreshold ("Luminance Cutoff", Range(0, 1)) = 0.18
+        _GlowIntensity ("Glow Intensity", Range(0, 3)) = 1.25
+        _SweepSpeed ("Sweep Speed (Hz)", Float) = 0.50
+        _SweepWidth ("Sweep Band Width", Range(0.05, 0.5)) = 0.20
+        _LuminanceThreshold ("Luminance Cutoff", Range(0, 1)) = 0.15
         [MaterialToggle] PixelSnap ("Pixel snap", Float) = 0
         [HideInInspector] _RendererColor ("RendererColor", Color) = (1,1,1,1)
         [HideInInspector] _Flip ("Flip", Vector) = (1,1,1,1)
@@ -153,20 +153,21 @@ Shader "AnimeHillRacing/VehicleAnimatedLightSweep"
 
                 fixed4 c = SampleSpriteTexture (IN.texcoord) * IN.color;
 
-                // Animated Left-to-Right Light Sweep
+                // Animated Left-to-Right Light Sweep across vehicle details
                 float progress = frac(_Time.y * _SweepSpeed);
-                float sweepCenter = progress * 1.4 - 0.2; // Smooth entry and exit
-                float dist = abs(IN.texcoord.x - sweepCenter);
+                float sweepCenter = progress * 1.4 - 0.2; // Smooth entry at -0.2, exit at +1.2
+                float uCoord = IN.texcoord.x + (IN.texcoord.y - 0.5) * 0.12; // Slight aerodynamic tilt
+                float dist = abs(uCoord - sweepCenter);
                 float sweep = smoothstep(_SweepWidth, 0.0, dist);
 
                 float lum = dot(c.rgb, fixed3(0.299, 0.587, 0.114));
                 if (lum > _LuminanceThreshold)
                 {
-                    float highlight = saturate((lum - _LuminanceThreshold) / (1.0 - _LuminanceThreshold));
-                    c.rgb += _GlowColor.rgb * (_GlowIntensity * sweep * highlight * c.a);
+                    float highlight = saturate((lum - _LuminanceThreshold) / max(0.001, 1.0 - _LuminanceThreshold));
+                    c.rgb += _GlowColor.rgb * (_GlowIntensity * sweep * highlight);
                 }
 
-                c.rgb *= c.a;
+                c.rgb *= c.a; // Premultiplied alpha blending: transparent areas remain completely transparent
                 return c;
             }
             ENDCG

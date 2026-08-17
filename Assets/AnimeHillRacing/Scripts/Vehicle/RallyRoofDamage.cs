@@ -78,9 +78,15 @@ namespace AnimeHillRacing.Vehicle
             {
                 if (s_sharedBeltlineMaterial == null)
                 {
-                    Shader shader = Shader.Find("AnimeHillRacing/VehicleBodyBeltline");
+                    Shader shader = Resources.Load<Shader>("VehicleBeltlineCut");
+                    if (shader == null) shader = Resources.Load<Shader>("VehicleBodyBeltline");
+                    if (shader == null) shader = Shader.Find("AnimeHillRacing/VehicleBodyBeltline");
                     if (shader != null)
-                        s_sharedBeltlineMaterial = new Material(shader) { name = "Runtime_RallyBeltlineMaterial" };
+                        s_sharedBeltlineMaterial = new Material(shader)
+                        {
+                            name = "Runtime_RallyBeltlineMaterial",
+                            hideFlags = HideFlags.HideAndDontSave
+                        };
                 }
                 beltlineMaterial = s_sharedBeltlineMaterial;
             }
@@ -89,9 +95,16 @@ namespace AnimeHillRacing.Vehicle
             {
                 for (int i = 0; i < bodyRenderers.Length; i++)
                 {
-                    if (bodyRenderers[i] != null && bodyRenderers[i].sharedMaterial != beltlineMaterial)
+                    if (bodyRenderers[i] != null)
                     {
-                        bodyRenderers[i].sharedMaterial = beltlineMaterial;
+                        // Only assign default beltlineMaterial if renderer doesn't already have an active compatible material
+                        if (bodyRenderers[i].sharedMaterial == null ||
+                            (bodyRenderers[i].sharedMaterial.shader != null &&
+                             bodyRenderers[i].sharedMaterial.shader.name != "AnimeHillRacing/VehicleBodyBeltline" &&
+                             bodyRenderers[i].sharedMaterial.shader.name != "AnimeHillRacing/VehicleAnimatedLightSweep"))
+                        {
+                            bodyRenderers[i].sharedMaterial = beltlineMaterial;
+                        }
                     }
                 }
             }
@@ -156,6 +169,7 @@ namespace AnimeHillRacing.Vehicle
             bodyPropertyBlock.SetFloat("_ClipInvert", 0f); // Keep car body
 
             Sprite activeSprite = null;
+            Material activeMaterial = beltlineMaterial;
             Transform refTransform = transform;
 
             if (bodyRenderers != null)
@@ -168,6 +182,8 @@ namespace AnimeHillRacing.Vehicle
                         {
                             activeSprite = bodyRenderers[i].sprite;
                             refTransform = bodyRenderers[i].transform;
+                            if (bodyRenderers[i].sharedMaterial != null)
+                                activeMaterial = bodyRenderers[i].sharedMaterial;
                         }
                         bodyRenderers[i].SetPropertyBlock(bodyPropertyBlock);
                     }
@@ -195,7 +211,7 @@ namespace AnimeHillRacing.Vehicle
 
             SpriteRenderer renderer = piece.AddComponent<SpriteRenderer>();
             renderer.sprite = activeSprite;
-            renderer.sharedMaterial = beltlineMaterial;
+            renderer.sharedMaterial = activeMaterial;
             renderer.sortingOrder = 13;
 
             MaterialPropertyBlock canopyBlock = new MaterialPropertyBlock();

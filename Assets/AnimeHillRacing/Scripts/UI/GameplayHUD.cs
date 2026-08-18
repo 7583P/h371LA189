@@ -74,6 +74,58 @@ namespace AnimeHillRacing.UI
                 fuelEmptyOffsetMax.x = fuelFillRect.offsetMin.x;
             }
             debugPanel?.SetActive(false);
+            teleportModal = TeleportModalUI.Create(transform);
+            EnsureTeleportButton();
+        }
+
+        private TeleportModalUI teleportModal;
+
+        private void EnsureTeleportButton()
+        {
+            if (transform.Find("Teleport Button") != null) return;
+
+            GameObject buttonObj = new GameObject("Teleport Button", typeof(RectTransform), typeof(Image), typeof(Button));
+            buttonObj.transform.SetParent(transform, false);
+            RectTransform rect = buttonObj.GetComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0.5f, 1f);
+            rect.anchorMax = new Vector2(0.5f, 1f);
+            rect.pivot = new Vector2(0.5f, 1f);
+            rect.anchoredPosition = new Vector2(0f, -16f);
+            rect.sizeDelta = new Vector2(170f, 40f);
+
+            Image img = buttonObj.GetComponent<Image>();
+            img.color = new Color(0.08f, 0.10f, 0.22f, 0.88f);
+
+            Outline outline = buttonObj.AddComponent<Outline>();
+            outline.effectColor = new Color(0.2f, 0.85f, 1f, 0.9f);
+            outline.effectDistance = new Vector2(2f, -2f);
+
+            GameObject textObj = new GameObject("Label", typeof(RectTransform), typeof(Text));
+            textObj.transform.SetParent(buttonObj.transform, false);
+            RectTransform textRect = textObj.GetComponent<RectTransform>();
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.sizeDelta = Vector2.zero;
+
+            Text label = textObj.GetComponent<Text>();
+            Font defaultFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            if (defaultFont == null) defaultFont = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            if (distanceText != null) defaultFont = distanceText.font;
+            label.font = defaultFont;
+            label.fontSize = 16;
+            label.fontStyle = FontStyle.Bold;
+            label.alignment = TextAnchor.MiddleCenter;
+            label.color = new Color(1f, 0.95f, 0.35f, 1f);
+            label.text = "🚀 TELEPORT [T]";
+
+            Button btn = buttonObj.GetComponent<Button>();
+            btn.onClick.AddListener(OnTeleportClicked);
+        }
+
+        public void OnTeleportClicked()
+        {
+            if (teleportModal != null)
+                teleportModal.Toggle();
         }
 
         private static void RemoveDecorativeCardBackground(Text content, string expectedCardName)

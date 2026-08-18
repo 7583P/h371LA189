@@ -1,3 +1,4 @@
+using AnimeHillRacing.Core;
 using UnityEngine;
 
 namespace AnimeHillRacing.Vehicle
@@ -382,8 +383,10 @@ namespace AnimeHillRacing.Vehicle
                 return;
 
             float dragForce = definition.grip.aerodynamicDrag * speed * speed;
+            HcrGlitchState glitch = HcrGlitchSystem.Evaluate(body.position.x);
+            float extraResistance = glitch.isActive ? glitch.extraRollingResistance : 0f;
             float rollingForce = AnyWheelGrounded
-                ? definition.mass * Physics.gravity.magnitude * definition.grip.rollingResistance : 0f;
+                ? definition.mass * Physics.gravity.magnitude * (definition.grip.rollingResistance + extraResistance) : 0f;
             body.AddForce(-velocity.normalized * (dragForce + rollingForce), ForceMode.Force);
         }
 

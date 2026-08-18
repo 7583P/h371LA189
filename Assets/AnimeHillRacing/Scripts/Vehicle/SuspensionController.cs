@@ -1,3 +1,4 @@
+using AnimeHillRacing.Core;
 using UnityEngine;
 
 namespace AnimeHillRacing.Vehicle
@@ -483,6 +484,18 @@ namespace AnimeHillRacing.Vehicle
             // interpolated render pose. Mixing simulation-pose wheels with the interpolated chassis
             // creates a one-physics-step visual offset that grows with speed.
             Vector3 position = wheelBody.transform.position;
+
+            // Replicate Hill Climb Racing distance-based soft sinking when grounded
+            if (IsGrounded)
+            {
+                HcrGlitchState glitch = HcrGlitchSystem.Evaluate(position.x);
+                if (glitch.isActive && glitch.sinkDepth > 0f)
+                {
+                    Vector3 sinkDirection = contactNormal.sqrMagnitude > 0.001f ? contactNormal : Vector3.up;
+                    position -= sinkDirection * glitch.sinkDepth;
+                }
+            }
+
             position.z = wheelVisual.position.z;
             wheelVisual.position = position;
             wheelVisual.rotation = Quaternion.Euler(0f, 0f, wheelBody.transform.rotation.eulerAngles.z);

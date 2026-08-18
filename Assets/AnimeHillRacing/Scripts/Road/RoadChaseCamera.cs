@@ -1,3 +1,4 @@
+using AnimeHillRacing.Core;
 using AnimeHillRacing.Vehicle;
 using UnityEngine;
 
@@ -53,7 +54,15 @@ namespace AnimeHillRacing.Road
             Vector3 filteredTarget = new Vector3(target.transform.position.x, filteredTargetY,
                 target.transform.position.z);
             Vector3 desired = filteredTarget - stableForward * distance + Vector3.up * height;
-            transform.position = Vector3.SmoothDamp(transform.position, desired, ref velocity, smoothness);
+            Vector3 camPos = Vector3.SmoothDamp(transform.position, desired, ref velocity, smoothness);
+            HcrGlitchState glitch = HcrGlitchSystem.Evaluate(target.ProgressPosition);
+            if (glitch.isActive)
+            {
+                camPos.x = HcrGlitchSystem.Quantize(camPos.x, glitch.quantizationStep) + glitch.cameraJitter.x;
+                camPos.y = HcrGlitchSystem.Quantize(camPos.y, glitch.quantizationStep) + glitch.cameraJitter.y;
+                camPos.z = HcrGlitchSystem.Quantize(camPos.z, glitch.quantizationStep);
+            }
+            transform.position = camPos;
             float speed01 = Mathf.InverseLerp(0f, Mathf.Max(1f, target.Stats.topSpeedMps), Mathf.Abs(target.SpeedMps));
             Vector3 focus = filteredTarget + stableForward * (lookAhead + highSpeedLookAheadBonus * speed01);
             Vector3 horizontalLook = Vector3.ProjectOnPlane(focus - transform.position, Vector3.up);

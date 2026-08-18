@@ -1,3 +1,4 @@
+using AnimeHillRacing.Core;
 using AnimeHillRacing.Vehicle;
 using UnityEngine;
 
@@ -49,9 +50,19 @@ namespace AnimeHillRacing.CameraSystem
 
             float speed01 = Mathf.InverseLerp(0f, Mathf.Max(1f, target.Stats.topSpeedMps),
                 Mathf.Max(0f, target.SpeedMps));
-            progressAnchorX = Mathf.Max(progressAnchorX, target.transform.position.x);
-            if (progressAnchorX - target.transform.position.x > reverseTolerance)
-                progressAnchorX = target.transform.position.x + reverseTolerance;
+            if (Mathf.Abs(target.transform.position.x - progressAnchorX) > 50f)
+            {
+                progressAnchorX = target.transform.position.x;
+                smoothedTargetY = target.transform.position.y;
+                horizontalVelocity = 0f;
+                verticalVelocity = 0f;
+            }
+            else
+            {
+                progressAnchorX = Mathf.Max(progressAnchorX, target.transform.position.x);
+                if (progressAnchorX - target.transform.position.x > reverseTolerance)
+                    progressAnchorX = target.transform.position.x + reverseTolerance;
+            }
             smoothedTargetY = Mathf.SmoothDamp(smoothedTargetY, target.transform.position.y, ref verticalVelocity,
                 verticalSmooth);
             float visibleWidth = orthographicSize * 2f * cameraComponent.aspect;
@@ -61,7 +72,17 @@ namespace AnimeHillRacing.CameraSystem
                 1f - Mathf.Exp(-lookAheadResponse * Time.deltaTime));
             float desiredX = progressAnchorX + smoothedLookAhead;
             float x = Mathf.SmoothDamp(transform.position.x, desiredX, ref horizontalVelocity, horizontalSmooth);
-            transform.position = new Vector3(x, smoothedTargetY + cameraHeight, fixedZ);
+            float y = smoothedTargetY + cameraHeight;
+
+            // Replicate Hill Climb Racing float jitter and quantization at extreme distances
+            HcrGlitchState glitch = HcrGlitchSystem.Evaluate(target.transform.position.x);
+            if (glitch.isActive)
+            {
+                x = HcrGlitchSystem.Quantize(x, glitch.quantizationStep) + glitch.cameraJitter.x;
+                y = HcrGlitchSystem.Quantize(y, glitch.quantizationStep) + glitch.cameraJitter.y;
+            }
+
+            transform.position = new Vector3(x, y, fixedZ);
             transform.rotation = Quaternion.identity;
             cameraComponent.orthographicSize = orthographicSize;
         }

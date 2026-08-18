@@ -89,6 +89,46 @@ namespace AnimeHillRacing.Terrain
             }
         }
 
+        public void TeleportTo(float targetWorldX)
+        {
+            if (mapProfile == null || chunks == null) return;
+
+            float targetY = TerrainGenerator.SampleHeight(mapProfile, targetWorldX) + 2.5f;
+
+            if (vehicle != null)
+            {
+                Rigidbody rb = vehicle.Body;
+                if (rb != null)
+                {
+                    rb.position = new Vector3(targetWorldX, targetY, 0f);
+                    rb.linearVelocity = Vector3.zero;
+                    rb.angularVelocity = Vector3.zero;
+                }
+                vehicle.transform.position = new Vector3(targetWorldX, targetY, 0f);
+                vehicle.transform.rotation = Quaternion.identity;
+
+                FuelSystem fuel = vehicle.Fuel;
+                if (fuel != null)
+                    fuel.AddFuel(100f);
+            }
+
+            int newChunkIndex = Mathf.FloorToInt(targetWorldX / chunkLength);
+            currentChunkIndex = newChunkIndex;
+            minimumLoadedIndex = currentChunkIndex - chunksBehind;
+            maximumLoadedIndex = currentChunkIndex + chunksAhead;
+
+            for (int i = 0; i < chunks.Length; i++)
+            {
+                if (chunks[i] != null)
+                {
+                    GenerateChunk(chunks[i], minimumLoadedIndex + i);
+                }
+            }
+
+            RebuildAuthoritativeTerrainCollider();
+            RefreshLiquidHazards();
+        }
+
         private void RecycleOneForward()
         {
             TerrainChunk oldest = FindChunk(minimumLoadedIndex);

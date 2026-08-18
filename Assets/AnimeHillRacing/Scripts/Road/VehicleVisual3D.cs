@@ -85,6 +85,9 @@ namespace AnimeHillRacing.Road
                 bool isRight = localPosition.x > 0f;
                 int physicsWheelIndex = (isFront ? 2 : 0) + (isRight ? 1 : 0);
                 localPosition.y = -vehicle.GetWheelSuspensionLength(physicsWheelIndex);
+                HcrGlitchState glitch = HcrGlitchSystem.Evaluate(vehicle.ProgressPosition);
+                if (glitch.isActive && vehicle.AnyGrounded)
+                    localPosition.y -= glitch.sinkDepth;
                 wheels[i].localPosition = localPosition;
                 wheels[i].localRotation = Quaternion.AngleAxis(steering, Vector3.up) * baseRotations[i] * spin;
             }

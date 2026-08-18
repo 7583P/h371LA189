@@ -156,6 +156,9 @@ namespace AnimeHillRacing.Terrain
         [Header("Optional Rainstorm")]
         public RainstormSettings rainstorm = new RainstormSettings();
 
+        [Header("Retro Distance Glitch (Hill Climb Racing 32K Phase)")]
+        public HcrGlitchSettings hcrGlitch = new HcrGlitchSettings();
+
         public float EvaluateDifficulty(float distance)
         {
             float bandProgress = EvaluateDifficultyBands(distance);
@@ -172,6 +175,7 @@ namespace AnimeHillRacing.Terrain
             initialFuelGap = Mathf.Max(1f, initialFuelGap);
             liquidChallenges ??= new LiquidChallengeSettings();
             rainstorm ??= new RainstormSettings();
+            hcrGlitch ??= new HcrGlitchSettings();
             rainstorm.maximumParticles = Mathf.Clamp(rainstorm.maximumParticles, 100, 900);
             rainstorm.emissionRate = Mathf.Clamp(rainstorm.emissionRate, 20f, 300f);
             rainstorm.surfaceGripMultiplier = Mathf.Clamp(rainstorm.surfaceGripMultiplier, .25f, 1f);

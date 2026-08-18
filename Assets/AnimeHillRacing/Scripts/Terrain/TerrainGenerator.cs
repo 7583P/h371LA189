@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using AnimeHillRacing.Core;
 using UnityEngine;
 
 namespace AnimeHillRacing.Terrain
@@ -774,9 +775,21 @@ namespace AnimeHillRacing.Terrain
             for (int i = 0; i < sampleCount; i++)
             {
                 float localX = i * dx;
+                float worldX = chunkStartX + localX;
                 float textureU = profile.fitAuthoredTerrainTexture
-                    ? (chunkStartX + localX) / Mathf.Max(1f, profile.terrainTextureRepeatWidth)
+                    ? worldX / Mathf.Max(1f, profile.terrainTextureRepeatWidth)
                     : localX * .1f;
+
+                // Replicate Hill Climb Racing texture UV quantization glitch at extreme distances
+                if (profile != null && profile.hcrGlitch != null && profile.hcrGlitch.enabled && profile.hcrGlitch.enableTextureGlitch)
+                {
+                    HcrGlitchState glitch = HcrGlitchSystem.Evaluate(worldX, profile.hcrGlitch);
+                    if (glitch.isActive && glitch.quantizationStep > 0f)
+                    {
+                        float uvStep = Mathf.Max(0.0039f, glitch.quantizationStep * 15f);
+                        textureU = HcrGlitchSystem.Quantize(textureU, uvStep);
+                    }
+                }
                 float surfaceY = surfaceHeights[i];
                 float groundBottomY = surfaceY - groundVisualDepth;
                 float groundTopY = surfaceY + groundVisualRise;

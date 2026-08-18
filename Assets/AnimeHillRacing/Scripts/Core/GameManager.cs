@@ -117,6 +117,17 @@ namespace AnimeHillRacing.Core
         public float OutOfFuelRemaining => State == RunState.OutOfFuelPending
             ? Mathf.Max(0f, outOfFuelDeadline - Time.time) : 0f;
 
+        public void TeleportTo(float targetWorldX)
+        {
+            TerrainManager terrain = FindFirstObjectByType<TerrainManager>();
+            if (terrain != null)
+                terrain.TeleportTo(targetWorldX);
+
+            maxProgress = Mathf.Max(maxProgress, targetWorldX);
+            if (State == RunState.OutOfFuelPending || State == RunState.OutOfFuelFinal || State == RunState.Results)
+                State = RunState.Running;
+        }
+
         private void Awake()
         {
             Time.timeScale = 1f;

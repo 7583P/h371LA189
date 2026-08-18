@@ -375,7 +375,9 @@ namespace AnimeHillRacing.Road
                 body.AddForce(Vector3.down * tunedAcceleration, ForceMode.Acceleration);
             if (speedSquared < 0.001f) return;
             float drag = definition.grip.aerodynamicDrag * speedSquared;
-            float rolling = hasWheelContact ? definition.mass * Physics.gravity.magnitude * definition.grip.rollingResistance : 0f;
+            HcrGlitchState glitch = HcrGlitchSystem.Evaluate(trackDistance);
+            float extraResistance = glitch.isActive ? glitch.extraRollingResistance : 0f;
+            float rolling = hasWheelContact ? definition.mass * Physics.gravity.magnitude * (definition.grip.rollingResistance + extraResistance) : 0f;
             body.AddForce(-velocity.normalized * (drag + rolling), ForceMode.Force);
         }
 

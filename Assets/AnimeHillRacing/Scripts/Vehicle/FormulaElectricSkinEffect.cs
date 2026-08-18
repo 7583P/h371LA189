@@ -32,9 +32,20 @@ namespace AnimeHillRacing.Vehicle
             }
 
             Material material = GetMaterial();
-            if (material == null) return false;
+            if (material == null)
+            {
+                SetLayerActive(internalLayer, false);
+                SetLayerActive(externalLayer, false);
+                return false;
+            }
             VehicleDefinition.CustomizationOption maskSkin = definition.FindSkin(BodyMaskSkinId);
             Sprite bodyMask = maskSkin != null && maskSkin.sprite != null ? maskSkin.sprite : body.sprite;
+            if (bodyMask == null || bodyMask.texture == null)
+            {
+                SetLayerActive(internalLayer, false);
+                SetLayerActive(externalLayer, false);
+                return false;
+            }
             internalLayer = internalLayer != null ? internalLayer : CreateLayer(body, InternalName);
             externalLayer = externalLayer != null ? externalLayer : CreateLayer(body, ExternalName);
             ConfigureLayer(internalLayer, body, electricity, bodyMask, material, 0.82f, 0f, 1f);
@@ -55,8 +66,8 @@ namespace AnimeHillRacing.Vehicle
         private static Material GetMaterial()
         {
             if (sharedMaterial != null) return sharedMaterial;
-            Shader shader = Resources.Load<Shader>("FormulaElectricOverlay");
-            if (shader == null) shader = Shader.Find("AnimeHillRacing/FormulaElectricOverlay");
+            Shader shader = Shader.Find("AnimeHillRacing/FormulaElectricOverlay");
+            if (shader == null) shader = Resources.Load<Shader>("FormulaElectricOverlay");
             if (shader == null) return null;
             sharedMaterial = new Material(shader)
             {

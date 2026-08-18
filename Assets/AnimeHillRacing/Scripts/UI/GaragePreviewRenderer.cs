@@ -32,12 +32,22 @@ namespace AnimeHillRacing.UI
         public ArticulatedDriver2D Driver => driver;
         public Camera PreviewCamera => previewCamera;
 
-        private void Awake() => EnsureTexture();
+        private int warmUpFrames = 4;
+
+        private void Awake()
+        {
+            EnsureTexture();
+            if (body != null && body.sharedMaterial == null)
+                body.sharedMaterial = HillAdventurerSkinEffect.GetDefaultSpriteMaterial();
+        }
 
         private void OnEnable()
         {
+            warmUpFrames = 4;
             EnsureTexture();
-            if (!Application.isPlaying) RenderNow();
+            if (body != null && body.sharedMaterial == null)
+                body.sharedMaterial = HillAdventurerSkinEffect.GetDefaultSpriteMaterial();
+            RenderNow();
         }
 
         private void LateUpdate()
@@ -45,6 +55,12 @@ namespace AnimeHillRacing.UI
             if (targetImage == null) return;
             if (animateElectricSkin || animateHillAdventurerSkin)
             {
+                RenderNow();
+                return;
+            }
+            if (warmUpFrames > 0)
+            {
+                warmUpFrames--;
                 RenderNow();
                 return;
             }
@@ -154,6 +170,7 @@ namespace AnimeHillRacing.UI
                 wheelSortingOrder);
             ApplyWheel(frontWheel, wheelOption, vehicle.frontWheelVisualPosition, vehicle.FrontWheelDiameter,
                 wheelSortingOrder);
+            warmUpFrames = 3;
             RenderNow();
         }
 
@@ -162,6 +179,9 @@ namespace AnimeHillRacing.UI
         {
             previewCamera = camera; targetImage = image; previewRoot = root; body = bodyRenderer;
             rearWheel = rearWheelRenderer; frontWheel = frontWheelRenderer; driver = articulated;
+            if (body != null && body.sharedMaterial == null)
+                body.sharedMaterial = HillAdventurerSkinEffect.GetDefaultSpriteMaterial();
+            warmUpFrames = 3;
             EnsureTexture();
         }
 
@@ -171,6 +191,8 @@ namespace AnimeHillRacing.UI
             if (Application.isBatchMode || previewCamera == null || texture == null) return;
             previewCamera.enabled = false;
             previewCamera.Render();
+            if (targetImage != null && targetImage.texture != texture)
+                targetImage.texture = texture;
         }
 
         private void ApplyWheel(SpriteRenderer renderer, VehicleDefinition.CustomizationOption option,

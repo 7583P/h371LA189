@@ -15,8 +15,8 @@ namespace AnimeHillRacing.Vehicle
         public static Material GetSweepMaterial()
         {
             if (s_sharedSweepMaterial != null) return s_sharedSweepMaterial;
-            Shader shader = Resources.Load<Shader>("VehicleAnimatedLightSweep");
-            if (shader == null) shader = Shader.Find("AnimeHillRacing/VehicleAnimatedLightSweep");
+            Shader shader = Shader.Find("AnimeHillRacing/VehicleAnimatedLightSweep");
+            if (shader == null) shader = Resources.Load<Shader>("VehicleAnimatedLightSweep");
             if (shader != null)
             {
                 s_sharedSweepMaterial = new Material(shader)
@@ -31,9 +31,8 @@ namespace AnimeHillRacing.Vehicle
         public static Material GetBeltlineMaterial()
         {
             if (s_sharedBeltlineMaterial != null) return s_sharedBeltlineMaterial;
-            Shader shader = Resources.Load<Shader>("VehicleBeltlineCut");
-            if (shader == null) shader = Resources.Load<Shader>("VehicleBodyBeltline");
-            if (shader == null) shader = Shader.Find("AnimeHillRacing/VehicleBodyBeltline");
+            Shader shader = Shader.Find("AnimeHillRacing/VehicleBodyBeltline");
+            if (shader == null) shader = Resources.Load<Shader>("VehicleBeltlineCut");
             if (shader != null)
             {
                 s_sharedBeltlineMaterial = new Material(shader)
@@ -45,6 +44,23 @@ namespace AnimeHillRacing.Vehicle
             return s_sharedBeltlineMaterial;
         }
 
+        private static Material s_defaultSpriteMaterial;
+
+        public static Material GetDefaultSpriteMaterial()
+        {
+            if (s_defaultSpriteMaterial != null) return s_defaultSpriteMaterial;
+            Shader shader = Shader.Find("Sprites/Default");
+            if (shader != null)
+            {
+                s_defaultSpriteMaterial = new Material(shader)
+                {
+                    name = "Runtime_SpritesDefault",
+                    hideFlags = HideFlags.HideAndDontSave
+                };
+            }
+            return s_defaultSpriteMaterial;
+        }
+
         public static void Apply(SpriteRenderer body, VehicleDefinition definition, VehicleDefinition.CustomizationOption skin)
         {
             if (body == null) return;
@@ -52,31 +68,12 @@ namespace AnimeHillRacing.Vehicle
             if (IsHillAdventurer(definition, skin))
             {
                 Material sweepMat = GetSweepMaterial();
-                if (sweepMat != null)
-                {
-                    body.sharedMaterial = sweepMat;
-                }
-            }
-            else if (definition != null && definition.archetype == VehicleArchetype.Rally)
-            {
-                // Rally skins (Default, Neo Rally, etc.) use Beltline Cut material for roof damage
-                Material beltlineMat = GetBeltlineMaterial();
-                if (beltlineMat != null)
-                {
-                    body.sharedMaterial = beltlineMat;
-                }
+                body.sharedMaterial = sweepMat != null ? sweepMat : GetDefaultSpriteMaterial();
             }
             else
             {
-                // Non-Rally vehicles (such as Hill Adventurer 4x4, Formula, Jeep, SportBike)
-                // If renderer previously had a Rally sweep or beltline material (e.g. from Garage Preview reuse),
-                // reset to null so SpriteRenderer cleanly uses Sprites-Default without pink/magenta errors.
-                if (body.sharedMaterial != null && body.sharedMaterial.shader != null &&
-                    (body.sharedMaterial.shader.name == "AnimeHillRacing/VehicleAnimatedLightSweep" ||
-                     body.sharedMaterial.shader.name == "AnimeHillRacing/VehicleBodyBeltline"))
-                {
-                    body.sharedMaterial = null;
-                }
+                // Always assign the valid default sprite material so SpriteRenderer never has a null material (which renders as magenta/pink).
+                body.sharedMaterial = GetDefaultSpriteMaterial();
             }
         }
     }

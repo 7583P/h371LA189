@@ -15,6 +15,8 @@ Shader "AnimeHillRacing/VehicleBodyBeltline"
         _SeatMinU ("Seat Min U", Float) = 0.33
         _SeatMaxU ("Seat Max U", Float) = 0.40
         _SeatMaxV ("Seat Max V height", Float) = 0.85
+        [PerRendererData] _AlphaTex ("External Alpha", 2D) = "white" {}
+        [PerRendererData] _EnableExternalAlpha ("Enable External Alpha", Float) = 0
     }
 
     SubShader
@@ -38,7 +40,7 @@ Shader "AnimeHillRacing/VehicleBodyBeltline"
             CGPROGRAM
             #pragma vertex SpriteVert
             #pragma fragment SpriteFrag
-            #pragma target 2.0
+            #pragma target 3.0
             #pragma multi_compile_instancing
             #pragma multi_compile_local _ PIXELSNAP_ON
             #pragma multi_compile _ ETC1_EXTERNAL_ALPHA
@@ -63,6 +65,7 @@ Shader "AnimeHillRacing/VehicleBodyBeltline"
 
             sampler2D _MainTex;
             sampler2D _AlphaTex;
+            float _EnableExternalAlpha;
             fixed4 _Color;
             fixed4 _RendererColor;
             fixed4 _Flip;
@@ -83,10 +86,17 @@ Shader "AnimeHillRacing/VehicleBodyBeltline"
 
                 OUT.localPos = IN.vertex.xy;
 
-                IN.vertex.xy *= _Flip.xy;
+                float2 flip = _Flip.xy;
+                if (abs(flip.x) < 0.001) flip.x = 1.0;
+                if (abs(flip.y) < 0.001) flip.y = 1.0;
+                IN.vertex.xy *= flip;
+
                 OUT.vertex = UnityObjectToClipPos(IN.vertex);
                 OUT.texcoord = IN.texcoord;
-                OUT.color = IN.color * _Color * _RendererColor;
+
+                fixed4 rendColor = _RendererColor;
+                if (rendColor.a < 0.001 && dot(rendColor.rgb, rendColor.rgb) < 0.001) rendColor = fixed4(1,1,1,1);
+                OUT.color = IN.color * _Color * rendColor;
 
                 #ifdef PIXELSNAP_ON
                 OUT.vertex = UnityPixelSnap (OUT.vertex);

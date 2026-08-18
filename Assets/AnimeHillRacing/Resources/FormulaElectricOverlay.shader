@@ -32,7 +32,7 @@ Shader "AnimeHillRacing/FormulaElectricOverlay"
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
-            #pragma target 2.0
+            #pragma target 3.0
             #pragma multi_compile _ PIXELSNAP_ON
             #pragma multi_compile _ ETC1_EXTERNAL_ALPHA
             #include "UnityCG.cginc"
@@ -63,10 +63,18 @@ Shader "AnimeHillRacing/FormulaElectricOverlay"
             v2f vert(appdata_t input)
             {
                 v2f output;
-                input.vertex.xy *= _Flip.xy;
+                float2 flip = _Flip.xy;
+                if (abs(flip.x) < 0.001) flip.x = 1.0;
+                if (abs(flip.y) < 0.001) flip.y = 1.0;
+                input.vertex.xy *= flip;
+
                 output.vertex = UnityObjectToClipPos(input.vertex);
                 output.texcoord = input.texcoord;
-                output.color = input.color * _RendererColor;
+
+                fixed4 rendColor = _RendererColor;
+                if (rendColor.a < 0.001 && dot(rendColor.rgb, rendColor.rgb) < 0.001) rendColor = fixed4(1,1,1,1);
+                output.color = input.color * rendColor;
+
                 #ifdef PIXELSNAP_ON
                 output.vertex = UnityPixelSnap(output.vertex);
                 #endif

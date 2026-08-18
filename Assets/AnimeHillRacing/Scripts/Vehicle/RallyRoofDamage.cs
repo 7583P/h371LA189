@@ -78,9 +78,9 @@ namespace AnimeHillRacing.Vehicle
             {
                 if (s_sharedBeltlineMaterial == null)
                 {
-                    Shader shader = Resources.Load<Shader>("VehicleBeltlineCut");
+                    Shader shader = Shader.Find("AnimeHillRacing/VehicleBodyBeltline");
+                    if (shader == null) shader = Resources.Load<Shader>("VehicleBeltlineCut");
                     if (shader == null) shader = Resources.Load<Shader>("VehicleBodyBeltline");
-                    if (shader == null) shader = Shader.Find("AnimeHillRacing/VehicleBodyBeltline");
                     if (shader != null)
                         s_sharedBeltlineMaterial = new Material(shader)
                         {

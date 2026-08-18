@@ -422,7 +422,9 @@ namespace AnimeHillRacing.Terrain
             return false;
         }
 
-        public static bool IsLiquidGap(MapProfile profile, float worldX) =>
+        public static bool IsLiquidGap(MapProfile profile, float worldX) => false;
+
+        public static bool IsLiquidPool(MapProfile profile, float worldX) =>
             TryGetLiquidChallengeAtDistance(profile, worldX, out _);
 
         private static float SampleNeonHeight(MapProfile profile, float worldX)
@@ -461,22 +463,28 @@ namespace AnimeHillRacing.Terrain
                     float transitionRise = .5f * slope * settings.rampTransitionLength;
                     return baseline + transitionRise + slope * (distance - challenge.rampStart);
                 }
+                float depth = settings != null ? Mathf.Max(2f, settings.visualDepth) : 7f;
+                float bottomY = baseline - depth;
+                float exitRamp = Mathf.Clamp(settings != null ? settings.exitRampHorizontalLength : 12f, 4f, challenge.poolLength * 0.5f);
                 if (distance < challenge.poolEnd)
-                    return challenge.liquidSurfaceY;
+                {
+                    float exitStart = challenge.poolEnd - exitRamp;
+                    if (distance < exitStart)
+                        return bottomY;
+                    float exitT = Smooth01(Mathf.InverseLerp(exitStart, challenge.poolEnd, distance));
+                    return Mathf.Lerp(bottomY, baseline, exitT);
+                }
                 if (distance < challenge.landingEnd)
                 {
-                    float t = Smooth01(Mathf.InverseLerp(challenge.poolEnd, challenge.landingEnd, distance));
-                    return Mathf.Lerp(baseline + .70f, baseline - .35f, t);
+                    return baseline;
                 }
                 if (distance < challenge.recoveryEnd)
                 {
-                    float recoveryT = Smooth01(Mathf.InverseLerp(challenge.landingEnd,
-                        challenge.recoveryEnd, distance));
-                    return Mathf.Lerp(baseline - .35f, baseline - .55f, recoveryT);
+                    return baseline;
                 }
                 float rejoinT = Smooth01(Mathf.InverseLerp(challenge.recoveryEnd, rejoinEnd, distance));
                 float rejoinTarget = SampleNeonBaseHeight(profile, rejoinEnd);
-                return Mathf.Lerp(baseline - .55f, rejoinTarget, rejoinT);
+                return Mathf.Lerp(baseline, rejoinTarget, rejoinT);
             }
             return general;
         }

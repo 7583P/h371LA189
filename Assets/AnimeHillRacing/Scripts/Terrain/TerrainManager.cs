@@ -225,7 +225,7 @@ namespace AnimeHillRacing.Terrain
                 {
                     CoinRoutePoint point = route.GetPoint(group, pointIndex);
                     float x = group.anchorDistance + point.distanceOffset;
-                    if (x < start || x >= end || TerrainGenerator.IsLiquidGap(mapProfile, x) ||
+                    if (x < start || x >= end || TerrainGenerator.IsLiquidPool(mapProfile, x) ||
                         !chunk.TrySampleSurface(x, out float y, out _)) continue;
                     CoinPickup pickup = pickupPool.SpawnCoin(point.value,
                         new Vector3(x, y + route.surfaceOffset + point.heightOffset, 0f), x,
@@ -268,7 +268,7 @@ namespace AnimeHillRacing.Terrain
                 {
                     float offset = i == 0 ? 0f : i * step * side;
                     float candidateX = Mathf.Clamp(targetDistance + offset, chunkStart + 2f, chunkEnd - 2f);
-                    if (TerrainGenerator.IsLiquidGap(mapProfile, candidateX)) continue;
+                    if (TerrainGenerator.IsLiquidPool(mapProfile, candidateX)) continue;
                     if (!chunk.TrySampleSurface(candidateX, out float candidateY, out float slope))
                         continue;
                     float absoluteSlope = Mathf.Abs(slope);

@@ -98,15 +98,17 @@ namespace AnimeHillRacing.Terrain
             transform.position = new Vector3(layout.poolStart, surfaceY, 0f);
             volume.center = new Vector3(layout.poolLength * .5f, -settings.visualDepth * .5f, 0f);
             volume.size = new Vector3(layout.poolLength, settings.visualDepth, Mathf.Max(2f, trackWidth));
-            ConfigureBasin(profile, layout, trackWidth);
+            if (basinRenderer != null) basinRenderer.enabled = false;
+            if (basinCollider != null) basinCollider.enabled = false;
 
             liquidRenderer.sprite = settings.liquidSprite;
             liquidRenderer.drawMode = SpriteDrawMode.Tiled;
             liquidRenderer.tileMode = SpriteTileMode.Continuous;
             liquidRenderer.size = new Vector2(layout.poolLength, settings.visualDepth);
-            liquidRenderer.sortingOrder = settings.liquidSortingOrder;
+            liquidRenderer.sortingOrder = -1;
+            // Position behind the front track edge (Z > -trackWidth * 0.5f)
             liquidRenderer.transform.localPosition = new Vector3(layout.poolLength * .5f,
-                -settings.visualDepth * .5f, -trackWidth * .5f - .08f);
+                -settings.visualDepth * .5f, 0.05f);
             Color liquidColor = liquidRenderer.color;
             liquidColor.a = settings.normalAlpha;
             liquidRenderer.color = liquidColor;

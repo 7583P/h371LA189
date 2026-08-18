@@ -261,7 +261,7 @@ namespace AnimeHillRacing.Terrain
             if (profile.useCityHighwayTerrain) return SampleCityHighwayHeight(profile, worldX);
             if (profile.supportsLiquidExposure) return SampleNeonHeight(profile, worldX);
             float distance = Mathf.Max(0f, worldX);
-            float difficulty = profile.EvaluateDifficulty(distance);
+            float difficulty = profile.EvaluateDifficulty(distance * Core.GameManager.LogicalDistanceScale);
             float amplitudeProgress = profile.introductoryAmplitude +
                                       difficulty * (1f - profile.introductoryAmplitude);
             float featureLength = Mathf.Max(profile.sectionLength, profile.minimumValleyWidth,
@@ -269,7 +269,7 @@ namespace AnimeHillRacing.Terrain
             float featurePosition = worldX / featureLength;
             int featureIndex = Mathf.FloorToInt(featurePosition);
             float t = featurePosition - featureIndex;
-            float featureDifficulty = profile.EvaluateDifficulty(Mathf.Max(0f, (featureIndex + 0.5f) * featureLength));
+            float featureDifficulty = profile.EvaluateDifficulty(Mathf.Max(0f, (featureIndex + 0.5f) * featureLength) * Core.GameManager.LogicalDistanceScale);
             TerrainFeatureType feature = GetFeatureType(profile, featureIndex, featureDifficulty);
             uint seed = CombinedSeed(profile);
             float variant = Hash01(seed, featureIndex * 271 + 37);
@@ -292,7 +292,7 @@ namespace AnimeHillRacing.Terrain
             float featurePosition = distance / featureLength;
             int featureIndex = Mathf.FloorToInt(featurePosition);
             float t = featurePosition - featureIndex;
-            float difficulty = Mathf.Clamp01(profile.EvaluateDifficulty(distance));
+            float difficulty = Mathf.Clamp01(profile.EvaluateDifficulty(distance * Core.GameManager.LogicalDistanceScale));
             float amplitude = profile.amplitude * Mathf.Lerp(profile.introductoryAmplitude, 1f, difficulty);
             uint seed = CombinedSeed(profile);
             float p0 = CityAnchor(seed, featureIndex - 1);
@@ -362,18 +362,9 @@ namespace AnimeHillRacing.Terrain
             int count = LiquidChallengeSettings.RequiredChallengesPerCycle;
             int safeCycle = Mathf.Max(0, cycleIndex);
             int safeChallenge = Mathf.Clamp(challengeIndex, 0, count - 1);
-            uint seed = CombinedSeed(profile);
-            int variationHash = safeCycle * 7919 + safeChallenge * 104729;
-            // Structural positions repeat exactly. Only pool length varies deterministically by cycle.
-            float variation01 = Hash01(seed, variationHash + 53) * 2f - 1f;
-            float growth = settings != null
-                ? 1f + settings.cycleGrowth * safeCycle / (safeCycle + settings.growthSaturation)
-                : 1f;
-            float baseLength = settings != null ? settings.basePoolLength : 18f;
-            float variation = 1f + variation01 * (settings != null ? settings.deterministicLengthVariation : .12f);
-            float minimumLength = settings != null ? settings.minimumPoolLength : 16f;
-            float maximumLength = settings != null ? settings.maximumPoolLength : 34f;
-            float poolLength = Mathf.Clamp(baseLength * growth * variation, minimumLength, maximumLength);
+            // Liquid grows by exactly +7m per cycle completed (Cycle 0: Base, Cycle 1: Base+7m, Cycle 2: Base+14m, etc.)
+            float baseLength = settings != null ? settings.basePoolLength : 21f;
+            float poolLength = baseLength + (safeCycle * 7f);
             float runUpLength = settings != null ? settings.runUpLength : 42f;
             float transitionLength = settings != null ? settings.rampTransitionLength : 6f;
             float rampLength = settings != null ? settings.rampHorizontalLength : 12f;

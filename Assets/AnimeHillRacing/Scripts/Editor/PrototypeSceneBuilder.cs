@@ -680,17 +680,17 @@ namespace AnimeHillRacing.Editor
                 }
             }
             Object.DestroyImmediate(mesh);
-            float d100 = profile.EvaluateDifficulty(100f);
-            float d2000 = profile.EvaluateDifficulty(2000f);
-            float d5000 = profile.EvaluateDifficulty(5000f);
-            float d9000 = profile.EvaluateDifficulty(9000f);
-            float d10000 = profile.EvaluateDifficulty(10000f);
-            float d11000 = profile.EvaluateDifficulty(11000f);
-            bool progressive = d100 < d2000 && d2000 < d5000 && d5000 < d9000 && d9000 <= d10000;
-            bool capped = Mathf.Approximately(d10000, d11000);
-            Debug.Log($"Countryside 0-10km: maxSlope={maxSlope:0.0}° maxDelta={maxDelta:0.00}m; " +
-                      $"difficulty 100/2000/5000/9000/10000/11000m=" +
-                      $"{d100:0.00}/{d2000:0.00}/{d5000:0.00}/{d9000:0.00}/{d10000:0.00}/{d11000:0.00}; " +
+            float d150 = profile.EvaluateDifficulty(150f);
+            float d3000 = profile.EvaluateDifficulty(3000f);
+            float d7500 = profile.EvaluateDifficulty(7500f);
+            float d13500 = profile.EvaluateDifficulty(13500f);
+            float d15000 = profile.EvaluateDifficulty(15000f);
+            float d16500 = profile.EvaluateDifficulty(16500f);
+            bool progressive = d150 < d3000 && d3000 < d7500 && d7500 < d13500 && d13500 <= d15000;
+            bool capped = Mathf.Approximately(d15000, d16500);
+            Debug.Log($"Countryside 0-15km: maxSlope={maxSlope:0.0}° maxDelta={maxDelta:0.00}m; " +
+                      $"difficulty 150/3000/7500/13500/15000/16500m=" +
+                      $"{d150:0.00}/{d3000:0.00}/{d7500:0.00}/{d13500:0.00}/{d15000:0.00}/{d16500:0.00}; " +
                       $"progression={(progressive ? "OK" : "FAILED")}; cap={(capped ? "OK" : "FAILED")}.");
         }
 
@@ -1939,7 +1939,7 @@ namespace AnimeHillRacing.Editor
                 profile.supportsLiquidExposure || !profile.useSeparateTerrainMaterials ||
                 !profile.fitAuthoredTerrainTexture ||
                 Mathf.Abs(profile.terrainFillStartV - profile.terrainSurfaceContactV) > .0001f ||
-                profile.hardEndDistance != 5000f || environment == null || environment.sky != assets.citySky ||
+                profile.hardEndDistance != 7500f || environment == null || environment.sky != assets.citySky ||
                 environment.mountains != assets.cityBackground || environment.clouds == null ||
                 environment.clouds.Length != 15 || profile.terrainMaterial != assets.cityTerrainMaterial ||
                 profile.terrainEdgeMaterial != assets.cityGroundMaterial ||
@@ -1947,11 +1947,11 @@ namespace AnimeHillRacing.Editor
                 profile.terrainEdgeMaterial.mainTexture != assets.cityGround.texture)
                 throw new System.InvalidOperationException("City profile, visuals, clouds or terrain materials are incomplete.");
             float d0 = profile.EvaluateDifficulty(0f);
-            float d2500 = profile.EvaluateDifficulty(2500f);
-            float d5000 = profile.EvaluateDifficulty(5000f);
-            float d9000 = profile.EvaluateDifficulty(9000f);
-            if (!(d0 < d2500 && d2500 < d5000) || !Mathf.Approximately(d5000, d9000))
-                throw new System.InvalidOperationException("City difficulty must grow through 5000 m and remain capped.");
+            float d3750 = profile.EvaluateDifficulty(3750f);
+            float d7500 = profile.EvaluateDifficulty(7500f);
+            float d12000 = profile.EvaluateDifficulty(12000f);
+            if (!(d0 < d3750 && d3750 < d7500) || !Mathf.Approximately(d7500, d12000))
+                throw new System.InvalidOperationException("City difficulty must grow through 7500 m and remain capped.");
             float maximumRawSlope = 0f;
             float maximumRawSlopeDistance = 0f;
             for (float x = 0f; x <= 8000f; x += 1f)
@@ -2459,8 +2459,8 @@ namespace AnimeHillRacing.Editor
             }
             Object.DestroyImmediate(mesh);
             Object.DestroyImmediate(colliderMesh);
-            float difficultyAtPeak = profile.EvaluateDifficulty(10000f);
-            float difficultyAfterPeak = profile.EvaluateDifficulty(11000f);
+            float difficultyAtPeak = profile.EvaluateDifficulty(15000f);
+            float difficultyAfterPeak = profile.EvaluateDifficulty(16500f);
             if (maximumSlope > profile.maxSlopeAngle + .25f || maximumHeight - minimumHeight < 25f ||
                 directionChanges < 60 || !Mathf.Approximately(difficultyAtPeak, 1f) ||
                 !Mathf.Approximately(difficultyAtPeak, difficultyAfterPeak) ||
@@ -2468,10 +2468,10 @@ namespace AnimeHillRacing.Editor
                 throw new System.InvalidOperationException(
                     $"Countryside movement invalid: range={minimumHeight:0.0}..{maximumHeight:0.0}m, " +
                     $"slope={maximumSlope:0.0}, directionChanges={directionChanges}, " +
-                    $"difficulty10km={difficultyAtPeak:0.00}, alignment={maximumAlignmentError:0.000000}m.");
+                    $"difficulty15km={difficultyAtPeak:0.00}, alignment={maximumAlignmentError:0.000000}m.");
             Debug.Log($"COUNTRYSIDE_TERRAIN_PATTERN: range {minimumHeight:0.0}..{maximumHeight:0.0}m, " +
                        $"max slope {maximumSlope:0.0} degrees, {directionChanges} climb/descent changes, " +
-                       $"difficulty peaks at 10000m; Ground/collider error {maximumAlignmentError:0.000000}m, " +
+                       $"difficulty peaks at 15000m; Ground/collider error {maximumAlignmentError:0.000000}m, " +
                        $"Ground band {minimumGroundDepth:0.000}m, Terrain fill >= {minimumTerrainDepth:0.0}m.");
         }
 
@@ -5098,10 +5098,10 @@ namespace AnimeHillRacing.Editor
             assets.countryside.amplitude = 20f;
             assets.countryside.frequency = 0.019f;
             assets.countryside.introductoryAmplitude = 0.12f;
-            assets.countryside.introEndDistance = 500f;
-            assets.countryside.easyEndDistance = 2000f;
-            assets.countryside.normalEndDistance = 4000f;
-            assets.countryside.hardEndDistance = 10000f;
+            assets.countryside.introEndDistance = 750f;
+            assets.countryside.easyEndDistance = 3000f;
+            assets.countryside.normalEndDistance = 6000f;
+            assets.countryside.hardEndDistance = 15000f;
             assets.countryside.difficultyCurve = new AnimationCurve(
                 new Keyframe(0f, 0f), new Keyframe(0.25f, 0.22f), new Keyframe(0.60f, 0.55f),
                 new Keyframe(0.80f, 0.82f), new Keyframe(1f, 1f));
@@ -5191,10 +5191,10 @@ namespace AnimeHillRacing.Editor
             assets.city.cityFeatureLength = 48f;
             assets.city.cityMiniRhythmStrength = .16f;
             assets.city.introductoryAmplitude = .38f;
-            assets.city.introEndDistance = 350f;
-            assets.city.easyEndDistance = 1500f;
-            assets.city.normalEndDistance = 3300f;
-            assets.city.hardEndDistance = 5000f;
+            assets.city.introEndDistance = 525f;
+            assets.city.easyEndDistance = 2250f;
+            assets.city.normalEndDistance = 4950f;
+            assets.city.hardEndDistance = 7500f;
             assets.city.difficultyCurve = new AnimationCurve(
                 new Keyframe(0f, 0f), new Keyframe(.25f, .22f),
                 new Keyframe(.60f, .62f), new Keyframe(1f, 1f));
@@ -5262,10 +5262,10 @@ namespace AnimeHillRacing.Editor
             assets.neonCity.neonAmplitudeSaturationCycles = 2f;
             assets.neonCity.frequency = .0105f;
             assets.neonCity.introductoryAmplitude = .45f;
-            assets.neonCity.introEndDistance = 500f;
-            assets.neonCity.easyEndDistance = 6000f;
-            assets.neonCity.normalEndDistance = 12000f;
-            assets.neonCity.hardEndDistance = 24000f;
+            assets.neonCity.introEndDistance = 750f;
+            assets.neonCity.easyEndDistance = 9000f;
+            assets.neonCity.normalEndDistance = 18000f;
+            assets.neonCity.hardEndDistance = 36000f;
             assets.neonCity.maximumDifficulty = 1f;
             assets.neonCity.sectionLength = 70f;
             assets.neonCity.recoveryEverySections = 4;
@@ -5351,10 +5351,10 @@ namespace AnimeHillRacing.Editor
             assets.countrysideRoad.roadWidth = 12f;
             assets.countrysideRoad.curveIntensity = 10f;
             assets.countrysideRoad.elevationIntensity = 8.5f;
-            assets.countrysideRoad.introEndDistance = 150f;
-            assets.countrysideRoad.easyEndDistance = 500f;
-            assets.countrysideRoad.normalEndDistance = 1200f;
-            assets.countrysideRoad.hardEndDistance = 2500f;
+            assets.countrysideRoad.introEndDistance = 225f;
+            assets.countrysideRoad.easyEndDistance = 750f;
+            assets.countrysideRoad.normalEndDistance = 1800f;
+            assets.countrysideRoad.hardEndDistance = 3750f;
             assets.countrysideRoad.difficultyCurve = new AnimationCurve(
                 new Keyframe(0f, 0.15f), new Keyframe(0.2f, 0.3f),
                 new Keyframe(0.5f, 0.65f), new Keyframe(1f, 1f));

@@ -88,10 +88,10 @@ namespace AnimeHillRacing.Editor
             profile.hillSize = .82f;
             profile.useCityHighwayTerrain = false;
             profile.introductoryAmplitude = .34f;
-            profile.introEndDistance = 260f;
-            profile.easyEndDistance = 1050f;
-            profile.normalEndDistance = 2400f;
-            profile.hardEndDistance = 4200f;
+            profile.introEndDistance = 390f;
+            profile.easyEndDistance = 1575f;
+            profile.normalEndDistance = 3600f;
+            profile.hardEndDistance = 6300f;
             profile.difficultyCurve = new AnimationCurve(
                 new Keyframe(0f, 0f), new Keyframe(.25f, .34f),
                 new Keyframe(.60f, .78f), new Keyframe(1f, 1.2f));

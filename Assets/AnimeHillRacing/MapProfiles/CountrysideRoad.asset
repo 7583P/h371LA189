@@ -17,10 +17,10 @@ MonoBehaviour:
   supportedGameMode: 1
   seed: 18472
   coinRoute: {fileID: 11400000, guid: 2d8f01a9a8d293943a19b887710af661, type: 2}
-  introEndDistance: 150
-  easyEndDistance: 500
-  normalEndDistance: 1200
-  hardEndDistance: 2500
+  introEndDistance: 225
+  easyEndDistance: 750
+  normalEndDistance: 1800
+  hardEndDistance: 3750
   roadWidth: 12
   chunkLength: 100
   samplesPerChunk: 32

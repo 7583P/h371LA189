@@ -32,7 +32,7 @@ namespace AnimeHillRacing.Vehicle
         public bool IsShifting => shiftRemaining > 0f;
         public float TorqueScale => IsShifting ? shiftTorqueScale : 1f;
         public ShiftQuality LastShiftQuality { get; private set; }
-        public string ShiftStatus => statusRemaining > 0f && LastShiftQuality != ShiftQuality.None
+        public string ShiftStatus => statusRemaining > 0f && LastShiftQuality != ShiftQuality.None && LastShiftQuality != ShiftQuality.Auto
             ? LastShiftQuality.ToString().ToUpperInvariant()
             : string.Empty;
 

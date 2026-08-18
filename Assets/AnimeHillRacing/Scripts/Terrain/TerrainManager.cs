@@ -34,7 +34,7 @@ namespace AnimeHillRacing.Terrain
         public int CurrentChunkIndex => currentChunkIndex;
         public MapProfile ActiveProfile => mapProfile;
         public float CurrentDifficulty => mapProfile != null && vehicle != null
-            ? mapProfile.EvaluateDifficulty(Mathf.Max(0f, vehicle.transform.position.x))
+            ? mapProfile.EvaluateDifficulty(Mathf.Max(0f, vehicle.transform.position.x * GameManager.LogicalDistanceScale))
             : 0f;
         public TerrainSectionKind CurrentSection => mapProfile != null && vehicle != null
             ? TerrainGenerator.GetSectionKind(mapProfile,

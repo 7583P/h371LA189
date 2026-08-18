@@ -18,7 +18,7 @@ namespace AnimeHillRacing.Road
         private readonly ProgressiveFuelSequence fuelSequence = new ProgressiveFuelSequence();
         public int CurrentChunkIndex { get; private set; }
         public float CurrentDifficulty => profile != null && vehicle != null
-            ? profile.Difficulty(vehicle.ProgressPosition)
+            ? profile.Difficulty(vehicle.ProgressPosition * Core.GameManager.LogicalDistanceScale)
             : 0f;
         public int Seed => profile != null ? profile.seed : 0;
         public float CurrentFuelSpacing => fuelSequence.CurrentSpacing;

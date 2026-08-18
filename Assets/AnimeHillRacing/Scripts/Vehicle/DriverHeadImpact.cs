@@ -1,3 +1,4 @@
+using AnimeHillRacing.Pickups;
 using UnityEngine;
 
 namespace AnimeHillRacing.Vehicle
@@ -20,9 +21,19 @@ namespace AnimeHillRacing.Vehicle
 
         private void OnTriggerEnter(Collider other)
         {
+            ProcessImpact(other);
+        }
+
+        private void OnTriggerStay(Collider other)
+        {
+            ProcessImpact(other);
+        }
+
+        private void ProcessImpact(Collider other)
+        {
             Transform root = vehicleBody != null ? vehicleBody.transform : transform.root;
             if (!GroundContactFilter.IsGround(other, root) || Time.time < nextAllowedImpact) return;
-            nextAllowedImpact = Time.time + .08f;
+            nextAllowedImpact = Time.time + .10f;
 
             float speed = vehicleBody != null ? vehicleBody.GetPointVelocity(transform.position).magnitude : 3f;
             driver?.TriggerHeadImpact(speed);
@@ -36,6 +47,9 @@ namespace AnimeHillRacing.Vehicle
 
             // Head exposed (roof broken on Rally, or open-cockpit vehicle) -> lethal head impact
             crashDetector ??= GetComponentInParent<CrashDetector>();
+            if (crashDetector == null)
+                crashDetector = FindFirstObjectByType<CrashDetector>();
+
             crashDetector?.NotifyDriverHeadGroundImpact();
         }
     }
@@ -44,13 +58,33 @@ namespace AnimeHillRacing.Vehicle
     {
         public static bool IsGround(Collider other, Transform vehicleRoot)
         {
-            if (other == null || other.isTrigger ||
-                (vehicleRoot != null && other.transform.IsChildOf(vehicleRoot))) return false;
+            if (other == null || other.isTrigger) return false;
+
+            // Ignore ANY collider belonging to the vehicle hierarchy (chassis, wheels, scarf, accessories, etc.)
+            if (vehicleRoot != null)
+            {
+                Transform vehicleTop = vehicleRoot.root;
+                if (other.transform.IsChildOf(vehicleTop) || other.transform.root == vehicleTop)
+                    return false;
+
+                if (other.attachedRigidbody != null && other.attachedRigidbody.transform.IsChildOf(vehicleTop))
+                    return false;
+            }
+
+            // Ignore pickups, collectibles, triggers
+            if (other.GetComponent<PickupBase>() != null)
+                return false;
+
+            string objName = other.name.ToLowerInvariant();
+            if (objName.Contains("coin") || objName.Contains("fuel") || objName.Contains("chest") || objName.Contains("pickup"))
+                return false;
+
             string layer = LayerMask.LayerToName(other.gameObject.layer);
             if (layer == "Terrain" || layer == "Ground") return true;
-            string name = other.name.ToLowerInvariant();
-            return name.Contains("terrain") || name.Contains("ground") || name.Contains("road") ||
-                   name.Contains("track") || name.Contains("shortcut") || name.Contains("ramp");
+
+            return objName.Contains("terrain") || objName.Contains("ground") || objName.Contains("road") ||
+                   objName.Contains("track") || objName.Contains("shortcut") || objName.Contains("ramp") ||
+                   objName.Contains("surface") || objName.Contains("chunk");
         }
     }
 }

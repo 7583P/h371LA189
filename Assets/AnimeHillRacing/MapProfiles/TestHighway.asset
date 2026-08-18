@@ -16,10 +16,10 @@ MonoBehaviour:
   displayName: TEST HIGHWAY
   supportedGameMode: 1
   seed: 28191
-  introEndDistance: 150
-  easyEndDistance: 500
-  normalEndDistance: 1200
-  hardEndDistance: 2500
+  introEndDistance: 225
+  easyEndDistance: 750
+  normalEndDistance: 1800
+  hardEndDistance: 3750
   roadWidth: 10
   chunkLength: 100
   samplesPerChunk: 32

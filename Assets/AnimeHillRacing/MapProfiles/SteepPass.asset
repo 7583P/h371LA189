@@ -20,8 +20,8 @@ MonoBehaviour:
   frequency: 0.018
   smoothing: 0.65
   hillSize: 0.9
-  difficultyStartDistance: 500
-  difficultyMaxDistance: 8000
+  difficultyStartDistance: 750
+  difficultyMaxDistance: 12000
   difficultyCurve:
     serializedVersion: 2
     m_Curve:

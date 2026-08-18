@@ -15,6 +15,7 @@ namespace AnimeHillRacing.Vehicle
         public abstract float SpeedMps { get; }
         public float SpeedKmh => SpeedMps * 3.6f;
         public abstract float ProgressPosition { get; }
+        public virtual float LogicalDistance => ProgressPosition * Core.GameManager.LogicalDistanceScale;
         public abstract float FuelNormalized { get; }
         public abstract float MotorTorque { get; }
         public abstract float AppliedThrottle { get; }

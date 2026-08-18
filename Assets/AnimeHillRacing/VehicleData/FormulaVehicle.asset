@@ -85,8 +85,8 @@ MonoBehaviour:
     visualOffset: {x: 0, y: 0}
   electricSkinOverlay: {fileID: 21300000, guid: e91b5cf2d3564b2fbc32e54d21f25b04, type: 3}
   driverPose:
-    rootPosition: {x: 0.16, y: 0.18}
-    rootScale: 0.86
+    rootPosition: {x: 0.16, y: 0.22}
+    rootScale: 0.95
     torso:
       position: {x: -0.02, y: 0.12}
       rotation: -8

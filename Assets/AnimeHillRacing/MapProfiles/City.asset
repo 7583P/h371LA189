@@ -17,10 +17,10 @@ MonoBehaviour:
   supportedGameMode: 0
   seed: 4152026
   coinRoute: {fileID: 11400000, guid: 2d8f01a9a8d293943a19b887710af661, type: 2}
-  introEndDistance: 350
-  easyEndDistance: 1500
-  normalEndDistance: 3300
-  hardEndDistance: 5000
+  introEndDistance: 525
+  easyEndDistance: 2250
+  normalEndDistance: 4950
+  hardEndDistance: 7500
   elevationProfile: {fileID: 0}
   baseHeight: 0
   amplitude: 18

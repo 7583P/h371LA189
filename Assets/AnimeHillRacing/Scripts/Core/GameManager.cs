@@ -86,9 +86,11 @@ namespace AnimeHillRacing.Core
         private Quaternion previousStuntRotation;
         private bool stuntRotationInitialized;
 
+        public const float LogicalDistanceScale = 1.5f;
+
         public RunState State { get; private set; } = RunState.Ready;
         public RunEndReason EndReason { get; private set; }
-        public float Distance => Mathf.Max(0f, maxProgress - startProgress);
+        public float Distance => Mathf.Max(0f, (maxProgress - startProgress) * LogicalDistanceScale);
         public float BestDistance { get; private set; }
         public float MaxSpeedKmh => maxSpeedKmh;
         public int RunCoins => runCoins;

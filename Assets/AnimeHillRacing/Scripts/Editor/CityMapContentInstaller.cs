@@ -107,10 +107,10 @@ namespace AnimeHillRacing.Editor
             profile.cityFeatureLength = 48f;
             profile.cityMiniRhythmStrength = .16f;
             profile.introductoryAmplitude = .38f;
-            profile.introEndDistance = 350f;
-            profile.easyEndDistance = 1500f;
-            profile.normalEndDistance = 3300f;
-            profile.hardEndDistance = 5000f;
+            profile.introEndDistance = 525f;
+            profile.easyEndDistance = 2250f;
+            profile.normalEndDistance = 4950f;
+            profile.hardEndDistance = 7500f;
             profile.difficultyCurve = new AnimationCurve(
                 new Keyframe(0f, 0f), new Keyframe(.25f, .22f),
                 new Keyframe(.60f, .62f), new Keyframe(1f, 1f));
@@ -172,12 +172,12 @@ namespace AnimeHillRacing.Editor
             GameCatalog catalog)
         {
             float d0 = profile.EvaluateDifficulty(0f);
-            float d2500 = profile.EvaluateDifficulty(2500f);
-            float d5000 = profile.EvaluateDifficulty(5000f);
-            float d9000 = profile.EvaluateDifficulty(9000f);
+            float d3750 = profile.EvaluateDifficulty(3750f);
+            float d7500 = profile.EvaluateDifficulty(7500f);
+            float d12000 = profile.EvaluateDifficulty(12000f);
             if (!profile.useCityHighwayTerrain || profile.supportsLiquidExposure ||
                 Mathf.Abs(profile.terrainFillStartV - profile.terrainSurfaceContactV) > .0001f ||
-                !(d0 < d2500 && d2500 < d5000) || !Mathf.Approximately(d5000, d9000) ||
+                !(d0 < d3750 && d3750 < d7500) || !Mathf.Approximately(d7500, d12000) ||
                 environment.clouds == null || environment.clouds.Length != 15 ||
                 catalog.FindMap("city", GameModeType.Adventure2_5D) != profile)
                 throw new System.InvalidOperationException("City integration validation failed.");

@@ -11,9 +11,11 @@ namespace AnimeHillRacing.UI
         private GameObject modalContainer;
         private Text distanceDisplay;
         private Text phaseDescriptionText;
+        private Slider distanceSlider;
         private float selectedDistance = 32768f;
         private bool isOpen;
         private float previousTimeScale = 1f;
+        private bool isUpdatingSliderInternally;
 
         public bool IsOpen => isOpen;
 
@@ -44,7 +46,10 @@ namespace AnimeHillRacing.UI
 
         private void BuildUI()
         {
-            // Fullscreen Dimmed background blocker
+            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            if (font == null) font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+
+            // Fullscreen Dimmed Background Blocker
             modalContainer = new GameObject("Modal Container", typeof(RectTransform), typeof(Image));
             modalContainer.transform.SetParent(transform, false);
             RectTransform blockerRect = modalContainer.GetComponent<RectTransform>();
@@ -54,10 +59,10 @@ namespace AnimeHillRacing.UI
             blockerRect.offsetMax = Vector2.zero;
 
             Image blockerImage = modalContainer.GetComponent<Image>();
-            blockerImage.color = new Color(0f, 0f, 0.05f, 0.78f);
+            blockerImage.color = new Color(0f, 0f, 0.05f, 0.82f);
             blockerImage.raycastTarget = true;
 
-            // Window Card
+            // Window Card (Glassmorphic Cyber-Neon)
             GameObject window = new GameObject("Window", typeof(RectTransform), typeof(Image));
             window.transform.SetParent(modalContainer.transform, false);
             RectTransform winRect = window.GetComponent<RectTransform>();
@@ -65,93 +70,168 @@ namespace AnimeHillRacing.UI
             winRect.anchorMax = new Vector2(0.5f, 0.5f);
             winRect.pivot = new Vector2(0.5f, 0.5f);
             winRect.anchoredPosition = Vector2.zero;
-            winRect.sizeDelta = new Vector2(500f, 520f);
+            winRect.sizeDelta = new Vector2(520f, 560f);
 
             Image winImg = window.GetComponent<Image>();
-            winImg.color = new Color(0.07f, 0.08f, 0.17f, 0.98f);
+            winImg.color = new Color(0.06f, 0.08f, 0.16f, 0.98f);
             winImg.raycastTarget = true;
 
             Outline winOutline = window.AddComponent<Outline>();
             winOutline.effectColor = new Color(0.2f, 0.85f, 1f, 0.95f);
-            winOutline.effectDistance = new Vector2(2.5f, -2.5f);
-
-            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            if (font == null) font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+            winOutline.effectDistance = new Vector2(3f, -3f);
 
             // Header Title
-            CreateText(window.transform, "Title", "🚀 MENU DE TELETRANSPORTE", 21, FontStyle.Bold,
-                new Vector2(0f, 225f), new Vector2(460f, 38f), new Color(0.3f, 0.9f, 1f, 1f), font);
+            CreateText(window.transform, "Title", "🚀 MENU DE TELETRANSPORTE", 22, FontStyle.Bold,
+                new Vector2(0f, 245f), new Vector2(480f, 40f), new Color(0.3f, 0.9f, 1f, 1f), font);
 
             // Target Distance Card
             GameObject displayCard = new GameObject("Display Card", typeof(RectTransform), typeof(Image));
             displayCard.transform.SetParent(window.transform, false);
             RectTransform cardRect = displayCard.GetComponent<RectTransform>();
-            cardRect.anchoredPosition = new Vector2(0f, 160f);
-            cardRect.sizeDelta = new Vector2(440f, 70f);
+            cardRect.anchoredPosition = new Vector2(0f, 180f);
+            cardRect.sizeDelta = new Vector2(460f, 75f);
             Image cardImg = displayCard.GetComponent<Image>();
-            cardImg.color = new Color(0.03f, 0.04f, 0.10f, 0.98f);
+            cardImg.color = new Color(0.02f, 0.03f, 0.08f, 0.98f);
             cardImg.raycastTarget = false;
 
             Outline cardOutline = displayCard.AddComponent<Outline>();
-            cardOutline.effectColor = new Color(1f, 0.85f, 0.2f, 0.85f);
-            cardOutline.effectDistance = new Vector2(1.5f, -1.5f);
+            cardOutline.effectColor = new Color(1f, 0.85f, 0.2f, 0.9f);
+            cardOutline.effectDistance = new Vector2(2f, -2f);
 
-            distanceDisplay = CreateText(displayCard.transform, "Distance Text", "32,768 m", 28, FontStyle.Bold,
-                new Vector2(0f, 10f), new Vector2(420f, 36f), new Color(1f, 0.92f, 0.2f, 1f), font);
+            distanceDisplay = CreateText(displayCard.transform, "Distance Text", "32,768 m", 30, FontStyle.Bold,
+                new Vector2(0f, 12f), new Vector2(440f, 38f), new Color(1f, 0.94f, 0.25f, 1f), font);
 
-            phaseDescriptionText = CreateText(displayCard.transform, "Phase Text", "Fase 1 (32K): Pre-Glitch & Hundimiento leve", 12, FontStyle.Italic,
-                new Vector2(0f, -18f), new Vector2(420f, 22f), new Color(0.7f, 0.85f, 1f, 0.9f), font);
+            phaseDescriptionText = CreateText(displayCard.transform, "Phase Text", "Fase 1 (32K): Pre-Glitch & Hundimiento leve (3cm)", 12, FontStyle.Italic,
+                new Vector2(0f, -20f), new Vector2(440f, 22f), new Color(0.7f, 0.88f, 1f, 0.95f), font);
 
-            // Fine Adjustment Buttons (+500m / -500m / +5000m / -5000m)
-            CreateButton(window.transform, "BtnMinus5000", "-5,000m", new Vector2(-165f, 95f), new Vector2(100f, 38f),
-                new Color(0.18f, 0.22f, 0.38f, 0.95f), font, () => AddDistance(-5000f));
-            CreateButton(window.transform, "BtnMinus500", "-500m", new Vector2(-55f, 95f), new Vector2(100f, 38f),
-                new Color(0.24f, 0.30f, 0.52f, 0.95f), font, () => AddDistance(-500f));
-            CreateButton(window.transform, "BtnPlus500", "+500m", new Vector2(55f, 95f), new Vector2(100f, 38f),
-                new Color(0.15f, 0.52f, 0.38f, 0.95f), font, () => AddDistance(500f));
-            CreateButton(window.transform, "BtnPlus5000", "+5,000m", new Vector2(165f, 95f), new Vector2(100f, 38f),
-                new Color(0.18f, 0.62f, 0.44f, 0.95f), font, () => AddDistance(5000f));
+            // Touch Slider for smooth finger dragging from 0m to 150,000m
+            CreateTouchSlider(window.transform, new Vector2(0f, 115f), new Vector2(450f, 30f), font);
+
+            // Tactile Fine Adjustment Buttons (+500m / -500m / +5000m / -5000m)
+            CreateButton(window.transform, "BtnMinus5000", "-5,000m", new Vector2(-170f, 62f), new Vector2(104f, 44f),
+                new Color(0.18f, 0.22f, 0.40f, 0.95f), font, () => AddDistance(-5000f), 15);
+            CreateButton(window.transform, "BtnMinus500", "-500m", new Vector2(-58f, 62f), new Vector2(104f, 44f),
+                new Color(0.24f, 0.32f, 0.58f, 0.95f), font, () => AddDistance(-500f), 16);
+            CreateButton(window.transform, "BtnPlus500", "+500m", new Vector2(58f, 62f), new Vector2(104f, 44f),
+                new Color(0.14f, 0.56f, 0.40f, 0.98f), font, () => AddDistance(500f), 16);
+            CreateButton(window.transform, "BtnPlus5000", "+5,000m", new Vector2(170f, 62f), new Vector2(104f, 44f),
+                new Color(0.16f, 0.68f, 0.48f, 0.98f), font, () => AddDistance(5000f), 15);
 
             // Section Label
-            CreateText(window.transform, "PresetLabel", "PREAJUSTES RAPIDOS (TECLAS 1 AL 6):", 12, FontStyle.Bold,
-                new Vector2(0f, 52f), new Vector2(440f, 20f), new Color(0.8f, 0.85f, 0.95f, 0.9f), font);
+            CreateText(window.transform, "PresetLabel", "PREAJUSTES DIRECTOS (TOCA PARA ELEGIR):", 12, FontStyle.Bold,
+                new Vector2(0f, 18f), new Vector2(460f, 20f), new Color(0.85f, 0.9f, 1f, 0.95f), font);
 
             // Quick Preset Grid - Row 1
             float[] presetRow1 = { 0f, 1000f, 10000f };
-            string[] labelsRow1 = { "1.  0 m", "2.  1,000 m", "3.  10,000 m" };
+            string[] labelsRow1 = { "0 m", "1,000 m", "10,000 m" };
             for (int i = 0; i < 3; i++)
             {
                 float d = presetRow1[i];
                 CreateButton(window.transform, $"Preset_{d}", labelsRow1[i],
-                    new Vector2(-150f + i * 150f, 18f), new Vector2(140f, 34f),
-                    new Color(0.12f, 0.16f, 0.30f, 0.95f), font, () => SetDistance(d));
+                    new Vector2(-155f + i * 155f, -18f), new Vector2(146f, 40f),
+                    new Color(0.14f, 0.18f, 0.34f, 0.95f), font, () => SetDistance(d), 15);
             }
 
             // Quick Preset Grid - Row 2 (Glitch Phases)
             float[] presetRow2 = { 32768f, 65536f, 131072f };
-            string[] labelsRow2 = { "4. 32,768 m (32K)", "5. 65,536 m (65K)", "6. 131,072 m (131K)" };
+            string[] labelsRow2 = { "32,768 m (32K)", "65,536 m (65K)", "131,072 m (131K)" };
             for (int i = 0; i < 3; i++)
             {
                 float d = presetRow2[i];
                 CreateButton(window.transform, $"Preset_{d}", labelsRow2[i],
-                    new Vector2(-150f + i * 150f, -22f), new Vector2(140f, 34f),
-                    new Color(0.28f, 0.18f, 0.42f, 0.95f), font, () => SetDistance(d));
+                    new Vector2(-155f + i * 155f, -66f), new Vector2(146f, 40f),
+                    new Color(0.32f, 0.18f, 0.48f, 0.98f), font, () => SetDistance(d), 14);
             }
 
-            // Controls Hint Label
-            CreateText(window.transform, "HintLabel", "⌨ Teclado: Flechas [← / →] ±500m | [↑ / ↓] ±5K | [ENTER] Teletransportar", 11, FontStyle.Normal,
-                new Vector2(0f, -62f), new Vector2(460f, 22f), new Color(0.6f, 0.75f, 0.9f, 0.85f), font);
+            // Big Tactile Teleport Action Button
+            CreateButton(window.transform, "BtnTeleport", "🚀 ¡TELETRANSPORTAR AHORA!", new Vector2(0f, -135f), new Vector2(460f, 56f),
+                new Color(0.08f, 0.72f, 0.36f, 1f), font, ExecuteTeleport, 20);
 
-            // Execute Teleport Button
-            CreateButton(window.transform, "BtnTeleport", "🚀 ¡TELETRANSPORTAR AHORA! [ENTER]", new Vector2(0f, -112f), new Vector2(430f, 54f),
-                new Color(0.08f, 0.70f, 0.36f, 0.98f), font, ExecuteTeleport, 18);
-
-            // Close Button
-            CreateButton(window.transform, "BtnClose", "✖ CERRAR [ESC]", new Vector2(0f, -180f), new Vector2(260f, 40f),
-                new Color(0.60f, 0.12f, 0.16f, 0.95f), font, Close, 14);
+            // Big Tactile Close Button
+            CreateButton(window.transform, "BtnClose", "✖ CERRAR", new Vector2(0f, -205f), new Vector2(280f, 44f),
+                new Color(0.65f, 0.12f, 0.16f, 0.98f), font, Close, 16);
 
             modalContainer.SetActive(false);
             UpdateDisplay();
+        }
+
+        private void CreateTouchSlider(Transform parent, Vector2 position, Vector2 size, Font font)
+        {
+            GameObject sliderObj = new GameObject("Distance Slider", typeof(RectTransform), typeof(Slider));
+            sliderObj.transform.SetParent(parent, false);
+            RectTransform sliderRect = sliderObj.GetComponent<RectTransform>();
+            sliderRect.anchoredPosition = position;
+            sliderRect.sizeDelta = size;
+
+            distanceSlider = sliderObj.GetComponent<Slider>();
+            distanceSlider.minValue = 0f;
+            distanceSlider.maxValue = 150000f;
+            distanceSlider.wholeNumbers = true;
+            distanceSlider.value = selectedDistance;
+
+            // Background track
+            GameObject bgObj = new GameObject("Background", typeof(RectTransform), typeof(Image));
+            bgObj.transform.SetParent(sliderObj.transform, false);
+            RectTransform bgRect = bgObj.GetComponent<RectTransform>();
+            bgRect.anchorMin = new Vector2(0f, 0.25f);
+            bgRect.anchorMax = new Vector2(1f, 0.75f);
+            bgRect.offsetMin = Vector2.zero;
+            bgRect.offsetMax = Vector2.zero;
+            Image bgImg = bgObj.GetComponent<Image>();
+            bgImg.color = new Color(0.12f, 0.15f, 0.25f, 1f);
+            bgImg.raycastTarget = true;
+
+            // Fill area
+            GameObject fillArea = new GameObject("Fill Area", typeof(RectTransform));
+            fillArea.transform.SetParent(sliderObj.transform, false);
+            RectTransform fillAreaRect = fillArea.GetComponent<RectTransform>();
+            fillAreaRect.anchorMin = new Vector2(0f, 0.25f);
+            fillAreaRect.anchorMax = new Vector2(1f, 0.75f);
+            fillAreaRect.offsetMin = new Vector2(5f, 0f);
+            fillAreaRect.offsetMax = new Vector2(-5f, 0f);
+
+            GameObject fill = new GameObject("Fill", typeof(RectTransform), typeof(Image));
+            fill.transform.SetParent(fillArea.transform, false);
+            RectTransform fillRect = fill.GetComponent<RectTransform>();
+            fillRect.offsetMin = Vector2.zero;
+            fillRect.offsetMax = Vector2.zero;
+            Image fillImg = fill.GetComponent<Image>();
+            fillImg.color = new Color(0.2f, 0.85f, 1f, 0.95f);
+            fillImg.raycastTarget = false;
+
+            // Handle slide area
+            GameObject handleArea = new GameObject("Handle Slide Area", typeof(RectTransform));
+            handleArea.transform.SetParent(sliderObj.transform, false);
+            RectTransform handleAreaRect = handleArea.GetComponent<RectTransform>();
+            handleAreaRect.anchorMin = Vector2.zero;
+            handleAreaRect.anchorMax = Vector2.one;
+            handleAreaRect.offsetMin = new Vector2(15f, 0f);
+            handleAreaRect.offsetMax = new Vector2(-15f, 0f);
+
+            GameObject handle = new GameObject("Handle", typeof(RectTransform), typeof(Image));
+            handle.transform.SetParent(handleArea.transform, false);
+            RectTransform handleRect = handle.GetComponent<RectTransform>();
+            handleRect.sizeDelta = new Vector2(30f, 30f);
+            Image handleImg = handle.GetComponent<Image>();
+            handleImg.color = new Color(1f, 0.92f, 0.2f, 1f);
+            handleImg.raycastTarget = true;
+
+            Outline handleOutline = handle.AddComponent<Outline>();
+            handleOutline.effectColor = new Color(0f, 0f, 0f, 0.8f);
+            handleOutline.effectDistance = new Vector2(1.5f, -1.5f);
+
+            distanceSlider.fillRect = fillRect;
+            distanceSlider.handleRect = handleRect;
+            distanceSlider.targetGraphic = handleImg;
+
+            distanceSlider.onValueChanged.AddListener((val) =>
+            {
+                if (!isUpdatingSliderInternally)
+                {
+                    selectedDistance = Mathf.Round(val / 50f) * 50f;
+                    UpdateDisplay(false);
+                }
+            });
         }
 
         public void Open()
@@ -190,10 +270,17 @@ namespace AnimeHillRacing.UI
             UpdateDisplay();
         }
 
-        private void UpdateDisplay()
+        private void UpdateDisplay(bool syncSlider = true)
         {
             if (distanceDisplay != null)
                 distanceDisplay.text = $"{selectedDistance:N0} m";
+
+            if (syncSlider && distanceSlider != null)
+            {
+                isUpdatingSliderInternally = true;
+                distanceSlider.value = selectedDistance;
+                isUpdatingSliderInternally = false;
+            }
 
             if (phaseDescriptionText != null)
             {
@@ -250,13 +337,11 @@ namespace AnimeHillRacing.UI
             }
 
             // Keyboard adjustments:
-            // Left/Right: -500m / +500m
             if (keyboard.rightArrowKey.wasPressedThisFrame || keyboard.dKey.wasPressedThisFrame)
                 AddDistance(500f);
             else if (keyboard.leftArrowKey.wasPressedThisFrame || keyboard.aKey.wasPressedThisFrame)
                 AddDistance(-500f);
 
-            // Up/Down: +5,000m / -5,000m
             if (keyboard.upArrowKey.wasPressedThisFrame || keyboard.wKey.wasPressedThisFrame)
                 AddDistance(5000f);
             else if (keyboard.downArrowKey.wasPressedThisFrame || keyboard.sKey.wasPressedThisFrame)
@@ -305,7 +390,7 @@ namespace AnimeHillRacing.UI
             img.raycastTarget = true;
 
             Outline outline = obj.AddComponent<Outline>();
-            outline.effectColor = new Color(1f, 1f, 1f, 0.3f);
+            outline.effectColor = new Color(1f, 1f, 1f, 0.35f);
             outline.effectDistance = new Vector2(1.5f, -1.5f);
 
             GameObject textObj = new GameObject("Label", typeof(RectTransform), typeof(Text));
@@ -333,6 +418,9 @@ namespace AnimeHillRacing.UI
             colors.selectedColor = bgColor * 1.35f;
             btn.colors = colors;
             btn.onClick.AddListener(onClick);
+
+            // Add tactile touch scale bounce feedback
+            obj.AddComponent<ButtonPressFeedback>();
             return btn;
         }
     }

@@ -86,18 +86,21 @@ namespace AnimeHillRacing.UI
 
             GameObject buttonObj = new GameObject("Teleport Button", typeof(RectTransform), typeof(Image), typeof(Button));
             buttonObj.transform.SetParent(transform, false);
+            buttonObj.transform.SetAsLastSibling();
+
             RectTransform rect = buttonObj.GetComponent<RectTransform>();
             rect.anchorMin = new Vector2(0.5f, 1f);
             rect.anchorMax = new Vector2(0.5f, 1f);
             rect.pivot = new Vector2(0.5f, 1f);
-            rect.anchoredPosition = new Vector2(0f, -16f);
-            rect.sizeDelta = new Vector2(170f, 40f);
+            rect.anchoredPosition = new Vector2(0f, -18f);
+            rect.sizeDelta = new Vector2(185f, 46f);
 
             Image img = buttonObj.GetComponent<Image>();
-            img.color = new Color(0.08f, 0.10f, 0.22f, 0.88f);
+            img.color = new Color(0.08f, 0.12f, 0.25f, 0.95f);
+            img.raycastTarget = true;
 
             Outline outline = buttonObj.AddComponent<Outline>();
-            outline.effectColor = new Color(0.2f, 0.85f, 1f, 0.9f);
+            outline.effectColor = new Color(0.2f, 0.85f, 1f, 0.95f);
             outline.effectDistance = new Vector2(2f, -2f);
 
             GameObject textObj = new GameObject("Label", typeof(RectTransform), typeof(Text));
@@ -115,11 +118,21 @@ namespace AnimeHillRacing.UI
             label.fontSize = 16;
             label.fontStyle = FontStyle.Bold;
             label.alignment = TextAnchor.MiddleCenter;
-            label.color = new Color(1f, 0.95f, 0.35f, 1f);
+            label.color = new Color(1f, 0.94f, 0.25f, 1f);
             label.text = "🚀 TELEPORT [T]";
+            label.raycastTarget = false;
 
             Button btn = buttonObj.GetComponent<Button>();
+            btn.targetGraphic = img;
+            ColorBlock colors = btn.colors;
+            colors.normalColor = img.color;
+            colors.highlightedColor = new Color(0.15f, 0.25f, 0.45f, 1f);
+            colors.pressedColor = new Color(0.04f, 0.06f, 0.14f, 1f);
+            colors.selectedColor = colors.highlightedColor;
+            btn.colors = colors;
             btn.onClick.AddListener(OnTeleportClicked);
+
+            buttonObj.AddComponent<ButtonPressFeedback>();
         }
 
         public void OnTeleportClicked()

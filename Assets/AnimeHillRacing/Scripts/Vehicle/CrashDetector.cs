@@ -4,7 +4,6 @@ using UnityEngine;
 
 namespace AnimeHillRacing.Vehicle
 {
-    [RequireComponent(typeof(Rigidbody))]
     public sealed class CrashDetector : MonoBehaviour
     {
         [SerializeField] private float minimumWorldHeight = -8f;
@@ -13,12 +12,10 @@ namespace AnimeHillRacing.Vehicle
         [SerializeField] private MapProfile terrainProfile;
 
         private VehicleRuntimeBase vehicle;
-        private Rigidbody body;
 
         private void Awake()
         {
             vehicle = GetComponent<VehicleRuntimeBase>();
-            body = GetComponent<Rigidbody>();
         }
 
         private void FixedUpdate()

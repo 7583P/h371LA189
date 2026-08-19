@@ -19,14 +19,17 @@ namespace AnimeHillRacing.Terrain
         private MeshFilter meshFilter;
         private MeshRenderer meshRenderer;
         private MeshCollider meshCollider;
+        private EdgeCollider2D edgeCollider2D;
         private LineRenderer edgeRenderer;
         private PickupPool pickupPool;
         private float[] surfaceHeights;
+        private Vector2[] edgePoints2D;
         private float chunkLength;
         private float surfaceWidth;
         private MaterialPropertyBlock groundProperties;
 
         private static readonly int HorizontalSampleId = Shader.PropertyToID("_HorizontalSample");
+        private static PhysicsMaterial2D s_defaultGroundMaterial2D;
 
         public int Index { get; private set; }
         public bool IsGenerated { get; private set; }
@@ -49,6 +52,10 @@ namespace AnimeHillRacing.Terrain
                 meshRenderer = GetComponent<MeshRenderer>();
             if (meshCollider == null)
                 meshCollider = GetComponent<MeshCollider>();
+            if (edgeCollider2D == null)
+                edgeCollider2D = GetComponent<EdgeCollider2D>();
+            if (edgeCollider2D == null)
+                edgeCollider2D = gameObject.AddComponent<EdgeCollider2D>();
             if (edgeRenderer == null)
             {
                 edgeRenderer = GetComponent<LineRenderer>();
@@ -71,6 +78,14 @@ namespace AnimeHillRacing.Terrain
                 surfaceColliderMesh = new Mesh { name = "Ground Surface Only Collider" };
                 surfaceColliderMesh.MarkDynamic();
             }
+            if (s_defaultGroundMaterial2D == null)
+            {
+                s_defaultGroundMaterial2D = new PhysicsMaterial2D("DefaultTerrain2D")
+                {
+                    friction = 0.85f,
+                    bounciness = 0f
+                };
+            }
         }
 
         public void Generate(int index, MapProfile profile, float targetChunkLength, int samples, float width,
@@ -90,9 +105,39 @@ namespace AnimeHillRacing.Terrain
             IsGenerated = true;
             TerrainGenerator.BuildSurfaceColliderMesh(surfaceColliderMesh, profile,
                 index * targetChunkLength, targetChunkLength, surfaceHeights, width);
-            meshCollider.sharedMesh = null;
-            meshCollider.sharedMesh = surfaceColliderMesh;
-            meshCollider.sharedMaterial = profile.groundPhysicsMaterial;
+            if (meshCollider != null)
+            {
+                meshCollider.sharedMesh = null;
+                meshCollider.sharedMesh = surfaceColliderMesh;
+                meshCollider.sharedMaterial = profile.groundPhysicsMaterial;
+            }
+
+            // Generate Physics2D EdgeCollider2D representing the exact driving surface
+            if (surfaceHeights != null && surfaceHeights.Length > 1 && edgeCollider2D != null)
+            {
+                float dx = targetChunkLength / Mathf.Max(1, surfaceHeights.Length - 1);
+                int totalPoints = surfaceHeights.Length + 2;
+                if (edgePoints2D == null || edgePoints2D.Length != totalPoints)
+                    edgePoints2D = new Vector2[totalPoints];
+
+                float worldStartX = index * targetChunkLength;
+                float prevY = profile != null ? TerrainGenerator.SampleHeight(profile, worldStartX - dx) : surfaceHeights[0];
+                float nextY = profile != null ? TerrainGenerator.SampleHeight(profile, worldStartX + targetChunkLength + dx) : surfaceHeights[surfaceHeights.Length - 1];
+
+                edgePoints2D[0] = new Vector2(-dx, prevY);
+                for (int i = 0; i < surfaceHeights.Length; i++)
+                {
+                    edgePoints2D[i + 1] = new Vector2(i * dx, surfaceHeights[i]);
+                }
+                edgePoints2D[totalPoints - 1] = new Vector2(targetChunkLength + dx, nextY);
+
+                edgeCollider2D.points = edgePoints2D;
+                edgeCollider2D.edgeRadius = 0.02f;
+                edgeCollider2D.sharedMaterial = profile != null && profile.groundPhysicsMaterial2D != null
+                    ? profile.groundPhysicsMaterial2D : s_defaultGroundMaterial2D;
+                edgeCollider2D.enabled = true;
+            }
+
             if ((profile.supportsLiquidExposure || profile.useSeparateTerrainMaterials) &&
                 profile.terrainEdgeMaterial != null)
             {
@@ -122,9 +167,9 @@ namespace AnimeHillRacing.Terrain
                 return;
             }
             edgeRenderer.positionCount = surfaceHeights.Length;
-            float dx = targetChunkLength / Mathf.Max(1, surfaceHeights.Length - 1);
+            float lineDx = targetChunkLength / Mathf.Max(1, surfaceHeights.Length - 1);
             for (int i = 0; i < surfaceHeights.Length; i++)
-                edgeRenderer.SetPosition(i, new Vector3(i * dx, surfaceHeights[i], -width * 0.5f - 0.03f));
+                edgeRenderer.SetPosition(i, new Vector3(i * lineDx, surfaceHeights[i], -width * 0.5f - 0.03f));
             name = $"Terrain Chunk {index}";
         }
 
@@ -134,7 +179,8 @@ namespace AnimeHillRacing.Terrain
         public void SetChunkColliderEnabled(bool value)
         {
             EnsureComponents();
-            meshCollider.enabled = value;
+            if (meshCollider != null) meshCollider.enabled = value;
+            if (edgeCollider2D != null) edgeCollider2D.enabled = value;
         }
 
         public bool TrySampleSurface(float worldX, out float height, out float slopeDegrees)
@@ -150,8 +196,8 @@ namespace AnimeHillRacing.Terrain
             int lower = Mathf.Clamp(Mathf.FloorToInt(samplePosition), 0, surfaceHeights.Length - 2);
             float t = samplePosition - lower;
             height = Mathf.Lerp(surfaceHeights[lower], surfaceHeights[lower + 1], t);
-            float dx = chunkLength / (surfaceHeights.Length - 1);
-            slopeDegrees = Mathf.Atan2(surfaceHeights[lower + 1] - surfaceHeights[lower], dx) * Mathf.Rad2Deg;
+            float sampleDx = chunkLength / (surfaceHeights.Length - 1);
+            slopeDegrees = Mathf.Atan2(surfaceHeights[lower + 1] - surfaceHeights[lower], sampleDx) * Mathf.Rad2Deg;
             return true;
         }
 

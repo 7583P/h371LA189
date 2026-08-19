@@ -123,13 +123,37 @@ namespace AnimeHillRacing.Core
             if (terrain != null)
                 terrain.TeleportTo(targetWorldX);
 
+            float targetY = mapProfile != null
+                ? TerrainGenerator.SampleHeight(mapProfile, targetWorldX) + 2.5f
+                : 2.5f;
+
+            if (vehicle != null)
+            {
+                vehicle.TeleportToPosition(new Vector3(targetWorldX, targetY, 0f));
+            }
+
             maxProgress = Mathf.Max(maxProgress, targetWorldX);
-            if (State == RunState.OutOfFuelPending || State == RunState.OutOfFuelFinal || State == RunState.Results)
+            if (State == RunState.OutOfFuelPending || State == RunState.OutOfFuelFinal || State == RunState.Results || State == RunState.CrashPending)
+            {
                 State = RunState.Running;
+                EndReason = RunEndReason.None;
+                if (resultsUI != null) resultsUI.HideImmediate();
+                vehicle?.SetDriveEnabled(true);
+            }
+
+            if (hud != null)
+            {
+                hud.ResetDisplayedDistance();
+                hud.RefreshImmediate(this);
+            }
         }
+
+        public static GameManager Instance { get; private set; }
+        public MapProfile MapProfile => mapProfile;
 
         private void Awake()
         {
+            Instance = this;
             Time.timeScale = 1f;
             BestDistance = SaveManager.GetBestDistance(Mode, MapId);
             vehicle?.SetTransmissionMode(GameSession.SelectedTransmission);
@@ -154,18 +178,22 @@ namespace AnimeHillRacing.Core
 
         private void FixedUpdate()
         {
-            Rigidbody body = vehicle != null ? vehicle.Body : null;
-            if (body == null) return;
+            if (vehicle == null) return;
             bool runActive = State == RunState.Running;
             bool airborne = runActive && !vehicle.AnyGrounded;
             if (Mode == GameModeType.Adventure2_5D)
             {
-                stuntRotation.SampleAngle(body.rotation.eulerAngles.z, airborne, runActive);
-                previousStuntRotation = body.rotation;
+                float zAngle = vehicle.Body2D != null
+                    ? vehicle.Body2D.rotation
+                    : (vehicle.Body != null ? vehicle.Body.rotation.eulerAngles.z : vehicle.transform.rotation.eulerAngles.z);
+                stuntRotation.SampleAngle(zAngle, airborne, runActive);
+                previousStuntRotation = vehicle.transform.rotation;
                 stuntRotationInitialized = true;
                 return;
             }
 
+            Rigidbody body = vehicle.Body;
+            if (body == null) return;
             Quaternion current = body.rotation;
             if (!stuntRotationInitialized)
             {
@@ -181,11 +209,12 @@ namespace AnimeHillRacing.Core
 
         private void ResetRunStunts()
         {
-            Rigidbody body = vehicle != null ? vehicle.Body : null;
-            float initialAngle = body != null ? body.rotation.eulerAngles.z : 0f;
+            float initialAngle = vehicle != null
+                ? (vehicle.Body2D != null ? vehicle.Body2D.rotation : (vehicle.Body != null ? vehicle.Body.rotation.eulerAngles.z : vehicle.transform.rotation.eulerAngles.z))
+                : 0f;
             stuntRotation.Reset(initialAngle);
-            previousStuntRotation = body != null ? body.rotation : Quaternion.identity;
-            stuntRotationInitialized = body != null;
+            previousStuntRotation = vehicle != null ? vehicle.transform.rotation : Quaternion.identity;
+            stuntRotationInitialized = vehicle != null;
         }
 
         private static float SignedPitchDeltaDegrees(Quaternion previous, Quaternion current,
@@ -374,6 +403,7 @@ namespace AnimeHillRacing.Core
 
         private void OnDestroy()
         {
+            if (Instance == this) Instance = null;
             ChestSystem.Flush();
             if (State == RunState.Results) RestoreTime();
         }

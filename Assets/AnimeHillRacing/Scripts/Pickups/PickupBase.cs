@@ -7,6 +7,7 @@ namespace AnimeHillRacing.Pickups
     {
         private PickupPool pool;
         private Collider triggerCollider;
+        private Collider2D triggerCollider2D;
         private Renderer[] renderers;
         private bool collected;
         private bool feedbackActive;
@@ -27,6 +28,17 @@ namespace AnimeHillRacing.Pickups
         {
             pool = owner;
             if (triggerCollider == null) triggerCollider = GetComponent<Collider>();
+            if (triggerCollider2D == null) triggerCollider2D = GetComponent<Collider2D>();
+            if (triggerCollider2D == null)
+            {
+                CircleCollider2D circle = gameObject.AddComponent<CircleCollider2D>();
+                if (circle != null)
+                {
+                    circle.isTrigger = true;
+                    circle.radius = 0.5f;
+                    triggerCollider2D = circle;
+                }
+            }
             if (renderers == null) renderers = GetComponentsInChildren<Renderer>(true);
             if (!scaleCached) { baseLocalScale = transform.localScale; scaleCached = true; }
             collected = false;
@@ -36,24 +48,30 @@ namespace AnimeHillRacing.Pickups
             SpawnId = spawnId;
             SpawnVersion++;
             if (triggerCollider != null) triggerCollider.enabled = true;
-            for (int i = 0; i < renderers.Length; i++) renderers[i].enabled = true;
+            if (triggerCollider2D != null) triggerCollider2D.enabled = true;
+            if (renderers != null)
+            {
+                for (int i = 0; i < renderers.Length; i++)
+                    if (renderers[i] != null) renderers[i].enabled = true;
+            }
             transform.position = position;
             transform.rotation = Quaternion.identity;
             transform.localScale = baseLocalScale;
             gameObject.SetActive(true);
         }
 
-        private void OnTriggerEnter(Collider other) => TryCollect(other);
+        private void OnTriggerEnter(Collider other) => TryCollect(other.GetComponentInParent<VehicleRuntimeBase>());
+        private void OnTriggerStay(Collider other) => TryCollect(other.GetComponentInParent<VehicleRuntimeBase>());
+        private void OnTriggerEnter2D(Collider2D other) => TryCollect(other.GetComponentInParent<VehicleRuntimeBase>());
+        private void OnTriggerStay2D(Collider2D other) => TryCollect(other.GetComponentInParent<VehicleRuntimeBase>());
 
-        private void OnTriggerStay(Collider other) => TryCollect(other);
-
-        private void TryCollect(Collider other)
+        private void TryCollect(VehicleRuntimeBase vehicle)
         {
-            VehicleRuntimeBase vehicle = other.GetComponentInParent<VehicleRuntimeBase>();
             if (vehicle == null || collected)
                 return;
             collected = true;
             if (triggerCollider != null) triggerCollider.enabled = false;
+            if (triggerCollider2D != null) triggerCollider2D.enabled = false;
             pool?.NotifyCollected(this);
             Collect(vehicle);
             feedbackStartPosition = transform.position;

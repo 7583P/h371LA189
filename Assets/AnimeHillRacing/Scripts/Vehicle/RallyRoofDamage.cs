@@ -6,6 +6,7 @@ namespace AnimeHillRacing.Vehicle
     {
         [SerializeField] private VehicleDefinition definition;
         [SerializeField] private Rigidbody vehicleBody;
+        [SerializeField] private Rigidbody2D vehicleBody2D;
         [SerializeField] private SpriteRenderer[] bodyRenderers;
         [SerializeField] private Transform visualRoot;
         [SerializeField, Min(.1f)] private float detachedRoofMass = 8f;
@@ -23,6 +24,7 @@ namespace AnimeHillRacing.Vehicle
         private float upsideDownContactTimer;
         private float lastRoofGroundContactTime = -10f;
         private Collider roofTriggerCollider;
+        private Collider2D roofTriggerCollider2D;
 
         public bool RoofDetached { get; private set; }
         public float UpsideDownContactTimer => upsideDownContactTimer;
@@ -30,8 +32,15 @@ namespace AnimeHillRacing.Vehicle
         public void Assign(VehicleDefinition vehicleDefinition, Rigidbody body, SpriteRenderer[] renderers,
             Transform targetVisualRoot)
         {
+            Assign(vehicleDefinition, body, null, renderers, targetVisualRoot);
+        }
+
+        public void Assign(VehicleDefinition vehicleDefinition, Rigidbody body, Rigidbody2D body2D,
+            SpriteRenderer[] renderers, Transform targetVisualRoot)
+        {
             definition = vehicleDefinition;
             vehicleBody = body;
+            vehicleBody2D = body2D;
             bodyRenderers = renderers;
             visualRoot = targetVisualRoot;
             EnsureMaterial();
@@ -40,6 +49,7 @@ namespace AnimeHillRacing.Vehicle
         private void Awake()
         {
             roofTriggerCollider = GetComponent<Collider>();
+            roofTriggerCollider2D = GetComponent<Collider2D>();
             EnsureMaterial();
             ResetState();
         }
@@ -57,6 +67,8 @@ namespace AnimeHillRacing.Vehicle
 
             if (roofTriggerCollider != null)
                 roofTriggerCollider.enabled = true;
+            if (roofTriggerCollider2D != null)
+                roofTriggerCollider2D.enabled = true;
 
             // Reset body renderers to full intact appearance (remove clip)
             if (bodyRenderers != null)
@@ -110,21 +122,26 @@ namespace AnimeHillRacing.Vehicle
             }
         }
 
-        private void OnTriggerEnter(Collider other)
-        {
-            RecordGroundContact(other);
-        }
+        private void OnTriggerEnter(Collider other) => RecordGroundContact3D(other);
+        private void OnTriggerStay(Collider other) => RecordGroundContact3D(other);
+        private void OnTriggerEnter2D(Collider2D other) => RecordGroundContact2D(other);
+        private void OnTriggerStay2D(Collider2D other) => RecordGroundContact2D(other);
 
-        private void OnTriggerStay(Collider other)
-        {
-            RecordGroundContact(other);
-        }
-
-        private void RecordGroundContact(Collider other)
+        private void RecordGroundContact3D(Collider other)
         {
             if (RoofDetached || definition == null || definition.archetype != VehicleArchetype.Rally) return;
-            Transform rootTransform = vehicleBody != null ? vehicleBody.transform : transform.root;
+            Transform rootTransform = vehicleBody != null ? vehicleBody.transform : (vehicleBody2D != null ? vehicleBody2D.transform : transform.root);
             if (GroundContactFilter.IsGround(other, rootTransform))
+            {
+                lastRoofGroundContactTime = Time.time;
+            }
+        }
+
+        private void RecordGroundContact2D(Collider2D other)
+        {
+            if (RoofDetached || definition == null || definition.archetype != VehicleArchetype.Rally) return;
+            Transform rootTransform = vehicleBody2D != null ? vehicleBody2D.transform : (vehicleBody != null ? vehicleBody.transform : transform.root);
+            if (GroundContactFilter.IsGround2D(other, rootTransform))
             {
                 lastRoofGroundContactTime = Time.time;
             }
@@ -134,7 +151,7 @@ namespace AnimeHillRacing.Vehicle
         {
             if (RoofDetached || definition == null || definition.archetype != VehicleArchetype.Rally) return;
 
-            Transform refTransform = vehicleBody != null ? vehicleBody.transform : transform;
+            Transform refTransform = vehicleBody != null ? vehicleBody.transform : (vehicleBody2D != null ? vehicleBody2D.transform : transform);
             float upDot = Vector3.Dot(refTransform.up, Vector3.up);
             bool isUpsideDown = upDot < upsideDownDotThreshold;
             bool isRoofGrounded = (Time.time - lastRoofGroundContactTime) <= (Time.fixedDeltaTime * 2.5f);
@@ -200,6 +217,7 @@ namespace AnimeHillRacing.Vehicle
             if (activeSprite == null)
             {
                 if (roofTriggerCollider != null) roofTriggerCollider.enabled = false;
+                if (roofTriggerCollider2D != null) roofTriggerCollider2D.enabled = false;
                 return;
             }
 
@@ -219,25 +237,44 @@ namespace AnimeHillRacing.Vehicle
             canopyBlock.SetFloat("_ClipInvert", 1f); // Keep upper canopy only (windshield + roof)
             renderer.SetPropertyBlock(canopyBlock);
 
-            // 3. Add physical collision & impulse to flying canopy
-            BoxCollider detachedCollider = piece.AddComponent<BoxCollider>();
-            detachedCollider.size = new Vector3(activeSprite.bounds.size.x * 0.65f,
-                Mathf.Max(0.12f, activeSprite.bounds.size.y * 0.45f), 0.18f);
-            detachedCollider.center = new Vector3(0f, beltlineCutHeight * 0.5f + 0.35f, 0f);
-
-            Rigidbody roofBody = piece.AddComponent<Rigidbody>();
-            roofBody.mass = detachedRoofMass;
-            roofBody.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
-
-            if (vehicleBody != null)
+            // 3. Add physical collision & impulse to flying canopy (2D or 3D depending on active body)
+            if (vehicleBody2D != null)
             {
-                roofBody.linearVelocity = vehicleBody.GetPointVelocity(transform.position) +
-                                          Vector3.up * separationImpulse +
-                                          vehicleBody.transform.forward * 1.5f;
-                roofBody.angularVelocity = vehicleBody.angularVelocity + new Vector3(0.5f, 0f, 3.2f);
+                BoxCollider2D detachedCollider2D = piece.AddComponent<BoxCollider2D>();
+                detachedCollider2D.size = new Vector2(activeSprite.bounds.size.x * 0.65f,
+                    Mathf.Max(0.12f, activeSprite.bounds.size.y * 0.45f));
+                detachedCollider2D.offset = new Vector2(0f, beltlineCutHeight * 0.5f + 0.35f);
+
+                Rigidbody2D roofBody2D = piece.AddComponent<Rigidbody2D>();
+                roofBody2D.mass = detachedRoofMass;
+                roofBody2D.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+                roofBody2D.linearVelocity = vehicleBody2D.GetPointVelocity(transform.position) +
+                                            Vector2.up * separationImpulse +
+                                            (Vector2)vehicleBody2D.transform.right * 1.5f;
+                roofBody2D.angularVelocity = vehicleBody2D.angularVelocity + 180f;
+            }
+            else
+            {
+                BoxCollider detachedCollider = piece.AddComponent<BoxCollider>();
+                detachedCollider.size = new Vector3(activeSprite.bounds.size.x * 0.65f,
+                    Mathf.Max(0.12f, activeSprite.bounds.size.y * 0.45f), 0.18f);
+                detachedCollider.center = new Vector3(0f, beltlineCutHeight * 0.5f + 0.35f, 0f);
+
+                Rigidbody roofBody = piece.AddComponent<Rigidbody>();
+                roofBody.mass = detachedRoofMass;
+                roofBody.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+
+                if (vehicleBody != null)
+                {
+                    roofBody.linearVelocity = vehicleBody.GetPointVelocity(transform.position) +
+                                              Vector3.up * separationImpulse +
+                                              vehicleBody.transform.forward * 1.5f;
+                    roofBody.angularVelocity = vehicleBody.angularVelocity + new Vector3(0.5f, 0f, 3.2f);
+                }
             }
 
             if (roofTriggerCollider != null) roofTriggerCollider.enabled = false;
+            if (roofTriggerCollider2D != null) roofTriggerCollider2D.enabled = false;
             Destroy(piece, 8f);
         }
     }

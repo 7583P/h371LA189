@@ -144,6 +144,7 @@ namespace AnimeHillRacing.Terrain
                  "Negative values use the lower edge of the authored Ground band.")]
         [Range(-1f, 1f)] public float terrainFillStartV = -1f;
         public PhysicsMaterial groundPhysicsMaterial;
+        public PhysicsMaterial2D groundPhysicsMaterial2D;
         [Range(0.04f, 0.5f)] public float terrainEdgeWidth = 0.18f;
         [Min(5f)] public float terrainVisualDepth = 20f;
 

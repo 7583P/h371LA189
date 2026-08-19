@@ -23,6 +23,7 @@ namespace AnimeHillRacing.Vehicle
         [SerializeField] private bool physicalReaction = true;
 
         private Rigidbody vehicleBody;
+        private Rigidbody2D vehicleBody2D;
         private Transform torsoTransform;
         private Transform headTransform;
         private float wobbleAngle;
@@ -47,13 +48,15 @@ namespace AnimeHillRacing.Vehicle
 
         private void LateUpdate()
         {
-            if (!physicalReaction || vehicleBody == null || headTransform == null) return;
-            float angular = vehicleBody.angularVelocity.z * Mathf.Rad2Deg;
+            if (!physicalReaction || (vehicleBody == null && vehicleBody2D == null) || headTransform == null) return;
+            float angular = vehicleBody != null ? vehicleBody.angularVelocity.z * Mathf.Rad2Deg : (vehicleBody2D != null ? vehicleBody2D.angularVelocity : 0f);
             float angularAcceleration = (angular - previousAngularVelocity) / Mathf.Max(.001f, Time.deltaTime);
             previousAngularVelocity = angular;
-            Vector3 acceleration = (vehicleBody.linearVelocity - previousVelocity) / Mathf.Max(.001f, Time.deltaTime);
-            previousVelocity = vehicleBody.linearVelocity;
-            float longitudinalReaction = -Vector3.Dot(acceleration, vehicleBody.transform.right) * .12f;
+            Vector3 currentVelocity = vehicleBody != null ? vehicleBody.linearVelocity : (vehicleBody2D != null ? (Vector3)vehicleBody2D.linearVelocity : Vector3.zero);
+            Vector3 acceleration = (currentVelocity - previousVelocity) / Mathf.Max(.001f, Time.deltaTime);
+            previousVelocity = currentVelocity;
+            Transform vehicleTransform = vehicleBody != null ? vehicleBody.transform : (vehicleBody2D != null ? vehicleBody2D.transform : transform.root);
+            float longitudinalReaction = -Vector3.Dot(acceleration, vehicleTransform.right) * .12f;
             float landingReaction = -acceleration.y * .022f;
             float target = Mathf.Clamp(-angular * .055f - angularAcceleration * .0015f +
                 longitudinalReaction + landingReaction + impactImpulse, -16f, 16f);
@@ -71,7 +74,8 @@ namespace AnimeHillRacing.Vehicle
         public void TriggerHeadImpact(float impactSpeed)
         {
             if (!physicalReaction) return;
-            float direction = vehicleBody != null && vehicleBody.angularVelocity.z < 0f ? -1f : 1f;
+            float angularW = vehicleBody != null ? vehicleBody.angularVelocity.z : (vehicleBody2D != null ? vehicleBody2D.angularVelocity : 0f);
+            float direction = angularW < 0f ? -1f : 1f;
             impactImpulse = direction * Mathf.Clamp(impactSpeed * 2.2f, 5f, 16f);
             wobbleVelocity += direction * Mathf.Clamp(impactSpeed * 18f, 35f, 150f);
         }
@@ -79,18 +83,32 @@ namespace AnimeHillRacing.Vehicle
         public void Apply(DriverDefinition driver, VehicleDefinition.DriverPose pose, Rigidbody body,
             bool enablePhysicalReaction)
         {
+            Apply(driver, pose, body, null, enablePhysicalReaction);
+        }
+
+        public void Apply(DriverDefinition driver, VehicleDefinition.DriverPose pose, Rigidbody body,
+            Rigidbody2D body2D, bool enablePhysicalReaction)
+        {
             DriverDefinition.CharacterAccessoryOption selected = driver != null
                 ? driver.FindAccessory(SaveManager.GetSelectedCharacterAccessoryId(driver.DefaultAccessoryId))
                 : null;
-            Apply(driver, pose, selected, body, enablePhysicalReaction);
+            Apply(driver, pose, selected, body, body2D, enablePhysicalReaction);
         }
 
         public void Apply(DriverDefinition driver, VehicleDefinition.DriverPose pose,
             DriverDefinition.CharacterAccessoryOption selectedAccessory, Rigidbody body,
             bool enablePhysicalReaction)
         {
+            Apply(driver, pose, selectedAccessory, body, null, enablePhysicalReaction);
+        }
+
+        public void Apply(DriverDefinition driver, VehicleDefinition.DriverPose pose,
+            DriverDefinition.CharacterAccessoryOption selectedAccessory, Rigidbody body,
+            Rigidbody2D body2D, bool enablePhysicalReaction)
+        {
             if (driver == null || pose == null) return;
             vehicleBody = body;
+            vehicleBody2D = body2D;
             physicalReaction = enablePhysicalReaction;
             transform.localPosition = new Vector3(pose.rootPosition.x, pose.rootPosition.y, transform.localPosition.z);
             transform.localScale = Vector3.one * Mathf.Max(.01f, pose.rootScale);
@@ -117,10 +135,10 @@ namespace AnimeHillRacing.Vehicle
             for (int i = 0; i < reactiveLimbs.Length; i++)
                 reactiveLimbBaseRotations[i] = reactiveLimbs[i] != null
                     ? reactiveLimbs[i].localRotation : Quaternion.identity;
-            previousVelocity = body != null ? body.linearVelocity : Vector3.zero;
+            previousVelocity = body != null ? body.linearVelocity : (body2D != null ? (Vector3)body2D.linearVelocity : Vector3.zero);
             if (headImpact != null)
             {
-                headImpact.Assign(this, body);
+                headImpact.Assign(this, body, body2D);
                 headImpact.gameObject.SetActive(enablePhysicalReaction && pose.head.visible);
             }
         }

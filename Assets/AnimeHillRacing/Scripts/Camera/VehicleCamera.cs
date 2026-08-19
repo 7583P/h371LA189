@@ -26,6 +26,10 @@ namespace AnimeHillRacing.CameraSystem
         private float fixedZ;
         private bool initialized;
 
+        private float shakeIntensity;
+        private float shakeDuration;
+        private float shakeTimer;
+
         private void Awake()
         {
             cameraComponent = GetComponent<Camera>();
@@ -74,8 +78,18 @@ namespace AnimeHillRacing.CameraSystem
             float x = Mathf.SmoothDamp(transform.position.x, desiredX, ref horizontalVelocity, horizontalSmooth);
             float y = smoothedTargetY + cameraHeight;
 
-            // Replicate Hill Climb Racing float jitter and quantization at extreme distances
-            HcrGlitchState glitch = HcrGlitchSystem.Evaluate(target.transform.position.x);
+            // 1. Dynamic Impact Screen Shake
+            if (shakeTimer > 0f)
+            {
+                shakeTimer -= Time.deltaTime;
+                float progress = Mathf.Clamp01(shakeTimer / Mathf.Max(0.001f, shakeDuration));
+                x += (Mathf.PerlinNoise(Time.time * 50f, 13.7f) - 0.5f) * 2f * shakeIntensity * progress;
+                y += (Mathf.PerlinNoise(31.2f, Time.time * 50f) - 0.5f) * 2f * shakeIntensity * progress;
+                if (shakeTimer <= 0f) { shakeIntensity = 0f; shakeDuration = 0f; }
+            }
+
+            // 2. Replicate Hill Climb Racing visual float jitter, screen shake and quantization at distance (> 32,768 m)
+            HcrGlitchState glitch = HcrGlitchSystem.Evaluate(target.ProgressPosition);
             if (glitch.isActive)
             {
                 x = HcrGlitchSystem.Quantize(x, glitch.quantizationStep) + glitch.cameraJitter.x;
@@ -85,6 +99,13 @@ namespace AnimeHillRacing.CameraSystem
             transform.position = new Vector3(x, y, fixedZ);
             transform.rotation = Quaternion.identity;
             cameraComponent.orthographicSize = orthographicSize;
+        }
+
+        public void TriggerImpactShake(float intensity = 0.18f, float duration = 0.22f)
+        {
+            shakeIntensity = Mathf.Max(shakeIntensity, intensity);
+            shakeDuration = Mathf.Max(shakeDuration, duration);
+            shakeTimer = shakeDuration;
         }
 
         public void AssignTarget(VehicleRuntimeBase vehicle) => target = vehicle;

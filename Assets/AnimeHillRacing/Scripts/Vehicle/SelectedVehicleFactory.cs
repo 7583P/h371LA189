@@ -44,7 +44,9 @@ namespace AnimeHillRacing.Vehicle
 
         private void Awake()
         {
-            ActiveDefinition = catalog != null ? catalog.FindVehicle(GameSession.SelectedVehicleId) : null;
+            string vehicleId = !string.IsNullOrEmpty(GameSession.SelectedVehicleId)
+                ? GameSession.SelectedVehicleId : SaveManager.SelectedVehicleId;
+            ActiveDefinition = catalog != null ? (catalog.FindVehicle(vehicleId) ?? (catalog.vehicles != null && catalog.vehicles.Length > 0 ? catalog.vehicles[0] : null)) : null;
             if (ActiveDefinition == null) { enabled = false; return; }
             if (mode == GameModeType.Adventure2_5D)
             {
@@ -74,6 +76,23 @@ namespace AnimeHillRacing.Vehicle
                                                terrainProfile.rainstorm.permanentRain
                     ? terrainProfile.rainstorm.surfaceGripMultiplier : 1f);
             }
+
+            VehiclePhysics2DController vehicle2D = SpawnedVehicle as VehiclePhysics2DController;
+            if (vehicle2D != null)
+            {
+                Suspension2DController front = null;
+                Suspension2DController rear = null;
+                foreach (var s in instance.GetComponentsInChildren<Suspension2DController>(true))
+                {
+                    if (s.name.ToLower().Contains("front")) front = s;
+                    else if (s.name.ToLower().Contains("rear")) rear = s;
+                }
+                vehicle2D.AssignRuntimeReferences(ActiveDefinition, input, front, rear);
+                vehicle2D.SetSurfaceGripMultiplier(terrainProfile != null && terrainProfile.rainstorm != null &&
+                                                   terrainProfile.rainstorm.permanentRain
+                    ? terrainProfile.rainstorm.surfaceGripMultiplier : 1f);
+            }
+
             RoadVehicleController roadVehicle = SpawnedVehicle as RoadVehicleController;
             if (roadVehicle != null) roadVehicle.Assign(ActiveDefinition, input);
             instance.GetComponent<CrashDetector>()?.AssignGameManager(gameManager,

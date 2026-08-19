@@ -86,14 +86,18 @@ namespace AnimeHillRacing.UI
 
             GameObject buttonObj = new GameObject("Teleport Button", typeof(RectTransform), typeof(Image), typeof(Button));
             buttonObj.transform.SetParent(transform, false);
-            buttonObj.transform.SetAsLastSibling();
+
+            Canvas btnCanvas = buttonObj.AddComponent<Canvas>();
+            btnCanvas.overrideSorting = true;
+            btnCanvas.sortingOrder = 50;
+            buttonObj.AddComponent<GraphicRaycaster>();
 
             RectTransform rect = buttonObj.GetComponent<RectTransform>();
-            rect.anchorMin = new Vector2(0.5f, 1f);
-            rect.anchorMax = new Vector2(0.5f, 1f);
-            rect.pivot = new Vector2(0.5f, 1f);
-            rect.anchoredPosition = new Vector2(0f, -18f);
-            rect.sizeDelta = new Vector2(185f, 46f);
+            rect.anchorMin = new Vector2(1f, 1f);
+            rect.anchorMax = new Vector2(1f, 1f);
+            rect.pivot = new Vector2(1f, 1f);
+            rect.anchoredPosition = new Vector2(-330f, -22f);
+            rect.sizeDelta = new Vector2(185f, 44f);
 
             Image img = buttonObj.GetComponent<Image>();
             img.color = new Color(0.08f, 0.12f, 0.25f, 0.95f);
@@ -115,7 +119,7 @@ namespace AnimeHillRacing.UI
             if (defaultFont == null) defaultFont = Resources.GetBuiltinResource<Font>("Arial.ttf");
             if (distanceText != null) defaultFont = distanceText.font;
             label.font = defaultFont;
-            label.fontSize = 16;
+            label.fontSize = 15;
             label.fontStyle = FontStyle.Bold;
             label.alignment = TextAnchor.MiddleCenter;
             label.color = new Color(1f, 0.94f, 0.25f, 1f);
@@ -176,7 +180,7 @@ namespace AnimeHillRacing.UI
                 if (realMeters != displayedDistance)
                 {
                     displayedDistance = realMeters;
-                    distanceText.text = $"DISTANCE: {displayedDistance}m";
+                    distanceText.text = $"{displayedDistance:N0} m";
                 }
             }
             if (bestText != null) bestText.text = $"BEST\n{Mathf.Max(gameManager.BestDistance, gameManager.Distance):N0} m";

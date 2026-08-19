@@ -283,6 +283,9 @@ MonoBehaviour:
   wheelBody: {fileID: 1620969789991025960}
   wheelCollider: {fileID: 4821539004274498174}
   suspensionJoint: {fileID: 2285177552526559080}
+  enableLongDistancePrecisionGlitch: 1
+  startDistance: 32768
+  precisionScale: 1
   logSuspensionAnomalies: 0
   axisDriftToleranceDegrees: 0.1
   anchorDriftTolerance: 0.0005
@@ -387,6 +390,9 @@ MonoBehaviour:
   wheelBody: {fileID: 5322270755893090658}
   wheelCollider: {fileID: 189217279907676907}
   suspensionJoint: {fileID: 8290306636734513457}
+  enableLongDistancePrecisionGlitch: 1
+  startDistance: 32768
+  precisionScale: 1
   logSuspensionAnomalies: 0
   axisDriftToleranceDegrees: 0.1
   anchorDriftTolerance: 0.0005
@@ -2077,3 +2083,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AnimeHillRacing.Vehicle.DriverHeadImpact
   driver: {fileID: 4059228486808087243}
   vehicleBody: {fileID: 8214696846294850537}
+  vehicleBody2D: {fileID: 0}

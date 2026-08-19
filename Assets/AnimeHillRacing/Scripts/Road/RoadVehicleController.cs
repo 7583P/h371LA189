@@ -375,9 +375,7 @@ namespace AnimeHillRacing.Road
                 body.AddForce(Vector3.down * tunedAcceleration, ForceMode.Acceleration);
             if (speedSquared < 0.001f) return;
             float drag = definition.grip.aerodynamicDrag * speedSquared;
-            HcrGlitchState glitch = HcrGlitchSystem.Evaluate(trackDistance);
-            float extraResistance = glitch.isActive ? glitch.extraRollingResistance : 0f;
-            float rolling = hasWheelContact ? definition.mass * Physics.gravity.magnitude * (definition.grip.rollingResistance + extraResistance) : 0f;
+            float rolling = hasWheelContact ? definition.mass * Physics.gravity.magnitude * definition.grip.rollingResistance : 0f;
             body.AddForce(-velocity.normalized * (drag + rolling), ForceMode.Force);
         }
 
@@ -427,6 +425,22 @@ namespace AnimeHillRacing.Road
         }
 
         public override void AddFuel(float normalizedAmount) => fuel?.AddFuel(normalizedAmount);
+
+        public override void TeleportToPosition(Vector3 newPosition)
+        {
+            trackDistance = newPosition.x;
+            furthestTrackDistance = Mathf.Max(furthestTrackDistance, trackDistance);
+            if (body == null) body = GetComponent<Rigidbody>();
+            if (body != null)
+            {
+                body.position = newPosition;
+                body.linearVelocity = Vector3.zero;
+                body.angularVelocity = Vector3.zero;
+            }
+            previousPosition = newPosition;
+            transform.position = newPosition;
+            Physics.SyncTransforms();
+        }
 
         public void Assign(VehicleDefinition vehicleDefinition, VehicleInputController targetInput)
         {

@@ -1,8 +1,16 @@
 using AnimeHillRacing.Core;
+using AnimeHillRacing.Terrain;
 using UnityEngine;
 
 namespace AnimeHillRacing.Vehicle
 {
+    public enum WheelTerrainState
+    {
+        Normal,
+        ContactUnstable,
+        BelowSurface
+    }
+
     /// <summary>
     /// One physical wheel and its suspension. The wheel has its own rigidbody/collider and is constrained to
     /// the chassis by a ConfigurableJoint. Spring and damper forces are equal-and-opposite on the sprung and
@@ -16,6 +24,13 @@ namespace AnimeHillRacing.Vehicle
         [SerializeField] private Rigidbody wheelBody;
         [SerializeField] private SphereCollider wheelCollider;
         [SerializeField] private ConfigurableJoint suspensionJoint;
+        [Header("HCR Long-Distance Precision Glitch")]
+        [Tooltip("Enable long-distance precision glitch inspired by HCR1.")]
+        [SerializeField] private bool enableLongDistancePrecisionGlitch = true;
+        [Tooltip("Distance threshold (in meters) where float precision degradation begins (2^15 = 32,768m).")]
+        [SerializeField, Min(0f)] private float startDistance = 32768f;
+        [Tooltip("Multiplier for the precision step degradation.")]
+        [SerializeField, Min(0.1f)] private float precisionScale = 1.0f;
         [Header("Optional anomaly diagnostics")]
         [SerializeField] private bool logSuspensionAnomalies;
         [SerializeField, Min(.001f)] private float axisDriftToleranceDegrees = .1f;
@@ -57,6 +72,10 @@ namespace AnimeHillRacing.Vehicle
         private bool contactSinceLastStep;
         private bool wasGrounded;
         private bool motionSynchronized;
+        private WheelTerrainState terrainState = WheelTerrainState.Normal;
+        private int contactMissFrames;
+        private int unstableFrames;
+        private float previousSignedDistance = float.NaN;
         private Vector3 contactNormal = Vector3.up;
         private Vector3 contactPoint;
         private Vector3 expectedJointAnchor;
@@ -65,6 +84,26 @@ namespace AnimeHillRacing.Vehicle
         private readonly RaycastHit[] groundHits = new RaycastHit[8];
 
         public bool IsGrounded { get; private set; }
+        public WheelTerrainState TerrainState => terrainState;
+        public bool IsBelowSurface => terrainState == WheelTerrainState.BelowSurface;
+        public bool EnableLongDistancePrecisionGlitch { get => enableLongDistancePrecisionGlitch; set => enableLongDistancePrecisionGlitch = value; }
+        public float StartDistance { get => startDistance; set => startDistance = value; }
+        public float PrecisionScale { get => precisionScale; set => precisionScale = value; }
+        public float VirtualDistance { get; private set; }
+        public int PrecisionTier { get; private set; }
+        public float FloatStep { get; private set; }
+        public int ContactMissFrames => contactMissFrames;
+        public int UnstableFrames => unstableFrames;
+        public float EffectiveCrossingMargin { get; private set; }
+        public float RawSurfaceY { get; private set; }
+        public float SampledSurfaceY { get; private set; }
+        public float WheelBottomY { get; private set; }
+        public float WheelSurfaceDistance => WheelBottomY - RawSurfaceY;
+        public float NormalVelocity { get; private set; }
+        public float NormalTravelPerStep { get; private set; }
+        public float SignedSurfaceDistance { get; private set; }
+        public bool HasPhysXContact { get; private set; }
+        public bool HasQuantizedProbe { get; private set; }
         public RaycastHit GroundHit { get; private set; }
         public float Compression01 { get; private set; }
         public float CompressionFromRest => restLength - currentLength;
@@ -132,6 +171,7 @@ namespace AnimeHillRacing.Vehicle
             slidingGripMultiplier = stats.slidingGripMultiplier;
             tractionRecoveryPerSecond = stats.tractionRecoveryPerSecond;
 
+            ResetWheelState();
             EnsurePhysicalWheel(definition, stats.grip);
             ConfigureHardTravelLimit();
             currentLength = restLength;
@@ -142,6 +182,20 @@ namespace AnimeHillRacing.Vehicle
             contactPoint = wheelBody.position - body.transform.up * wheelRadius;
             SyncVisual();
         }
+
+        public void ResetWheelState()
+        {
+            terrainState = WheelTerrainState.Normal;
+            contactMissFrames = 0;
+            unstableFrames = 0;
+            previousSignedDistance = wheelRadius;
+            if (wheelCollider != null)
+            {
+                wheelCollider.enabled = true;
+            }
+        }
+
+        public void ResetGlitchState() => ResetWheelState();
 
         private void EnsurePhysicalWheel(VehicleDefinition definition, float physicalGrip)
         {
@@ -304,6 +358,124 @@ namespace AnimeHillRacing.Vehicle
                 motionSynchronized = true;
             }
 
+            // Determine virtual distance and active float precision step
+            float currentDist = body != null ? body.position.x : transform.position.x;
+            if (GameManager.Instance != null && GameManager.Instance.Distance > currentDist)
+                currentDist = GameManager.Instance.Distance;
+            VirtualDistance = currentDist;
+
+            if (enableLongDistancePrecisionGlitch && currentDist >= startDistance)
+            {
+                FloatStep = LongDistancePrecision.CalculateFloatStep(currentDist, startDistance) * precisionScale;
+                PrecisionTier = LongDistancePrecision.CalculatePrecisionTier(currentDist, startDistance);
+            }
+            else
+            {
+                FloatStep = 0f;
+                PrecisionTier = 0;
+            }
+
+            // Query actual and quantized terrain heights
+            MapProfile profile = (GameManager.Instance != null && GameManager.Instance.MapProfile != null) ? GameManager.Instance.MapProfile
+                               : (TerrainManager.Instance != null && TerrainManager.Instance.ActiveProfile != null) ? TerrainManager.Instance.ActiveProfile
+                               : Object.FindAnyObjectByType<TerrainManager>() != null ? Object.FindAnyObjectByType<TerrainManager>().ActiveProfile
+                               : Object.FindAnyObjectByType<GameManager>() != null ? Object.FindAnyObjectByType<GameManager>().MapProfile : null;
+
+            float rawX = wheelBody.position.x;
+            if (profile != null)
+            {
+                RawSurfaceY = TerrainGenerator.SampleHeight(profile, rawX);
+            }
+            else if (Physics.Raycast(new Vector3(rawX, wheelBody.position.y + 100f, wheelBody.position.z), Vector3.down, out RaycastHit terrainHit, 200f, groundMask))
+            {
+                RawSurfaceY = terrainHit.point.y;
+            }
+            else
+            {
+                RawSurfaceY = 0f;
+            }
+
+            float quantizedX = FloatStep > 0f ? LongDistancePrecision.Quantize(rawX, FloatStep) : rawX;
+            SampledSurfaceY = profile != null ? TerrainGenerator.SampleHeight(profile, quantizedX) : RawSurfaceY;
+            WheelBottomY = wheelBody.position.y - wheelRadius;
+
+            // Surface normal calculation for accurate normal projection
+            Vector3 terrainNormal = Vector3.up;
+            if (profile != null)
+            {
+                const float eps = 0.05f;
+                float yR = TerrainGenerator.SampleHeight(profile, rawX + eps);
+                float yL = TerrainGenerator.SampleHeight(profile, rawX - eps);
+                float slope = (yR - yL) / (2f * eps);
+                terrainNormal = new Vector3(-slope, 1f, 0f).normalized;
+            }
+            else if (contactNormal.sqrMagnitude > 0.01f)
+            {
+                terrainNormal = contactNormal;
+            }
+
+            // Signed distance along surface normal from terrain surface to wheel center
+            Vector3 surfacePoint = new Vector3(rawX, RawSurfaceY, wheelBody.position.z);
+            float currentSignedDistance = Vector3.Dot(wheelBody.position - surfacePoint, terrainNormal);
+            SignedSurfaceDistance = currentSignedDistance;
+
+            // Normal inward velocity relative to local terrain normal (positive when moving inward towards terrain)
+            Vector3 relativeWheelVelocity = wheelBody.linearVelocity;
+            float normalInwardVel = -Vector3.Dot(relativeWheelVelocity, terrainNormal);
+            NormalVelocity = normalInwardVel;
+            NormalTravelPerStep = Mathf.Max(0f, normalInwardVel) * Time.fixedDeltaTime;
+
+            // Handle BelowSurface state: wheel is trapped underneath the track.
+            // Irreversible during race. Anchors the chassis down into the ground.
+            // No force, jump, or chassis momentum can pull the wheel out through the ground.
+            // Only ResetWheelState() (respawn/teleport/restart) can restore it to Normal.
+            if (terrainState == WheelTerrainState.BelowSurface)
+            {
+                if (wheelCollider != null && wheelCollider.enabled)
+                    wheelCollider.enabled = false;
+
+                IsGrounded = false;
+                wasGrounded = false;
+                lastSuspensionForce = 0f;
+                lastSpringForce = 0f;
+                lastDamperForce = 0f;
+                lastLandingImpactSpeed = 0f;
+                lastContactNormalForce = 0f;
+                tractionBlend = 0f;
+                Slip01 = 0f;
+                Compression01 = 0f;
+                previousSignedDistance = currentSignedDistance;
+
+                // 1. Physically clamp wheel below terrain surface ceiling so it cannot rise out
+                float ceilingY = RawSurfaceY - 0.05f;
+                if (wheelBody.position.y > ceilingY)
+                {
+                    Vector3 pos = wheelBody.position;
+                    pos.y = ceilingY;
+                    wheelBody.position = pos;
+                }
+
+                // 2. Block upward velocity on trapped wheel and add underground drag
+                Vector3 wVel = wheelBody.linearVelocity;
+                if (wVel.y > 0f) wVel.y = 0f;
+                wVel.x *= 0.85f;
+                wheelBody.linearVelocity = wVel;
+
+                // 3. Anchor the chassis downward towards the trapped wheel position
+                if (body != null)
+                {
+                    Vector3 anchorPoint = body.transform.TransformPoint(new Vector3(anchorLocalX, 0f, 0f));
+                    float pullForce = Mathf.Clamp(body.mass * 9.81f * 3.5f, 3000f, 25000f);
+                    body.AddForceAtPosition(Vector3.down * pullForce, anchorPoint, ForceMode.Force);
+
+                    // Underground resistance damping on chassis
+                    Vector3 bVel = body.linearVelocity;
+                    bVel.x *= 0.97f;
+                    body.linearVelocity = bVel;
+                }
+                return;
+            }
+
             Vector3 up = body.transform.up;
             Vector3 anchor = body.transform.TransformPoint(new Vector3(anchorLocalX, 0f, 0f));
             float measuredLength = Vector3.Dot(anchor - wheelBody.position, up);
@@ -312,11 +484,171 @@ namespace AnimeHillRacing.Vehicle
             float rawCompression = restLength - measuredLength;
             float relativeVelocity = Vector3.Dot(body.GetPointVelocity(anchor) - wheelBody.linearVelocity, up);
             lastRelativeVelocity = relativeVelocity;
-            bool probedGround = ProbeGround(out RaycastHit hit);
-            // Each wheel owns its own contact probe. The probe is constrained to the physical tire radius
-            // plus a small authored skin, so it represents that wheel touching the surface; it never promotes
-            // the opposite axle or the complete vehicle to grounded.
-            IsGrounded = contactSinceLastStep || probedGround;
+
+            // Quantized ground probe
+            bool probedGround = ProbeGroundQuantized(FloatStep, out RaycastHit hit);
+            HasQuantizedProbe = probedGround;
+            HasPhysXContact = contactSinceLastStep;
+
+            // Point 1: A failure of the quantized raycast alone does NOT remove suspension support if
+            // SphereCollider/PhysX still reports valid physical contact.
+            IsGrounded = HasPhysXContact || probedGround;
+
+            // Physical crossing requirements scaled progressively by Precision Tier (Glitch Phase):
+            // Tier 15 (2^15 = 32,768m - 65,535m): First glitch phase. Micro-stutter/tremor, clipping is extremely rare.
+            // Tier 16 (2^16 = 65,536m - 131,071m): Moderate chatter, clipping requires heavy crash landing.
+            // Tier 17 (2^17 = 131,072m - 262,143m): High hazard, hard landings can trap wheels.
+            // Tier 18+ (2^18 = 262,144m+): Extreme glitch zone, wheels clip frequently on impacts.
+            float requiredInwardVel;
+            float requiredPenetrationFactor;
+            int requiredUnstableFrames;
+
+            if (PrecisionTier <= 15)
+            {
+                requiredInwardVel = 7.0f;
+                requiredPenetrationFactor = 0.70f;
+                requiredUnstableFrames = 8;
+            }
+            else if (PrecisionTier == 16)
+            {
+                requiredInwardVel = 4.5f;
+                requiredPenetrationFactor = 0.50f;
+                requiredUnstableFrames = 6;
+            }
+            else if (PrecisionTier == 17)
+            {
+                requiredInwardVel = 2.5f;
+                requiredPenetrationFactor = 0.35f;
+                requiredUnstableFrames = 4;
+            }
+            else
+            {
+                requiredInwardVel = 1.2f;
+                requiredPenetrationFactor = 0.20f;
+                requiredUnstableFrames = 3;
+            }
+
+            EffectiveCrossingMargin = Mathf.Max(FloatStep * 2f, wheelRadius * requiredPenetrationFactor);
+
+            // Contact stability state machine and hysteresis:
+            if (FloatStep > 0f)
+            {
+                // In open air (well above surface), wheel is naturally ungrounded and stable
+                if (currentSignedDistance > wheelRadius * 0.5f)
+                {
+                    if (terrainState == WheelTerrainState.ContactUnstable)
+                        terrainState = WheelTerrainState.Normal;
+                    unstableFrames = 0;
+                    contactMissFrames = 0;
+                }
+                else if (IsGrounded)
+                {
+                    if (HasPhysXContact && HasQuantizedProbe)
+                    {
+                        if (terrainState == WheelTerrainState.ContactUnstable)
+                        {
+                            Debug.Log($"[WheelStateTransition] {name} ({VirtualDistance:0.0}m): ContactUnstable (after {unstableFrames} frames) -> Normal (Saved!)", this);
+                            terrainState = WheelTerrainState.Normal;
+                        }
+                        unstableFrames = 0;
+                        contactMissFrames = 0;
+                    }
+                    else if (!HasQuantizedProbe && HasPhysXContact && normalInwardVel > 1.2f)
+                    {
+                        // Quantized contact disagreement under heavy inward compression
+                        unstableFrames++;
+                        contactMissFrames++;
+                        if (terrainState == WheelTerrainState.Normal)
+                        {
+                            Debug.Log($"[WheelStateTransition] {name} ({VirtualDistance:0.0}m): Normal -> ContactUnstable (Frame {unstableFrames}) | InwardVel={NormalVelocity:0.00}m/s | FloatStep={FloatStep:0.000000}", this);
+                            terrainState = WheelTerrainState.ContactUnstable;
+                        }
+                    }
+                    else
+                    {
+                        // Grounded with PhysX and controlled inward velocity -> contact stabilizes naturally
+                        if (terrainState == WheelTerrainState.ContactUnstable && normalInwardVel <= 0.8f)
+                        {
+                            Debug.Log($"[WheelStateTransition] {name} ({VirtualDistance:0.0}m): ContactUnstable (after {unstableFrames} frames) -> Normal (Stabilized)", this);
+                            terrainState = WheelTerrainState.Normal;
+                            unstableFrames = 0;
+                            contactMissFrames = 0;
+                        }
+                    }
+                }
+                else
+                {
+                    // Near ground boundary without confirmed contact
+                    if (currentSignedDistance <= 0.05f && normalInwardVel > 1.0f)
+                    {
+                        unstableFrames++;
+                        contactMissFrames++;
+                        if (terrainState == WheelTerrainState.Normal)
+                        {
+                            Debug.Log($"[WheelStateTransition] {name} ({VirtualDistance:0.0}m): Normal -> ContactUnstable (Frame {unstableFrames}) | Boundary Mismatch | InwardVel={NormalVelocity:0.00}m/s", this);
+                            terrainState = WheelTerrainState.ContactUnstable;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                if (terrainState != WheelTerrainState.Normal)
+                    terrainState = WheelTerrainState.Normal;
+                unstableFrames = 0;
+                contactMissFrames = 0;
+            }
+
+            // Real geometric crossing into BelowSurface:
+            // Requires:
+            // 1. FloatStep > 0
+            // 2. Sustained multiframe struggle matching the precision tier (unstableFrames >= requiredUnstableFrames)
+            // 3. Wheel center has physically penetrated deep below the tier-calibrated crossing margin (currentSignedDistance <= -EffectiveCrossingMargin)
+            // 4. Inward velocity is actively forcing the wheel deeper (normalInwardVel > requiredInwardVel)
+            // 5. Quantized ground probe is completely lost
+            if (FloatStep > 0f && terrainState == WheelTerrainState.ContactUnstable)
+            {
+                bool isPastCrossingMargin = currentSignedDistance <= -EffectiveCrossingMargin;
+                bool isMovingInward = normalInwardVel > requiredInwardVel;
+                bool hasSufficientUnstableFrames = unstableFrames >= requiredUnstableFrames;
+                bool hasLostProbe = !HasQuantizedProbe;
+
+                if (isPastCrossingMargin && isMovingInward && hasSufficientUnstableFrames && hasLostProbe)
+                {
+                    WheelTerrainState previousState = terrainState;
+                    float prevSigned = previousSignedDistance;
+                    terrainState = WheelTerrainState.BelowSurface;
+                    if (wheelCollider != null) wheelCollider.enabled = false;
+                    IsGrounded = false;
+                    wasGrounded = false;
+                    lastSuspensionForce = 0f;
+                    lastSpringForce = 0f;
+                    lastDamperForce = 0f;
+                    lastContactNormalForce = 0f;
+                    tractionBlend = 0f;
+                    Slip01 = 0f;
+                    Compression01 = 0f;
+                    previousSignedDistance = currentSignedDistance;
+
+                    Debug.Log($"[LongDistanceWheelCrossing]\n" +
+                              $"Distance: {VirtualDistance:0.00}\n" +
+                              $"Wheel: {name}\n" +
+                              $"Tier: {PrecisionTier}\n" +
+                              $"FloatStep: {FloatStep:0.0000000}\n" +
+                              $"UnstableFrames: {unstableFrames}\n" +
+                              $"HasPhysXContact: {HasPhysXContact}\n" +
+                              $"HasQuantizedProbe: {HasQuantizedProbe}\n" +
+                              $"NormalVelocity: {NormalVelocity:0.00}\n" +
+                              $"NormalTravelPerStep: {NormalTravelPerStep:0.0000}\n" +
+                              $"PreviousSignedDistance: {prevSigned:0.000}\n" +
+                              $"CurrentSignedDistance: {currentSignedDistance:0.000}\n" +
+                              $"EffectiveCrossingMargin: {EffectiveCrossingMargin:0.000}\n" +
+                              $"WheelRadius: {wheelRadius:0.00}\n" +
+                              $"CrossingConfirmed = true", this);
+                    return;
+                }
+            }
+
             if (IsGrounded && !wasGrounded && relativeVelocity < -.65f)
             {
                 lastLandingImpactSpeed = -relativeVelocity;
@@ -386,12 +718,18 @@ namespace AnimeHillRacing.Vehicle
                 maximumCompression, maximumExtension);
             UpdateSlip();
             ValidateConfigurationDrift();
+            previousSignedDistance = SignedSurfaceDistance;
         }
 
-        private bool ProbeGround(out RaycastHit nearest)
+        private bool ProbeGroundQuantized(float step, out RaycastHit nearest)
         {
             const float originLift = .02f;
             Vector3 origin = wheelBody.position + body.transform.up * originLift;
+            if (step > 0.00001f)
+            {
+                origin.x = LongDistancePrecision.Quantize(origin.x, step);
+                origin.y = LongDistancePrecision.Quantize(origin.y, step);
+            }
             float distance = wheelRadius + originLift + Mathf.Clamp(wheelContactTolerance, .005f, .04f);
             return SuspensionPhysics.TryRaycastGround(origin, -body.transform.up, distance, groundMask,
                 body.transform, groundHits, out nearest);
@@ -448,25 +786,27 @@ namespace AnimeHillRacing.Vehicle
         public void AssignWheelVisual(Transform visual) => wheelVisual = visual;
 
         public void AssignPhysicalReferences(Rigidbody targetWheelBody, SphereCollider targetWheelCollider,
-            ConfigurableJoint chassisJoint)
+            ConfigurableJoint targetJoint)
         {
             wheelBody = targetWheelBody;
             wheelCollider = targetWheelCollider;
-            suspensionJoint = chassisJoint;
+            suspensionJoint = targetJoint;
         }
 
         private void ValidateConfigurationDrift()
         {
-            if (!logSuspensionAnomalies || suspensionJoint == null || body == null) return;
-            float axisDelta = Vector3.Angle(SuspensionAxisWorld, body.transform.up);
-            float jointAnchorDelta = Vector3.Distance(suspensionJoint.anchor, expectedJointAnchor);
+            if (!logSuspensionAnomalies || suspensionJoint == null || wheelBody == null ||
+                Time.time < nextDiagnosticLogTime) return;
+
+            Vector3 currentAxis = suspensionJoint.transform.TransformDirection(suspensionJoint.secondaryAxis).normalized;
+            float angle = Vector3.Angle(body.transform.up, currentAxis);
+            float anchorDelta = Vector3.Distance(suspensionJoint.anchor, expectedJointAnchor);
             float connectedAnchorDelta = Vector3.Distance(suspensionJoint.connectedAnchor, expectedConnectedAnchor);
-            if (axisDelta <= axisDriftToleranceDegrees && jointAnchorDelta <= anchorDriftTolerance &&
+            if (angle <= axisDriftToleranceDegrees && anchorDelta <= anchorDriftTolerance &&
                 connectedAnchorDelta <= anchorDriftTolerance) return;
-            if (Time.unscaledTime < nextDiagnosticLogTime) return;
-            nextDiagnosticLogTime = Time.unscaledTime + 1f;
-            Debug.LogWarning($"{name} suspension configuration drift | axisDelta={axisDelta:0.000}deg, " +
-                             $"anchorDelta={jointAnchorDelta:0.000000}m, " +
+
+            nextDiagnosticLogTime = Time.time + 1f;
+            Debug.LogWarning($"{name}: axis drift={angle:0.000} deg, anchorDelta={anchorDelta:0.000000}m, " +
                              $"connectedAnchorDelta={connectedAnchorDelta:0.000000}m, " +
                              $"translation={JointTranslation:0.0000}m, wheelV={wheelBody.linearVelocity}, " +
                              $"wheelW={wheelBody.angularVelocity.z:0.000}, chassisV={body.linearVelocity}, " +
@@ -480,22 +820,7 @@ namespace AnimeHillRacing.Vehicle
         private void SyncVisual()
         {
             if (wheelVisual == null || wheelBody == null) return;
-            // Rigidbody.position/rotation expose the simulation pose, while Transform exposes the
-            // interpolated render pose. Mixing simulation-pose wheels with the interpolated chassis
-            // creates a one-physics-step visual offset that grows with speed.
             Vector3 position = wheelBody.transform.position;
-
-            // Replicate Hill Climb Racing distance-based soft sinking when grounded
-            if (IsGrounded)
-            {
-                HcrGlitchState glitch = HcrGlitchSystem.Evaluate(position.x);
-                if (glitch.isActive && glitch.sinkDepth > 0f)
-                {
-                    Vector3 sinkDirection = contactNormal.sqrMagnitude > 0.001f ? contactNormal : Vector3.up;
-                    position -= sinkDirection * glitch.sinkDepth;
-                }
-            }
-
             position.z = wheelVisual.position.z;
             wheelVisual.position = position;
             wheelVisual.rotation = Quaternion.Euler(0f, 0f, wheelBody.transform.rotation.eulerAngles.z);
@@ -506,6 +831,7 @@ namespace AnimeHillRacing.Vehicle
 
         private void CaptureContact(Collision collision)
         {
+            if (terrainState == WheelTerrainState.BelowSurface) return;
             if (body == null || collision == null || collision.collider == null ||
                 !SuspensionPhysics.LayerInMask(collision.collider.gameObject.layer, groundMask) ||
                 collision.collider.transform.IsChildOf(body.transform)) return;
@@ -525,6 +851,29 @@ namespace AnimeHillRacing.Vehicle
             lastContactNormalForce = Mathf.Min(maximumNormalForce,
                 collision.impulse.magnitude / Mathf.Max(.001f, Time.fixedDeltaTime));
         }
+
+#if UNITY_EDITOR
+        private void OnDrawGizmosSelected()
+        {
+            if (wheelBody == null) return;
+            Vector3 center = wheelBody.position;
+            Gizmos.color = terrainState == WheelTerrainState.BelowSurface ? Color.red :
+                           terrainState == WheelTerrainState.ContactUnstable ? Color.yellow : Color.green;
+            Gizmos.DrawWireSphere(center, wheelRadius);
+
+            Vector3 rawSurfacePos = new Vector3(center.x, RawSurfaceY, center.z);
+            Gizmos.color = Color.cyan;
+            Gizmos.DrawSphere(rawSurfacePos, 0.04f);
+
+            if (FloatStep > 0f)
+            {
+                float qX = LongDistancePrecision.Quantize(center.x, FloatStep);
+                Vector3 qPos = new Vector3(qX, SampledSurfaceY, center.z);
+                Gizmos.color = Color.magenta;
+                Gizmos.DrawWireCube(qPos, new Vector3(FloatStep, 0.05f, 0.1f));
+            }
+        }
+#endif
 
         private void OnDestroy()
         {

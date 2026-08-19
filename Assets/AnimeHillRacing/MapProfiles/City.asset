@@ -105,6 +105,7 @@ MonoBehaviour:
   terrainSurfaceContactV: 0.45
   terrainFillStartV: 0.45
   groundPhysicsMaterial: {fileID: 13400000, guid: 4dfb87f232532b24aafe44e9c5c97f50, type: 2}
+  groundPhysicsMaterial2D: {fileID: 0}
   terrainEdgeWidth: 0.18
   terrainVisualDepth: 22
   supportsLiquidExposure: 0
@@ -161,7 +162,5 @@ MonoBehaviour:
   hcrGlitch:
     enabled: 1
     startDistance: 32768
-    maxSinkDepth: 0.16
-    maxExtraRollingResistance: 0.09
     maxCameraJitter: 0.055
     enableTextureGlitch: 1

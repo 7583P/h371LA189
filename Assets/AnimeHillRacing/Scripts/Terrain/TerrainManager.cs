@@ -31,6 +31,8 @@ namespace AnimeHillRacing.Terrain
         private readonly HashSet<long> requiredLiquidHazards = new HashSet<long>();
         private readonly List<long> liquidKeyBuffer = new List<long>(12);
 
+        public static TerrainManager Instance { get; private set; }
+
         public int CurrentChunkIndex => currentChunkIndex;
         public MapProfile ActiveProfile => mapProfile;
         public float CurrentDifficulty => mapProfile != null && vehicle != null
@@ -42,6 +44,11 @@ namespace AnimeHillRacing.Terrain
             : TerrainSectionKind.Fast;
         public float CurrentFuelSpacing => fuelSequence.CurrentSpacing;
         public float NextFuelSequencePosition => fuelSequence.NextPosition;
+
+        private void Awake()
+        {
+            Instance = this;
+        }
 
         private void Start()
         {
@@ -95,21 +102,17 @@ namespace AnimeHillRacing.Terrain
 
             float targetY = TerrainGenerator.SampleHeight(mapProfile, targetWorldX) + 2.5f;
 
-            if (vehicle != null)
+            VehicleRuntimeBase activeVehicle = vehicle;
+            if (activeVehicle == null)
             {
-                Rigidbody rb = vehicle.Body;
-                if (rb != null)
-                {
-                    rb.position = new Vector3(targetWorldX, targetY, 0f);
-                    rb.linearVelocity = Vector3.zero;
-                    rb.angularVelocity = Vector3.zero;
-                }
-                vehicle.transform.position = new Vector3(targetWorldX, targetY, 0f);
-                vehicle.transform.rotation = Quaternion.identity;
+                GameManager gm = FindFirstObjectByType<GameManager>();
+                if (gm != null) activeVehicle = gm.Vehicle;
+            }
 
-                FuelSystem fuel = vehicle.Fuel;
-                if (fuel != null)
-                    fuel.AddFuel(100f);
+            if (activeVehicle != null)
+            {
+                activeVehicle.TeleportToPosition(new Vector3(targetWorldX, targetY, 0f));
+                activeVehicle.Fuel?.AddFuel(100f);
             }
 
             int newChunkIndex = Mathf.FloorToInt(targetWorldX / chunkLength);
@@ -405,6 +408,7 @@ namespace AnimeHillRacing.Terrain
 
         private void OnDestroy()
         {
+            if (Instance == this) Instance = null;
             if (authoritativeTerrainMesh == null) return;
             if (Application.isPlaying) Destroy(authoritativeTerrainMesh);
             else DestroyImmediate(authoritativeTerrainMesh);

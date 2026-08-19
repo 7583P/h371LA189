@@ -383,10 +383,8 @@ namespace AnimeHillRacing.Vehicle
                 return;
 
             float dragForce = definition.grip.aerodynamicDrag * speed * speed;
-            HcrGlitchState glitch = HcrGlitchSystem.Evaluate(body.position.x);
-            float extraResistance = glitch.isActive ? glitch.extraRollingResistance : 0f;
             float rollingForce = AnyWheelGrounded
-                ? definition.mass * Physics.gravity.magnitude * (definition.grip.rollingResistance + extraResistance) : 0f;
+                ? definition.mass * Physics.gravity.magnitude * definition.grip.rollingResistance : 0f;
             body.AddForce(-velocity.normalized * (dragForce + rollingForce), ForceMode.Force);
         }
 
@@ -665,6 +663,43 @@ namespace AnimeHillRacing.Vehicle
         }
 
         public override void AddFuel(float normalizedAmount) => fuel?.AddFuel(normalizedAmount);
+
+        public override void TeleportToPosition(Vector3 newPosition)
+        {
+            if (body == null) body = GetComponent<Rigidbody>();
+            Vector3 oldPos = body != null ? body.position : transform.position;
+            Vector3 delta = newPosition - oldPos;
+
+            if (body != null)
+            {
+                body.position = newPosition;
+                body.linearVelocity = Vector3.zero;
+                body.angularVelocity = Vector3.zero;
+            }
+            transform.position = newPosition;
+            transform.rotation = Quaternion.identity;
+
+            furthestDistanceReached = newPosition.x;
+
+            if (suspensionPoints != null)
+            {
+                for (int i = 0; i < suspensionPoints.Length; i++)
+                {
+                    if (suspensionPoints[i] != null)
+                    {
+                        suspensionPoints[i].ResetGlitchState();
+                        if (suspensionPoints[i].WheelBody != null)
+                        {
+                            suspensionPoints[i].WheelBody.position += delta;
+                            suspensionPoints[i].WheelBody.linearVelocity = Vector3.zero;
+                            suspensionPoints[i].WheelBody.angularVelocity = Vector3.zero;
+                        }
+                    }
+                }
+            }
+
+            Physics.SyncTransforms();
+        }
 
         public void AssignRuntimeReferences(VehicleDefinition vehicleDefinition, VehicleInputController targetInput,
             SuspensionController[] points)

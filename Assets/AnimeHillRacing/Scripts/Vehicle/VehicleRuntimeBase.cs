@@ -33,11 +33,30 @@ namespace AnimeHillRacing.Vehicle
         public abstract VehicleDefinition Definition { get; }
         public abstract ResolvedVehicleStats Stats { get; }
         public abstract FuelSystem Fuel { get; }
-        public abstract Rigidbody Body { get; }
+        public virtual Rigidbody Body => null;
+        public virtual Rigidbody2D Body2D => null;
         public abstract void SetDriveEnabled(bool value);
         public abstract void AddFuel(float normalizedAmount);
 
         public virtual void RefillFuelFull() => Fuel?.RefillFull();
+
+        public virtual void TeleportToPosition(Vector3 targetPosition)
+        {
+            if (Body != null)
+            {
+                Body.position = targetPosition;
+                Body.linearVelocity = Vector3.zero;
+                Body.angularVelocity = Vector3.zero;
+            }
+            if (Body2D != null)
+            {
+                Body2D.position = new Vector2(targetPosition.x, targetPosition.y);
+                Body2D.linearVelocity = Vector2.zero;
+                Body2D.angularVelocity = 0f;
+            }
+            transform.position = targetPosition;
+            transform.rotation = Quaternion.identity;
+        }
 
         public virtual void SetTransmissionMode(TransmissionMode mode)
         {

@@ -1,5 +1,6 @@
 using AnimeHillRacing.Core;
 using AnimeHillRacing.Terrain;
+using AnimeHillRacing.Vehicle;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -12,10 +13,15 @@ namespace AnimeHillRacing.UI
         private Text distanceDisplay;
         private Text phaseDescriptionText;
         private Slider distanceSlider;
+        private Text resetFuelBtnText;
+        private Text unlimitedFuelBtnText;
+        private Image unlimitedFuelBtnImage;
         private float selectedDistance = 32768f;
         private bool isOpen;
         private float previousTimeScale = 1f;
         private bool isUpdatingSliderInternally;
+
+        public static bool IsUnlimitedFuel { get; private set; }
 
         public bool IsOpen => isOpen;
 
@@ -24,13 +30,6 @@ namespace AnimeHillRacing.UI
             Canvas rootCanvas = parent != null ? parent.GetComponentInParent<Canvas>() : null;
             Transform targetParent = rootCanvas != null ? rootCanvas.transform : parent;
 
-            if (targetParent != null)
-            {
-                GraphicRaycaster raycaster = targetParent.GetComponent<GraphicRaycaster>();
-                if (raycaster == null && rootCanvas != null)
-                    rootCanvas.gameObject.AddComponent<GraphicRaycaster>();
-            }
-
             GameObject go = new GameObject("Teleport Modal Controller", typeof(RectTransform));
             go.transform.SetParent(targetParent, false);
             RectTransform rootRect = go.GetComponent<RectTransform>();
@@ -38,6 +37,12 @@ namespace AnimeHillRacing.UI
             rootRect.anchorMax = Vector2.one;
             rootRect.offsetMin = Vector2.zero;
             rootRect.offsetMax = Vector2.zero;
+
+            // Dedicated Canvas + GraphicRaycaster with highest sortingOrder to ensure it is always on top and fully clickable
+            Canvas modalCanvas = go.AddComponent<Canvas>();
+            modalCanvas.overrideSorting = true;
+            modalCanvas.sortingOrder = 100;
+            go.AddComponent<GraphicRaycaster>();
 
             TeleportModalUI modal = go.AddComponent<TeleportModalUI>();
             modal.BuildUI();
@@ -59,18 +64,18 @@ namespace AnimeHillRacing.UI
             blockerRect.offsetMax = Vector2.zero;
 
             Image blockerImage = modalContainer.GetComponent<Image>();
-            blockerImage.color = new Color(0f, 0f, 0.05f, 0.82f);
+            blockerImage.color = new Color(0f, 0f, 0.05f, 0.72f);
             blockerImage.raycastTarget = true;
 
-            // Window Card (Glassmorphic Cyber-Neon)
+            // Window Card (Glassmorphic Cyber-Neon, shifted to the right so player/car remains visible on the left)
             GameObject window = new GameObject("Window", typeof(RectTransform), typeof(Image));
             window.transform.SetParent(modalContainer.transform, false);
             RectTransform winRect = window.GetComponent<RectTransform>();
             winRect.anchorMin = new Vector2(0.5f, 0.5f);
             winRect.anchorMax = new Vector2(0.5f, 0.5f);
             winRect.pivot = new Vector2(0.5f, 0.5f);
-            winRect.anchoredPosition = Vector2.zero;
-            winRect.sizeDelta = new Vector2(520f, 560f);
+            winRect.anchoredPosition = new Vector2(250f, 0f);
+            winRect.sizeDelta = new Vector2(520f, 630f);
 
             Image winImg = window.GetComponent<Image>();
             winImg.color = new Color(0.06f, 0.08f, 0.16f, 0.98f);
@@ -82,14 +87,14 @@ namespace AnimeHillRacing.UI
 
             // Header Title
             CreateText(window.transform, "Title", "🚀 MENU DE TELETRANSPORTE", 22, FontStyle.Bold,
-                new Vector2(0f, 245f), new Vector2(480f, 40f), new Color(0.3f, 0.9f, 1f, 1f), font);
+                new Vector2(0f, 278f), new Vector2(480f, 38f), new Color(0.3f, 0.9f, 1f, 1f), font);
 
             // Target Distance Card
             GameObject displayCard = new GameObject("Display Card", typeof(RectTransform), typeof(Image));
             displayCard.transform.SetParent(window.transform, false);
             RectTransform cardRect = displayCard.GetComponent<RectTransform>();
-            cardRect.anchoredPosition = new Vector2(0f, 180f);
-            cardRect.sizeDelta = new Vector2(460f, 75f);
+            cardRect.anchoredPosition = new Vector2(0f, 214f);
+            cardRect.sizeDelta = new Vector2(460f, 70f);
             Image cardImg = displayCard.GetComponent<Image>();
             cardImg.color = new Color(0.02f, 0.03f, 0.08f, 0.98f);
             cardImg.raycastTarget = false;
@@ -98,28 +103,28 @@ namespace AnimeHillRacing.UI
             cardOutline.effectColor = new Color(1f, 0.85f, 0.2f, 0.9f);
             cardOutline.effectDistance = new Vector2(2f, -2f);
 
-            distanceDisplay = CreateText(displayCard.transform, "Distance Text", "32,768 m", 30, FontStyle.Bold,
-                new Vector2(0f, 12f), new Vector2(440f, 38f), new Color(1f, 0.94f, 0.25f, 1f), font);
+            distanceDisplay = CreateText(displayCard.transform, "Distance Text", "32,768 m", 28, FontStyle.Bold,
+                new Vector2(0f, 12f), new Vector2(440f, 36f), new Color(1f, 0.94f, 0.25f, 1f), font);
 
-            phaseDescriptionText = CreateText(displayCard.transform, "Phase Text", "Fase 1 (32K): Pre-Glitch & Hundimiento leve (3cm)", 12, FontStyle.Italic,
-                new Vector2(0f, -20f), new Vector2(440f, 22f), new Color(0.7f, 0.88f, 1f, 0.95f), font);
+            phaseDescriptionText = CreateText(displayCard.transform, "Phase Text", "Fase 1 (32K): Pre-Glitch & Hundimiento leve (3cm)", 11, FontStyle.Italic,
+                new Vector2(0f, -18f), new Vector2(440f, 22f), new Color(0.7f, 0.88f, 1f, 0.95f), font);
 
             // Touch Slider for smooth finger dragging from 0m to 150,000m
-            CreateTouchSlider(window.transform, new Vector2(0f, 115f), new Vector2(450f, 30f), font);
+            CreateTouchSlider(window.transform, new Vector2(0f, 154f), new Vector2(450f, 28f), font);
 
             // Tactile Fine Adjustment Buttons (+500m / -500m / +5000m / -5000m)
-            CreateButton(window.transform, "BtnMinus5000", "-5,000m", new Vector2(-170f, 62f), new Vector2(104f, 44f),
+            CreateButton(window.transform, "BtnMinus5000", "-5,000m", new Vector2(-170f, 108f), new Vector2(104f, 40f),
                 new Color(0.18f, 0.22f, 0.40f, 0.95f), font, () => AddDistance(-5000f), 15);
-            CreateButton(window.transform, "BtnMinus500", "-500m", new Vector2(-58f, 62f), new Vector2(104f, 44f),
+            CreateButton(window.transform, "BtnMinus500", "-500m", new Vector2(-58f, 108f), new Vector2(104f, 40f),
                 new Color(0.24f, 0.32f, 0.58f, 0.95f), font, () => AddDistance(-500f), 16);
-            CreateButton(window.transform, "BtnPlus500", "+500m", new Vector2(58f, 62f), new Vector2(104f, 44f),
+            CreateButton(window.transform, "BtnPlus500", "+500m", new Vector2(58f, 108f), new Vector2(104f, 40f),
                 new Color(0.14f, 0.56f, 0.40f, 0.98f), font, () => AddDistance(500f), 16);
-            CreateButton(window.transform, "BtnPlus5000", "+5,000m", new Vector2(170f, 62f), new Vector2(104f, 44f),
+            CreateButton(window.transform, "BtnPlus5000", "+5,000m", new Vector2(170f, 108f), new Vector2(104f, 40f),
                 new Color(0.16f, 0.68f, 0.48f, 0.98f), font, () => AddDistance(5000f), 15);
 
-            // Section Label
+            // Section Label - Presets
             CreateText(window.transform, "PresetLabel", "PREAJUSTES DIRECTOS (TOCA PARA ELEGIR):", 12, FontStyle.Bold,
-                new Vector2(0f, 18f), new Vector2(460f, 20f), new Color(0.85f, 0.9f, 1f, 0.95f), font);
+                new Vector2(0f, 66f), new Vector2(460f, 20f), new Color(0.85f, 0.9f, 1f, 0.95f), font);
 
             // Quick Preset Grid - Row 1
             float[] presetRow1 = { 0f, 1000f, 10000f };
@@ -128,8 +133,8 @@ namespace AnimeHillRacing.UI
             {
                 float d = presetRow1[i];
                 CreateButton(window.transform, $"Preset_{d}", labelsRow1[i],
-                    new Vector2(-155f + i * 155f, -18f), new Vector2(146f, 40f),
-                    new Color(0.14f, 0.18f, 0.34f, 0.95f), font, () => SetDistance(d), 15);
+                    new Vector2(-155f + i * 155f, 32f), new Vector2(146f, 36f),
+                    new Color(0.14f, 0.18f, 0.34f, 0.95f), font, () => SetDistance(d), 14);
             }
 
             // Quick Preset Grid - Row 2 (Glitch Phases)
@@ -139,20 +144,32 @@ namespace AnimeHillRacing.UI
             {
                 float d = presetRow2[i];
                 CreateButton(window.transform, $"Preset_{d}", labelsRow2[i],
-                    new Vector2(-155f + i * 155f, -66f), new Vector2(146f, 40f),
-                    new Color(0.32f, 0.18f, 0.48f, 0.98f), font, () => SetDistance(d), 14);
+                    new Vector2(-155f + i * 155f, -10f), new Vector2(146f, 36f),
+                    new Color(0.32f, 0.18f, 0.48f, 0.98f), font, () => SetDistance(d), 13);
             }
 
+            // Section Label - Fuel Management
+            CreateText(window.transform, "FuelLabel", "⛽ GESTIÓN DE COMBUSTIBLE (FUEL):", 12, FontStyle.Bold,
+                new Vector2(0f, -52f), new Vector2(460f, 20f), new Color(1f, 0.85f, 0.3f, 0.95f), font);
+
+            // Fuel Management Buttons Row (Reset Fuel & Limited/Unlimited Fuel Toggle)
+            CreateButton(window.transform, "BtnResetFuel", "⛽ RESET FUEL (100%)", new Vector2(-118f, -92f), new Vector2(224f, 44f),
+                new Color(0.16f, 0.48f, 0.36f, 0.98f), font, ResetFuel, 13, out resetFuelBtnText, out _);
+
+            CreateButton(window.transform, "BtnUnlimitedFuel", "♾️ FUEL: ILIMITADO", new Vector2(118f, -92f), new Vector2(224f, 44f),
+                new Color(0.24f, 0.28f, 0.42f, 0.95f), font, ToggleUnlimitedFuel, 13, out unlimitedFuelBtnText, out unlimitedFuelBtnImage);
+
             // Big Tactile Teleport Action Button
-            CreateButton(window.transform, "BtnTeleport", "🚀 ¡TELETRANSPORTAR AHORA!", new Vector2(0f, -135f), new Vector2(460f, 56f),
-                new Color(0.08f, 0.72f, 0.36f, 1f), font, ExecuteTeleport, 20);
+            CreateButton(window.transform, "BtnTeleport", "🚀 ¡TELETRANSPORTAR AHORA!", new Vector2(0f, -160f), new Vector2(460f, 54f),
+                new Color(0.08f, 0.72f, 0.36f, 1f), font, ExecuteTeleport, 19);
 
             // Big Tactile Close Button
-            CreateButton(window.transform, "BtnClose", "✖ CERRAR", new Vector2(0f, -205f), new Vector2(280f, 44f),
+            CreateButton(window.transform, "BtnClose", "✖ CERRAR", new Vector2(0f, -228f), new Vector2(280f, 42f),
                 new Color(0.65f, 0.12f, 0.16f, 0.98f), font, Close, 16);
 
             modalContainer.SetActive(false);
             UpdateDisplay();
+            UpdateFuelUI();
         }
 
         private void CreateTouchSlider(Transform parent, Vector2 position, Vector2 size, Font font)
@@ -241,8 +258,10 @@ namespace AnimeHillRacing.UI
             previousTimeScale = Time.timeScale;
             Time.timeScale = 0f;
             modalContainer.SetActive(true);
+            transform.SetAsLastSibling();
             modalContainer.transform.SetAsLastSibling();
             UpdateDisplay();
+            UpdateFuelUI();
         }
 
         public void Close()
@@ -268,6 +287,89 @@ namespace AnimeHillRacing.UI
         {
             selectedDistance = Mathf.Max(0f, distance);
             UpdateDisplay();
+        }
+
+        public void ResetFuel()
+        {
+            VehicleRuntimeBase vehicle = GetActiveVehicle();
+            GameManager gm = FindFirstObjectByType<GameManager>();
+
+            if (vehicle != null && vehicle.Fuel != null)
+            {
+                vehicle.Fuel.RefillFull();
+                if (IsUnlimitedFuel)
+                {
+                    vehicle.Fuel.SetConsumptionEnabled(false);
+                }
+                FindFirstObjectByType<GameplayHUD>()?.RefreshImmediate(gm);
+            }
+
+            if (resetFuelBtnText != null)
+            {
+                resetFuelBtnText.text = "✅ ¡FUEL AL 100%!";
+                CancelInvoke(nameof(RestoreResetFuelLabel));
+                Invoke(nameof(RestoreResetFuelLabel), 1.5f);
+            }
+        }
+
+        private void RestoreResetFuelLabel()
+        {
+            if (resetFuelBtnText != null)
+                resetFuelBtnText.text = "⛽ RESET FUEL (100%)";
+        }
+
+        public void ToggleUnlimitedFuel()
+        {
+            SetUnlimitedFuel(!IsUnlimitedFuel);
+        }
+
+        public void SetUnlimitedFuel(bool enabled)
+        {
+            IsUnlimitedFuel = enabled;
+            ApplyFuelSetting();
+            UpdateFuelUI();
+        }
+
+        private void ApplyFuelSetting()
+        {
+            VehicleRuntimeBase vehicle = GetActiveVehicle();
+            if (vehicle != null && vehicle.Fuel != null)
+            {
+                vehicle.Fuel.SetConsumptionEnabled(!IsUnlimitedFuel);
+                if (IsUnlimitedFuel)
+                {
+                    vehicle.Fuel.RefillFull();
+                }
+                GameManager gm = FindFirstObjectByType<GameManager>();
+                FindFirstObjectByType<GameplayHUD>()?.RefreshImmediate(gm);
+            }
+        }
+
+        private void UpdateFuelUI()
+        {
+            if (unlimitedFuelBtnText != null && unlimitedFuelBtnImage != null)
+            {
+                if (IsUnlimitedFuel)
+                {
+                    unlimitedFuelBtnText.text = "♾️ FUEL: ILIMITADO (ON)";
+                    unlimitedFuelBtnText.color = new Color(1f, 0.95f, 0.3f, 1f);
+                    unlimitedFuelBtnImage.color = new Color(0.12f, 0.55f, 0.42f, 1f);
+                }
+                else
+                {
+                    unlimitedFuelBtnText.text = "⛽ FUEL: LIMITADO (OFF)";
+                    unlimitedFuelBtnText.color = Color.white;
+                    unlimitedFuelBtnImage.color = new Color(0.24f, 0.28f, 0.42f, 0.95f);
+                }
+            }
+        }
+
+        private VehicleRuntimeBase GetActiveVehicle()
+        {
+            GameManager gm = FindFirstObjectByType<GameManager>();
+            if (gm != null && gm.Vehicle != null)
+                return gm.Vehicle;
+            return FindFirstObjectByType<VehicleRuntimeBase>();
         }
 
         private void UpdateDisplay(bool syncSlider = true)
@@ -302,17 +404,36 @@ namespace AnimeHillRacing.UI
             float target = selectedDistance;
             Close();
 
-            TerrainManager terrain = FindFirstObjectByType<TerrainManager>();
-            if (terrain != null)
-                terrain.TeleportTo(target);
-
             GameManager gm = FindFirstObjectByType<GameManager>();
             if (gm != null)
+            {
                 gm.TeleportTo(target);
+            }
+            else
+            {
+                TerrainManager terrain = FindFirstObjectByType<TerrainManager>();
+                if (terrain != null)
+                    terrain.TeleportTo(target);
+            }
+
+            ApplyFuelSetting();
         }
 
         private void Update()
         {
+            // Keep unlimited fuel active during gameplay if selected
+            if (IsUnlimitedFuel && !isOpen)
+            {
+                VehicleRuntimeBase vehicle = GetActiveVehicle();
+                if (vehicle != null && vehicle.Fuel != null)
+                {
+                    if (vehicle.Fuel.CanConsume)
+                        vehicle.Fuel.SetConsumptionEnabled(false);
+                    if (vehicle.Fuel.FuelNormalized < 0.99f)
+                        vehicle.Fuel.RefillFull();
+                }
+            }
+
             Keyboard keyboard = Keyboard.current;
             if (keyboard == null) return;
 
@@ -333,6 +454,19 @@ namespace AnimeHillRacing.UI
             if (keyboard.enterKey.wasPressedThisFrame || keyboard.numpadEnterKey.wasPressedThisFrame || keyboard.spaceKey.wasPressedThisFrame)
             {
                 ExecuteTeleport();
+                return;
+            }
+
+            // Keyboard shortcut to reset fuel (F) or toggle unlimited fuel (U)
+            if (keyboard.fKey.wasPressedThisFrame)
+            {
+                ResetFuel();
+                return;
+            }
+
+            if (keyboard.uKey.wasPressedThisFrame)
+            {
+                ToggleUnlimitedFuel();
                 return;
             }
 
@@ -379,6 +513,13 @@ namespace AnimeHillRacing.UI
         private static Button CreateButton(Transform parent, string name, string label, Vector2 position,
             Vector2 dimensions, Color bgColor, Font font, UnityEngine.Events.UnityAction onClick, int fontSize = 14)
         {
+            return CreateButton(parent, name, label, position, dimensions, bgColor, font, onClick, fontSize, out _, out _);
+        }
+
+        private static Button CreateButton(Transform parent, string name, string label, Vector2 position,
+            Vector2 dimensions, Color bgColor, Font font, UnityEngine.Events.UnityAction onClick, int fontSize,
+            out Text labelText, out Image bgImage)
+        {
             GameObject obj = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button));
             obj.transform.SetParent(parent, false);
             RectTransform rect = obj.GetComponent<RectTransform>();
@@ -388,6 +529,7 @@ namespace AnimeHillRacing.UI
             Image img = obj.GetComponent<Image>();
             img.color = bgColor;
             img.raycastTarget = true;
+            bgImage = img;
 
             Outline outline = obj.AddComponent<Outline>();
             outline.effectColor = new Color(1f, 1f, 1f, 0.35f);
@@ -408,6 +550,7 @@ namespace AnimeHillRacing.UI
             txt.color = Color.white;
             txt.text = label;
             txt.raycastTarget = false;
+            labelText = txt;
 
             Button btn = obj.GetComponent<Button>();
             btn.targetGraphic = img;

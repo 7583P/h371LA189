@@ -86,7 +86,7 @@ namespace AnimeHillRacing.Core
         private Quaternion previousStuntRotation;
         private bool stuntRotationInitialized;
 
-        public const float LogicalDistanceScale = 1.5f;
+        public const float LogicalDistanceScale = 1f;
 
         public RunState State { get; private set; } = RunState.Ready;
         public RunEndReason EndReason { get; private set; }

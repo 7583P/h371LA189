@@ -12,8 +12,8 @@ namespace AnimeHillRacing.Vehicle
 
     /// <summary>
     /// Manages an independent 2D wheel (Rigidbody2D + CircleCollider2D) connected to the vehicle
-    /// chassis via WheelJoint2D. Handles suspension parameters, progressive bump stops, ground contact,
-    /// and visual sprite synchronization.
+    /// chassis via WheelJoint2D. Handles suspension parameters, progressive bump stops, real Box2D ground contact,
+    /// physical crossing observation, and visual sprite synchronization.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class Suspension2DController : MonoBehaviour
@@ -38,6 +38,20 @@ namespace AnimeHillRacing.Vehicle
         private DriveMethod2D driveMethod = DriveMethod2D.RigidbodyTorque;
         private ContactFilter2D groundFilter;
         private readonly Collider2D[] groundHitBuffer = new Collider2D[4];
+        private readonly ContactPoint2D[] contactBuffer = new ContactPoint2D[16];
+
+        private WheelTerrainState terrainState = WheelTerrainState.Normal;
+        private bool hasBox2DContact;
+        private int actualContactCount;
+        private Vector2 lastContactPoint;
+        private Vector2 lastContactNormal = Vector2.up;
+        private float normalVelocity;
+        private float normalTravelPerStep;
+        private float currentSignedDistance;
+        private float previousSignedDistance;
+        private int consecutiveContactMisses;
+        private int consecutiveContactHits;
+        private int contactAlternationCount;
 
         public Rigidbody2D WheelBody => wheelBody;
         public CircleCollider2D WheelCollider => wheelCollider;
@@ -46,6 +60,20 @@ namespace AnimeHillRacing.Vehicle
         public float WheelRadius => wheelRadius;
         public float LastAppliedMotorTorque => lastAppliedMotorTorque;
         public float WheelAngularVelocity => wheelBody != null ? wheelBody.angularVelocity * Mathf.Deg2Rad : 0f;
+
+        public WheelTerrainState TerrainState => terrainState;
+        public bool IsBelowSurface => terrainState == WheelTerrainState.BelowSurface;
+        public bool IsContactUnstable => terrainState == WheelTerrainState.ContactUnstable;
+        public bool HasBox2DContact => hasBox2DContact;
+        public int ActualContactCount => actualContactCount;
+        public float NormalVelocity => normalVelocity;
+        public float NormalTravelPerStep => normalTravelPerStep;
+        public float CurrentSignedDistance => currentSignedDistance;
+        public float PreviousSignedDistance => previousSignedDistance;
+        public Vector2 LastContactPoint => lastContactPoint;
+        public Vector2 LastContactNormal => lastContactNormal;
+        public float FloatStep => LongDistancePrecision.CalculateFloatStep(wheelBody != null ? (wheelBody.position.x * GameManager.LogicalDistanceScale) : 0f);
+
         public float SuspensionCompression01
         {
             get
@@ -135,31 +163,166 @@ namespace AnimeHillRacing.Vehicle
             suspensionJoint.enableCollision = false;
         }
 
-        public void Simulate()
+        public void ResetTerrainState()
+        {
+            terrainState = WheelTerrainState.Normal;
+            currentSignedDistance = 0f;
+            previousSignedDistance = 0f;
+            consecutiveContactHits = 0;
+            consecutiveContactMisses = 0;
+            contactAlternationCount = 0;
+        }
+
+        public void Simulate(float dt = 0.02f, MapProfile profile = null)
         {
             if (wheelBody == null || chassisBody == null) return;
 
-            // 1. Ground detection via universal GroundContactFilter
-            isGrounded = false;
-            if (wheelCollider != null)
+            Transform root = chassisBody != null ? chassisBody.transform.root : transform.root;
+
+            // 1. Query real Box2D contact points directly from contact solver
+            actualContactCount = wheelCollider != null ? wheelCollider.GetContacts(contactBuffer) : 0;
+            hasBox2DContact = false;
+            Vector2 sumPoint = Vector2.zero;
+            Vector2 sumNormal = Vector2.zero;
+            int validGroundContacts = 0;
+
+            for (int i = 0; i < actualContactCount; i++)
             {
-                ContactFilter2D filter = new ContactFilter2D { useTriggers = false };
-                int count = wheelCollider.Overlap(filter, groundHitBuffer);
-                Transform root = chassisBody != null ? chassisBody.transform.root : transform.root;
-                for (int i = 0; i < count; i++)
+                ContactPoint2D cp = contactBuffer[i];
+                if (cp.collider != null && GroundContactFilter.IsGround2D(cp.collider, root))
                 {
-                    if (GroundContactFilter.IsGround2D(groundHitBuffer[i], root))
-                    {
-                        isGrounded = true;
-                        break;
-                    }
+                    hasBox2DContact = true;
+                    sumPoint += cp.point;
+                    sumNormal += cp.normal;
+                    validGroundContacts++;
                 }
             }
 
-            // 2. Progressive Bump Stop
-            // When compression exceeds bumpStopStartRatio (e.g. 72%), apply smooth progressive push
-            // to absorb hard impacts without unnatural position teleportation
-            if (suspensionJoint != null)
+            if (validGroundContacts > 0)
+            {
+                lastContactPoint = sumPoint / validGroundContacts;
+                lastContactNormal = (sumNormal / validGroundContacts).normalized;
+            }
+
+            // 2. Secondary Overlap telemetry
+            int overlapCount = wheelCollider != null ? wheelCollider.Overlap(groundFilter, groundHitBuffer) : 0;
+            bool overlapGrounded = false;
+            for (int i = 0; i < overlapCount; i++)
+            {
+                if (GroundContactFilter.IsGround2D(groundHitBuffer[i], root))
+                {
+                    overlapGrounded = true;
+                    break;
+                }
+            }
+
+            // Real gameplay grounded state: Box2D contact OR active overlap
+            isGrounded = hasBox2DContact || overlapGrounded;
+
+            // 3. Update Contact History and Alternation Tracking (Observation of contact oscillation)
+            if (hasBox2DContact)
+            {
+                if (consecutiveContactMisses > 0)
+                {
+                    contactAlternationCount++;
+                }
+                consecutiveContactHits++;
+                consecutiveContactMisses = 0;
+            }
+            else
+            {
+                if (consecutiveContactHits > 0)
+                {
+                    contactAlternationCount++;
+                }
+                consecutiveContactMisses++;
+                consecutiveContactHits = 0;
+            }
+
+            // 4. Calculate Surface Geometry & Signed Distance (positive = above ground, negative = below ground)
+            Vector2 surfacePoint;
+            Vector2 terrainNormal;
+            float worldX = wheelBody.position.x;
+
+            if (validGroundContacts > 0)
+            {
+                surfacePoint = lastContactPoint;
+                terrainNormal = lastContactNormal;
+            }
+            else
+            {
+                float surfaceY = profile != null ? TerrainGenerator.SampleHeight(profile, worldX)
+                    : (lastContactPoint.y != 0f ? lastContactPoint.y : wheelBody.position.y);
+                surfacePoint = new Vector2(worldX, surfaceY);
+                if (profile != null)
+                {
+                    float yAhead = TerrainGenerator.SampleHeight(profile, worldX + 0.5f);
+                    float yBehind = TerrainGenerator.SampleHeight(profile, worldX - 0.5f);
+                    Vector2 tangent = new Vector2(1.0f, yAhead - yBehind).normalized;
+                    terrainNormal = new Vector2(-tangent.y, tangent.x);
+                }
+                else
+                {
+                    terrainNormal = lastContactNormal != Vector2.zero ? lastContactNormal : Vector2.up;
+                }
+            }
+
+            previousSignedDistance = currentSignedDistance;
+            currentSignedDistance = Vector2.Dot(wheelBody.position - surfacePoint, terrainNormal);
+
+            // Compute relative normal velocity (positive = pushing into terrain)
+            Vector2 relVel = wheelBody.linearVelocity;
+            normalVelocity = -Vector2.Dot(relVel, terrainNormal);
+            normalTravelPerStep = Mathf.Max(0f, normalVelocity) * dt;
+
+            // 5. OBSERVE BOX2D PHYSICAL STATE (Pure Observation, no forced crossing!)
+            float floatStep = FloatStep;
+
+            if (terrainState == WheelTerrainState.BelowSurface)
+            {
+                // CRITICAL RULE: NO RECOVERY AFTER PHYSICAL CROSSING!
+                // Once Box2D carried the wheel below the surface, it remains BelowSurface for this run.
+            }
+            else
+            {
+                // A. Check for Physical Crossing:
+                // Box2D physically carried the wheel center across the terrain line to the wrong side
+                bool physicallyCrossed = currentSignedDistance < -wheelRadius * 0.20f &&
+                                         (previousSignedDistance >= -wheelRadius * 0.20f || previousSignedDistance == 0f) &&
+                                         normalVelocity > 0.3f;
+
+                // Also check if wheel center is deep below surface without valid upward contact
+                if (currentSignedDistance < -wheelRadius * 0.50f && !hasBox2DContact)
+                {
+                    physicallyCrossed = true;
+                }
+
+                if (physicallyCrossed && floatStep > 0f)
+                {
+                    terrainState = WheelTerrainState.BelowSurface;
+                }
+                else if (floatStep > 0f)
+                {
+                    // B. Observe Contact Instability (contact -> miss -> contact):
+                    if (contactAlternationCount >= 2 && Mathf.Abs(currentSignedDistance) < wheelRadius * 1.5f)
+                    {
+                        terrainState = WheelTerrainState.ContactUnstable;
+                    }
+                    else if (consecutiveContactHits >= 4)
+                    {
+                        // Contact restored stably -> wheel is saved naturally!
+                        terrainState = WheelTerrainState.Normal;
+                        contactAlternationCount = 0;
+                    }
+                }
+                else
+                {
+                    terrainState = WheelTerrainState.Normal;
+                }
+            }
+
+            // 6. Progressive Bump Stop (only when above surface to prevent chassis crash)
+            if (suspensionJoint != null && terrainState != WheelTerrainState.BelowSurface)
             {
                 float compression01 = SuspensionCompression01;
                 if (compression01 > bumpStopStartRatio)
@@ -174,7 +337,7 @@ namespace AnimeHillRacing.Vehicle
                 }
             }
 
-            // 3. Visual synchronization
+            // 7. Visual synchronization
             SyncVisual();
         }
 
@@ -193,16 +356,16 @@ namespace AnimeHillRacing.Vehicle
             if (driveMethod == DriveMethod2D.RigidbodyTorque)
             {
                 // In 2D: positive Z torque rotates counter-clockwise (backward), negative Z rotates clockwise (forward)
-                // When wheel is airborne, prevent runaway over-spin to ensure silky smooth touchdown
+                // When wheel is airborne for an extended period, prevent runaway over-spin to ensure silky smooth touchdown
                 float appliedTorque = requestedTorque;
                 if (!isGrounded && chassisBody != null)
                 {
                     float forwardSpeed = Vector2.Dot(chassisBody.linearVelocity, chassisBody.transform.right);
                     float expectedSpinDeg = -(forwardSpeed / Mathf.Max(0.1f, wheelRadius)) * Mathf.Rad2Deg;
                     float currentSpinDeg = wheelBody.angularVelocity;
-                    if (Mathf.Abs(currentSpinDeg) > Mathf.Abs(expectedSpinDeg) * 1.25f + 120f)
+                    if (Mathf.Abs(currentSpinDeg) > Mathf.Abs(expectedSpinDeg) * 1.5f + 250f)
                     {
-                        appliedTorque *= 0.10f;
+                        appliedTorque *= 0.15f;
                     }
                 }
                 wheelBody.AddTorque(-appliedTorque, ForceMode2D.Force);

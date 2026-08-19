@@ -783,7 +783,7 @@ namespace AnimeHillRacing.Terrain
                 // Replicate Hill Climb Racing texture UV quantization glitch at extreme distances
                 if (profile != null && profile.hcrGlitch != null && profile.hcrGlitch.enabled && profile.hcrGlitch.enableTextureGlitch)
                 {
-                    HcrGlitchState glitch = HcrGlitchSystem.Evaluate(worldX, profile.hcrGlitch);
+                    HcrGlitchState glitch = HcrGlitchSystem.Evaluate(worldX * GameManager.LogicalDistanceScale, profile.hcrGlitch);
                     if (glitch.isActive && glitch.quantizationStep > 0f)
                     {
                         float uvStep = Mathf.Max(0.0039f, glitch.quantizationStep * 15f);

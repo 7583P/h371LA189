@@ -1,4 +1,5 @@
 using AnimeHillRacing.Core;
+using AnimeHillRacing.Terrain;
 using UnityEngine;
 
 namespace AnimeHillRacing.Vehicle
@@ -184,13 +185,28 @@ namespace AnimeHillRacing.Vehicle
             StepPhysics(Time.fixedDeltaTime, input != null ? input.State : default);
         }
 
+        private MapProfile terrainProfile;
+
+        public bool FrontWheelBelowSurface => frontSuspension != null && frontSuspension.IsBelowSurface;
+        public bool RearWheelBelowSurface => rearSuspension != null && rearSuspension.IsBelowSurface;
+        public bool FrontWheelContactUnstable => frontSuspension != null && frontSuspension.IsContactUnstable;
+        public bool RearWheelContactUnstable => rearSuspension != null && rearSuspension.IsContactUnstable;
+
+        public void SetTerrainProfile(MapProfile profile) => terrainProfile = profile;
+
+        public void ResetGlitchState()
+        {
+            if (frontSuspension != null) frontSuspension.ResetTerrainState();
+            if (rearSuspension != null) rearSuspension.ResetTerrainState();
+        }
+
         public void StepPhysics(float dt, VehicleInputState inputState)
         {
             if (definition == null || body == null) return;
 
-            // 1. Simulate independent wheels
-            if (frontSuspension != null) frontSuspension.Simulate();
-            if (rearSuspension != null) rearSuspension.Simulate();
+            // 1. Simulate independent wheels with real Box2D contact solver observation
+            if (frontSuspension != null) frontSuspension.Simulate(dt, terrainProfile);
+            if (rearSuspension != null) rearSuspension.Simulate(dt, terrainProfile);
 
             // 2. Update grounded tracking
             bool rawGrounded = AnyWheelGrounded || chassisContactSinceLastStep;

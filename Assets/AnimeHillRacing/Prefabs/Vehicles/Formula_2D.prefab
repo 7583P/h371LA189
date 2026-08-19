@@ -535,9 +535,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2187555296309260485}
-  - component: {fileID: 5870624576520052488}
-  - component: {fileID: 8583537554267935754}
-  - component: {fileID: 188838952872092866}
+  - component: {fileID: 6876765175215784268}
+  - component: {fileID: 2035210524698446527}
+  - component: {fileID: 5290426528507506533}
   m_Layer: 0
   m_Name: Front Suspension
   m_TagString: Untagged
@@ -560,7 +560,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 7911781179097310019}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!54 &5870624576520052488
+--- !u!54 &6876765175215784268
 Rigidbody:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -587,7 +587,7 @@ Rigidbody:
   m_Interpolate: 1
   m_Constraints: 56
   m_CollisionDetection: 2
---- !u!135 &8583537554267935754
+--- !u!135 &2035210524698446527
 SphereCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -608,7 +608,7 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 0.48
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &188838952872092866
+--- !u!114 &5290426528507506533
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -624,9 +624,9 @@ MonoBehaviour:
   groundMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  wheelBody: {fileID: 5870624576520052488}
-  wheelCollider: {fileID: 8583537554267935754}
-  suspensionJoint: {fileID: 8333714740282659746}
+  wheelBody: {fileID: 6876765175215784268}
+  wheelCollider: {fileID: 2035210524698446527}
+  suspensionJoint: {fileID: 1819215207573648995}
   enableLongDistancePrecisionGlitch: 1
   startDistance: 32768
   precisionScale: 1
@@ -1246,7 +1246,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AnimeHillRacing.Vehicle.DriverHeadImpact
   driver: {fileID: 9069375557764474382}
-  vehicleBody: {fileID: 8949745195946124924}
+  vehicleBody: {fileID: 5998115238638181486}
   vehicleBody2D: {fileID: 0}
 --- !u!1 &5788047148511864408
 GameObject:
@@ -1348,9 +1348,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 526499918676770600}
-  - component: {fileID: 6653549793230279141}
-  - component: {fileID: 4132324153075729254}
-  - component: {fileID: 3864638636333586805}
+  - component: {fileID: 2050628473462547010}
+  - component: {fileID: 4603519577640492123}
+  - component: {fileID: 7192228579487287424}
   m_Layer: 0
   m_Name: Rear Suspension
   m_TagString: Untagged
@@ -1373,7 +1373,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 7911781179097310019}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!54 &6653549793230279141
+--- !u!54 &2050628473462547010
 Rigidbody:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1400,7 +1400,7 @@ Rigidbody:
   m_Interpolate: 1
   m_Constraints: 56
   m_CollisionDetection: 2
---- !u!135 &4132324153075729254
+--- !u!135 &4603519577640492123
 SphereCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1421,7 +1421,7 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 0.48
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &3864638636333586805
+--- !u!114 &7192228579487287424
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1437,9 +1437,9 @@ MonoBehaviour:
   groundMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  wheelBody: {fileID: 6653549793230279141}
-  wheelCollider: {fileID: 4132324153075729254}
-  suspensionJoint: {fileID: 4707251829976126946}
+  wheelBody: {fileID: 2050628473462547010}
+  wheelCollider: {fileID: 4603519577640492123}
+  suspensionJoint: {fileID: 5547652873314113010}
   enableLongDistancePrecisionGlitch: 1
   startDistance: 32768
   precisionScale: 1
@@ -1767,7 +1767,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 69e2dc4bbcee59242852a48f4cb73baf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AnimeHillRacing.Vehicle.VehicleVisual2D
-  vehicle: {fileID: 5866250669851621832}
+  vehicle: {fileID: 7081635852090478197}
   definition: {fileID: 11400000, guid: 4a22c28e33e32ad4783466ebedc3cc15, type: 2}
   bodySprite: {fileID: 241501845076240683}
   frontWheelSprite: {fileID: 5136242542515863618}
@@ -1788,16 +1788,16 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7911781179097310019}
-  - component: {fileID: 8949745195946124924}
-  - component: {fileID: 6768632078812662974}
-  - component: {fileID: 8299907785449793912}
+  - component: {fileID: 5998115238638181486}
+  - component: {fileID: 2263874803847475011}
+  - component: {fileID: 358910845470942942}
   - component: {fileID: 6247498624227091044}
   - component: {fileID: 710183108347348853}
   - component: {fileID: 8099827809887821073}
-  - component: {fileID: 5866250669851621832}
+  - component: {fileID: 7081635852090478197}
   - component: {fileID: 1818666221258603625}
-  - component: {fileID: 4707251829976126946}
-  - component: {fileID: 8333714740282659746}
+  - component: {fileID: 5547652873314113010}
+  - component: {fileID: 1819215207573648995}
   m_Layer: 0
   m_Name: Formula_2D
   m_TagString: Untagged
@@ -1823,7 +1823,7 @@ Transform:
   - {fileID: 2187555296309260485}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!54 &8949745195946124924
+--- !u!54 &5998115238638181486
 Rigidbody:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1850,7 +1850,7 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
---- !u!136 &6768632078812662974
+--- !u!136 &2263874803847475011
 CapsuleCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1873,7 +1873,7 @@ CapsuleCollider:
   m_Height: 3.65
   m_Direction: 0
   m_Center: {x: 0, y: 0.29, z: 0}
---- !u!114 &8299907785449793912
+--- !u!114 &358910845470942942
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1922,7 +1922,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a2ec1c794e74c724f8b86e28f1c362e9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AnimeHillRacing.Vehicle.TransmissionController
---- !u!114 &5866250669851621832
+--- !u!114 &7081635852090478197
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1946,8 +1946,8 @@ MonoBehaviour:
     turboTune: 1
   input: {fileID: 0}
   suspensionPoints:
-  - {fileID: 3864638636333586805}
-  - {fileID: 188838952872092866}
+  - {fileID: 7192228579487287424}
+  - {fileID: 5290426528507506533}
   initialReverseBoundary: -50
   maxReverseDistanceFromProgress: 150
   reverseBoundaryDeceleration: 35
@@ -1973,7 +1973,7 @@ MonoBehaviour:
   maximumDistanceBelowTerrain: 14
   gameManager: {fileID: 0}
   terrainProfile: {fileID: 0}
---- !u!153 &4707251829976126946
+--- !u!153 &5547652873314113010
 ConfigurableJoint:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1981,7 +1981,7 @@ ConfigurableJoint:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8203009062753291760}
   serializedVersion: 4
-  m_ConnectedBody: {fileID: 6653549793230279141}
+  m_ConnectedBody: {fileID: 2050628473462547010}
   m_ConnectedArticulationBody: {fileID: 0}
   m_Anchor: {x: 0, y: 0, z: 0}
   m_Axis: {x: 1, y: 0, z: 0}
@@ -2075,7 +2075,7 @@ ConfigurableJoint:
   m_EnablePreprocessing: 1
   m_MassScale: 1
   m_ConnectedMassScale: 1
---- !u!153 &8333714740282659746
+--- !u!153 &1819215207573648995
 ConfigurableJoint:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2083,7 +2083,7 @@ ConfigurableJoint:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8203009062753291760}
   serializedVersion: 4
-  m_ConnectedBody: {fileID: 5870624576520052488}
+  m_ConnectedBody: {fileID: 6876765175215784268}
   m_ConnectedArticulationBody: {fileID: 0}
   m_Anchor: {x: 0, y: 0, z: 0}
   m_Axis: {x: 1, y: 0, z: 0}

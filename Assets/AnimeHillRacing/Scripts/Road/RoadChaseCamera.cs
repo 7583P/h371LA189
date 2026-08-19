@@ -55,7 +55,7 @@ namespace AnimeHillRacing.Road
                 target.transform.position.z);
             Vector3 desired = filteredTarget - stableForward * distance + Vector3.up * height;
             Vector3 camPos = Vector3.SmoothDamp(transform.position, desired, ref velocity, smoothness);
-            HcrGlitchState glitch = HcrGlitchSystem.Evaluate(target.ProgressPosition);
+            HcrGlitchState glitch = HcrGlitchSystem.Evaluate(target != null ? target.LogicalDistance : 0f);
             if (glitch.isActive)
             {
                 camPos.x = HcrGlitchSystem.Quantize(camPos.x, glitch.quantizationStep) + glitch.cameraJitter.x;

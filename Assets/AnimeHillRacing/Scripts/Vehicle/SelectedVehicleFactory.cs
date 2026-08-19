@@ -88,6 +88,7 @@ namespace AnimeHillRacing.Vehicle
                     else if (s.name.ToLower().Contains("rear")) rear = s;
                 }
                 vehicle2D.AssignRuntimeReferences(ActiveDefinition, input, front, rear);
+                vehicle2D.SetTerrainProfile(terrainProfile);
                 vehicle2D.SetSurfaceGripMultiplier(terrainProfile != null && terrainProfile.rainstorm != null &&
                                                    terrainProfile.rainstorm.permanentRain
                     ? terrainProfile.rainstorm.surfaceGripMultiplier : 1f);

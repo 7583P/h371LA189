@@ -28,12 +28,19 @@ namespace AnimeHillRacing.Pickups
         {
             pool = owner;
             if (triggerCollider == null) triggerCollider = GetComponent<Collider>();
-            if (triggerCollider2D == null) triggerCollider2D = GetComponent<Collider2D>();
             if (triggerCollider2D == null)
             {
-                CircleCollider2D circle = gameObject.AddComponent<CircleCollider2D>();
-                if (circle != null)
+                Transform child2D = transform.Find("Trigger2D");
+                if (child2D == null)
                 {
+                    GameObject go = new GameObject("Trigger2D");
+                    go.transform.SetParent(transform, false);
+                    child2D = go.transform;
+                }
+                triggerCollider2D = child2D.GetComponent<Collider2D>();
+                if (triggerCollider2D == null)
+                {
+                    CircleCollider2D circle = child2D.gameObject.AddComponent<CircleCollider2D>();
                     circle.isTrigger = true;
                     circle.radius = 0.5f;
                     triggerCollider2D = circle;

@@ -53,9 +53,17 @@ namespace AnimeHillRacing.Terrain
             if (meshCollider == null)
                 meshCollider = GetComponent<MeshCollider>();
             if (edgeCollider2D == null)
-                edgeCollider2D = GetComponent<EdgeCollider2D>();
-            if (edgeCollider2D == null)
-                edgeCollider2D = gameObject.AddComponent<EdgeCollider2D>();
+            {
+                Transform child2D = transform.Find("SurfaceCollider2D");
+                if (child2D == null)
+                {
+                    GameObject go = new GameObject("SurfaceCollider2D");
+                    go.transform.SetParent(transform, false);
+                    child2D = go.transform;
+                }
+                edgeCollider2D = child2D.GetComponent<EdgeCollider2D>();
+                if (edgeCollider2D == null) edgeCollider2D = child2D.gameObject.AddComponent<EdgeCollider2D>();
+            }
             if (edgeRenderer == null)
             {
                 edgeRenderer = GetComponent<LineRenderer>();

@@ -209,7 +209,7 @@ namespace AnimeHillRacing.Editor
             v.accelerationForceCalibration = 0.38f;
             v.centerOfMass = new Vector3(0.05f, -0.10f, 0f);
             v.collisionPitchInertiaMultiplier = 1.25f;
-            v.maximumDepenetrationVelocity = 1.6f;
+            v.maximumDepenetrationVelocity = 5.0f;
             v.chassisAirControlMultiplier = 0.10f;
             v.downforceReferenceSpeedMps = 30f;
             v.maximumDownforceAcceleration = 0f;

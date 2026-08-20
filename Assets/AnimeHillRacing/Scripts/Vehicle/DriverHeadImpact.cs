@@ -12,13 +12,26 @@ namespace AnimeHillRacing.Vehicle
         private RallyRoofDamage rallyRoofDamage;
         private float nextAllowedImpact;
 
+        private void Awake()
+        {
+            EnsureReferences();
+        }
+
+        private void EnsureReferences()
+        {
+            if (vehicleBody == null) vehicleBody = GetComponentInParent<Rigidbody>();
+            if (vehicleBody2D == null) vehicleBody2D = GetComponentInParent<Rigidbody2D>();
+            if (crashDetector == null) crashDetector = GetComponentInParent<CrashDetector>() ?? FindFirstObjectByType<CrashDetector>();
+            if (rallyRoofDamage == null) rallyRoofDamage = GetComponentInParent<RallyRoofDamage>();
+            if (driver == null) driver = GetComponentInParent<ArticulatedDriver2D>();
+        }
+
         public void Assign(ArticulatedDriver2D owner, Rigidbody body, Rigidbody2D body2D = null)
         {
             driver = owner;
             vehicleBody = body;
             vehicleBody2D = body2D;
-            crashDetector = GetComponentInParent<CrashDetector>();
-            rallyRoofDamage = GetComponentInParent<RallyRoofDamage>();
+            EnsureReferences();
         }
 
         private void OnTriggerEnter(Collider other) => ProcessImpact3D(other);
@@ -28,6 +41,7 @@ namespace AnimeHillRacing.Vehicle
 
         private void ProcessImpact3D(Collider other)
         {
+            EnsureReferences();
             Transform root = vehicleBody != null ? vehicleBody.transform : (vehicleBody2D != null ? vehicleBody2D.transform : transform.root);
             if (!GroundContactFilter.IsGround(other, root) || Time.time < nextAllowedImpact) return;
             nextAllowedImpact = Time.time + .10f;
@@ -35,18 +49,31 @@ namespace AnimeHillRacing.Vehicle
             float speed = vehicleBody != null ? vehicleBody.GetPointVelocity(transform.position).magnitude : 3f;
             driver?.TriggerHeadImpact(speed);
 
+            // Always check real chassis upright orientation (NOT the floppy animated head sprite)
+            Transform chassisTransform = vehicleBody != null ? vehicleBody.transform : transform.root;
+            Vector3 chassisUp = chassisTransform.up;
+            float uprightDot = Vector3.Dot(chassisUp, Vector3.up);
+
+            // If the vehicle is upright on its wheels (climbing slopes, driving over hills without rolling over),
+            // touching or grazing the terrain slope behind the seat is NEVER a fatal crash.
+            if (uprightDot > -0.05f)
+            {
+                return; // Vehicle is upright on its wheels!
+            }
+
             // If this is a Rally vehicle and the roof is intact, the roof protects the driver.
-            rallyRoofDamage ??= GetComponentInParent<RallyRoofDamage>();
             if (rallyRoofDamage != null && !rallyRoofDamage.RoofDetached)
             {
                 return; // Intact roof protects driver!
             }
 
+            Debug.Log($"[DriverHeadImpact] Overturned fatal head impact! Hit: {other.name} | ChassisUprightDot: {uprightDot:0.00} | Speed: {speed:0.0}m/s", this);
             TriggerDriverDown();
         }
 
         private void ProcessImpact2D(Collider2D other)
         {
+            EnsureReferences();
             Transform root = vehicleBody2D != null ? vehicleBody2D.transform : (vehicleBody != null ? vehicleBody.transform : transform.root);
             if (!GroundContactFilter.IsGround2D(other, root) || Time.time < nextAllowedImpact) return;
             nextAllowedImpact = Time.time + .10f;
@@ -54,13 +81,21 @@ namespace AnimeHillRacing.Vehicle
             float speed = vehicleBody2D != null ? vehicleBody2D.GetPointVelocity(transform.position).magnitude : 3f;
             driver?.TriggerHeadImpact(speed);
 
-            // If this is a Rally vehicle and the roof is intact, the roof protects the driver.
-            rallyRoofDamage ??= GetComponentInParent<RallyRoofDamage>();
+            Transform chassisTransform = vehicleBody2D != null ? vehicleBody2D.transform : transform.root;
+            Vector2 chassisUp2D = (Vector2)chassisTransform.up;
+            float uprightDot = Vector2.Dot(chassisUp2D, Vector2.up);
+
+            if (uprightDot > -0.05f)
+            {
+                return; // Vehicle is upright on its wheels!
+            }
+
             if (rallyRoofDamage != null && !rallyRoofDamage.RoofDetached)
             {
                 return; // Intact roof protects driver!
             }
 
+            Debug.Log($"[DriverHeadImpact] 2D Overturned fatal head impact! Hit: {other.name} | ChassisUprightDot: {uprightDot:0.00} | Speed: {speed:0.0}m/s", this);
             TriggerDriverDown();
         }
 

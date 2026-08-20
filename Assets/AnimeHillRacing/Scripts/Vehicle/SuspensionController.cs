@@ -225,8 +225,8 @@ namespace AnimeHillRacing.Vehicle
             wheelBody.interpolation = RigidbodyInterpolation.Interpolate;
             wheelBody.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
             wheelBody.maxDepenetrationVelocity = definition.maximumDepenetrationVelocity;
-            wheelBody.solverIterations = Mathf.Max(wheelBody.solverIterations, 12);
-            wheelBody.solverVelocityIterations = Mathf.Max(wheelBody.solverVelocityIterations, 8);
+            wheelBody.solverIterations = Mathf.Max(wheelBody.solverIterations, 16);
+            wheelBody.solverVelocityIterations = Mathf.Max(wheelBody.solverVelocityIterations, 12);
             wheelBody.maxAngularVelocity = Mathf.Max(40f, statsTopWheelSpeed(definition) * 1.65f);
             wheelBody.constraints = RigidbodyConstraints.FreezePositionZ |
                                     RigidbodyConstraints.FreezeRotationX |
@@ -425,55 +425,10 @@ namespace AnimeHillRacing.Vehicle
             NormalVelocity = normalInwardVel;
             NormalTravelPerStep = Mathf.Max(0f, normalInwardVel) * Time.fixedDeltaTime;
 
-            // Handle BelowSurface state: wheel is trapped underneath the track.
-            // Irreversible during race. Anchors the chassis down into the ground.
-            // No force, jump, or chassis momentum can pull the wheel out through the ground.
-            // Only ResetWheelState() (respawn/teleport/restart) can restore it to Normal.
-            if (terrainState == WheelTerrainState.BelowSurface)
+            // Ensure wheel collider is always enabled for true PhysX collision
+            if (wheelCollider != null && !wheelCollider.enabled)
             {
-                if (wheelCollider != null && wheelCollider.enabled)
-                    wheelCollider.enabled = false;
-
-                IsGrounded = false;
-                wasGrounded = false;
-                lastSuspensionForce = 0f;
-                lastSpringForce = 0f;
-                lastDamperForce = 0f;
-                lastLandingImpactSpeed = 0f;
-                lastContactNormalForce = 0f;
-                tractionBlend = 0f;
-                Slip01 = 0f;
-                Compression01 = 0f;
-                previousSignedDistance = currentSignedDistance;
-
-                // 1. Physically clamp wheel below terrain surface ceiling so it cannot rise out
-                float ceilingY = RawSurfaceY - 0.05f;
-                if (wheelBody.position.y > ceilingY)
-                {
-                    Vector3 pos = wheelBody.position;
-                    pos.y = ceilingY;
-                    wheelBody.position = pos;
-                }
-
-                // 2. Block upward velocity on trapped wheel and add underground drag
-                Vector3 wVel = wheelBody.linearVelocity;
-                if (wVel.y > 0f) wVel.y = 0f;
-                wVel.x *= 0.85f;
-                wheelBody.linearVelocity = wVel;
-
-                // 3. Anchor the chassis downward towards the trapped wheel position
-                if (body != null)
-                {
-                    Vector3 anchorPoint = body.transform.TransformPoint(new Vector3(anchorLocalX, 0f, 0f));
-                    float pullForce = Mathf.Clamp(body.mass * 9.81f * 3.5f, 3000f, 25000f);
-                    body.AddForceAtPosition(Vector3.down * pullForce, anchorPoint, ForceMode.Force);
-
-                    // Underground resistance damping on chassis
-                    Vector3 bVel = body.linearVelocity;
-                    bVel.x *= 0.97f;
-                    body.linearVelocity = bVel;
-                }
-                return;
+                wheelCollider.enabled = true;
             }
 
             Vector3 up = body.transform.up;
@@ -485,168 +440,31 @@ namespace AnimeHillRacing.Vehicle
             float relativeVelocity = Vector3.Dot(body.GetPointVelocity(anchor) - wheelBody.linearVelocity, up);
             lastRelativeVelocity = relativeVelocity;
 
-            // Quantized ground probe
+            // Physical ground contact check via PhysX and quantized raycast
             bool probedGround = ProbeGroundQuantized(FloatStep, out RaycastHit hit);
             HasQuantizedProbe = probedGround;
             HasPhysXContact = contactSinceLastStep;
-
-            // Point 1: A failure of the quantized raycast alone does NOT remove suspension support if
-            // SphereCollider/PhysX still reports valid physical contact.
             IsGrounded = HasPhysXContact || probedGround;
 
-            // Physical crossing requirements scaled progressively by Precision Tier (Glitch Phase):
-            // Tier 15 (2^15 = 32,768m - 65,535m): First glitch phase. Micro-stutter/tremor, clipping is extremely rare.
-            // Tier 16 (2^16 = 65,536m - 131,071m): Moderate chatter, clipping requires heavy crash landing.
-            // Tier 17 (2^17 = 131,072m - 262,143m): High hazard, hard landings can trap wheels.
-            // Tier 18+ (2^18 = 262,144m+): Extreme glitch zone, wheels clip frequently on impacts.
-            float requiredInwardVel;
-            float requiredPenetrationFactor;
-            int requiredUnstableFrames;
-
-            if (PrecisionTier <= 15)
-            {
-                requiredInwardVel = 7.0f;
-                requiredPenetrationFactor = 0.70f;
-                requiredUnstableFrames = 8;
-            }
-            else if (PrecisionTier == 16)
-            {
-                requiredInwardVel = 4.5f;
-                requiredPenetrationFactor = 0.50f;
-                requiredUnstableFrames = 6;
-            }
-            else if (PrecisionTier == 17)
-            {
-                requiredInwardVel = 2.5f;
-                requiredPenetrationFactor = 0.35f;
-                requiredUnstableFrames = 4;
-            }
-            else
-            {
-                requiredInwardVel = 1.2f;
-                requiredPenetrationFactor = 0.20f;
-                requiredUnstableFrames = 3;
-            }
-
-            EffectiveCrossingMargin = Mathf.Max(FloatStep * 2f, wheelRadius * requiredPenetrationFactor);
-
-            // Contact stability state machine and hysteresis:
+            // Pure diagnostic observation of physical state (No artificial puppet forces)
             if (FloatStep > 0f)
             {
-                // In open air (well above surface), wheel is naturally ungrounded and stable
-                if (currentSignedDistance > wheelRadius * 0.5f)
+                if (currentSignedDistance < -wheelRadius * 0.9f && !HasPhysXContact)
                 {
-                    if (terrainState == WheelTerrainState.ContactUnstable)
-                        terrainState = WheelTerrainState.Normal;
-                    unstableFrames = 0;
-                    contactMissFrames = 0;
+                    terrainState = WheelTerrainState.BelowSurface;
                 }
-                else if (IsGrounded)
+                else if (!HasQuantizedProbe && HasPhysXContact)
                 {
-                    if (HasPhysXContact && HasQuantizedProbe)
-                    {
-                        if (terrainState == WheelTerrainState.ContactUnstable)
-                        {
-                            Debug.Log($"[WheelStateTransition] {name} ({VirtualDistance:0.0}m): ContactUnstable (after {unstableFrames} frames) -> Normal (Saved!)", this);
-                            terrainState = WheelTerrainState.Normal;
-                        }
-                        unstableFrames = 0;
-                        contactMissFrames = 0;
-                    }
-                    else if (!HasQuantizedProbe && HasPhysXContact && normalInwardVel > 1.2f)
-                    {
-                        // Quantized contact disagreement under heavy inward compression
-                        unstableFrames++;
-                        contactMissFrames++;
-                        if (terrainState == WheelTerrainState.Normal)
-                        {
-                            Debug.Log($"[WheelStateTransition] {name} ({VirtualDistance:0.0}m): Normal -> ContactUnstable (Frame {unstableFrames}) | InwardVel={NormalVelocity:0.00}m/s | FloatStep={FloatStep:0.000000}", this);
-                            terrainState = WheelTerrainState.ContactUnstable;
-                        }
-                    }
-                    else
-                    {
-                        // Grounded with PhysX and controlled inward velocity -> contact stabilizes naturally
-                        if (terrainState == WheelTerrainState.ContactUnstable && normalInwardVel <= 0.8f)
-                        {
-                            Debug.Log($"[WheelStateTransition] {name} ({VirtualDistance:0.0}m): ContactUnstable (after {unstableFrames} frames) -> Normal (Stabilized)", this);
-                            terrainState = WheelTerrainState.Normal;
-                            unstableFrames = 0;
-                            contactMissFrames = 0;
-                        }
-                    }
+                    terrainState = WheelTerrainState.ContactUnstable;
                 }
                 else
                 {
-                    // Near ground boundary without confirmed contact
-                    if (currentSignedDistance <= 0.05f && normalInwardVel > 1.0f)
-                    {
-                        unstableFrames++;
-                        contactMissFrames++;
-                        if (terrainState == WheelTerrainState.Normal)
-                        {
-                            Debug.Log($"[WheelStateTransition] {name} ({VirtualDistance:0.0}m): Normal -> ContactUnstable (Frame {unstableFrames}) | Boundary Mismatch | InwardVel={NormalVelocity:0.00}m/s", this);
-                            terrainState = WheelTerrainState.ContactUnstable;
-                        }
-                    }
+                    terrainState = WheelTerrainState.Normal;
                 }
             }
             else
             {
-                if (terrainState != WheelTerrainState.Normal)
-                    terrainState = WheelTerrainState.Normal;
-                unstableFrames = 0;
-                contactMissFrames = 0;
-            }
-
-            // Real geometric crossing into BelowSurface:
-            // Requires:
-            // 1. FloatStep > 0
-            // 2. Sustained multiframe struggle matching the precision tier (unstableFrames >= requiredUnstableFrames)
-            // 3. Wheel center has physically penetrated deep below the tier-calibrated crossing margin (currentSignedDistance <= -EffectiveCrossingMargin)
-            // 4. Inward velocity is actively forcing the wheel deeper (normalInwardVel > requiredInwardVel)
-            // 5. Quantized ground probe is completely lost
-            if (FloatStep > 0f && terrainState == WheelTerrainState.ContactUnstable)
-            {
-                bool isPastCrossingMargin = currentSignedDistance <= -EffectiveCrossingMargin;
-                bool isMovingInward = normalInwardVel > requiredInwardVel;
-                bool hasSufficientUnstableFrames = unstableFrames >= requiredUnstableFrames;
-                bool hasLostProbe = !HasQuantizedProbe;
-
-                if (isPastCrossingMargin && isMovingInward && hasSufficientUnstableFrames && hasLostProbe)
-                {
-                    WheelTerrainState previousState = terrainState;
-                    float prevSigned = previousSignedDistance;
-                    terrainState = WheelTerrainState.BelowSurface;
-                    if (wheelCollider != null) wheelCollider.enabled = false;
-                    IsGrounded = false;
-                    wasGrounded = false;
-                    lastSuspensionForce = 0f;
-                    lastSpringForce = 0f;
-                    lastDamperForce = 0f;
-                    lastContactNormalForce = 0f;
-                    tractionBlend = 0f;
-                    Slip01 = 0f;
-                    Compression01 = 0f;
-                    previousSignedDistance = currentSignedDistance;
-
-                    Debug.Log($"[LongDistanceWheelCrossing]\n" +
-                              $"Distance: {VirtualDistance:0.00}\n" +
-                              $"Wheel: {name}\n" +
-                              $"Tier: {PrecisionTier}\n" +
-                              $"FloatStep: {FloatStep:0.0000000}\n" +
-                              $"UnstableFrames: {unstableFrames}\n" +
-                              $"HasPhysXContact: {HasPhysXContact}\n" +
-                              $"HasQuantizedProbe: {HasQuantizedProbe}\n" +
-                              $"NormalVelocity: {NormalVelocity:0.00}\n" +
-                              $"NormalTravelPerStep: {NormalTravelPerStep:0.0000}\n" +
-                              $"PreviousSignedDistance: {prevSigned:0.000}\n" +
-                              $"CurrentSignedDistance: {currentSignedDistance:0.000}\n" +
-                              $"EffectiveCrossingMargin: {EffectiveCrossingMargin:0.000}\n" +
-                              $"WheelRadius: {wheelRadius:0.00}\n" +
-                              $"CrossingConfirmed = true", this);
-                    return;
-                }
+                terrainState = WheelTerrainState.Normal;
             }
 
             if (IsGrounded && !wasGrounded && relativeVelocity < -.65f)

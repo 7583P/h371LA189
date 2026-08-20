@@ -155,6 +155,8 @@ namespace AnimeHillRacing.Core
         {
             Instance = this;
             Time.timeScale = 1f;
+            Physics.simulationMode = SimulationMode.FixedUpdate;
+            Physics2D.simulationMode = SimulationMode2D.FixedUpdate;
             BestDistance = SaveManager.GetBestDistance(Mode, MapId);
             vehicle?.SetTransmissionMode(GameSession.SelectedTransmission);
             liquidExposure.Reset(LiquidExposureLimit);

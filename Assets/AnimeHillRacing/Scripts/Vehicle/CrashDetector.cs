@@ -6,8 +6,8 @@ namespace AnimeHillRacing.Vehicle
 {
     public sealed class CrashDetector : MonoBehaviour
     {
-        [SerializeField] private float minimumWorldHeight = -8f;
-        [SerializeField, Min(2f)] private float maximumDistanceBelowTerrain = 14f;
+        [SerializeField] private float minimumWorldHeight = -100f;
+        [SerializeField, Min(20f)] private float maximumDistanceBelowTerrain = 80f;
         [SerializeField] private GameManager gameManager;
         [SerializeField] private MapProfile terrainProfile;
 
@@ -25,12 +25,27 @@ namespace AnimeHillRacing.Vehicle
             if (gameManager != null && gameManager.IsInsideLiquid)
                 return;
 
-            float safetyFloor = terrainProfile != null
-                ? TerrainGenerator.SampleHeight(terrainProfile, transform.position.x) - maximumDistanceBelowTerrain
-                : minimumWorldHeight;
+            // A vehicle has only fallen out of the world if it drops deep below all possible terrain into the abyss.
+            // Never false-kill on steep slopes, crests, or valleys.
+            float groundSample = 0f;
+            MapProfile activeProfile = terrainProfile != null ? terrainProfile
+                : (gameManager != null && gameManager.MapProfile != null ? gameManager.MapProfile : null)
+                ?? (TerrainManager.Instance != null ? TerrainManager.Instance.ActiveProfile : null);
+
+            float safetyFloor = -150f;
+            if (activeProfile != null)
+            {
+                groundSample = TerrainGenerator.SampleHeight(activeProfile, transform.position.x);
+                safetyFloor = Mathf.Min(-100f, groundSample - maximumDistanceBelowTerrain);
+            }
+            else
+            {
+                safetyFloor = minimumWorldHeight;
+            }
 
             if (transform.position.y < safetyFloor)
             {
+                Debug.Log($"[CrashDetector] Vehicle fell into abyss! Y={transform.position.y:0.0} < SafetyFloor={safetyFloor:0.0} (GroundSample={groundSample:0.0})", this);
                 gameManager?.RequestGameOver(RunEndReason.Crashed);
                 enabled = false;
             }

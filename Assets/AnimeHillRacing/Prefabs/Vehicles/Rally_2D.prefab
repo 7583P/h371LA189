@@ -752,8 +752,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1fda49ecb7c5e634ba152209e8bcbbfd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AnimeHillRacing.Vehicle.CrashDetector
-  minimumWorldHeight: -8
-  maximumDistanceBelowTerrain: 14
+  minimumWorldHeight: -100
+  maximumDistanceBelowTerrain: 80
   gameManager: {fileID: 0}
   terrainProfile: {fileID: 0}
 --- !u!153 &4888989207262449100

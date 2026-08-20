@@ -191,9 +191,9 @@ MonoBehaviour:
   reverseForce: 5800
   airControlTorque: 4200
   downforceReferenceSpeedMps: 30
-  maximumDownforceAcceleration: 14
+  maximumDownforceAcceleration: 18
   collisionPitchInertiaMultiplier: 1.2
-  maximumDepenetrationVelocity: 1.6
+  maximumDepenetrationVelocity: 5
   chassisAirControlMultiplier: 0.09
   maxAirAngularVelocity: 2.2
   airAngularAcceleration: 13
@@ -346,8 +346,8 @@ MonoBehaviour:
     bumpStopStart: 0.72
     progressiveSpringMultiplier: 1.9
     hardStopSpringMultiplier: 7
-    maximumAcceleration: 26
-    maximumReboundAcceleration: 0.8
+    maximumAcceleration: 30
+    maximumReboundAcceleration: 1.6
   grip:
     minGrip: 0.14
     maxGrip: 2.2

@@ -173,7 +173,7 @@ MonoBehaviour:
   downforceReferenceSpeedMps: 30
   maximumDownforceAcceleration: 14
   collisionPitchInertiaMultiplier: 1.3
-  maximumDepenetrationVelocity: 1.7
+  maximumDepenetrationVelocity: 5
   chassisAirControlMultiplier: 0.1
   maxAirAngularVelocity: 2.5
   airAngularAcceleration: 14

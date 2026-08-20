@@ -4633,7 +4633,7 @@ namespace AnimeHillRacing.Editor
             assets.jeep.mass = 1150f; assets.jeep.wheelMass = 48f; assets.jeep.wheelRadius = .45f;
             assets.jeep.engine.speedTorqueCurve = ArcadeSpeedTorqueCurve();
             assets.jeep.collisionPitchInertiaMultiplier = 1.30f;
-            assets.jeep.maximumDepenetrationVelocity = 1.7f;
+            assets.jeep.maximumDepenetrationVelocity = 5.0f;
             assets.jeep.chassisAirControlMultiplier = .10f;
             assets.jeep.halfWheelbase = 1.18f; assets.jeep.halfTrack = .78f;
             assets.jeep.topSpeedMps = 100f / 3.6f; assets.jeep.airControlTorque = 3200f;
@@ -4674,12 +4674,12 @@ namespace AnimeHillRacing.Editor
             assets.formula.suspensionMaxTunes = 20; assets.formula.gripMaxTunes = 20;
             assets.formula.airControlMaxTunes = 0; assets.formula.downforceMaxTunes = 20; assets.formula.fuelMaxTunes = 25;
             assets.formula.tuneTargets = CreateFormulaTuneTargets();
-            assets.formula.mass = 780f; assets.formula.wheelMass = 28f; assets.formula.wheelRadius = .48f;
+            assets.formula.mass = 780f; assets.formula.wheelMass = 40f; assets.formula.wheelRadius = .48f;
             assets.formula.engine.speedTorqueCurve = ArcadeSpeedTorqueCurve();
             // Formula remains the lowest-COM car, but its physical inertia must still transmit a strong
             // nose/tail or one-wheel impact instead of acting like a four-times heavier flywheel.
             assets.formula.collisionPitchInertiaMultiplier = 1.35f;
-            assets.formula.maximumDepenetrationVelocity = 1.5f;
+            assets.formula.maximumDepenetrationVelocity = 5.0f;
             assets.formula.chassisAirControlMultiplier = .08f;
             assets.formula.halfWheelbase = 1.75f; assets.formula.halfTrack = .78f;
             assets.formula.topSpeedMps = 300f / 3.6f;
@@ -4712,10 +4712,10 @@ namespace AnimeHillRacing.Editor
             assets.formula.suspension.springMin = 82000f; assets.formula.suspension.springMax = 96000f;
             assets.formula.suspension.dampingMin = 14000f; assets.formula.suspension.dampingMax = 16000f;
             assets.formula.suspension.bumpStopStart = .76f;
-            assets.formula.suspension.progressiveSpringMultiplier = 1.2f;
-            assets.formula.suspension.hardStopSpringMultiplier = 5f;
-            assets.formula.suspension.maximumAcceleration = 16f;
-            assets.formula.suspension.maximumReboundAcceleration = .6f;
+            assets.formula.suspension.progressiveSpringMultiplier = 1.6f;
+            assets.formula.suspension.hardStopSpringMultiplier = 8f;
+            assets.formula.suspension.maximumAcceleration = 36f;
+            assets.formula.suspension.maximumReboundAcceleration = 2.2f;
             assets.formula.grip.minGrip = .14f; assets.formula.grip.maxGrip = 2.20f;
             assets.formula.grip.slipThreshold = .13f; assets.formula.grip.slidingGripMultiplier = .46f;
             assets.formula.grip.tractionRecoveryPerSecond = 4.2f;
@@ -4759,13 +4759,15 @@ namespace AnimeHillRacing.Editor
             assets.rally.mass = 1030f; assets.rally.wheelMass = 36f; assets.rally.wheelRadius = .51f;
             assets.rally.engine.speedTorqueCurve = ArcadeSpeedTorqueCurve();
             assets.rally.collisionPitchInertiaMultiplier = 1.20f;
-            assets.rally.maximumDepenetrationVelocity = 1.6f;
+            assets.rally.maximumDepenetrationVelocity = 5.0f;
             assets.rally.chassisAirControlMultiplier = .09f;
             assets.rally.halfWheelbase = 1.35f; assets.rally.halfTrack = .78f;
             assets.rally.topSpeedMps = 280f / 3.6f;
             assets.rally.brakeForce = 16500f; assets.rally.reverseForce = 5800f;
             assets.rally.accelerationForceCalibration = .361f;
             assets.rally.airControlTorque = 4200f;
+            assets.rally.downforceReferenceSpeedMps = 30f;
+            assets.rally.maximumDownforceAcceleration = 18f;
             assets.rally.maxAirAngularVelocity = 2.2f; assets.rally.airAngularAcceleration = 13f;
             assets.rally.airAngularDamping = .45f;
             assets.rally.oneWheelAngularDamping = .08f; assets.rally.twoWheelAngularDamping = .32f;
@@ -4792,8 +4794,8 @@ namespace AnimeHillRacing.Editor
             assets.rally.suspension.bumpStopStart = .72f;
             assets.rally.suspension.progressiveSpringMultiplier = 1.9f;
             assets.rally.suspension.hardStopSpringMultiplier = 7f;
-            assets.rally.suspension.maximumAcceleration = 26f;
-            assets.rally.suspension.maximumReboundAcceleration = .8f;
+            assets.rally.suspension.maximumAcceleration = 30f;
+            assets.rally.suspension.maximumReboundAcceleration = 1.6f;
             assets.rally.grip.minGrip = .14f; assets.rally.grip.maxGrip = 2.20f;
             assets.rally.grip.slipThreshold = .15f; assets.rally.grip.slidingGripMultiplier = .52f;
             assets.rally.grip.tractionRecoveryPerSecond = 5f;
@@ -4850,8 +4852,10 @@ namespace AnimeHillRacing.Editor
             assets.sportBike.brakeForce = 9800f;
             assets.sportBike.reverseForce = 3300f;
             assets.sportBike.airControlTorque = 8200f;
+            assets.sportBike.downforceReferenceSpeedMps = 30f;
+            assets.sportBike.maximumDownforceAcceleration = 18f;
             assets.sportBike.collisionPitchInertiaMultiplier = 1f;
-            assets.sportBike.maximumDepenetrationVelocity = 1.4f;
+            assets.sportBike.maximumDepenetrationVelocity = 5.0f;
             assets.sportBike.chassisAirControlMultiplier = .07f;
             assets.sportBike.maxAirAngularVelocity = 3.6f;
             assets.sportBike.airAngularAcceleration = 24f;
@@ -4889,8 +4893,8 @@ namespace AnimeHillRacing.Editor
             assets.sportBike.suspension.bumpStopStart = .74f;
             assets.sportBike.suspension.progressiveSpringMultiplier = 1.6f;
             assets.sportBike.suspension.hardStopSpringMultiplier = 7f;
-            assets.sportBike.suspension.maximumAcceleration = 20f;
-            assets.sportBike.suspension.maximumReboundAcceleration = 1.2f;
+            assets.sportBike.suspension.maximumAcceleration = 26f;
+            assets.sportBike.suspension.maximumReboundAcceleration = 1.6f;
             assets.sportBike.grip.minGrip = .12f;
             assets.sportBike.grip.maxGrip = 1.85f;
             assets.sportBike.grip.slipThreshold = .13f;
@@ -4960,7 +4964,7 @@ namespace AnimeHillRacing.Editor
             assets.hillAdventurer.accelerationForceCalibration = .380f;
             assets.hillAdventurer.airControlTorque = 3400f;
             assets.hillAdventurer.collisionPitchInertiaMultiplier = 1.25f;
-            assets.hillAdventurer.maximumDepenetrationVelocity = 1.6f;
+            assets.hillAdventurer.maximumDepenetrationVelocity = 5.0f;
             assets.hillAdventurer.chassisAirControlMultiplier = .10f;
             assets.hillAdventurer.maxAirAngularVelocity = 2.0f;
             assets.hillAdventurer.airAngularAcceleration = 12f;

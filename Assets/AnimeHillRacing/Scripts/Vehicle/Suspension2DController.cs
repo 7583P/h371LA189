@@ -287,12 +287,12 @@ namespace AnimeHillRacing.Vehicle
             {
                 // A. Check for Physical Crossing:
                 // Box2D physically carried the wheel center across the terrain line to the wrong side
-                bool physicallyCrossed = currentSignedDistance < -wheelRadius * 0.20f &&
-                                         (previousSignedDistance >= -wheelRadius * 0.20f || previousSignedDistance == 0f) &&
-                                         normalVelocity > 0.3f;
+                bool physicallyCrossed = currentSignedDistance < -wheelRadius * 0.85f &&
+                                         (previousSignedDistance >= -wheelRadius * 0.85f || previousSignedDistance == 0f) &&
+                                         normalVelocity > 4.0f;
 
                 // Also check if wheel center is deep below surface without valid upward contact
-                if (currentSignedDistance < -wheelRadius * 0.50f && !hasBox2DContact)
+                if (currentSignedDistance < -wheelRadius * 1.10f && !hasBox2DContact)
                 {
                     physicallyCrossed = true;
                 }

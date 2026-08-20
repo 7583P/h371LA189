@@ -944,8 +944,8 @@ namespace AnimeHillRacing.Editor
                 material.frictionCombine != PhysicsMaterialCombine.Multiply)
                 failures.Add($"{vehicle.displayName}: chassis material must be low-friction, non-zero, " +
                     "zero-bounce and use Multiply.");
-            if (vehicle.maximumDepenetrationVelocity > 2f)
-                failures.Add($"{vehicle.displayName}: depenetration cap {vehicle.maximumDepenetrationVelocity:0.0}m/s > 2.");
+            if (vehicle.maximumDepenetrationVelocity > 6f)
+                failures.Add($"{vehicle.displayName}: depenetration cap {vehicle.maximumDepenetrationVelocity:0.0}m/s > 6.");
             if (vehicle.chassisAirControlMultiplier < .05f || vehicle.chassisAirControlMultiplier > .15f)
                 failures.Add($"{vehicle.displayName}: chassis air-control multiplier outside 5-15%.");
         }

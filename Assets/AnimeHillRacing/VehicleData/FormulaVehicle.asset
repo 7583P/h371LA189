@@ -172,7 +172,7 @@ MonoBehaviour:
   damagedBodySprite: {fileID: 0}
   detachableRoofSprite: {fileID: 0}
   mass: 780
-  wheelMass: 28
+  wheelMass: 40
   wheelRadius: 0.48
   halfWheelbase: 1.75
   halfTrack: 0.78
@@ -183,7 +183,7 @@ MonoBehaviour:
   downforceReferenceSpeedMps: 30
   maximumDownforceAcceleration: 28
   collisionPitchInertiaMultiplier: 1.35
-  maximumDepenetrationVelocity: 1.5
+  maximumDepenetrationVelocity: 5
   chassisAirControlMultiplier: 0.08
   maxAirAngularVelocity: 1.8
   airAngularAcceleration: 11
@@ -334,10 +334,10 @@ MonoBehaviour:
     landingDampingScale: {x: 1.02, y: 1.45}
     landingDampingDuration: 0.13
     bumpStopStart: 0.76
-    progressiveSpringMultiplier: 1.2
-    hardStopSpringMultiplier: 5
-    maximumAcceleration: 16
-    maximumReboundAcceleration: 0.6
+    progressiveSpringMultiplier: 1.6
+    hardStopSpringMultiplier: 8
+    maximumAcceleration: 36
+    maximumReboundAcceleration: 2.2
   grip:
     minGrip: 0.14
     maxGrip: 2.2

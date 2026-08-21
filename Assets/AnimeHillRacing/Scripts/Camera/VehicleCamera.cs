@@ -88,14 +88,6 @@ namespace AnimeHillRacing.CameraSystem
                 if (shakeTimer <= 0f) { shakeIntensity = 0f; shakeDuration = 0f; }
             }
 
-            // 2. Replicate Hill Climb Racing visual float jitter, screen shake and quantization at display distance (> 32,768 m)
-            HcrGlitchState glitch = HcrGlitchSystem.Evaluate(target.LogicalDistance);
-            if (glitch.isActive)
-            {
-                x = HcrGlitchSystem.Quantize(x, glitch.quantizationStep) + glitch.cameraJitter.x;
-                y = HcrGlitchSystem.Quantize(y, glitch.quantizationStep) + glitch.cameraJitter.y;
-            }
-
             transform.position = new Vector3(x, y, fixedZ);
             transform.rotation = Quaternion.identity;
             cameraComponent.orthographicSize = orthographicSize;

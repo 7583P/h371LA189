@@ -75,7 +75,7 @@ namespace AnimeHillRacing.UI
             winRect.anchorMax = new Vector2(0.5f, 0.5f);
             winRect.pivot = new Vector2(0.5f, 0.5f);
             winRect.anchoredPosition = new Vector2(250f, 0f);
-            winRect.sizeDelta = new Vector2(520f, 630f);
+            winRect.sizeDelta = new Vector2(520f, 700f);
 
             Image winImg = window.GetComponent<Image>();
             winImg.color = new Color(0.06f, 0.08f, 0.16f, 0.98f);
@@ -148,23 +148,39 @@ namespace AnimeHillRacing.UI
                     new Color(0.32f, 0.18f, 0.48f, 0.98f), font, () => SetDistance(d), 13);
             }
 
+            float[] presetRow3 = { 262144f, 274306f, 524288f };
+            string[] labelsRow3 = { "262,144 m", "274,306 m", "524,288 m" };
+            for (int i = 0; i < 3; i++)
+            {
+                float d = presetRow3[i];
+                CreateButton(window.transform, $"Preset_{d}", labelsRow3[i],
+                    new Vector2(-155f + i * 155f, -52f), new Vector2(146f, 36f),
+                    new Color(0.48f, 0.16f, 0.28f, 0.98f), font, () => SetDistance(d), 13);
+            }
+
             // Section Label - Fuel Management
             CreateText(window.transform, "FuelLabel", "⛽ GESTIÓN DE COMBUSTIBLE (FUEL):", 12, FontStyle.Bold,
-                new Vector2(0f, -52f), new Vector2(460f, 20f), new Color(1f, 0.85f, 0.3f, 0.95f), font);
+                new Vector2(0f, -88f), new Vector2(460f, 20f), new Color(1f, 0.85f, 0.3f, 0.95f), font);
 
             // Fuel Management Buttons Row (Reset Fuel & Limited/Unlimited Fuel Toggle)
-            CreateButton(window.transform, "BtnResetFuel", "⛽ RESET FUEL (100%)", new Vector2(-118f, -92f), new Vector2(224f, 44f),
+            CreateButton(window.transform, "BtnResetFuel", "⛽ RESET FUEL (100%)", new Vector2(-118f, -124f), new Vector2(224f, 38f),
                 new Color(0.16f, 0.48f, 0.36f, 0.98f), font, ResetFuel, 13, out resetFuelBtnText, out _);
 
-            CreateButton(window.transform, "BtnUnlimitedFuel", "♾️ FUEL: ILIMITADO", new Vector2(118f, -92f), new Vector2(224f, 44f),
+            CreateButton(window.transform, "BtnUnlimitedFuel", "♾️ FUEL: ILIMITADO", new Vector2(118f, -124f), new Vector2(224f, 38f),
                 new Color(0.24f, 0.28f, 0.42f, 0.95f), font, ToggleUnlimitedFuel, 13, out unlimitedFuelBtnText, out unlimitedFuelBtnImage);
 
             // Big Tactile Teleport Action Button
-            CreateButton(window.transform, "BtnTeleport", "🚀 ¡TELETRANSPORTAR AHORA!", new Vector2(0f, -160f), new Vector2(460f, 54f),
+            CreateButton(window.transform, "BtnTeleport", "🚀 ¡TELETRANSPORTAR AHORA!", new Vector2(0f, -174f), new Vector2(460f, 48f),
                 new Color(0.08f, 0.72f, 0.36f, 1f), font, ExecuteTeleport, 19);
 
+            CreateButton(window.transform, "BtnStrongImpact", "IMPACTO BOX2D  vx=100 / vy=-40", new Vector2(0f, -232f), new Vector2(460f, 48f),
+                new Color(0.85f, 0.30f, 0.08f, 1f), font, ExecuteStrongImpact, 17);
+
+            CreateButton(window.transform, "BtnResumeDrive", "REANUDAR MANEJO NORMAL", new Vector2(0f, -282f), new Vector2(280f, 34f),
+                new Color(0.16f, 0.46f, 0.72f, 1f), font, ResumeNormalDrive, 14);
+
             // Big Tactile Close Button
-            CreateButton(window.transform, "BtnClose", "✖ CERRAR", new Vector2(0f, -228f), new Vector2(280f, 42f),
+            CreateButton(window.transform, "BtnClose", "✖ CERRAR", new Vector2(0f, -324f), new Vector2(280f, 36f),
                 new Color(0.65f, 0.12f, 0.16f, 0.98f), font, Close, 16);
 
             modalContainer.SetActive(false);
@@ -182,7 +198,7 @@ namespace AnimeHillRacing.UI
 
             distanceSlider = sliderObj.GetComponent<Slider>();
             distanceSlider.minValue = 0f;
-            distanceSlider.maxValue = 150000f;
+            distanceSlider.maxValue = 524288f;
             distanceSlider.wholeNumbers = true;
             distanceSlider.value = selectedDistance;
 
@@ -387,15 +403,19 @@ namespace AnimeHillRacing.UI
             if (phaseDescriptionText != null)
             {
                 if (selectedDistance < 10000f)
-                    phaseDescriptionText.text = "Zona Normal: Física y texturas 100% estables";
+                    phaseDescriptionText.text = "Zona base: referencia de control";
                 else if (selectedDistance < 32768f)
-                    phaseDescriptionText.text = "Zona Intermedia: Terreno lejano";
+                    phaseDescriptionText.text = "Zona intermedia: precision float todavia alta";
                 else if (selectedDistance < 65536f)
-                    phaseDescriptionText.text = "Fase 1 (32K): Inicio de Glitch, Jitter de cámara y hundimiento leve (3cm)";
+                    phaseDescriptionText.text = "32K: paso float aproximado 0.00390625";
                 else if (selectedDistance < 131072f)
-                    phaseDescriptionText.text = "Fase 2 (65K): Hundimiento moderado (8cm), arrastre y vibración 60Hz";
+                    phaseDescriptionText.text = "65K: paso float aproximado 0.0078125";
+                else if (selectedDistance < 262144f)
+                    phaseDescriptionText.text = "131K: paso float aproximado 0.015625";
+                else if (selectedDistance < 524288f)
+                    phaseDescriptionText.text = "262K: paso float aproximado 0.03125";
                 else
-                    phaseDescriptionText.text = "Fase 3 (131K+): Hundimiento profundo (16cm) y distorsión de texturas UV";
+                    phaseDescriptionText.text = "524K: paso float aproximado 0.0625";
             }
         }
 
@@ -403,6 +423,7 @@ namespace AnimeHillRacing.UI
         {
             float target = selectedDistance;
             Close();
+            ResumeNormalDrive();
 
             GameManager gm = FindFirstObjectByType<GameManager>();
             if (gm != null)
@@ -417,6 +438,36 @@ namespace AnimeHillRacing.UI
             }
 
             ApplyFuelSetting();
+        }
+
+        public void ExecuteStrongImpact()
+        {
+            float target = selectedDistance;
+            Close();
+
+            GameManager gm = FindFirstObjectByType<GameManager>();
+            if (gm != null)
+                gm.TeleportTo(target);
+            else
+                FindFirstObjectByType<TerrainManager>()?.TeleportTo(target);
+
+            VehiclePhysics2DController vehicle2D = GetActiveVehicle() as VehiclePhysics2DController;
+            if (vehicle2D == null)
+            {
+                Debug.LogWarning("IMPACTO BOX2D requiere un vehículo Adventure con VehiclePhysics2DController.", this);
+                return;
+            }
+
+            AdventureBox2DStrongImpactDebug debug = vehicle2D.GetComponent<AdventureBox2DStrongImpactDebug>();
+            if (debug == null) debug = vehicle2D.gameObject.AddComponent<AdventureBox2DStrongImpactDebug>();
+            debug.BeginStrongImpact();
+            ApplyFuelSetting();
+        }
+
+        public void ResumeNormalDrive()
+        {
+            VehiclePhysics2DController vehicle2D = GetActiveVehicle() as VehiclePhysics2DController;
+            vehicle2D?.GetComponent<AdventureBox2DStrongImpactDebug>()?.ResumeNormalDrive();
         }
 
         private void Update()
@@ -481,13 +532,16 @@ namespace AnimeHillRacing.UI
             else if (keyboard.downArrowKey.wasPressedThisFrame || keyboard.sKey.wasPressedThisFrame)
                 AddDistance(-5000f);
 
-            // Number keys 1-6 for presets
+            // Number keys 1-9 for presets
             if (keyboard.digit1Key.wasPressedThisFrame || keyboard.numpad1Key.wasPressedThisFrame) SetDistance(0f);
             if (keyboard.digit2Key.wasPressedThisFrame || keyboard.numpad2Key.wasPressedThisFrame) SetDistance(1000f);
             if (keyboard.digit3Key.wasPressedThisFrame || keyboard.numpad3Key.wasPressedThisFrame) SetDistance(10000f);
             if (keyboard.digit4Key.wasPressedThisFrame || keyboard.numpad4Key.wasPressedThisFrame) SetDistance(32768f);
             if (keyboard.digit5Key.wasPressedThisFrame || keyboard.numpad5Key.wasPressedThisFrame) SetDistance(65536f);
             if (keyboard.digit6Key.wasPressedThisFrame || keyboard.numpad6Key.wasPressedThisFrame) SetDistance(131072f);
+            if (keyboard.digit7Key.wasPressedThisFrame || keyboard.numpad7Key.wasPressedThisFrame) SetDistance(262144f);
+            if (keyboard.digit8Key.wasPressedThisFrame || keyboard.numpad8Key.wasPressedThisFrame) SetDistance(274306f);
+            if (keyboard.digit9Key.wasPressedThisFrame || keyboard.numpad9Key.wasPressedThisFrame) SetDistance(524288f);
         }
 
         private static Text CreateText(Transform parent, string name, string content, int size, FontStyle style,

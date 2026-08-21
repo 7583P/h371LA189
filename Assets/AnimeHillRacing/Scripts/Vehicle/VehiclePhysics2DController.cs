@@ -407,6 +407,52 @@ namespace AnimeHillRacing.Vehicle
 
         public override void AddFuel(float normalizedAmount) => fuel?.AddFuel(normalizedAmount);
 
+        public override void TeleportToPosition(Vector3 targetPosition)
+        {
+            if (body == null) body = GetComponent<Rigidbody2D>();
+            if (body == null) return;
+
+            Vector2 target = new Vector2(targetPosition.x, targetPosition.y);
+            Vector2 delta = target - body.position;
+            body.position = target;
+            body.rotation = 0f;
+            body.linearVelocity = Vector2.zero;
+            body.angularVelocity = 0f;
+            transform.position = new Vector3(target.x, target.y, targetPosition.z);
+            transform.rotation = Quaternion.identity;
+
+            MoveWheelWithChassis(frontSuspension, delta);
+            MoveWheelWithChassis(rearSuspension, delta);
+            ResetGlitchState();
+            Physics2D.SyncTransforms();
+        }
+
+        public void SetWholeRigVelocity(Vector2 velocity)
+        {
+            if (body == null) body = GetComponent<Rigidbody2D>();
+            if (body != null) body.linearVelocity = velocity;
+            SetWheelVelocity(frontSuspension, velocity);
+            SetWheelVelocity(rearSuspension, velocity);
+        }
+
+        private static void MoveWheelWithChassis(Suspension2DController suspension, Vector2 delta)
+        {
+            Rigidbody2D wheel = suspension != null ? suspension.WheelBody : null;
+            if (wheel == null) return;
+            wheel.position += delta;
+            wheel.rotation = 0f;
+            wheel.linearVelocity = Vector2.zero;
+            wheel.angularVelocity = 0f;
+        }
+
+        private static void SetWheelVelocity(Suspension2DController suspension, Vector2 velocity)
+        {
+            Rigidbody2D wheel = suspension != null ? suspension.WheelBody : null;
+            if (wheel == null) return;
+            wheel.linearVelocity = velocity;
+            wheel.angularVelocity = 0f;
+        }
+
         private void OnCollisionEnter2D(Collision2D collision) => chassisContactSinceLastStep = true;
         private void OnCollisionStay2D(Collision2D collision) => chassisContactSinceLastStep = true;
     }

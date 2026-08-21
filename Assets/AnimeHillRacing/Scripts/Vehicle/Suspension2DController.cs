@@ -321,8 +321,8 @@ namespace AnimeHillRacing.Vehicle
                 }
             }
 
-            // 6. Progressive Bump Stop (only when above surface to prevent chassis crash)
-            if (suspensionJoint != null && terrainState != WheelTerrainState.BelowSurface)
+            // 6. Progressive Bump Stop. Diagnostic terrain state must never alter the physical solver path.
+            if (suspensionJoint != null)
             {
                 float compression01 = SuspensionCompression01;
                 if (compression01 > bumpStopStartRatio)

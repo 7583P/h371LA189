@@ -46,8 +46,7 @@ namespace AnimeHillRacing.Vehicle
             ApplyWheel(frontWheelRenderer, wheel, definition.FrontWheelDiameter, wheelSortingOrder);
             ApplyWheel(rearWheelRenderer, wheel, definition.RearWheelDiameter, wheelSortingOrder);
             if (articulatedDriver != null && fallbackDriver != null)
-                articulatedDriver.Apply(fallbackDriver, definition.driverPose,
-                    vehicle != null ? vehicle.GetComponent<Rigidbody>() : GetComponentInParent<Rigidbody>(), true);
+                ApplyDriverPhysicsBody();
         }
 
         public void ApplyCustomization(DriverDefinition driver)
@@ -77,8 +76,7 @@ namespace AnimeHillRacing.Vehicle
             ApplyWheel(frontWheelRenderer, wheel, definition.FrontWheelDiameter, wheelSortingOrder);
             ApplyWheel(rearWheelRenderer, wheel, definition.RearWheelDiameter, wheelSortingOrder);
             if (articulatedDriver != null && fallbackDriver != null)
-                articulatedDriver.Apply(fallbackDriver, definition.driverPose,
-                    vehicle != null ? vehicle.GetComponent<Rigidbody>() : GetComponentInParent<Rigidbody>(), true);
+                ApplyDriverPhysicsBody();
         }
 
         public void Assign(VehicleRuntimeBase vehicleController, Transform bodyTransform,
@@ -117,6 +115,13 @@ namespace AnimeHillRacing.Vehicle
             articulatedDriver = driver;
             fallbackDriver = defaultDriver;
             ApplySavedCustomization();
+        }
+
+        private void ApplyDriverPhysicsBody()
+        {
+            Rigidbody body = vehicle != null ? vehicle.GetComponent<Rigidbody>() : GetComponentInParent<Rigidbody>();
+            Rigidbody2D body2D = vehicle != null ? vehicle.GetComponent<Rigidbody2D>() : GetComponentInParent<Rigidbody2D>();
+            articulatedDriver.Apply(fallbackDriver, definition.driverPose, body, body2D, true);
         }
 
         private void ApplyWheel(SpriteRenderer renderer, VehicleDefinition.CustomizationOption option,

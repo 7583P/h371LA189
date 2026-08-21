@@ -25,6 +25,9 @@ namespace AnimeHillRacing.Terrain
         private readonly ProgressiveFuelSequence fuelSequence = new ProgressiveFuelSequence();
         private MeshCollider authoritativeTerrainCollider;
         private Mesh authoritativeTerrainMesh;
+        private EdgeCollider2D authoritativeTerrainCollider2D;
+        private PhysicsMaterial2D authoritativeTerrainMaterial2D;
+        private Vector2[] authoritativeTerrainPoints2D;
         private readonly List<NeonLiquidHazard> liquidHazardPool = new List<NeonLiquidHazard>(12);
         private readonly Dictionary<long, NeonLiquidHazard> activeLiquidHazards =
             new Dictionary<long, NeonLiquidHazard>();
@@ -75,6 +78,7 @@ namespace AnimeHillRacing.Terrain
                 GenerateChunk(chunk, minimumLoadedIndex + i);
             }
             RebuildAuthoritativeTerrainCollider();
+            RebuildAuthoritativeTerrainCollider2D();
             PrewarmLiquidHazards(count + 2);
             RefreshLiquidHazards();
         }
@@ -94,6 +98,11 @@ namespace AnimeHillRacing.Terrain
                 currentChunkIndex--;
                 RecycleOneBackward();
             }
+
+            // The Box2D comparison intentionally rebuilds one absolute-coordinate EdgeCollider2D every
+            // rendered frame. World X is the only precision variable; no floating origin is used.
+            if (vehicle != null && vehicle.Body2D != null)
+                RebuildAuthoritativeTerrainCollider2D();
         }
 
         public void TeleportTo(float targetWorldX)
@@ -129,6 +138,7 @@ namespace AnimeHillRacing.Terrain
             }
 
             RebuildAuthoritativeTerrainCollider();
+            RebuildAuthoritativeTerrainCollider2D();
             RefreshLiquidHazards();
         }
 
@@ -194,6 +204,57 @@ namespace AnimeHillRacing.Terrain
                 authoritativeTerrainMesh.MarkDynamic();
             }
             authoritativeTerrainCollider.sharedMaterial = mapProfile.groundPhysicsMaterial;
+
+            if (authoritativeTerrainCollider2D == null)
+            {
+                Transform child = transform.Find("Authoritative Terrain 2D");
+                if (child == null)
+                {
+                    GameObject childObject = new GameObject("Authoritative Terrain 2D");
+                    childObject.transform.SetParent(transform, false);
+                    child = childObject.transform;
+                }
+                authoritativeTerrainCollider2D = child.GetComponent<EdgeCollider2D>();
+                if (authoritativeTerrainCollider2D == null)
+                    authoritativeTerrainCollider2D = child.gameObject.AddComponent<EdgeCollider2D>();
+            }
+            if (authoritativeTerrainMaterial2D == null)
+            {
+                authoritativeTerrainMaterial2D = new PhysicsMaterial2D("AuthoritativeTerrain2D")
+                {
+                    friction = .85f,
+                    bounciness = 0f
+                };
+            }
+            authoritativeTerrainCollider2D.edgeRadius = 0f;
+            authoritativeTerrainCollider2D.sharedMaterial = mapProfile != null && mapProfile.groundPhysicsMaterial2D != null
+                ? mapProfile.groundPhysicsMaterial2D : authoritativeTerrainMaterial2D;
+        }
+
+        private void RebuildAuthoritativeTerrainCollider2D()
+        {
+            if (mapProfile == null || vehicle == null || vehicle.Body2D == null) return;
+            EnsureAuthoritativeTerrainCollider();
+
+            const float stepX = .8f;
+            const int pointsBehind = 30;
+            const int pointsAhead = 180;
+            const int pointCount = pointsBehind + pointsAhead + 1;
+            if (authoritativeTerrainPoints2D == null || authoritativeTerrainPoints2D.Length != pointCount)
+                authoritativeTerrainPoints2D = new Vector2[pointCount];
+
+            float centerX = vehicle.Body2D.position.x;
+            float firstX = Mathf.Floor(centerX / stepX) * stepX - pointsBehind * stepX;
+            Vector3 colliderPosition = authoritativeTerrainCollider2D.transform.position;
+            for (int i = 0; i < pointCount; i++)
+            {
+                float worldX = firstX + i * stepX;
+                float worldY = TerrainGenerator.SampleHeight(mapProfile, worldX);
+                authoritativeTerrainPoints2D[i] = new Vector2(worldX - colliderPosition.x, worldY - colliderPosition.y);
+            }
+
+            authoritativeTerrainCollider2D.points = authoritativeTerrainPoints2D;
+            authoritativeTerrainCollider2D.enabled = true;
         }
 
         private void RebuildAuthoritativeTerrainCollider()
@@ -409,9 +470,16 @@ namespace AnimeHillRacing.Terrain
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
-            if (authoritativeTerrainMesh == null) return;
-            if (Application.isPlaying) Destroy(authoritativeTerrainMesh);
-            else DestroyImmediate(authoritativeTerrainMesh);
+            if (authoritativeTerrainMesh != null)
+            {
+                if (Application.isPlaying) Destroy(authoritativeTerrainMesh);
+                else DestroyImmediate(authoritativeTerrainMesh);
+            }
+            if (authoritativeTerrainMaterial2D != null)
+            {
+                if (Application.isPlaying) Destroy(authoritativeTerrainMaterial2D);
+                else DestroyImmediate(authoritativeTerrainMaterial2D);
+            }
         }
     }
 }

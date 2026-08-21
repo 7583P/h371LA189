@@ -21,16 +21,6 @@ namespace AnimeHillRacing.Editor
         private const string ChassisPhysicMaterialPath = Root + "/Materials/VehicleBodyLowBounce.physicMaterial";
         private const string TirePhysicMaterialPath = Root + "/Materials/VehicleTireArcade.physicMaterial";
 
-        [InitializeOnLoadMethod]
-        private static void InstallWhenFirstAdded()
-        {
-            EditorApplication.delayCall += () =>
-            {
-                if (EditorApplication.isPlayingOrWillChangePlaymode) return;
-                InstallAndValidateAll();
-            };
-        }
-
         [MenuItem("Anime Hill Racing/Vehicles/Install Hill Adventurer 4x4 and Update Formula")]
         public static void InstallAndValidateAll()
         {

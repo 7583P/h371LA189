@@ -28,6 +28,7 @@ namespace AnimeHillRacing.Terrain
         private EdgeCollider2D authoritativeTerrainCollider2D;
         private PhysicsMaterial2D authoritativeTerrainMaterial2D;
         private Vector2[] authoritativeTerrainPoints2D;
+        private readonly List<Vector2> authoritativeSurfaceKnots2D = new List<Vector2>(512);
         private readonly List<NeonLiquidHazard> liquidHazardPool = new List<NeonLiquidHazard>(12);
         private readonly Dictionary<long, NeonLiquidHazard> activeLiquidHazards =
             new Dictionary<long, NeonLiquidHazard>();
@@ -39,14 +40,18 @@ namespace AnimeHillRacing.Terrain
         public int CurrentChunkIndex => currentChunkIndex;
         public MapProfile ActiveProfile => mapProfile;
         public float CurrentDifficulty => mapProfile != null && vehicle != null
-            ? mapProfile.EvaluateDifficulty(Mathf.Max(0f, vehicle.transform.position.x * GameManager.LogicalDistanceScale))
+            ? mapProfile.EvaluateDifficulty(Mathf.Max(0f, VehicleWorldX * GameManager.LogicalDistanceScale))
             : 0f;
         public TerrainSectionKind CurrentSection => mapProfile != null && vehicle != null
             ? TerrainGenerator.GetSectionKind(mapProfile,
-                Mathf.FloorToInt(vehicle.transform.position.x / Mathf.Max(1f, mapProfile.sectionLength)))
+                Mathf.FloorToInt(VehicleWorldX / Mathf.Max(1f, mapProfile.sectionLength)))
             : TerrainSectionKind.Fast;
         public float CurrentFuelSpacing => fuelSequence.CurrentSpacing;
         public float NextFuelSequencePosition => fuelSequence.NextPosition;
+        public EdgeCollider2D AuthoritativeCollider2D => authoritativeTerrainCollider2D;
+        private float VehicleWorldX => vehicle != null && vehicle.Body2D != null
+            ? vehicle.Body2D.position.x
+            : vehicle != null ? vehicle.transform.position.x : 0f;
 
         private void Awake()
         {
@@ -66,7 +71,7 @@ namespace AnimeHillRacing.Terrain
             fuelSequence.Reset(0f, mapProfile.initialFuelGap, mapProfile.fuelGapIncrease);
             int count = chunksBehind + chunksAhead + 1;
             chunks = new TerrainChunk[count];
-            currentChunkIndex = Mathf.FloorToInt(vehicle.transform.position.x / chunkLength);
+            currentChunkIndex = Mathf.FloorToInt(VehicleWorldX / chunkLength);
             minimumLoadedIndex = currentChunkIndex - chunksBehind;
             maximumLoadedIndex = currentChunkIndex + chunksAhead;
             for (int i = 0; i < count; i++)
@@ -87,7 +92,9 @@ namespace AnimeHillRacing.Terrain
         {
             if (chunks == null)
                 return;
-            int newIndex = Mathf.FloorToInt(vehicle.transform.position.x / chunkLength);
+            // Rigidbody2D interpolation intentionally lets Transform lag one rendered frame behind the solver.
+            // Chunk ownership must follow the authoritative Box2D position, especially after a large-X teleport.
+            int newIndex = Mathf.FloorToInt(VehicleWorldX / chunkLength);
             while (currentChunkIndex < newIndex)
             {
                 currentChunkIndex++;
@@ -109,19 +116,11 @@ namespace AnimeHillRacing.Terrain
         {
             if (mapProfile == null || chunks == null) return;
 
-            float targetY = TerrainGenerator.SampleHeight(mapProfile, targetWorldX) + 2.5f;
-
             VehicleRuntimeBase activeVehicle = vehicle;
             if (activeVehicle == null)
             {
                 GameManager gm = FindFirstObjectByType<GameManager>();
                 if (gm != null) activeVehicle = gm.Vehicle;
-            }
-
-            if (activeVehicle != null)
-            {
-                activeVehicle.TeleportToPosition(new Vector3(targetWorldX, targetY, 0f));
-                activeVehicle.Fuel?.AddFuel(100f);
             }
 
             int newChunkIndex = Mathf.FloorToInt(targetWorldX / chunkLength);
@@ -137,9 +136,34 @@ namespace AnimeHillRacing.Terrain
                 }
             }
 
+            float targetY = TrySampleAuthoritativeSurface(targetWorldX, out float surfaceY, out _)
+                ? surfaceY + 2.5f
+                : TerrainGenerator.SampleHeight(mapProfile, targetWorldX) + 2.5f;
+            if (activeVehicle != null)
+            {
+                activeVehicle.TeleportToPosition(new Vector3(targetWorldX, targetY, 0f));
+                activeVehicle.Fuel?.AddFuel(100f);
+            }
+
             RebuildAuthoritativeTerrainCollider();
             RebuildAuthoritativeTerrainCollider2D();
             RefreshLiquidHazards();
+        }
+
+        public bool TrySampleAuthoritativeSurface(float worldX, out float height, out float slopeDegrees)
+        {
+            height = 0f;
+            slopeDegrees = 0f;
+            if (chunks == null) return false;
+
+            int targetIndex = Mathf.FloorToInt(worldX / Mathf.Max(1f, chunkLength));
+            TerrainChunk chunk = FindChunk(targetIndex);
+            if (chunk != null && chunk.TrySampleSurface(worldX, out height, out slopeDegrees))
+                return true;
+
+            // At an exact shared boundary either adjacent chunk represents the same visual knot.
+            chunk = FindChunk(targetIndex - 1);
+            return chunk != null && chunk.TrySampleSurface(worldX, out height, out slopeDegrees);
         }
 
         private void RecycleOneForward()
@@ -162,8 +186,26 @@ namespace AnimeHillRacing.Terrain
             minimumLoadedIndex--;
             if (newest == null) return;
             GenerateChunk(newest, minimumLoadedIndex);
+            RegenerateLoadedSurfacesAscending();
             RebuildAuthoritativeTerrainCollider();
             RefreshLiquidHazards();
+        }
+
+        private void RegenerateLoadedSurfacesAscending()
+        {
+            TerrainChunk previous = null;
+            for (int index = minimumLoadedIndex; index <= maximumLoadedIndex; index++)
+            {
+                TerrainChunk chunk = FindChunk(index);
+                if (chunk == null) continue;
+                if (previous != null)
+                {
+                    chunk.RegenerateSurface(index, mapProfile, chunkLength, samples, width, pickupPool,
+                        true, previous.EndHeight, previous.EndSlope);
+                    chunk.SetChunkColliderEnabled(false);
+                }
+                previous = chunk;
+            }
         }
 
         private TerrainChunk FindChunk(int index)
@@ -233,26 +275,53 @@ namespace AnimeHillRacing.Terrain
 
         private void RebuildAuthoritativeTerrainCollider2D()
         {
-            if (mapProfile == null || vehicle == null || vehicle.Body2D == null) return;
+            if (mapProfile == null || vehicle == null || vehicle.Body2D == null || chunks == null) return;
             EnsureAuthoritativeTerrainCollider();
 
-            const float stepX = .8f;
             const int pointsBehind = 30;
             const int pointsAhead = 180;
             const int pointCount = pointsBehind + pointsAhead + 1;
-            if (authoritativeTerrainPoints2D == null || authoritativeTerrainPoints2D.Length != pointCount)
-                authoritativeTerrainPoints2D = new Vector2[pointCount];
 
-            float centerX = vehicle.Body2D.position.x;
-            float firstX = Mathf.Floor(centerX / stepX) * stepX - pointsBehind * stepX;
-            Vector3 colliderPosition = authoritativeTerrainCollider2D.transform.position;
-            for (int i = 0; i < pointCount; i++)
+            // The rendered road is the processed surfaceHeights polyline (smoothing, slope/crest limiting and
+            // chunk-boundary continuity included). Sampling TerrainGenerator.SampleHeight again produced a
+            // different invisible road. Reuse the exact rendered knots so visual and Box2D geometry are one
+            // and the same piecewise-linear surface.
+            authoritativeSurfaceKnots2D.Clear();
+            for (int chunkIndex = minimumLoadedIndex; chunkIndex <= maximumLoadedIndex; chunkIndex++)
             {
-                float worldX = firstX + i * stepX;
-                float worldY = TerrainGenerator.SampleHeight(mapProfile, worldX);
-                authoritativeTerrainPoints2D[i] = new Vector2(worldX - colliderPosition.x, worldY - colliderPosition.y);
+                TerrainChunk chunk = FindChunk(chunkIndex);
+                if (chunk == null) continue;
+                int sampleCount = chunk.SurfaceSampleCount;
+                int firstSample = authoritativeSurfaceKnots2D.Count > 0 ? 1 : 0;
+                for (int sample = firstSample; sample < sampleCount; sample++)
+                    authoritativeSurfaceKnots2D.Add(chunk.GetSurfaceWorldPoint(sample));
             }
 
+            if (authoritativeSurfaceKnots2D.Count < 2)
+            {
+                authoritativeTerrainCollider2D.enabled = false;
+                return;
+            }
+
+            float centerX = vehicle.Body2D.position.x;
+            int centerKnot = 0;
+            while (centerKnot + 1 < authoritativeSurfaceKnots2D.Count &&
+                   authoritativeSurfaceKnots2D[centerKnot + 1].x <= centerX)
+                centerKnot++;
+
+            int firstKnot = Mathf.Clamp(centerKnot - pointsBehind, 0,
+                Mathf.Max(0, authoritativeSurfaceKnots2D.Count - pointCount));
+            int selectedCount = Mathf.Min(pointCount, authoritativeSurfaceKnots2D.Count - firstKnot);
+            if (authoritativeTerrainPoints2D == null || authoritativeTerrainPoints2D.Length != selectedCount)
+                authoritativeTerrainPoints2D = new Vector2[selectedCount];
+
+            Transform colliderTransform = authoritativeTerrainCollider2D.transform;
+            for (int i = 0; i < selectedCount; i++)
+            {
+                Vector2 world = authoritativeSurfaceKnots2D[firstKnot + i];
+                Vector3 local = colliderTransform.InverseTransformPoint(new Vector3(world.x, world.y, 0f));
+                authoritativeTerrainPoints2D[i] = new Vector2(local.x, local.y);
+            }
             authoritativeTerrainCollider2D.points = authoritativeTerrainPoints2D;
             authoritativeTerrainCollider2D.enabled = true;
         }

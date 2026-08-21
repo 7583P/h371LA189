@@ -35,7 +35,11 @@ namespace AnimeHillRacing.Vehicle
             float safetyFloor = -150f;
             if (activeProfile != null)
             {
-                groundSample = TerrainGenerator.SampleHeight(activeProfile, transform.position.x);
+                TerrainManager terrain = TerrainManager.Instance;
+                groundSample = terrain != null && terrain.TrySampleAuthoritativeSurface(transform.position.x,
+                    out float authoritativeY, out _)
+                    ? authoritativeY
+                    : TerrainGenerator.SampleHeight(activeProfile, transform.position.x);
                 safetyFloor = Mathf.Min(-100f, groundSample - maximumDistanceBelowTerrain);
             }
             else

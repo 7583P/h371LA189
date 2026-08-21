@@ -123,9 +123,14 @@ namespace AnimeHillRacing.Core
             if (terrain != null)
                 terrain.TeleportTo(targetWorldX);
 
-            float targetY = mapProfile != null
-                ? TerrainGenerator.SampleHeight(mapProfile, targetWorldX) + 2.5f
-                : 2.5f;
+            float targetY;
+            if (terrain != null && terrain.TrySampleAuthoritativeSurface(targetWorldX,
+                    out float surfaceY, out _))
+                targetY = surfaceY + 2.5f;
+            else
+                targetY = mapProfile != null
+                    ? TerrainGenerator.SampleHeight(mapProfile, targetWorldX) + 2.5f
+                    : 2.5f;
 
             if (vehicle != null)
             {

@@ -16,8 +16,8 @@ namespace AnimeHillRacing.Pickups
 
         protected override void Collect(VehicleRuntimeBase vehicle)
         {
-            manager ??= UnityEngine.Object.FindFirstObjectByType<GameManager>();
-            manager?.AddCoin(value);
+            if (manager == null) manager = UnityEngine.Object.FindFirstObjectByType<GameManager>();
+            if (manager != null) manager.AddCoin(value);
         }
     }
 }

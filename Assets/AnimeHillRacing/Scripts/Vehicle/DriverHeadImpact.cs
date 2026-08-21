@@ -102,9 +102,8 @@ namespace AnimeHillRacing.Vehicle
         private void TriggerDriverDown()
         {
             // Head exposed (roof broken on Rally, or open-cockpit vehicle) -> lethal head impact
-            crashDetector ??= GetComponentInParent<CrashDetector>();
-            if (crashDetector == null)
-                crashDetector = FindFirstObjectByType<CrashDetector>();
+            if (crashDetector == null) crashDetector = GetComponentInParent<CrashDetector>();
+            if (crashDetector == null) crashDetector = FindFirstObjectByType<CrashDetector>();
 
             crashDetector?.NotifyDriverHeadGroundImpact();
         }

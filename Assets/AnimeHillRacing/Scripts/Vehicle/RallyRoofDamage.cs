@@ -50,6 +50,10 @@ namespace AnimeHillRacing.Vehicle
         {
             roofTriggerCollider = GetComponent<Collider>();
             roofTriggerCollider2D = GetComponent<Collider2D>();
+            if (vehicleBody == null) vehicleBody = GetComponentInParent<Rigidbody>();
+            if (vehicleBody2D == null) vehicleBody2D = GetComponentInParent<Rigidbody2D>();
+            if (definition == null) definition = GetComponentInParent<VehicleRuntimeBase>()?.Definition;
+            if (bodyRenderers == null || bodyRenderers.Length == 0) bodyRenderers = GetComponentsInParent<SpriteRenderer>(true);
             EnsureMaterial();
             ResetState();
         }

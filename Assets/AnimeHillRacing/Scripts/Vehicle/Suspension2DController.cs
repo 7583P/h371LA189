@@ -52,14 +52,22 @@ namespace AnimeHillRacing.Vehicle
         private int consecutiveContactMisses;
         private int consecutiveContactHits;
         private int contactAlternationCount;
+        private bool collisionGroundContactSinceLastStep;
+        private Vector2 collisionGroundPoint;
+        private Vector2 collisionGroundNormal = Vector2.up;
 
         public Rigidbody2D WheelBody => wheelBody;
         public CircleCollider2D WheelCollider => wheelCollider;
         public WheelJoint2D SuspensionJoint => suspensionJoint;
         public bool IsGrounded => isGrounded;
+        public float Slip01 { get; private set; }
         public float WheelRadius => wheelRadius;
         public float LastAppliedMotorTorque => lastAppliedMotorTorque;
         public float WheelAngularVelocity => wheelBody != null ? wheelBody.angularVelocity * Mathf.Deg2Rad : 0f;
+        public float VisualCenterError => wheelBody != null && wheelVisual != null
+            ? Vector2.Distance(wheelBody.position, wheelVisual.position) : 0f;
+        public float VisualRotationError => wheelBody != null && wheelVisual != null
+            ? Mathf.Abs(Mathf.DeltaAngle(wheelBody.rotation, wheelVisual.eulerAngles.z)) : 0f;
 
         public WheelTerrainState TerrainState => terrainState;
         public bool IsBelowSurface => terrainState == WheelTerrainState.BelowSurface;
@@ -102,6 +110,24 @@ namespace AnimeHillRacing.Vehicle
             nominalDampingRatio = Mathf.Clamp(dampingRatio, 0.2f, 2.0f);
             driveMethod = method;
 
+            EnsureWheelComponents(definition, gripRating);
+
+            // Spawn the physical centre at the authored tire centre before the first solver step. This matters
+            // for Hill Adventurer, whose axle Y differs from Jeep, and prevents an initialization impulse.
+            if (chassisBody != null && wheelBody != null)
+            {
+                Vector3 authoredWorld = chassisBody.transform.TransformPoint(
+                    new Vector3(anchorLocalX, axleY, 0f));
+                wheelBody.position = new Vector2(authoredWorld.x, authoredWorld.y);
+                wheelBody.rotation = chassisBody.rotation;
+            }
+
+            // A dynamic Rigidbody2D must not inherit the chassis Transform. Keeping a simulated wheel below
+            // a rotating chassis makes its world centre inherit parent rotation between solver updates.
+            Transform neutralParent = chassisBody != null ? chassisBody.transform.parent : null;
+            if (transform.parent != neutralParent)
+                transform.SetParent(neutralParent, true);
+
             groundFilter = new ContactFilter2D
             {
                 useLayerMask = true,
@@ -109,7 +135,6 @@ namespace AnimeHillRacing.Vehicle
                 useTriggers = false
             };
 
-            EnsureWheelComponents(definition, gripRating);
             ConfigureJoint(anchorLocalX, axleY);
         }
 
@@ -143,13 +168,35 @@ namespace AnimeHillRacing.Vehicle
 
         private void ConfigureJoint(float anchorLocalX, float axleY)
         {
-            if (suspensionJoint == null) suspensionJoint = GetComponent<WheelJoint2D>();
-            if (suspensionJoint == null) suspensionJoint = gameObject.AddComponent<WheelJoint2D>();
+            // The suspension axis belongs to the chassis reference frame. A WheelJoint2D attached to the
+            // spinning wheel rotates that axis every time the tire turns and makes the wheel centre orbit.
+            if (suspensionJoint != null && suspensionJoint.attachedRigidbody != chassisBody)
+            {
+                suspensionJoint.enabled = false;
+                if (Application.isPlaying) Destroy(suspensionJoint);
+                else DestroyImmediate(suspensionJoint);
+                suspensionJoint = null;
+            }
+            if (suspensionJoint == null && chassisBody != null)
+            {
+                WheelJoint2D[] chassisJoints = chassisBody.GetComponents<WheelJoint2D>();
+                for (int i = 0; i < chassisJoints.Length; i++)
+                {
+                    if (chassisJoints[i] != null && chassisJoints[i].connectedBody == wheelBody)
+                    {
+                        suspensionJoint = chassisJoints[i];
+                        break;
+                    }
+                }
+            }
+            if (suspensionJoint == null && chassisBody != null)
+                suspensionJoint = chassisBody.gameObject.AddComponent<WheelJoint2D>();
+            if (suspensionJoint == null) return;
 
-            suspensionJoint.connectedBody = chassisBody;
+            suspensionJoint.connectedBody = wheelBody;
             suspensionJoint.autoConfigureConnectedAnchor = false;
-            suspensionJoint.anchor = Vector2.zero;
-            suspensionJoint.connectedAnchor = new Vector2(anchorLocalX, axleY);
+            suspensionJoint.anchor = new Vector2(anchorLocalX, axleY);
+            suspensionJoint.connectedAnchor = Vector2.zero;
 
             // Suspension line points vertically up (90 degrees in 2D relative to chassis)
             suspensionJoint.suspension = new JointSuspension2D
@@ -178,9 +225,13 @@ namespace AnimeHillRacing.Vehicle
             if (wheelBody == null || chassisBody == null) return;
 
             Transform root = chassisBody != null ? chassisBody.transform.root : transform.root;
+            bool callbackGroundContact = collisionGroundContactSinceLastStep;
+            Vector2 callbackGroundPoint = collisionGroundPoint;
+            Vector2 callbackGroundNormal = collisionGroundNormal;
+            collisionGroundContactSinceLastStep = false;
 
             // 1. Query real Box2D contact points directly from contact solver
-            actualContactCount = wheelCollider != null ? wheelCollider.GetContacts(contactBuffer) : 0;
+            actualContactCount = wheelCollider != null ? Physics2D.GetContacts(wheelCollider, contactBuffer) : 0;
             hasBox2DContact = false;
             Vector2 sumPoint = Vector2.zero;
             Vector2 sumNormal = Vector2.zero;
@@ -189,12 +240,32 @@ namespace AnimeHillRacing.Vehicle
             for (int i = 0; i < actualContactCount; i++)
             {
                 ContactPoint2D cp = contactBuffer[i];
-                if (cp.collider != null && GroundContactFilter.IsGround2D(cp.collider, root))
+                // Collider2D.GetContacts can report this wheel as cp.collider and the terrain as
+                // cp.otherCollider. Test both sides and only accept the non-vehicle ground collider.
+                Collider2D groundCollider = GroundContactFilter.IsGround2D(cp.collider, root)
+                    ? cp.collider
+                    : GroundContactFilter.IsGround2D(cp.otherCollider, root) ? cp.otherCollider : null;
+                if (groundCollider != null)
                 {
                     hasBox2DContact = true;
                     sumPoint += cp.point;
                     sumNormal += cp.normal;
                     validGroundContacts++;
+                }
+            }
+
+            // Rebuilding EdgeCollider2D.points in Update can invalidate the queryable manifold before the
+            // following FixedUpdate. Collision callbacks are emitted by that real solver step, so retain one
+            // step of callback evidence rather than downgrading a physical contact to overlap-only telemetry.
+            if (callbackGroundContact)
+            {
+                hasBox2DContact = true;
+                if (validGroundContacts == 0)
+                {
+                    sumPoint = callbackGroundPoint;
+                    sumNormal = callbackGroundNormal;
+                    validGroundContacts = 1;
+                    actualContactCount = Mathf.Max(actualContactCount, 1);
                 }
             }
 
@@ -251,10 +322,24 @@ namespace AnimeHillRacing.Vehicle
             }
             else
             {
-                float surfaceY = profile != null ? TerrainGenerator.SampleHeight(profile, worldX)
-                    : (lastContactPoint.y != 0f ? lastContactPoint.y : wheelBody.position.y);
+                TerrainManager terrain = TerrainManager.Instance;
+                float surfaceY = 0f;
+                float slopeDegrees = 0f;
+                bool hasAuthoritativeSurface = terrain != null &&
+                    terrain.TrySampleAuthoritativeSurface(worldX, out surfaceY, out slopeDegrees);
+                if (!hasAuthoritativeSurface)
+                {
+                    surfaceY = profile != null ? TerrainGenerator.SampleHeight(profile, worldX)
+                        : (lastContactPoint.y != 0f ? lastContactPoint.y : wheelBody.position.y);
+                    slopeDegrees = 0f;
+                }
                 surfacePoint = new Vector2(worldX, surfaceY);
-                if (profile != null)
+                if (hasAuthoritativeSurface)
+                {
+                    float slopeRadians = slopeDegrees * Mathf.Deg2Rad;
+                    terrainNormal = new Vector2(-Mathf.Sin(slopeRadians), Mathf.Cos(slopeRadians));
+                }
+                else if (profile != null)
                 {
                     float yAhead = TerrainGenerator.SampleHeight(profile, worldX + 0.5f);
                     float yBehind = TerrainGenerator.SampleHeight(profile, worldX - 0.5f);
@@ -296,7 +381,6 @@ namespace AnimeHillRacing.Vehicle
                 {
                     physicallyCrossed = true;
                 }
-
                 if (physicallyCrossed && floatStep > 0f)
                 {
                     terrainState = WheelTerrainState.BelowSurface;
@@ -337,8 +421,50 @@ namespace AnimeHillRacing.Vehicle
                 }
             }
 
+            // 6.5 Calculate Physical Slip
+            if (!isGrounded || wheelBody == null)
+            {
+                Slip01 = 0f;
+            }
+            else
+            {
+                Vector2 tangent = new Vector2(terrainNormal.y, -terrainNormal.x);
+                if (chassisBody != null && Vector2.Dot(tangent, chassisBody.transform.right) < 0f) tangent = -tangent;
+                float groundSpeed = Vector2.Dot(wheelBody.linearVelocity, tangent);
+                float rollingSpeed = -wheelBody.angularVelocity * Mathf.Deg2Rad * wheelRadius;
+                float denominator = Mathf.Max(1f, Mathf.Abs(groundSpeed));
+                float slipRatio = Mathf.Abs(rollingSpeed - groundSpeed) / denominator;
+                const float slipThresh = 0.18f;
+                Slip01 = Mathf.InverseLerp(slipThresh, slipThresh * 3f, slipRatio);
+            }
+
             // 7. Visual synchronization
             SyncVisual();
+        }
+
+        private void OnCollisionEnter2D(Collision2D collision) => RecordSolverGroundContact(collision);
+        private void OnCollisionStay2D(Collision2D collision) => RecordSolverGroundContact(collision);
+
+        private void RecordSolverGroundContact(Collision2D collision)
+        {
+            if (collision == null) return;
+            Transform root = chassisBody != null ? chassisBody.transform.root : transform.root;
+            bool ground = GroundContactFilter.IsGround2D(collision.collider, root) ||
+                          GroundContactFilter.IsGround2D(collision.otherCollider, root);
+            if (!ground) return;
+
+            collisionGroundContactSinceLastStep = true;
+            int count = collision.GetContacts(contactBuffer);
+            if (count <= 0) return;
+            Vector2 point = Vector2.zero;
+            Vector2 normal = Vector2.zero;
+            for (int i = 0; i < count; i++)
+            {
+                point += contactBuffer[i].point;
+                normal += contactBuffer[i].normal;
+            }
+            collisionGroundPoint = point / count;
+            collisionGroundNormal = normal.sqrMagnitude > .000001f ? normal.normalized : Vector2.up;
         }
 
         public void ApplyMotorTorque(float requestedTorque, float maxTorqueCapacity)

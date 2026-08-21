@@ -44,6 +44,9 @@ namespace AnimeHillRacing.Vehicle
         private float lastGroundedTime = float.NegativeInfinity;
         private bool chassisContactSinceLastStep;
         private float surfaceGripMultiplier = 1f;
+        private float wheelSlip;
+        private float currentFrontTorqueRatio = 0.5f;
+        private MapProfile terrainProfile;
 
         public override float SpeedMps => body != null ? Vector2.Dot(body.linearVelocity, (Vector2)body.transform.right) : 0f;
         public override float ProgressPosition => body != null ? body.position.x : transform.position.x;
@@ -51,7 +54,7 @@ namespace AnimeHillRacing.Vehicle
         public override float MotorTorque => currentDriveTorque;
         public override float AppliedThrottle => input != null ? input.State.Gas : 0f;
         public override float EngineRpm => engine != null ? engine.CurrentRpm : 0f;
-        public override float WheelSlip => 0f;
+        public override float WheelSlip => wheelSlip;
         public override bool FrontWheelGrounded => frontSuspension != null && frontSuspension.IsGrounded;
         public override bool RearWheelGrounded => rearSuspension != null && rearSuspension.IsGrounded;
         public override bool AnyWheelGrounded => FrontWheelGrounded || RearWheelGrounded;
@@ -68,6 +71,11 @@ namespace AnimeHillRacing.Vehicle
 
         public Suspension2DController FrontSuspension => frontSuspension;
         public Suspension2DController RearSuspension => rearSuspension;
+
+        public bool FrontWheelBelowSurface => frontSuspension != null && frontSuspension.IsBelowSurface;
+        public bool RearWheelBelowSurface => rearSuspension != null && rearSuspension.IsBelowSurface;
+        public bool FrontWheelContactUnstable => frontSuspension != null && frontSuspension.IsContactUnstable;
+        public bool RearWheelContactUnstable => rearSuspension != null && rearSuspension.IsContactUnstable;
 
         private void Awake()
         {
@@ -107,12 +115,6 @@ namespace AnimeHillRacing.Vehicle
 
             // Center of Mass: slightly lower to match stable HCR-like chassis balance
             body.centerOfMass = new Vector2(definition.centerOfMass.x, definition.centerOfMass.y);
-
-            // Pitch Inertia: natural from collider geometry + mild multiplier
-            if (definition.collisionPitchInertiaMultiplier > 1f)
-            {
-                // In 2D, Rigidbody2D calculates inertia from collider shapes automatically.
-            }
         }
 
         private void InitializeSuspensions()
@@ -127,9 +129,8 @@ namespace AnimeHillRacing.Vehicle
                 }
             }
 
-            float halfBase = definition.halfWheelbase;
-            float axleY = -0.45f;
-            float radius = definition.wheelRadius > 0.05f ? definition.wheelRadius : 0.45f;
+            float frontRadius = definition.FrontWheelDiameter > 0.001f ? definition.FrontWheelDiameter * 0.5f : definition.wheelRadius;
+            float rearRadius = definition.RearWheelDiameter > 0.001f ? definition.RearWheelDiameter * 0.5f : definition.wheelRadius;
 
             // Tune-based suspension scaling: higher tune increases damping and high-impact control
             float tuneProgress = definition.suspensionMaxTunes > 1
@@ -139,12 +140,14 @@ namespace AnimeHillRacing.Vehicle
 
             if (frontSuspension != null)
             {
-                frontSuspension.Initialize(body, definition, stats, halfBase, axleY, radius,
+                frontSuspension.Initialize(body, definition, stats, definition.FrontWheelAnchor,
+                    definition.frontWheelVisualPosition.y, frontRadius,
                     suspensionTravel, tunedFrequency, tunedDamping, stats.grip, driveMethod);
             }
             if (rearSuspension != null)
             {
-                rearSuspension.Initialize(body, definition, stats, -halfBase, axleY, radius,
+                rearSuspension.Initialize(body, definition, stats, definition.RearWheelAnchor,
+                    definition.rearWheelVisualPosition.y, rearRadius,
                     suspensionTravel, tunedFrequency, tunedDamping, stats.grip, driveMethod);
             }
         }
@@ -154,8 +157,8 @@ namespace AnimeHillRacing.Vehicle
         {
             definition = def;
             input = inputController;
-            frontSuspension = front;
-            rearSuspension = rear;
+            if (front != null) frontSuspension = front;
+            if (rear != null) rearSuspension = rear;
             if (body == null) body = GetComponent<Rigidbody2D>();
             if (chassisCollider == null) chassisCollider = GetComponent<Collider2D>();
             if (engine == null) engine = GetComponent<EngineController>();
@@ -180,24 +183,17 @@ namespace AnimeHillRacing.Vehicle
             surfaceGripMultiplier = Mathf.Clamp(mult, 0.25f, 1.0f);
         }
 
-        private void FixedUpdate()
-        {
-            StepPhysics(Time.fixedDeltaTime, input != null ? input.State : default);
-        }
-
-        private MapProfile terrainProfile;
-
-        public bool FrontWheelBelowSurface => frontSuspension != null && frontSuspension.IsBelowSurface;
-        public bool RearWheelBelowSurface => rearSuspension != null && rearSuspension.IsBelowSurface;
-        public bool FrontWheelContactUnstable => frontSuspension != null && frontSuspension.IsContactUnstable;
-        public bool RearWheelContactUnstable => rearSuspension != null && rearSuspension.IsContactUnstable;
-
         public void SetTerrainProfile(MapProfile profile) => terrainProfile = profile;
 
         public void ResetGlitchState()
         {
             if (frontSuspension != null) frontSuspension.ResetTerrainState();
             if (rearSuspension != null) rearSuspension.ResetTerrainState();
+        }
+
+        private void FixedUpdate()
+        {
+            StepPhysics(Time.fixedDeltaTime, input != null ? input.State : default);
         }
 
         public void StepPhysics(float dt, VehicleInputState inputState)
@@ -207,6 +203,21 @@ namespace AnimeHillRacing.Vehicle
             // 1. Simulate independent wheels with real Box2D contact solver observation
             if (frontSuspension != null) frontSuspension.Simulate(dt, terrainProfile);
             if (rearSuspension != null) rearSuspension.Simulate(dt, terrainProfile);
+
+            // Update physical wheel slip
+            float slipSum = 0f;
+            int slipCount = 0;
+            if (frontSuspension != null && frontSuspension.IsGrounded)
+            {
+                slipSum += frontSuspension.Slip01;
+                slipCount++;
+            }
+            if (rearSuspension != null && rearSuspension.IsGrounded)
+            {
+                slipSum += rearSuspension.Slip01;
+                slipCount++;
+            }
+            wheelSlip = slipCount > 0 ? slipSum / slipCount : 0f;
 
             // 2. Update grounded tracking
             bool rawGrounded = AnyWheelGrounded || chassisContactSinceLastStep;
@@ -243,15 +254,17 @@ namespace AnimeHillRacing.Vehicle
             else switch (driveDirection)
             {
                 case DriveDirection.BrakingToReverse:
-                    targetBrakeTorque = definition.brakeForce * definition.wheelRadius * brake;
+                    float requiredBrake = Mathf.Max(definition.brakeForce, body.mass * Mathf.Max(14f, stats.targetAccelerationMps2 * 1.5f));
+                    targetBrakeTorque = requiredBrake * definition.wheelRadius * brake;
                     break;
 
                 case DriveDirection.Reverse:
                     float revPitchAngle = body != null ? -body.rotation : 0f;
                     float revSlopeComp = body != null && AnyWheelGrounded
                         ? body.mass * Physics2D.gravity.magnitude * Mathf.Sin(Mathf.Deg2Rad * Mathf.Clamp(revPitchAngle, -65f, 65f)) : 0f;
+                    float requiredRevForce = Mathf.Max(definition.reverseForce, body.mass * Mathf.Max(6f, stats.targetAccelerationMps2 * 0.7f));
                     targetTotalTorque = brake > 0f && speed > -maxReverseSpeedKmh / 3.6f
-                        ? -(definition.reverseForce + Mathf.Max(0f, revSlopeComp)) * definition.wheelRadius * brake : 0f;
+                        ? -(requiredRevForce + Mathf.Max(0f, revSlopeComp)) * definition.wheelRadius * brake : 0f;
                     break;
 
                 case DriveDirection.BrakingToForward:
@@ -290,19 +303,54 @@ namespace AnimeHillRacing.Vehicle
             float rampRate = Mathf.Max(100f, baseTorqueCap / Mathf.Max(0.05f, torqueRampSeconds));
             currentDriveTorque = Mathf.MoveTowards(currentDriveTorque, targetTotalTorque, rampRate * dt);
 
-            // Equal 50/50 torque distribution to all active wheels (eliminates the runaway 75% rear wheelie loop)
-            float perWheelTorque = currentDriveTorque * 0.5f;
-            float perWheelBrake = targetBrakeTorque * 0.5f;
+            // Dynamic Hill Adaptive AWD for Hill Adventurer
+            bool isAdaptive4x4 = definition != null && definition.archetype == VehicleArchetype.HillAdventurer;
+            float frontTorqueRatio = 0.5f;
+            if (isAdaptive4x4 && frontSuspension != null && rearSuspension != null)
+            {
+                bool frontGrounded = frontSuspension.IsGrounded;
+                bool rearGrounded = rearSuspension.IsGrounded;
+                float targetFrontRatio = 0.5f;
+                if (frontGrounded && !rearGrounded)
+                    targetFrontRatio = 0.75f;
+                else if (!frontGrounded && rearGrounded)
+                    targetFrontRatio = 0.25f;
+                else
+                    targetFrontRatio = 0.5f;
+
+                currentFrontTorqueRatio = Mathf.MoveTowards(currentFrontTorqueRatio, targetFrontRatio, 4f * dt);
+                frontTorqueRatio = currentFrontTorqueRatio;
+            }
+            else
+            {
+                frontTorqueRatio = 0.5f;
+            }
+
+            float frontTorque = currentDriveTorque * frontTorqueRatio;
+            float rearTorque = currentDriveTorque * (1f - frontTorqueRatio);
+            float perWheelBrake = targetBrakeTorque * 0.75f;
 
             if (frontSuspension != null)
             {
-                frontSuspension.ApplyMotorTorque(perWheelTorque, stats.grip * surfaceGripMultiplier);
+                frontSuspension.ApplyMotorTorque(frontTorque, stats.grip * surfaceGripMultiplier);
                 frontSuspension.ApplyBrakeTorque(perWheelBrake);
             }
             if (rearSuspension != null)
             {
-                rearSuspension.ApplyMotorTorque(perWheelTorque, stats.grip * surfaceGripMultiplier);
+                rearSuspension.ApplyMotorTorque(rearTorque, stats.grip * surfaceGripMultiplier);
                 rearSuspension.ApplyBrakeTorque(perWheelBrake);
+            }
+
+            // High-authority ground braking deceleration when actively braking forward motion
+            if (driveDirection == DriveDirection.BrakingToReverse && brake > 0.05f && AnyWheelGrounded)
+            {
+                Vector2 fwd = (Vector2)transform.right;
+                float fwdSpeed = Vector2.Dot(body.linearVelocity, fwd);
+                if (fwdSpeed > 0.1f)
+                {
+                    float decelForce = Mathf.Min(body.mass * fwdSpeed * 25f, body.mass * 16f * brake);
+                    body.AddForce(-fwd * decelForce, ForceMode2D.Force);
+                }
             }
         }
 
@@ -433,6 +481,38 @@ namespace AnimeHillRacing.Vehicle
             if (body != null) body.linearVelocity = velocity;
             SetWheelVelocity(frontSuspension, velocity);
             SetWheelVelocity(rearSuspension, velocity);
+        }
+
+        private void OnEnable()
+        {
+            SetWheelSimulation(frontSuspension, true);
+            SetWheelSimulation(rearSuspension, true);
+        }
+
+        private void OnDisable()
+        {
+            SetWheelSimulation(frontSuspension, false);
+            SetWheelSimulation(rearSuspension, false);
+        }
+
+        private void OnDestroy()
+        {
+            if (!Application.isPlaying) return;
+            DestroyDetachedWheel(frontSuspension);
+            DestroyDetachedWheel(rearSuspension);
+        }
+
+        private static void SetWheelSimulation(Suspension2DController suspension, bool simulated)
+        {
+            if (suspension != null && suspension.WheelBody != null)
+                suspension.WheelBody.simulated = simulated;
+        }
+
+        private void DestroyDetachedWheel(Suspension2DController suspension)
+        {
+            if (suspension == null || suspension.transform == transform || suspension.transform.IsChildOf(transform))
+                return;
+            Destroy(suspension.gameObject);
         }
 
         private static void MoveWheelWithChassis(Suspension2DController suspension, Vector2 delta)

@@ -80,12 +80,18 @@ namespace AnimeHillRacing.Vehicle
             VehiclePhysics2DController vehicle2D = SpawnedVehicle as VehiclePhysics2DController;
             if (vehicle2D != null)
             {
-                Suspension2DController front = null;
-                Suspension2DController rear = null;
-                foreach (var s in instance.GetComponentsInChildren<Suspension2DController>(true))
+                // Initialize() detaches the dynamic wheel bodies from the dynamic chassis so Box2D owns
+                // their world transforms. Preserve the controller's serialized/runtime references first;
+                // a hierarchy lookup is only a compatibility fallback for older prefabs.
+                Suspension2DController front = vehicle2D.FrontSuspension;
+                Suspension2DController rear = vehicle2D.RearSuspension;
+                if (front == null || rear == null)
                 {
-                    if (s.name.ToLower().Contains("front")) front = s;
-                    else if (s.name.ToLower().Contains("rear")) rear = s;
+                    foreach (var s in instance.GetComponentsInChildren<Suspension2DController>(true))
+                    {
+                        if (s.name.ToLower().Contains("front")) front = s;
+                        else if (s.name.ToLower().Contains("rear")) rear = s;
+                    }
                 }
                 vehicle2D.AssignRuntimeReferences(ActiveDefinition, input, front, rear);
                 vehicle2D.SetTerrainProfile(terrainProfile);

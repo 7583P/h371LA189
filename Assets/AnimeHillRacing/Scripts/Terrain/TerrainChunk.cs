@@ -11,6 +11,7 @@ namespace AnimeHillRacing.Terrain
         {
             public PickupBase pickup;
             public int spawnVersion;
+            public float surfaceOffset;
         }
 
         private readonly List<TrackedPickup> pickups = new List<TrackedPickup>(24);
@@ -99,8 +100,23 @@ namespace AnimeHillRacing.Terrain
         public void Generate(int index, MapProfile profile, float targetChunkLength, int samples, float width,
             PickupPool pool, bool hasBoundary, float boundaryHeight, float boundarySlope)
         {
+            GenerateInternal(index, profile, targetChunkLength, samples, width, pool, hasBoundary,
+                boundaryHeight, boundarySlope, false);
+        }
+
+        public void RegenerateSurface(int index, MapProfile profile, float targetChunkLength, int samples,
+            float width, PickupPool pool, bool hasBoundary, float boundaryHeight, float boundarySlope)
+        {
+            GenerateInternal(index, profile, targetChunkLength, samples, width, pool, hasBoundary,
+                boundaryHeight, boundarySlope, true);
+        }
+
+        private void GenerateInternal(int index, MapProfile profile, float targetChunkLength, int samples,
+            float width, PickupPool pool, bool hasBoundary, float boundaryHeight, float boundarySlope,
+            bool preservePickups)
+        {
             EnsureComponents();
-            ReleasePickups();
+            if (!preservePickups) ReleasePickups();
             Index = index;
             chunkLength = targetChunkLength;
             surfaceWidth = width;
@@ -172,6 +188,7 @@ namespace AnimeHillRacing.Terrain
                 // single LineRenderer would bridge them. In both cases the extra line is intentionally omitted.
                 edgeRenderer.positionCount = 0;
                 name = $"Terrain Chunk {index}";
+                if (preservePickups) RepositionTrackedPickups();
                 return;
             }
             edgeRenderer.positionCount = surfaceHeights.Length;
@@ -179,10 +196,21 @@ namespace AnimeHillRacing.Terrain
             for (int i = 0; i < surfaceHeights.Length; i++)
                 edgeRenderer.SetPosition(i, new Vector3(i * lineDx, surfaceHeights[i], -width * 0.5f - 0.03f));
             name = $"Terrain Chunk {index}";
+            if (preservePickups) RepositionTrackedPickups();
         }
 
         public float GetSurfaceHeight(int sampleIndex) => surfaceHeights != null && surfaceHeights.Length > 0
             ? surfaceHeights[Mathf.Clamp(sampleIndex, 0, surfaceHeights.Length - 1)] : 0f;
+
+        public Vector2 GetSurfaceWorldPoint(int sampleIndex)
+        {
+            if (surfaceHeights == null || surfaceHeights.Length == 0)
+                return transform.position;
+            int clamped = Mathf.Clamp(sampleIndex, 0, surfaceHeights.Length - 1);
+            float localX = clamped * chunkLength / Mathf.Max(1, surfaceHeights.Length - 1);
+            Vector3 world = transform.TransformPoint(new Vector3(localX, surfaceHeights[clamped], 0f));
+            return new Vector2(world.x, world.y);
+        }
 
         public void SetChunkColliderEnabled(bool value)
         {
@@ -197,22 +225,53 @@ namespace AnimeHillRacing.Terrain
             slopeDegrees = 0f;
             if (!IsGenerated || surfaceHeights == null || surfaceHeights.Length < 2)
                 return false;
-            float localX = worldX - Index * chunkLength;
-            if (localX < 0f || localX > chunkLength)
+            Vector2 first = GetSurfaceWorldPoint(0);
+            Vector2 last = GetSurfaceWorldPoint(surfaceHeights.Length - 1);
+            if (worldX < first.x || worldX > last.x)
                 return false;
-            float samplePosition = localX / chunkLength * (surfaceHeights.Length - 1);
-            int lower = Mathf.Clamp(Mathf.FloorToInt(samplePosition), 0, surfaceHeights.Length - 2);
-            float t = samplePosition - lower;
-            height = Mathf.Lerp(surfaceHeights[lower], surfaceHeights[lower + 1], t);
-            float sampleDx = chunkLength / (surfaceHeights.Length - 1);
-            slopeDegrees = Mathf.Atan2(surfaceHeights[lower + 1] - surfaceHeights[lower], sampleDx) * Mathf.Rad2Deg;
+
+            int lower = 0;
+            while (lower + 1 < surfaceHeights.Length - 1 &&
+                   GetSurfaceWorldPoint(lower + 1).x <= worldX)
+                lower++;
+            Vector2 a = GetSurfaceWorldPoint(lower);
+            Vector2 b = GetSurfaceWorldPoint(lower + 1);
+            float dx = b.x - a.x;
+            float t = Mathf.Abs(dx) > Mathf.Epsilon ? Mathf.Clamp01((worldX - a.x) / dx) : 0f;
+            height = Mathf.Lerp(a.y, b.y, t);
+            slopeDegrees = Mathf.Atan2(b.y - a.y, dx) * Mathf.Rad2Deg;
             return true;
         }
 
         public void TrackPickup(PickupBase pickup)
         {
             if (pickup != null)
-                pickups.Add(new TrackedPickup { pickup = pickup, spawnVersion = pickup.SpawnVersion });
+            {
+                float surfaceOffset = 0f;
+                if (TrySampleSurface(pickup.transform.position.x, out float surfaceY, out _))
+                    surfaceOffset = pickup.transform.position.y - surfaceY;
+                pickups.Add(new TrackedPickup
+                {
+                    pickup = pickup,
+                    spawnVersion = pickup.SpawnVersion,
+                    surfaceOffset = surfaceOffset
+                });
+            }
+        }
+
+        private void RepositionTrackedPickups()
+        {
+            for (int i = 0; i < pickups.Count; i++)
+            {
+                TrackedPickup tracked = pickups[i];
+                if (tracked.pickup == null || tracked.pickup.SpawnVersion != tracked.spawnVersion ||
+                    !tracked.pickup.gameObject.activeSelf)
+                    continue;
+                Vector3 position = tracked.pickup.transform.position;
+                if (!TrySampleSurface(position.x, out float surfaceY, out _)) continue;
+                position.y = surfaceY + tracked.surfaceOffset;
+                tracked.pickup.transform.position = position;
+            }
         }
 
         private void ReleasePickups()

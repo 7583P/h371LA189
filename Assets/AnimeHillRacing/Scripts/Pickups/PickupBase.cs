@@ -69,8 +69,22 @@ namespace AnimeHillRacing.Pickups
 
         private void OnTriggerEnter(Collider other) => TryCollect(other.GetComponentInParent<VehicleRuntimeBase>());
         private void OnTriggerStay(Collider other) => TryCollect(other.GetComponentInParent<VehicleRuntimeBase>());
-        private void OnTriggerEnter2D(Collider2D other) => TryCollect(other.GetComponentInParent<VehicleRuntimeBase>());
-        private void OnTriggerStay2D(Collider2D other) => TryCollect(other.GetComponentInParent<VehicleRuntimeBase>());
+        private void OnTriggerEnter2D(Collider2D other) => TryCollect(ResolveVehicle2D(other));
+        private void OnTriggerStay2D(Collider2D other) => TryCollect(ResolveVehicle2D(other));
+
+        private static VehicleRuntimeBase ResolveVehicle2D(Collider2D other)
+        {
+            if (other == null) return null;
+
+            VehicleRuntimeBase vehicle = other.GetComponentInParent<VehicleRuntimeBase>();
+            if (vehicle != null) return vehicle;
+
+            // Independent Box2D wheels are intentionally detached from the chassis Transform so their
+            // simulated position is not inherited twice. Resolve their explicit suspension owner so wheel
+            // contact collects fuel and coins exactly like chassis contact.
+            Suspension2DController suspension = other.GetComponentInParent<Suspension2DController>();
+            return suspension != null ? suspension.OwnerVehicle : null;
+        }
 
         private void TryCollect(VehicleRuntimeBase vehicle)
         {

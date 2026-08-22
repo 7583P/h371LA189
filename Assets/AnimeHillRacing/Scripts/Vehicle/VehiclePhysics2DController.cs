@@ -148,8 +148,12 @@ namespace AnimeHillRacing.Vehicle
             // Tune-based suspension scaling: higher tune increases damping and high-impact control
             float tuneProgress = definition.suspensionMaxTunes > 1
                 ? (upgrades.suspensionTune - 1f) / (definition.suspensionMaxTunes - 1f) : 0f;
-            float tunedFrequency = Mathf.Lerp(suspensionFrequency * 0.85f, suspensionFrequency * 1.15f, tuneProgress);
-            float tunedDamping = Mathf.Lerp(suspensionDampingRatio * 0.80f, suspensionDampingRatio * 1.30f, tuneProgress);
+            // Keep the 2D suspension firm and close to critically damped at every tune level. The old
+            // 0.60 base damping ratio stored too much spring energy and made the whole vehicle pogo after
+            // crests and landings, especially once aerodynamic load compressed the bump stops.
+            float tunedFrequency = Mathf.Lerp(suspensionFrequency, suspensionFrequency * 1.20f, tuneProgress);
+            float tunedDamping = Mathf.Lerp(Mathf.Max(1.0f, suspensionDampingRatio),
+                Mathf.Max(1.20f, suspensionDampingRatio * 1.35f), tuneProgress);
 
             if (frontSuspension != null)
             {
@@ -407,21 +411,13 @@ namespace AnimeHillRacing.Vehicle
             float forwardSpeed = Mathf.Max(0f, SpeedMps);
             float speed01 = Mathf.Clamp01(forwardSpeed / Mathf.Max(1f, definition.downforceReferenceSpeedMps));
 
-            float downforceAccel = 0f;
-            if (definition.archetype == VehicleArchetype.Formula)
-            {
-                downforceAccel = stats.airborneDownforceAcceleration * speed01 * speed01;
-            }
-            else if (definition.archetype == VehicleArchetype.Rally)
-            {
-                // 50% of Formula maximum downforce (14.0 m/s^2)
-                downforceAccel = 14.0f * speed01 * speed01;
-            }
-            else if (definition.archetype == VehicleArchetype.SportBike)
-            {
-                // 45% of Formula maximum downforce (12.6 m/s^2)
-                downforceAccel = 12.6f * speed01 * speed01;
-            }
+            bool supportsDownforce = definition.archetype == VehicleArchetype.Formula ||
+                                     definition.archetype == VehicleArchetype.Rally ||
+                                     definition.archetype == VehicleArchetype.SportBike;
+            float downforceAccel = supportsDownforce
+                ? Mathf.Min(definition.maximumDownforceAcceleration,
+                    Mathf.Max(0f, stats.airborneDownforceAcceleration)) * speed01 * speed01
+                : 0f;
 
             if (downforceAccel > 0.01f)
             {
@@ -429,20 +425,6 @@ namespace AnimeHillRacing.Vehicle
                 body.AddForce(downDirection * body.mass * downforceAccel, ForceMode2D.Force);
             }
 
-            // Heavy air gravity bias for fast vehicles (Rally & SportBike) when airborne to prevent endless floating
-            if (FullyAirborne)
-            {
-                if (definition.archetype == VehicleArchetype.SportBike)
-                {
-                    // +45% downward gravity for SportBike in the air -> fast, weighty descent
-                    body.AddForce(Vector2.down * (body.mass * 4.4f), ForceMode2D.Force);
-                }
-                else if (definition.archetype == VehicleArchetype.Rally)
-                {
-                    // +25% downward gravity for Rally in the air -> solid, heavy jump arcs
-                    body.AddForce(Vector2.down * (body.mass * 2.5f), ForceMode2D.Force);
-                }
-            }
         }
 
         private void ApplyAirControl(VehicleInputState inputState, float dt)

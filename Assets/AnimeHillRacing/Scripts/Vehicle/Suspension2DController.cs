@@ -60,6 +60,9 @@ namespace AnimeHillRacing.Vehicle
         public Rigidbody2D WheelBody => wheelBody;
         public CircleCollider2D WheelCollider => wheelCollider;
         public WheelJoint2D SuspensionJoint => suspensionJoint;
+        public VehicleRuntimeBase OwnerVehicle => chassisBody != null
+            ? chassisBody.GetComponent<VehicleRuntimeBase>()
+            : null;
         public bool IsGrounded => isGrounded;
         public float Slip01 { get; private set; }
         public float WheelRadius => wheelRadius;
@@ -436,7 +439,7 @@ namespace AnimeHillRacing.Vehicle
                     // Damping component: proportional to closing velocity between chassis and wheel.
                     Vector2 relativeVel = chassisBody.linearVelocity - wheelBody.linearVelocity;
                     float closingSpeed = Vector2.Dot(relativeVel, -suspensionDir); // positive = compressing
-                    float dampingForce = 0f;
+                    float compressionDampingForce = 0f;
                     if (closingSpeed > 0f)
                     {
                         float requestedDamping = chassisBody.mass * closingSpeed *
@@ -450,10 +453,18 @@ namespace AnimeHillRacing.Vehicle
                                             Mathf.Max(.01f, chassisBody.mass + wheelBody.mass);
                         float passiveForceLimit = reducedMass * closingSpeed /
                                                   Mathf.Max(.001f, dt) * .85f;
-                        dampingForce = Mathf.Min(requestedDamping, passiveForceLimit);
+                        compressionDampingForce = Mathf.Min(requestedDamping, passiveForceLimit);
                     }
 
-                    float totalForce = bumpForce + dampingForce;
+                    // During extension, bleed the bump-stop spring force instead of letting it launch the
+                    // chassis back upward. Clamping at zero keeps this passive: it never pulls the wheel and
+                    // chassis together or fabricates a downward impulse.
+                    float reboundSpeed = Vector2.Dot(relativeVel, suspensionDir);
+                    float reboundDampingForce = reboundSpeed > 0f
+                        ? chassisBody.mass * reboundSpeed * bumpStopSpringMultiplier * 1.5f * bumpProgress
+                        : 0f;
+                    float totalForce = Mathf.Max(0f,
+                        bumpForce + compressionDampingForce - reboundDampingForce);
                     wheelBody.AddForce(-suspensionDir * totalForce, ForceMode2D.Force);
                     chassisBody.AddForceAtPosition(suspensionDir * totalForce, wheelBody.position, ForceMode2D.Force);
                 }

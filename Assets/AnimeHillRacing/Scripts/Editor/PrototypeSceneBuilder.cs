@@ -3201,7 +3201,7 @@ namespace AnimeHillRacing.Editor
                 accelerationZeroToHundredSeconds = CreateProgressionTargets(20, 5.8f, 2.5f),
                 gripRatings = CreateProgressionTargets(14, 167f, 750f),
                 airControlTorque = new[] { 6500f },
-                airborneDownforceAcceleration = new[] { 0f },
+                airborneDownforceAcceleration = new[] { 11f },
                 fuelRunDurationSeconds = CreateProgressionTargets(15, 25f, 50f)
             };
         }
@@ -3216,7 +3216,7 @@ namespace AnimeHillRacing.Editor
                 accelerationZeroToHundredSeconds = CreateProgressionTargets(20, 8f, 2.5f),
                 gripRatings = CreateProgressionTargets(20, 160f, 500f),
                 airControlTorque = new[] { 7600f },
-                airborneDownforceAcceleration = new[] { 0f },
+                airborneDownforceAcceleration = new[] { 10f },
                 fuelRunDurationSeconds = CreateProgressionTargets(15, 15f, 45f)
             };
         }
@@ -4798,7 +4798,7 @@ namespace AnimeHillRacing.Editor
             assets.rally.accelerationForceCalibration = .361f;
             assets.rally.airControlTorque = 4200f;
             assets.rally.downforceReferenceSpeedMps = 30f;
-            assets.rally.maximumDownforceAcceleration = 18f;
+            assets.rally.maximumDownforceAcceleration = 11f;
             assets.rally.maxAirAngularVelocity = 2.2f; assets.rally.airAngularAcceleration = 13f;
             assets.rally.airAngularDamping = .45f;
             assets.rally.oneWheelAngularDamping = .08f; assets.rally.twoWheelAngularDamping = .32f;
@@ -4884,7 +4884,7 @@ namespace AnimeHillRacing.Editor
             assets.sportBike.reverseForce = 3300f;
             assets.sportBike.airControlTorque = 8200f;
             assets.sportBike.downforceReferenceSpeedMps = 30f;
-            assets.sportBike.maximumDownforceAcceleration = 18f;
+            assets.sportBike.maximumDownforceAcceleration = 10f;
             assets.sportBike.collisionPitchInertiaMultiplier = 1f;
             assets.sportBike.maximumDepenetrationVelocity = 5.0f;
             assets.sportBike.chassisAirControlMultiplier = .07f;

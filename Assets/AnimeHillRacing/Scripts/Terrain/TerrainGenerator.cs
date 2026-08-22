@@ -693,6 +693,16 @@ namespace AnimeHillRacing.Terrain
             return shape + detail;
         }
 
+        public static float EvaluateFloat32Precision(float value, float worldX)
+        {
+            float absX = Mathf.Abs(worldX);
+            if (absX < 32768f) return value;
+            float exponent = Mathf.Floor(Mathf.Log(absX, 2f));
+            float step = Mathf.Pow(2f, exponent - 23f);
+            if (step <= 0.000001f) return value;
+            return Mathf.Round(value / step) * step;
+        }
+
         public static void BuildMesh(Mesh mesh, MapProfile profile, float chunkStartX, float chunkLength,
             int samples, float width, bool hasBoundary, float boundaryHeight, float boundarySlope,
             out float[] surfaceHeights, out float endHeight, out float endSlope)
@@ -724,7 +734,11 @@ namespace AnimeHillRacing.Terrain
             float previousSlope;
             if (profile.supportsLiquidExposure)
             {
-                for (int i = 0; i < sampleCount; i++) surfaceHeights[i] = working[i + padding];
+                for (int i = 0; i < sampleCount; i++)
+                {
+                    float rawY = working[i + padding];
+                    surfaceHeights[i] = EvaluateFloat32Precision(rawY, chunkStartX + i * dx);
+                }
                 previousHeight = surfaceHeights[sampleCount - 1];
                 previousSlope = (surfaceHeights[sampleCount - 1] - surfaceHeights[sampleCount - 2]) / dx;
             }
@@ -733,12 +747,13 @@ namespace AnimeHillRacing.Terrain
                 previousHeight = hasBoundary ? boundaryHeight : working[padding];
                 previousSlope = hasBoundary ? boundarySlope :
                     (working[padding + 1] - working[padding]) / dx;
-                surfaceHeights[0] = previousHeight;
+                surfaceHeights[0] = EvaluateFloat32Precision(previousHeight, chunkStartX);
                 int firstGeneratedSample = 1;
                 if (hasBoundary && sampleCount > 1)
                 {
                     float boundaryDelta = Mathf.Clamp(boundarySlope * dx, -maxDelta, maxDelta);
-                    surfaceHeights[1] = previousHeight + boundaryDelta;
+                    float nextH = previousHeight + boundaryDelta;
+                    surfaceHeights[1] = EvaluateFloat32Precision(nextH, chunkStartX + dx);
                     previousHeight = surfaceHeights[1];
                     previousSlope = boundaryDelta / dx;
                     firstGeneratedSample = 2;
@@ -753,8 +768,8 @@ namespace AnimeHillRacing.Terrain
                     float safeAngle = Mathf.MoveTowards(previousAngle, desiredAngle, profile.maximumCrestSharpness);
                     float safeSlope = Mathf.Tan(safeAngle * Mathf.Deg2Rad);
                     float height = previousHeight + safeSlope * dx;
-                    surfaceHeights[i] = height;
-                    previousHeight = height;
+                    surfaceHeights[i] = EvaluateFloat32Precision(height, chunkStartX + i * dx);
+                    previousHeight = surfaceHeights[i];
                     previousSlope = safeSlope;
                 }
             }
@@ -774,29 +789,33 @@ namespace AnimeHillRacing.Terrain
             var skirtTriangles = new List<int>((sampleCount - 1) * 6);
             for (int i = 0; i < sampleCount; i++)
             {
-                float localX = i * dx;
-                float worldX = chunkStartX + localX;
+                float rawLocalX = i * dx;
+                float worldX = chunkStartX + rawLocalX;
+                float localX = rawLocalX;
                 float textureU = profile.fitAuthoredTerrainTexture
                     ? worldX / Mathf.Max(1f, profile.terrainTextureRepeatWidth)
                     : localX * .1f;
 
-                // Replicate Hill Climb Racing texture UV quantization glitch at extreme distances
-                if (profile != null && profile.hcrGlitch != null && profile.hcrGlitch.enabled && profile.hcrGlitch.enableTextureGlitch)
+                if (Mathf.Abs(worldX) >= 32768f)
                 {
-                    HcrGlitchState glitch = HcrGlitchSystem.Evaluate(worldX * GameManager.LogicalDistanceScale, profile.hcrGlitch);
-                    if (glitch.isActive && glitch.quantizationStep > 0f)
-                    {
-                        float uvStep = Mathf.Max(0.0039f, glitch.quantizationStep * 15f);
-                        textureU = HcrGlitchSystem.Quantize(textureU, uvStep);
-                    }
+                    float exponent = Mathf.Floor(Mathf.Log(Mathf.Abs(worldX), 2f));
+                    float step = Mathf.Pow(2f, exponent - 23f);
+                    localX = Mathf.Round((chunkStartX + rawLocalX) / step) * step - chunkStartX;
+
+                    float uvStep = step / Mathf.Max(1f, profile.terrainTextureRepeatWidth);
+                    if (uvStep > 0.0001f)
+                        textureU = Mathf.Round(textureU / uvStep) * uvStep;
                 }
+
                 float surfaceY = surfaceHeights[i];
-                float groundBottomY = surfaceY - groundVisualDepth;
-                float groundTopY = surfaceY + groundVisualRise;
-                float terrainTopY = surfaceY - terrainFillDepth;
+                float groundBottomY = EvaluateFloat32Precision(surfaceY - groundVisualDepth, worldX);
+                float groundTopY = EvaluateFloat32Precision(surfaceY + groundVisualRise, worldX);
+                float terrainTopY = EvaluateFloat32Precision(surfaceY - terrainFillDepth, worldX);
+                float skirtY = EvaluateFloat32Precision(skirtBottom, worldX);
+
                 int vertex = i * 6;
                 vertices[vertex] = new Vector3(localX, terrainTopY, -width * .5f);        // Terrain fill top
-                vertices[vertex + 1] = new Vector3(localX, skirtBottom, -width * .5f);    // Terrain bottom
+                vertices[vertex + 1] = new Vector3(localX, skirtY, -width * .5f);          // Terrain bottom
                 vertices[vertex + 2] = new Vector3(localX, groundTopY, -width * .5f);     // Ground art top
                 vertices[vertex + 3] = new Vector3(localX, groundBottomY, -width * .5f);  // Ground bottom
                 vertices[vertex + 4] = new Vector3(localX, surfaceY, -width * .5f);       // Physical surface front

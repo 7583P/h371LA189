@@ -1,5 +1,6 @@
 using System.IO;
 using AnimeHillRacing.Core;
+using AnimeHillRacing.EditorTools;
 using AnimeHillRacing.Road;
 using AnimeHillRacing.Vehicle;
 using UnityEditor;
@@ -102,6 +103,7 @@ namespace AnimeHillRacing.Editor
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            AdventureBox2DGoldenInstaller.InstallGoldenBox2D();
 
             Debug.Log("<color=green><b>HILL ADVENTURER 4x4 & FORMULA RESCALING INSTALLED SUCCESSFULLY!</b></color>");
         }

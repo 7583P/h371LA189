@@ -176,8 +176,3 @@ MonoBehaviour:
     lightningEventsPerMinute: 4
     lightningFlashDuration: 0.38
     lightningFlashAlpha: 0.42
-  hcrGlitch:
-    enabled: 1
-    startDistance: 32768
-    maxCameraJitter: 0.055
-    enableTextureGlitch: 1

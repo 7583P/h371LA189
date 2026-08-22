@@ -106,10 +106,9 @@ namespace AnimeHillRacing.Terrain
                 RecycleOneBackward();
             }
 
-            // The Box2D comparison intentionally rebuilds one absolute-coordinate EdgeCollider2D every
-            // rendered frame. World X is the only precision variable; no floating origin is used.
-            if (vehicle != null && vehicle.Body2D != null)
-                RebuildAuthoritativeTerrainCollider2D();
+            // The authoritative collider is rebuilt only when the loaded terrain changes. Rebuilding it every
+            // rendered frame invalidates Box2D contacts; leaving the per-chunk colliders enabled creates
+            // overlapping edge endpoints that behave like invisible walls.
         }
 
         public void TeleportTo(float targetWorldX)
@@ -175,6 +174,7 @@ namespace AnimeHillRacing.Terrain
             {
                 GenerateChunk(oldest, maximumLoadedIndex);
                 RebuildAuthoritativeTerrainCollider();
+                RebuildAuthoritativeTerrainCollider2D();
                 RefreshLiquidHazards();
             }
         }
@@ -188,6 +188,7 @@ namespace AnimeHillRacing.Terrain
             GenerateChunk(newest, minimumLoadedIndex);
             RegenerateLoadedSurfacesAscending();
             RebuildAuthoritativeTerrainCollider();
+            RebuildAuthoritativeTerrainCollider2D();
             RefreshLiquidHazards();
         }
 
@@ -227,8 +228,8 @@ namespace AnimeHillRacing.Terrain
             bool hasBoundary = previous != null;
             chunk.Generate(index, mapProfile, chunkLength, samples, width, pickupPool, hasBoundary,
                 hasBoundary ? previous.EndHeight : 0f, hasBoundary ? previous.EndSlope : 0f);
-            // Rendering remains chunked and recyclable, but separate coplanar MeshColliders produce duplicate
-            // contacts at their shared edge. Physics is rebuilt below as one welded, authoritative surface.
+            // Physics uses the single welded collider assembled from every rendered surface knot. Enabling
+            // this chunk collider too would create duplicate, partially overlapping edges at every seam.
             chunk.SetChunkColliderEnabled(false);
             SpawnCoins(chunk, index);
             SpawnProgressiveFuel(chunk, index);

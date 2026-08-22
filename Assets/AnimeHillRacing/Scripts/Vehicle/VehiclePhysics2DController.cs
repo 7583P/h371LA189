@@ -79,6 +79,19 @@ namespace AnimeHillRacing.Vehicle
 
         private void Awake()
         {
+            // Ensure 3D physics components from shared prefabs do not interfere with 2D Box2D simulation
+            Collider[] colliders3D = GetComponentsInChildren<Collider>(true);
+            for (int i = 0; i < colliders3D.Length; i++)
+            {
+                colliders3D[i].enabled = false;
+            }
+            Rigidbody[] rigidbodies3D = GetComponentsInChildren<Rigidbody>(true);
+            for (int i = 0; i < rigidbodies3D.Length; i++)
+            {
+                rigidbodies3D[i].isKinematic = true;
+                rigidbodies3D[i].detectCollisions = false;
+            }
+
             body = GetComponent<Rigidbody2D>();
             chassisCollider = GetComponent<Collider2D>();
             engine = GetComponent<EngineController>();
@@ -391,15 +404,44 @@ namespace AnimeHillRacing.Vehicle
 
         private void ApplyAerodynamicDownforce()
         {
-            if (definition.archetype != VehicleArchetype.Formula || stats.airborneDownforceAcceleration <= 0.01f) return;
             float forwardSpeed = Mathf.Max(0f, SpeedMps);
             float speed01 = Mathf.Clamp01(forwardSpeed / Mathf.Max(1f, definition.downforceReferenceSpeedMps));
-            float downforceAccel = stats.airborneDownforceAcceleration * speed01 * speed01;
+
+            float downforceAccel = 0f;
+            if (definition.archetype == VehicleArchetype.Formula)
+            {
+                downforceAccel = stats.airborneDownforceAcceleration * speed01 * speed01;
+            }
+            else if (definition.archetype == VehicleArchetype.Rally)
+            {
+                // 50% of Formula maximum downforce (14.0 m/s^2)
+                downforceAccel = 14.0f * speed01 * speed01;
+            }
+            else if (definition.archetype == VehicleArchetype.SportBike)
+            {
+                // 45% of Formula maximum downforce (12.6 m/s^2)
+                downforceAccel = 12.6f * speed01 * speed01;
+            }
 
             if (downforceAccel > 0.01f)
             {
                 Vector2 downDirection = -body.transform.up;
                 body.AddForce(downDirection * body.mass * downforceAccel, ForceMode2D.Force);
+            }
+
+            // Heavy air gravity bias for fast vehicles (Rally & SportBike) when airborne to prevent endless floating
+            if (FullyAirborne)
+            {
+                if (definition.archetype == VehicleArchetype.SportBike)
+                {
+                    // +45% downward gravity for SportBike in the air -> fast, weighty descent
+                    body.AddForce(Vector2.down * (body.mass * 4.4f), ForceMode2D.Force);
+                }
+                else if (definition.archetype == VehicleArchetype.Rally)
+                {
+                    // +25% downward gravity for Rally in the air -> solid, heavy jump arcs
+                    body.AddForce(Vector2.down * (body.mass * 2.5f), ForceMode2D.Force);
+                }
             }
         }
 
@@ -471,7 +513,8 @@ namespace AnimeHillRacing.Vehicle
 
             MoveWheelWithChassis(frontSuspension, delta);
             MoveWheelWithChassis(rearSuspension, delta);
-            ResetGlitchState();
+            frontSuspension?.ResetTerrainState();
+            rearSuspension?.ResetTerrainState();
             Physics2D.SyncTransforms();
         }
 

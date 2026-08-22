@@ -23,13 +23,20 @@ namespace AnimeHillRacing.UI
 
         private void OnEnable() => ApplyVisualStyle();
 
+
         public void Show(GameManager manager)
         {
             gameManager = manager;
             ApplyVisualStyle();
             root.SetActive(true);
             root.transform.SetAsLastSibling();
-            string reason = manager.EndReason == RunEndReason.OutOfFuel ? "OUT OF FUEL" : "DRIVER DOWN";
+            string reason;
+            if (manager.EndReason == RunEndReason.DriverDownAndOutOfFuel)
+                reason = "Driver Down & Out Of Fuel";
+            else if (manager.EndReason == RunEndReason.OutOfFuel)
+                reason = "OUT OF FUEL";
+            else
+                reason = "DRIVER DOWN";
             if (titleText != null) titleText.text = reason;
             resultsText.text = $"DISTANCE\n<size=34>{manager.Distance:N0} m</size>\n\n" +
                                $"BEST DISTANCE   {manager.BestDistance:N0} m\n" +

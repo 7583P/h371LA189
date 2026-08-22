@@ -227,48 +227,26 @@ namespace AnimeHillRacing.UI
                 rpmNeedleZeroAngle, rpmNeedleFullAngle);
             if (statusText != null)
             {
-                if (gameManager.State == RunState.CrashPending)
-                    statusText.text = "CRASHED";
+                if (gameManager.State == RunState.CrashPending || gameManager.State == RunState.OutOfFuelPending)
+                {
+                    if (gameManager.EndReason == RunEndReason.DriverDownAndOutOfFuel)
+                        statusText.text = $"DRIVER DOWN & OUT OF FUEL  {gameManager.GameOverRemaining:0.0}";
+                    else if (gameManager.EndReason == RunEndReason.OutOfFuel)
+                        statusText.text = $"OUT OF FUEL  {gameManager.GameOverRemaining:0.0}";
+                    else
+                        statusText.text = $"DRIVER DOWN  {gameManager.GameOverRemaining:0.0}";
+                }
+                else if (gameManager.State == RunState.OutOfFuelFinal)
+                {
+                    statusText.text = gameManager.EndReason == RunEndReason.DriverDownAndOutOfFuel
+                        ? "DRIVER DOWN & OUT OF FUEL" : "OUT OF FUEL";
+                }
                 else if (gameManager.ShowGemAward)
                     statusText.text = gameManager.LastGemAward == 1 ? "+1 GEM" : $"+{gameManager.LastGemAward} GEMS";
                 else if (gameManager.ShowDistanceBonus)
                     statusText.text = $"DISTANCE BONUS  +{gameManager.LastDistanceBonus}  |  NEXT {gameManager.NextDistanceBonusThreshold:0} m";
-                else if (gameManager.State == RunState.OutOfFuelPending)
-                    statusText.text = $"OUT OF FUEL  {gameManager.OutOfFuelRemaining:0.0}";
-                else if (gameManager.State == RunState.OutOfFuelFinal)
-                    statusText.text = "OUT OF FUEL";
                 else
                     statusText.text = transmission.ShiftStatus;
-            }
-
-            if (showDebug && debugText != null)
-            {
-                int chunk = terrainManager != null ? terrainManager.CurrentChunkIndex :
-                    roadManager != null ? roadManager.CurrentChunkIndex : 0;
-                float difficulty = terrainManager != null ? terrainManager.CurrentDifficulty :
-                    roadManager != null ? roadManager.CurrentDifficulty : 0f;
-                int seed = terrainManager != null && terrainManager.ActiveProfile != null ? terrainManager.ActiveProfile.seed :
-                    roadManager != null ? roadManager.Seed : 0;
-                string section = terrainManager != null ? terrainManager.CurrentSection.ToString() : "ROAD";
-                FuelSystem fuel = vehicle.Fuel;
-                RoadVehicleController roadVehicle = vehicle as RoadVehicleController;
-                string roadDebug = roadVehicle != null
-                    ? $"\nTRACK DISTANCE  {roadVehicle.ProgressPosition:0.0}\n" +
-                      $"STEERING INPUT/ANGLE  {roadVehicle.SteeringInput:0.00}/{roadVehicle.ActualSteeringAngle:0.0}°\n" +
-                      $"VELOCITY FWD/LAT  {roadVehicle.ForwardVelocity:0.00}/{roadVehicle.LateralVelocity:0.00} m/s\n" +
-                      $"WHEEL SLIP  {roadVehicle.WheelSlip:0.00}\nGRIP MULTIPLIER  {roadVehicle.GripMultiplier:0.00}\n" +
-                      $"DOWNFORCE  {roadVehicle.CurrentDownforce:0} N"
-                    : string.Empty;
-                debugText.text = $"RAW SPEED  {vehicle.SpeedMps:0.00} m/s\nRPM  {vehicle.EngineRpm:0}\n" +
-                                 $"GEAR  {transmission.CurrentGear}\nFUEL CURRENT/MAX  {(fuel != null ? fuel.CurrentFuel : 0f):0.00}/{(fuel != null ? fuel.MaxFuel : 0f):0.00}\n" +
-                                 $"FUEL NORMALIZED  {(fuel != null ? fuel.NormalizedFuel : 0f):0.000}\n" +
-                                 $"RAW THROTTLE/BRAKE/STEERING  {(input != null ? input.RawThrottleInput : 0f):0.000}/" +
-                                 $"{(input != null ? input.RawBrakeInput : 0f):0.000}/{(input != null ? input.RawSteeringInput : 0f):0.000}\n" +
-                                 $"APPLIED THROTTLE  {vehicle.AppliedThrottle:0.000}\n" +
-                                 $"RUN FUEL DURATION  {(fuel != null ? fuel.TotalRunDurationSeconds : 0f):0.0}s\n" +
-                                 $"CONSUMPTION  {(fuel != null ? fuel.CurrentConsumptionPerSecond : 0f):0.000} units/s ({(fuel != null ? fuel.CurrentConsumptionNormalizedPerSecond : 0f):0.0000}/s)\n" +
-                                 $"DISTANCE  {gameManager.Distance:0.0}\nVEHICLE  {vehicle.transform.position}\n" +
-                                 $"DIFFICULTY  {difficulty:0.00} {section}\nCHUNK  {chunk}\nSEED  {seed}{roadDebug}";
             }
         }
 

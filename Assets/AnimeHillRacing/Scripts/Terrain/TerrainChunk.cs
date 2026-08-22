@@ -145,18 +145,21 @@ namespace AnimeHillRacing.Terrain
                     edgePoints2D = new Vector2[totalPoints];
 
                 float worldStartX = index * targetChunkLength;
-                float prevY = profile != null ? TerrainGenerator.SampleHeight(profile, worldStartX - dx) : surfaceHeights[0];
-                float nextY = profile != null ? TerrainGenerator.SampleHeight(profile, worldStartX + targetChunkLength + dx) : surfaceHeights[surfaceHeights.Length - 1];
+                float prevWorldX = worldStartX - dx;
+                float nextWorldX = worldStartX + targetChunkLength + dx;
+                float prevY = profile != null ? TerrainGenerator.SampleHeight(profile, prevWorldX) : surfaceHeights[0];
+                float nextY = profile != null ? TerrainGenerator.SampleHeight(profile, nextWorldX) : surfaceHeights[surfaceHeights.Length - 1];
 
-                edgePoints2D[0] = new Vector2(-dx, prevY);
+                edgePoints2D[0] = new Vector2(prevWorldX - worldStartX, prevY);
                 for (int i = 0; i < surfaceHeights.Length; i++)
                 {
-                    edgePoints2D[i + 1] = new Vector2(i * dx, surfaceHeights[i]);
+                    float worldX = worldStartX + i * dx;
+                    edgePoints2D[i + 1] = new Vector2(worldX - worldStartX, surfaceHeights[i]);
                 }
-                edgePoints2D[totalPoints - 1] = new Vector2(targetChunkLength + dx, nextY);
+                edgePoints2D[totalPoints - 1] = new Vector2(nextWorldX - worldStartX, nextY);
 
                 edgeCollider2D.points = edgePoints2D;
-                edgeCollider2D.edgeRadius = 0.02f;
+                edgeCollider2D.edgeRadius = 0f;
                 edgeCollider2D.sharedMaterial = profile != null && profile.groundPhysicsMaterial2D != null
                     ? profile.groundPhysicsMaterial2D : s_defaultGroundMaterial2D;
                 edgeCollider2D.enabled = true;

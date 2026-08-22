@@ -363,17 +363,8 @@ namespace AnimeHillRacing.Vehicle
             if (GameManager.Instance != null && GameManager.Instance.Distance > currentDist)
                 currentDist = GameManager.Instance.Distance;
             VirtualDistance = currentDist;
-
-            if (enableLongDistancePrecisionGlitch && currentDist >= startDistance)
-            {
-                FloatStep = LongDistancePrecision.CalculateFloatStep(currentDist, startDistance) * precisionScale;
-                PrecisionTier = LongDistancePrecision.CalculatePrecisionTier(currentDist, startDistance);
-            }
-            else
-            {
-                FloatStep = 0f;
-                PrecisionTier = 0;
-            }
+            FloatStep = 0f;
+            PrecisionTier = 0;
 
             // Query actual and quantized terrain heights
             MapProfile profile = (GameManager.Instance != null && GameManager.Instance.MapProfile != null) ? GameManager.Instance.MapProfile
@@ -395,8 +386,7 @@ namespace AnimeHillRacing.Vehicle
                 RawSurfaceY = 0f;
             }
 
-            float quantizedX = FloatStep > 0f ? LongDistancePrecision.Quantize(rawX, FloatStep) : rawX;
-            SampledSurfaceY = profile != null ? TerrainGenerator.SampleHeight(profile, quantizedX) : RawSurfaceY;
+            SampledSurfaceY = RawSurfaceY;
             WheelBottomY = wheelBody.position.y - wheelRadius;
 
             // Surface normal calculation for accurate normal projection
@@ -543,11 +533,6 @@ namespace AnimeHillRacing.Vehicle
         {
             const float originLift = .02f;
             Vector3 origin = wheelBody.position + body.transform.up * originLift;
-            if (step > 0.00001f)
-            {
-                origin.x = LongDistancePrecision.Quantize(origin.x, step);
-                origin.y = LongDistancePrecision.Quantize(origin.y, step);
-            }
             float distance = wheelRadius + originLift + Mathf.Clamp(wheelContactTolerance, .005f, .04f);
             return SuspensionPhysics.TryRaycastGround(origin, -body.transform.up, distance, groundMask,
                 body.transform, groundHits, out nearest);
@@ -563,11 +548,11 @@ namespace AnimeHillRacing.Vehicle
             Vector3 tangent = Vector3.Cross(Vector3.forward, contactNormal).normalized;
             if (Vector3.Dot(tangent, body.transform.right) < 0f) tangent = -tangent;
             float groundSpeed = Vector3.Dot(wheelBody.linearVelocity, tangent);
-            float rollingSpeed = WheelAngularVelocity * wheelRadius;
+            float rollingSpeed = -wheelBody.angularVelocity.z * Mathf.Deg2Rad * wheelRadius;
             float denominator = Mathf.Max(1f, Mathf.Abs(groundSpeed));
             float slipRatio = Mathf.Abs(rollingSpeed - groundSpeed) / denominator;
-            Slip01 = Mathf.InverseLerp(slipThreshold, Mathf.Max(slipThreshold + .01f, slipThreshold * 3f),
-                slipRatio);
+            const float slipThresh = 0.18f;
+            Slip01 = Mathf.InverseLerp(slipThresh, slipThresh * 3f, slipRatio);
         }
 
         public float ApplyMotorTorque(float requestedTorque, float grip)
@@ -682,14 +667,6 @@ namespace AnimeHillRacing.Vehicle
             Vector3 rawSurfacePos = new Vector3(center.x, RawSurfaceY, center.z);
             Gizmos.color = Color.cyan;
             Gizmos.DrawSphere(rawSurfacePos, 0.04f);
-
-            if (FloatStep > 0f)
-            {
-                float qX = LongDistancePrecision.Quantize(center.x, FloatStep);
-                Vector3 qPos = new Vector3(qX, SampledSurfaceY, center.z);
-                Gizmos.color = Color.magenta;
-                Gizmos.DrawWireCube(qPos, new Vector3(FloatStep, 0.05f, 0.1f));
-            }
         }
 #endif
 

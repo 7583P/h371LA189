@@ -74,7 +74,7 @@ namespace AnimeHillRacing.Core
         private float maxSpeedKmh;
         private int runCoins;
         private Coroutine gameOverRoutine;
-        private float outOfFuelDeadline;
+        private float gameOverDeadline;
         private int lastDistanceBonus;
         private float distanceBonusMessageUntil;
         private readonly LiquidExposureTracker liquidExposure = new LiquidExposureTracker();
@@ -114,8 +114,9 @@ namespace AnimeHillRacing.Core
         public VehicleRuntimeBase Vehicle => vehicle;
         public GameModeType Mode => GameSession.SelectedGameMode;
         public string MapId => GameSession.SelectedMapId;
-        public float OutOfFuelRemaining => State == RunState.OutOfFuelPending
-            ? Mathf.Max(0f, outOfFuelDeadline - Time.time) : 0f;
+        public float GameOverRemaining => (State == RunState.CrashPending || State == RunState.OutOfFuelPending)
+            ? Mathf.Max(0f, gameOverDeadline - Time.time) : 0f;
+        public float OutOfFuelRemaining => GameOverRemaining;
 
         public void TeleportTo(float targetWorldX)
         {
@@ -140,8 +141,14 @@ namespace AnimeHillRacing.Core
             maxProgress = Mathf.Max(maxProgress, targetWorldX);
             if (State == RunState.OutOfFuelPending || State == RunState.OutOfFuelFinal || State == RunState.Results || State == RunState.CrashPending)
             {
+                if (gameOverRoutine != null)
+                {
+                    StopCoroutine(gameOverRoutine);
+                    gameOverRoutine = null;
+                }
                 State = RunState.Running;
                 EndReason = RunEndReason.None;
+                gameOverDeadline = 0f;
                 if (resultsUI != null) resultsUI.HideImmediate();
                 vehicle?.SetDriveEnabled(true);
             }
@@ -274,15 +281,22 @@ namespace AnimeHillRacing.Core
             }
             if (input != null && input.RetryPressedThisFrame)
                 Retry();
+
             if (State == RunState.OutOfFuelPending)
             {
                 if (vehicle.FuelNormalized > 0f)
                     CancelOutOfFuelCountdown();
-                else if (Time.time >= outOfFuelDeadline)
-                    FinalizeOutOfFuel();
+            }
+            else if (State == RunState.CrashPending)
+            {
+                if (vehicle.FuelNormalized <= 0f && EndReason != RunEndReason.DriverDownAndOutOfFuel)
+                    EndReason = RunEndReason.DriverDownAndOutOfFuel;
             }
             else if (State == RunState.Running && vehicle.FuelNormalized <= 0f)
+            {
                 BeginOutOfFuelCountdown();
+            }
+
             hud?.Refresh(this);
         }
 
@@ -314,29 +328,76 @@ namespace AnimeHillRacing.Core
         {
             if (reason == RunEndReason.OutOfFuel)
             {
-                if (State == RunState.Running) BeginOutOfFuelCountdown();
+                if (State == RunState.Running)
+                {
+                    BeginOutOfFuelCountdown();
+                }
+                else if (State == RunState.CrashPending)
+                {
+                    EndReason = RunEndReason.DriverDownAndOutOfFuel;
+                }
                 return;
             }
-            if (State != RunState.Running && State != RunState.OutOfFuelPending) return;
+
+            if (State == RunState.Results) return;
+
+            bool isDriverDown = reason == RunEndReason.DriverDown || reason == RunEndReason.Crashed;
+
+            if (State == RunState.OutOfFuelPending)
+            {
+                // Both occurred: Driver crashed while running out of fuel
+                EndReason = RunEndReason.DriverDownAndOutOfFuel;
+                State = RunState.CrashPending;
+                DisableDrivingAndControls();
+                // Crucial: Keep the running countdown without resetting it!
+                return;
+            }
+
+            if (State == RunState.CrashPending)
+            {
+                if (vehicle != null && vehicle.FuelNormalized <= 0f)
+                {
+                    EndReason = RunEndReason.DriverDownAndOutOfFuel;
+                }
+                return;
+            }
+
+            // Normal crash start
             State = RunState.CrashPending;
-            EndReason = reason;
+            bool outOfFuel = vehicle != null && vehicle.FuelNormalized <= 0f;
+            EndReason = (isDriverDown && outOfFuel) ? RunEndReason.DriverDownAndOutOfFuel : (isDriverDown ? RunEndReason.DriverDown : reason);
             DisableDrivingAndControls();
-            gameOverRoutine = StartCoroutine(ShowResultsAfterDelay(resultsDelay));
+            gameOverDeadline = Time.time + resultsDelay;
+            if (gameOverRoutine != null) StopCoroutine(gameOverRoutine);
+            gameOverRoutine = StartCoroutine(ShowResultsAfterDeadline());
         }
 
         private void BeginOutOfFuelCountdown()
         {
+            if (State == RunState.CrashPending)
+            {
+                EndReason = RunEndReason.DriverDownAndOutOfFuel;
+                return;
+            }
             if (State != RunState.Running) return;
             State = RunState.OutOfFuelPending;
             EndReason = RunEndReason.OutOfFuel;
-            outOfFuelDeadline = Time.time + resultsDelay;
+            gameOverDeadline = Time.time + resultsDelay;
+            if (gameOverRoutine != null) StopCoroutine(gameOverRoutine);
+            gameOverRoutine = StartCoroutine(ShowResultsAfterDeadline());
         }
 
         private void CancelOutOfFuelCountdown()
         {
+            if (State != RunState.OutOfFuelPending) return;
             State = RunState.Running;
             EndReason = RunEndReason.None;
-            outOfFuelDeadline = 0f;
+            gameOverDeadline = 0f;
+            if (gameOverRoutine != null)
+            {
+                StopCoroutine(gameOverRoutine);
+                gameOverRoutine = null;
+            }
         }
 
         private void FinalizeOutOfFuel()
@@ -344,7 +405,6 @@ namespace AnimeHillRacing.Core
             if (State != RunState.OutOfFuelPending) return;
             State = RunState.OutOfFuelFinal;
             DisableDrivingAndControls();
-            gameOverRoutine = StartCoroutine(ShowResultsAfterDelay(0f));
         }
 
         private void DisableDrivingAndControls()
@@ -359,9 +419,13 @@ namespace AnimeHillRacing.Core
             vehicle?.SetDriveEnabled(false);
         }
 
-        private IEnumerator ShowResultsAfterDelay(float delay)
+        private IEnumerator ShowResultsAfterDeadline()
         {
-            if (delay > 0f) yield return new WaitForSeconds(delay);
+            while (Time.time < gameOverDeadline)
+            {
+                yield return null;
+            }
+            DisableDrivingAndControls();
             if (resultCapture != null)
                 yield return resultCapture.Capture(Mode == GameModeType.Adventure2_5D);
             BestDistance = SaveManager.SaveRun(Distance, runCoins, Mode, MapId);
@@ -377,45 +441,27 @@ namespace AnimeHillRacing.Core
             vehicle?.SetTransmissionMode(mode);
         }
 
-        public void Retry()
+        public void AssignRuntimeReferences(VehicleRuntimeBase spawnedVehicle, VehicleInputController targetInput,
+            GameplayHUD targetHud, ResultsUI targetResults, ResultCaptureService targetCapture, CanvasGroup targetControls)
         {
-            if (gameOverRoutine != null)
-                StopCoroutine(gameOverRoutine);
-            RestoreTime();
-            resultCapture?.Release();
-            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+            vehicle = spawnedVehicle;
+            input = targetInput;
+            hud = targetHud;
+            resultsUI = targetResults;
+            resultCapture = targetCapture;
+            gameplayControls = targetControls;
         }
 
         public void MainMenu()
         {
-            RestoreTime();
-            resultCapture?.Release();
+            Time.timeScale = 1f;
             SceneManager.LoadScene("MainMenu");
         }
-        public void Menu() => MainMenu();
 
-        public void AssignRuntimeReferences(VehicleRuntimeBase targetVehicle, VehicleInputController targetInput,
-            GameplayHUD targetHud, ResultsUI targetResults, ResultCaptureService capture = null,
-            CanvasGroup controls = null)
+        public void Retry()
         {
-            vehicle = targetVehicle;
-            input = targetInput;
-            hud = targetHud;
-            resultsUI = targetResults;
-            resultCapture = capture;
-            gameplayControls = controls;
+            Time.timeScale = 1f;
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }
-
-        private static void RestoreTime() => Time.timeScale = 1f;
-
-        private void OnDestroy()
-        {
-            if (Instance == this) Instance = null;
-            ChestSystem.Flush();
-            if (State == RunState.Results) RestoreTime();
-        }
-
-        private void OnApplicationPause(bool paused) { if (paused) ChestSystem.Flush(); }
-        private void OnApplicationQuit() => ChestSystem.Flush();
     }
 }

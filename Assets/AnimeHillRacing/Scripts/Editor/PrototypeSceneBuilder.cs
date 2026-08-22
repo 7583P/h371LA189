@@ -6,6 +6,7 @@ using System.Reflection;
 using AnimeHillRacing.CameraSystem;
 using AnimeHillRacing.Chests;
 using AnimeHillRacing.Core;
+using AnimeHillRacing.EditorTools;
 using AnimeHillRacing.Pickups;
 using AnimeHillRacing.Road;
 using AnimeHillRacing.Terrain;
@@ -431,6 +432,7 @@ namespace AnimeHillRacing.Editor
             };
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
+            AdventureBox2DGoldenInstaller.InstallGoldenBox2D();
             ValidateAllGameScenes();
             EditorSceneManager.OpenScene(MainMenuPath, OpenSceneMode.Single);
             Selection.activeObject = AssetDatabase.LoadAssetAtPath<SceneAsset>(MainMenuPath);
@@ -2597,37 +2599,63 @@ namespace AnimeHillRacing.Editor
             {
                 VehicleDefinition definition = definitions[d];
                 GameObject prefab = definition.gameplayPrefab2D;
-                CapsuleCollider chassis = prefab != null ? prefab.GetComponent<CapsuleCollider>() : null;
-                if (chassis == null || chassis.sharedMaterial != assets.chassisPhysics ||
-                    chassis.sharedMaterial.bounciness > .001f ||
-                    chassis.sharedMaterial.dynamicFriction < .08f ||
-                    chassis.sharedMaterial.dynamicFriction > .24f ||
-                    chassis.sharedMaterial.staticFriction < chassis.sharedMaterial.dynamicFriction ||
-                    chassis.sharedMaterial.frictionCombine != PhysicsMaterialCombine.Multiply)
-                    throw new System.InvalidOperationException($"{definition.displayName} requires a rounded, " +
-                        "zero-bounce, low-friction sliding chassis collider.");
-                SuspensionController[] suspension = prefab.GetComponentsInChildren<SuspensionController>(true);
-                Rigidbody[] rigidbodies = prefab.GetComponentsInChildren<Rigidbody>(true);
-                ConfigurableJoint[] joints = prefab.GetComponentsInChildren<ConfigurableJoint>(true);
-                bool physicalWheels = suspension.Length == 2;
-                for (int wheel = 0; wheel < suspension.Length; wheel++)
+                if (prefab == null) continue;
+
+                VehiclePhysics2DController controller2D = prefab.GetComponent<VehiclePhysics2DController>();
+                if (controller2D != null)
                 {
-                    ConfigurableJoint joint = suspension[wheel].SuspensionJoint;
-                    physicalWheels &= suspension[wheel].GetComponent<Rigidbody>() != null &&
-                                      suspension[wheel].GetComponent<SphereCollider>() != null &&
-                                      joint != null && joint.gameObject == prefab &&
-                                      joint.connectedBody == suspension[wheel].GetComponent<Rigidbody>() &&
-                                      joint.secondaryAxis == Vector3.up &&
-                                      !joint.configuredInWorldSpace;
+                    Rigidbody2D rb2d = prefab.GetComponent<Rigidbody2D>();
+                    Suspension2DController[] susp2d = prefab.GetComponentsInChildren<Suspension2DController>(true);
+                    if (rb2d == null || susp2d.Length != 2)
+                        throw new System.InvalidOperationException($"{definition.displayName} 2D Box2D prefab requires Rigidbody2D and 2 Suspension2DControllers.");
                 }
-                if (rigidbodies.Length != 3 || joints.Length != 2 || !physicalWheels)
-                    throw new System.InvalidOperationException($"{definition.displayName} requires one chassis and two independent physical wheel rigidbodies/colliders/joints.");
+                else
+                {
+                    CapsuleCollider chassis = prefab.GetComponent<CapsuleCollider>();
+                    if (chassis == null || chassis.sharedMaterial != assets.chassisPhysics ||
+                        chassis.sharedMaterial.bounciness > .001f ||
+                        chassis.sharedMaterial.dynamicFriction < .08f ||
+                        chassis.sharedMaterial.dynamicFriction > .24f ||
+                        chassis.sharedMaterial.staticFriction < chassis.sharedMaterial.dynamicFriction ||
+                        chassis.sharedMaterial.frictionCombine != PhysicsMaterialCombine.Multiply)
+                        throw new System.InvalidOperationException($"{definition.displayName} requires a rounded, " +
+                            "zero-bounce, low-friction sliding chassis collider.");
+                    SuspensionController[] suspension = prefab.GetComponentsInChildren<SuspensionController>(true);
+                    Rigidbody[] rigidbodies = prefab.GetComponentsInChildren<Rigidbody>(true);
+                    ConfigurableJoint[] joints = prefab.GetComponentsInChildren<ConfigurableJoint>(true);
+                    bool physicalWheels = suspension.Length == 2;
+                    for (int wheel = 0; wheel < suspension.Length; wheel++)
+                    {
+                        ConfigurableJoint joint = suspension[wheel].SuspensionJoint;
+                        physicalWheels &= suspension[wheel].GetComponent<Rigidbody>() != null &&
+                                          suspension[wheel].GetComponent<SphereCollider>() != null &&
+                                          joint != null && joint.gameObject == prefab &&
+                                          joint.connectedBody == suspension[wheel].GetComponent<Rigidbody>() &&
+                                          joint.secondaryAxis == Vector3.up &&
+                                          !joint.configuredInWorldSpace;
+                    }
+                    if (rigidbodies.Length != 3 || joints.Length != 2 || !physicalWheels)
+                        throw new System.InvalidOperationException($"{definition.displayName} requires one chassis and two independent physical wheel rigidbodies/colliders/joints.");
+                }
                 Transform rear = null;
                 Transform front = null;
-                for (int i = 0; i < suspension.Length; i++)
+                if (controller2D != null)
                 {
-                    if (suspension[i].name.StartsWith("Rear")) rear = suspension[i].transform;
-                    if (suspension[i].name.StartsWith("Front")) front = suspension[i].transform;
+                    Suspension2DController[] susp2d = prefab.GetComponentsInChildren<Suspension2DController>(true);
+                    for (int i = 0; i < susp2d.Length; i++)
+                    {
+                        if (susp2d[i].name.StartsWith("Rear")) rear = susp2d[i].transform;
+                        if (susp2d[i].name.StartsWith("Front")) front = susp2d[i].transform;
+                    }
+                }
+                else
+                {
+                    SuspensionController[] suspension = prefab.GetComponentsInChildren<SuspensionController>(true);
+                    for (int i = 0; i < suspension.Length; i++)
+                    {
+                        if (suspension[i].name.StartsWith("Rear")) rear = suspension[i].transform;
+                        if (suspension[i].name.StartsWith("Front")) front = suspension[i].transform;
+                    }
                 }
                 if (rear == null || front == null ||
                     Mathf.Abs(rear.localPosition.x - definition.RearWheelAnchor) > .001f ||
@@ -3224,6 +3252,9 @@ namespace AnimeHillRacing.Editor
                 CreateRoadVehicle(assets.hillAdventurer, null, null, assets.chassisPhysics).gameObject,
                 Prefabs + "/HillAdventurer_3D.prefab");
             EditorUtility.SetDirty(assets.hillAdventurer);
+
+            // Permanently install 2D Box2D physics on all 2D Adventure prefabs
+            AdventureBox2DGoldenInstaller.InstallGoldenBox2D();
         }
 
         private static GameObject SaveVehiclePrefab(GameObject root, string path)

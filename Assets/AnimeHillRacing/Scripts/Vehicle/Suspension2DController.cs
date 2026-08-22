@@ -33,6 +33,7 @@ namespace AnimeHillRacing.Vehicle
         private float totalTravel = 0.35f;
         private float nominalFrequency = 4.5f;
         private float nominalDampingRatio = 0.75f;
+        private float highSpeedDampingRatio;
         private bool isGrounded;
         private float lastAppliedMotorTorque;
         private DriveMethod2D driveMethod = DriveMethod2D.RigidbodyTorque;
@@ -71,6 +72,7 @@ namespace AnimeHillRacing.Vehicle
 
         public WheelTerrainState TerrainState => terrainState;
         public bool IsBelowSurface => terrainState == WheelTerrainState.BelowSurface;
+        public bool IsGlitchTrapped => terrainState == WheelTerrainState.BelowSurface;
         public bool IsContactUnstable => terrainState == WheelTerrainState.ContactUnstable;
         public bool HasBox2DContact => hasBox2DContact;
         public int ActualContactCount => actualContactCount;
@@ -80,7 +82,7 @@ namespace AnimeHillRacing.Vehicle
         public float PreviousSignedDistance => previousSignedDistance;
         public Vector2 LastContactPoint => lastContactPoint;
         public Vector2 LastContactNormal => lastContactNormal;
-        public float FloatStep => LongDistancePrecision.CalculateFloatStep(wheelBody != null ? (wheelBody.position.x * GameManager.LogicalDistanceScale) : 0f);
+        public float FloatStep => 0f;
 
         public float SuspensionCompression01
         {
@@ -108,6 +110,7 @@ namespace AnimeHillRacing.Vehicle
             restLength = Mathf.Abs(axleY);
             nominalFrequency = Mathf.Max(1.0f, frequency);
             nominalDampingRatio = Mathf.Clamp(dampingRatio, 0.2f, 2.0f);
+            highSpeedDampingRatio = nominalDampingRatio;
             driveMethod = method;
 
             EnsureWheelComponents(definition, gripRating);
@@ -151,6 +154,9 @@ namespace AnimeHillRacing.Vehicle
             wheelBody.linearDamping = 0.05f;
             wheelBody.angularDamping = 0.15f;
             wheelBody.interpolation = RigidbodyInterpolation2D.Interpolate;
+            // The fastest vehicles can travel farther than the tire radius during one fixed step.
+            // Continuous detection keeps the EdgeCollider terrain contact from being recreated as a
+            // deep penetration, which otherwise arrives at the joint as a sharp correction.
             wheelBody.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
 
             wheelCollider.radius = wheelRadius;
@@ -218,11 +224,17 @@ namespace AnimeHillRacing.Vehicle
             consecutiveContactHits = 0;
             consecutiveContactMisses = 0;
             contactAlternationCount = 0;
+            hasBox2DContact = false;
+            collisionGroundContactSinceLastStep = false;
+            // Restore full collider radius on reset (e.g. after teleport)
+            if (wheelCollider != null) wheelCollider.radius = wheelRadius;
         }
 
         public void Simulate(float dt = 0.02f, MapProfile profile = null)
         {
             if (wheelBody == null || chassisBody == null) return;
+
+            UpdateHighSpeedJointDamping();
 
             Transform root = chassisBody != null ? chassisBody.transform.root : transform.root;
             bool callbackGroundContact = collisionGroundContactSinceLastStep;
@@ -287,8 +299,9 @@ namespace AnimeHillRacing.Vehicle
                 }
             }
 
-            // Real gameplay grounded state: Box2D contact OR active overlap
-            isGrounded = hasBox2DContact || overlapGrounded;
+            // Real gameplay grounded state: Box2D contact OR active overlap,
+            // with requirement that the wheel is on top of the terrain (not buried in the subsoil).
+            isGrounded = (hasBox2DContact || overlapGrounded) && currentSignedDistance >= -wheelRadius * 0.25f;
 
             // 3. Update Contact History and Alternation Tracking (Observation of contact oscillation)
             if (hasBox2DContact)
@@ -405,7 +418,9 @@ namespace AnimeHillRacing.Vehicle
                 }
             }
 
-            // 6. Progressive Bump Stop. Diagnostic terrain state must never alter the physical solver path.
+            // 6. Progressive Bump Stop with Damping.
+            // Pure spring bump stops resonate at high speed when aerodynamic downforce is strong.
+            // Adding velocity-dependent damping absorbs energy and prevents oscillation.
             if (suspensionJoint != null)
             {
                 float compression01 = SuspensionCompression01;
@@ -413,11 +428,34 @@ namespace AnimeHillRacing.Vehicle
                 {
                     float bumpProgress = Mathf.InverseLerp(bumpStopStartRatio, 1f, compression01);
                     Vector2 suspensionDir = chassisBody.transform.up;
+
+                    // Spring component (quadratic progressive)
                     float bumpForce = chassisBody.mass * Physics2D.gravity.magnitude *
                                      bumpStopSpringMultiplier * bumpProgress * bumpProgress;
 
-                    wheelBody.AddForce(-suspensionDir * bumpForce, ForceMode2D.Force);
-                    chassisBody.AddForceAtPosition(suspensionDir * bumpForce, wheelBody.position, ForceMode2D.Force);
+                    // Damping component: proportional to closing velocity between chassis and wheel.
+                    Vector2 relativeVel = chassisBody.linearVelocity - wheelBody.linearVelocity;
+                    float closingSpeed = Vector2.Dot(relativeVel, -suspensionDir); // positive = compressing
+                    float dampingForce = 0f;
+                    if (closingSpeed > 0f)
+                    {
+                        float requestedDamping = chassisBody.mass * closingSpeed *
+                                                 bumpStopSpringMultiplier * 1.5f;
+
+                        // A force larger than the reduced-mass impulse can stop and reverse the relative
+                        // motion in one Box2D step. That reversal repeats on the next step and is the source
+                        // of the violent high-speed wheel chatter. Keep the damper passive: it may consume
+                        // at most 85% of the closing impulse in a single simulation step.
+                        float reducedMass = chassisBody.mass * wheelBody.mass /
+                                            Mathf.Max(.01f, chassisBody.mass + wheelBody.mass);
+                        float passiveForceLimit = reducedMass * closingSpeed /
+                                                  Mathf.Max(.001f, dt) * .85f;
+                        dampingForce = Mathf.Min(requestedDamping, passiveForceLimit);
+                    }
+
+                    float totalForce = bumpForce + dampingForce;
+                    wheelBody.AddForce(-suspensionDir * totalForce, ForceMode2D.Force);
+                    chassisBody.AddForceAtPosition(suspensionDir * totalForce, wheelBody.position, ForceMode2D.Force);
                 }
             }
 
@@ -440,6 +478,24 @@ namespace AnimeHillRacing.Vehicle
 
             // 7. Visual synchronization
             SyncVisual();
+        }
+
+        private void UpdateHighSpeedJointDamping()
+        {
+            if (suspensionJoint == null || chassisBody == null) return;
+
+            float forwardSpeed = Mathf.Abs(Vector2.Dot(chassisBody.linearVelocity,
+                (Vector2)chassisBody.transform.right));
+            float speedBlend = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(22f, 55f, forwardSpeed));
+            float targetDamping = Mathf.Lerp(nominalDampingRatio,
+                Mathf.Max(nominalDampingRatio, 1.05f), speedBlend);
+            if (Mathf.Abs(targetDamping - highSpeedDampingRatio) < .005f) return;
+
+            highSpeedDampingRatio = targetDamping;
+            JointSuspension2D settings = suspensionJoint.suspension;
+            settings.frequency = nominalFrequency;
+            settings.dampingRatio = highSpeedDampingRatio;
+            suspensionJoint.suspension = settings;
         }
 
         private void OnCollisionEnter2D(Collision2D collision) => RecordSolverGroundContact(collision);
@@ -471,6 +527,7 @@ namespace AnimeHillRacing.Vehicle
         {
             lastAppliedMotorTorque = requestedTorque;
             if (wheelBody == null) return;
+
 
             if (Mathf.Abs(requestedTorque) < 0.001f)
             {
@@ -529,13 +586,20 @@ namespace AnimeHillRacing.Vehicle
         private void SyncVisual()
         {
             if (wheelVisual == null || wheelBody == null) return;
-            wheelVisual.position = new Vector3(wheelBody.position.x, wheelBody.position.y, wheelVisual.position.z);
+            Vector2 pos = wheelBody.position;
+            wheelVisual.position = new Vector3(pos.x, pos.y, -2.0f);
             wheelVisual.rotation = Quaternion.Euler(0f, 0f, wheelBody.rotation);
         }
 
         private void LateUpdate()
         {
-            SyncVisual();
+            if (wheelVisual == null || wheelBody == null) return;
+
+            // Rigidbody2D.position is the latest fixed-step pose. The Transform contains Unity's
+            // interpolated render pose, so following it here avoids a visible 50 Hz wheel judder.
+            Vector3 renderPosition = wheelBody.transform.position;
+            wheelVisual.position = new Vector3(renderPosition.x, renderPosition.y, -2.0f);
+            wheelVisual.rotation = wheelBody.transform.rotation;
         }
 
         private void OnDestroy()

@@ -11,6 +11,8 @@ namespace AnimeHillRacing.EditorTools
         {
             "Assets/AnimeHillRacing/VehicleData/MainVehicle.asset",
             "Assets/AnimeHillRacing/VehicleData/HillAdventurerVehicle.asset",
+            "Assets/AnimeHillRacing/VehicleData/BuggyVehicle.asset",
+            "Assets/AnimeHillRacing/VehicleData/AerialSateliteVehicle.asset",
             "Assets/AnimeHillRacing/VehicleData/FormulaVehicle.asset",
             "Assets/AnimeHillRacing/VehicleData/RallyVehicle.asset",
             "Assets/AnimeHillRacing/VehicleData/SportBikeVehicle.asset"

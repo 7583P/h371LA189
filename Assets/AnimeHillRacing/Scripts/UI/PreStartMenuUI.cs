@@ -829,6 +829,15 @@ namespace AnimeHillRacing.UI
                     return atMax ? $"AIR DOWNFORCE  {currentStats.airborneDownforceAcceleration:0.0} M/S²   MAX"
                         : $"AIR DOWNFORCE  {currentStats.airborneDownforceAcceleration:0.0}{arrow}{nextStats.airborneDownforceAcceleration:0.0} M/S²";
                 case VehicleUpgradeType.Turbo:
+                    if (vehicle.archetype == VehicleArchetype.AerialSatelite)
+                    {
+                        float currentThrust = Mathf.Lerp(88f, 118f,
+                            VehicleDefinition.UpgradeProgress(current.turboTune, vehicle.turboMaxTunes));
+                        float nextThrust = Mathf.Lerp(88f, 118f,
+                            VehicleDefinition.UpgradeProgress(next.turboTune, vehicle.turboMaxTunes));
+                        return atMax ? $"THRUST  {currentThrust:0}%   MAX"
+                            : $"THRUST  {currentThrust:0}%{arrow}{nextThrust:0}%";
+                    }
                     return atMax ? $"0-100  {currentStats.zeroToHundredTargetSeconds:0.00} SEC   MAX"
                         : $"0-100  {currentStats.zeroToHundredTargetSeconds:0.00}{arrow}{nextStats.zeroToHundredTargetSeconds:0.00} SEC";
                 default:

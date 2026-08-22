@@ -5,6 +5,26 @@ using AnimeHillRacing.CameraSystem;
 
 namespace AnimeHillRacing.Terrain
 {
+    [System.Serializable]
+    public sealed class MountainsSettings
+    {
+        [Header("Deterministic Mountain Grammar")]
+        [Min(1000f), Tooltip("Distance at which Mountains reaches its full extreme slope grammar.")]
+        public float peakDifficultyDistance = 10000f;
+        [Min(4f)] public float miniBumpMinimumWavelength = 7f;
+        [Min(6f)] public float miniBumpMaximumWavelength = 18f;
+        [Min(.05f)] public float initialMiniBumpHeight = .22f;
+        [Min(.1f)] public float maximumMiniBumpHeight = 1.15f;
+        [Range(10f, 50f)] public Vector2 easySlopeRange = new Vector2(20f, 45f);
+        [Range(30f, 65f)] public Vector2 mediumSlopeRange = new Vector2(40f, 60f);
+        [Range(45f, 75f)] public Vector2 hardSlopeRange = new Vector2(55f, 70f);
+        [Range(55f, 80f)] public Vector2 extremeSlopeRange = new Vector2(65f, 75f);
+        [Range(70f, 82f)] public float exceptionalSlope = 79.5f;
+        [Range(3, 12)] public int exceptionalEveryCells = 7;
+        [Range(.01f, .12f)] public float crestWidthFraction = .035f;
+        [Range(.03f, .18f)] public float recoveryWidthFraction = .07f;
+    }
+
     public enum ArenaSegmentType
     {
         Bumpy,
@@ -44,6 +64,7 @@ namespace AnimeHillRacing.Terrain
         [Min(1f)] public float tireMass = 17f;
         [Range(0f, 1f)] public float tireFriction = .82f;
         [Range(0f, .4f)] public float tireBounciness = .035f;
+        [Min(0f)] public float tireSurfaceClearance = .14f;
 
         [Header("Tilting Platform")]
         public Sprite platformSprite;
@@ -54,6 +75,8 @@ namespace AnimeHillRacing.Terrain
         [Min(0f)] public float platformAngularDamping = 3.2f;
         [Min(0f)] public float platformWeightTorque = 2.2f;
         [Min(0f)] public float platformCenteringTorque = 1.1f;
+        [Min(0f)] public float platformTakeoffDrop = .65f;
+        [Min(0f)] public float platformLandingClearance = 1.1f;
 
         [Header("Viscous Lava")]
         public Sprite lavaSprite;
@@ -64,6 +87,9 @@ namespace AnimeHillRacing.Terrain
         [Min(.5f)] public float lavaMaximumSpeed = 6.5f;
         [Min(.05f)] public float lavaEntrySeconds = .18f;
         [Min(.05f)] public float lavaRecoverySeconds = .85f;
+        [Min(0f)] public float lavaBankInset = .35f;
+        [Min(.25f)] public float lavaTriggerHeightAboveSurface = 1.25f;
+        [Min(0f)] public float pickupObstacleClearance = 4f;
     }
 
     [System.Serializable]
@@ -206,7 +232,7 @@ namespace AnimeHillRacing.Terrain
         [Range(0f, 1f)] public float technicalFeatureWeight = 0.15f;
 
         [Header("Geometric Safety")]
-        [FormerlySerializedAs("maximumSlopeDegrees"), Range(5f, 50f)] public float maxSlopeAngle = 18f;
+        [FormerlySerializedAs("maximumSlopeDegrees"), Range(5f, 82f)] public float maxSlopeAngle = 18f;
         [Min(0.05f)] public float maxHeightDeltaPerSample = 1.05f;
         [Min(8f)] public float minimumValleyWidth = 32f;
         [Min(8f)] public float minimumLandingLength = 24f;
@@ -256,6 +282,10 @@ namespace AnimeHillRacing.Terrain
         public bool useArenaTerrain;
         public ArenaSettings arena = new ArenaSettings();
 
+        [Header("Optional Extreme Mountains Terrain")]
+        public bool useMountainsTerrain;
+        public MountainsSettings mountains = new MountainsSettings();
+
         [Header("Optional Rainstorm")]
         public RainstormSettings rainstorm = new RainstormSettings();
 
@@ -276,6 +306,7 @@ namespace AnimeHillRacing.Terrain
             liquidChallenges ??= new LiquidChallengeSettings();
             spaceChallenges ??= new SpaceChallengeSettings();
             arena ??= new ArenaSettings();
+            mountains ??= new MountainsSettings();
             rainstorm ??= new RainstormSettings();
             rainstorm.maximumParticles = Mathf.Clamp(rainstorm.maximumParticles, 100, 900);
             rainstorm.emissionRate = Mathf.Clamp(rainstorm.emissionRate, 20f, 300f);
@@ -324,6 +355,19 @@ namespace AnimeHillRacing.Terrain
                 arena.hardPlatformWidth = Mathf.Min(arena.easyPlatformWidth,
                     Mathf.Max(4f, arena.hardPlatformWidth));
                 arena.maximumLavaLength = Mathf.Max(arena.minimumLavaLength, arena.maximumLavaLength);
+            }
+            if (useMountainsTerrain)
+            {
+                useSpaceTerrain = false;
+                useArenaTerrain = false;
+                supportsLiquidExposure = false;
+                useCityHighwayTerrain = false;
+                maxSlopeAngle = Mathf.Clamp(maxSlopeAngle, 5f, 82f);
+                mountains.miniBumpMaximumWavelength = Mathf.Max(mountains.miniBumpMinimumWavelength,
+                    mountains.miniBumpMaximumWavelength);
+                mountains.peakDifficultyDistance = Mathf.Max(hardEndDistance,
+                    mountains.peakDifficultyDistance);
+                mountains.exceptionalSlope = Mathf.Clamp(mountains.exceptionalSlope, 70f, 80f);
             }
         }
     }

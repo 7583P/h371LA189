@@ -102,7 +102,7 @@ namespace AnimeHillRacing.Terrain
             SegmentIndex = layout.index;
             transform.position = Vector3.zero;
             ConfigureTires(profile, settings, layout, trackWidth);
-            ConfigurePlatform(settings, layout, trackWidth);
+            ConfigurePlatform(profile, settings, layout, trackWidth);
             ConfigureLava(profile, settings, layout, trackWidth);
             gameObject.name = $"Arena {layout.type} Segment {layout.index} - Pooled";
             gameObject.SetActive(true);
@@ -127,7 +127,7 @@ namespace AnimeHillRacing.Terrain
                 int row = layout.variant > .58f && i >= lowerRow ? 1 : 0;
                 int column = row == 0 ? i : i - lowerRow;
                 float x = layout.tireStart + column * layout.tireSpacing + row * layout.tireSpacing * .48f;
-                float surface = TerrainGenerator.SampleHeight(profile, x);
+                float surface = ResolveSurfaceHeight(profile, x, TerrainGenerator.SampleHeight(profile, x));
                 float radius = settings.tireRadius * Mathf.Lerp(.92f, 1.08f,
                     Mathf.Repeat(layout.variant * 3.7f + i * .37f, 1f));
                 SpriteRenderer renderer = tire.GetComponent<SpriteRenderer>();
@@ -135,7 +135,8 @@ namespace AnimeHillRacing.Terrain
                 renderer.sortingOrder = 6;
                 float sourceDiameter = Mathf.Max(.001f, settings.tireSprite.bounds.size.x);
                 tire.transform.localScale = Vector3.one * (radius * 2f / sourceDiameter);
-                tire.transform.position = new Vector3(x, surface + radius + row * radius * 1.72f,
+                tire.transform.position = new Vector3(x,
+                    surface + radius + settings.tireSurfaceClearance + row * radius * 1.72f,
                     -trackWidth * .5f - .14f);
                 tire.transform.rotation = Quaternion.Euler(0f, 0f, layout.variant * 27f + i * 11f);
                 CircleCollider2D collider = tire.GetComponent<CircleCollider2D>();
@@ -152,13 +153,18 @@ namespace AnimeHillRacing.Terrain
             }
         }
 
-        private void ConfigurePlatform(ArenaSettings settings, ArenaSegmentLayout layout, float trackWidth)
+        private void ConfigurePlatform(MapProfile profile, ArenaSettings settings, ArenaSegmentLayout layout,
+            float trackWidth)
         {
             bool active = layout.HasPlatform && settings.platformSprite != null;
             platformAnchor.gameObject.SetActive(active);
             platformBody.gameObject.SetActive(active);
             if (!active) return;
-            Vector2 position = new Vector2(layout.platformCenterX, layout.platformY);
+            float takeoffY = ResolveSurfaceHeight(profile, layout.gapStart - 1f, layout.platformY);
+            float landingY = ResolveSurfaceHeight(profile, layout.gapEnd + 1f, layout.platformY);
+            float platformY = Mathf.Lerp(takeoffY - settings.platformTakeoffDrop,
+                landingY + settings.platformLandingClearance, Mathf.Lerp(.43f, .60f, layout.variant));
+            Vector2 position = new Vector2(layout.platformCenterX, platformY);
             platformAnchor.position = position;
             platformBody.position = position;
             platformBody.rotation = 0f;
@@ -190,16 +196,31 @@ namespace AnimeHillRacing.Terrain
             if (!active) return;
             float length = layout.lavaEnd - layout.lavaStart;
             float centerX = (layout.lavaStart + layout.lavaEnd) * .5f;
-            float surfaceY = TerrainGenerator.SampleHeight(profile, centerX) + .18f;
+            float centerSurface = ResolveSurfaceHeight(profile, centerX,
+                TerrainGenerator.SampleHeight(profile, centerX));
+            float leftSurface = ResolveSurfaceHeight(profile, layout.lavaStart + .5f,
+                TerrainGenerator.SampleHeight(profile, layout.lavaStart + .5f));
+            float rightSurface = ResolveSurfaceHeight(profile, layout.lavaEnd - .5f,
+                TerrainGenerator.SampleHeight(profile, layout.lavaEnd - .5f));
+            float surfaceY = Mathf.Max(centerSurface + .18f,
+                Mathf.Min(leftSurface, rightSurface) - settings.lavaBankInset);
             lavaRenderer.sprite = settings.lavaSprite;
             lavaRenderer.size = new Vector2(length, settings.lavaVisualDepth);
             lavaRenderer.transform.position = new Vector3(centerX,
                 surfaceY - settings.lavaVisualDepth * .47f, -trackWidth * .5f - .16f);
             lavaRenderer.color = Color.white;
-            lavaTrigger.size = new Vector2(length, settings.lavaVisualDepth * .88f);
-            lavaTrigger.offset = Vector2.zero;
+            float triggerRise = Mathf.Max(.25f, settings.lavaTriggerHeightAboveSurface);
+            lavaTrigger.size = new Vector2(length, settings.lavaVisualDepth + triggerRise);
+            lavaTrigger.offset = new Vector2(0f, triggerRise * .5f);
             lavaZone.Configure(settings);
             lavaPulsePhase = layout.variant * Mathf.PI * 2f;
+        }
+
+        private static float ResolveSurfaceHeight(MapProfile profile, float worldX, float fallback)
+        {
+            TerrainManager manager = TerrainManager.Instance;
+            return manager != null && manager.TrySampleAuthoritativeSurface(worldX, out float height, out _)
+                ? height : fallback;
         }
 
         private void Update()
@@ -322,7 +343,11 @@ namespace AnimeHillRacing.Terrain
         private ArenaSettings settings;
         private VehicleRuntimeBase cachedVehicle;
 
-        public void Configure(ArenaSettings arenaSettings) => settings = arenaSettings;
+        public void Configure(ArenaSettings arenaSettings)
+        {
+            settings = arenaSettings;
+            cachedVehicle = null;
+        }
 
         private void OnTriggerStay2D(Collider2D other)
         {

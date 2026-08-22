@@ -296,6 +296,8 @@ namespace AnimeHillRacing.Terrain
 
         public static float SampleHeight(MapProfile profile, float worldX)
         {
+            if (profile != null && profile.useMountainsTerrain)
+                return SampleMountainsHeight(profile, worldX);
             if (profile != null && profile.useArenaTerrain)
                 return SampleArenaHeight(profile, worldX);
             if (profile != null && profile.useCityHighwayTerrain)
@@ -312,11 +314,147 @@ namespace AnimeHillRacing.Terrain
         public static float SampleProfileHeight(MapProfile profile, float worldX)
         {
             if (profile == null) return 0f;
+            if (profile.useMountainsTerrain) return SampleMountainsHeight(profile, worldX);
             if (profile.useArenaTerrain) return SampleArenaHeight(profile, worldX);
             if (profile.useCityHighwayTerrain) return SampleCityHighwayHeight(profile, worldX);
             if (profile.supportsLiquidExposure) return SampleNeonHeight(profile, worldX);
             if (profile.useSpaceTerrain) return SampleSpaceHeight(profile, worldX);
             return SampleProceduralProfileHeight(profile, worldX);
+        }
+
+        public static float SampleMountainsHeight(MapProfile profile, float worldX)
+        {
+            if (profile == null) return 0f;
+            MountainsSettings settings = profile.mountains ?? new MountainsSettings();
+            float distance = Mathf.Max(0f, worldX);
+            float rhythm = SampleMountainRockRhythm(profile, settings, distance);
+
+            // The first 500 m form a deliberate suspension course: several harmonics create frequent,
+            // rounded rock bumps without frame-to-frame noise or microscopic collider spikes.
+            float initialGrowth = Smooth01(Mathf.InverseLerp(0f, 90f, distance));
+            float initialAmplitude = Mathf.Lerp(settings.initialMiniBumpHeight,
+                settings.maximumMiniBumpHeight * .48f, Mathf.InverseLerp(0f, 500f, distance));
+            float initial = profile.baseHeight + rhythm * initialAmplitude * initialGrowth;
+            if (distance <= 480f) return initial;
+
+            float mountain;
+            float introEnd = Mathf.Max(500f, profile.introEndDistance);
+            float easyEnd = Mathf.Max(introEnd + 500f, profile.easyEndDistance);
+            float normalEnd = Mathf.Max(easyEnd + 500f, profile.normalEndDistance);
+            float peakDistance = Mathf.Max(Mathf.Max(normalEnd + 1000f, profile.hardEndDistance),
+                settings.peakDifficultyDistance);
+            float progressiveStart = Mathf.Max(normalEnd + 500f, peakDistance - 2500f);
+            if (distance < easyEnd)
+                mountain = SampleMountainCell(profile, settings, distance, introEnd, 200f,
+                    settings.easySlopeRange, false);
+            else if (distance < normalEnd)
+                mountain = SampleMountainCell(profile, settings, distance, easyEnd, 250f,
+                    settings.mediumSlopeRange, false);
+            else if (distance < progressiveStart)
+                mountain = SampleMountainCell(profile, settings, distance, normalEnd, 250f,
+                    settings.hardSlopeRange, false);
+            else if (distance < peakDistance)
+            {
+                float progress = Smooth01(Mathf.InverseLerp(progressiveStart, peakDistance, distance));
+                Vector2 progressiveRange = Vector2.Lerp(settings.hardSlopeRange,
+                    settings.extremeSlopeRange, progress);
+                mountain = SampleMountainCell(profile, settings, distance, progressiveStart, 250f,
+                    progressiveRange, false);
+            }
+            else
+                mountain = SampleMountainCell(profile, settings, distance, peakDistance, 250f,
+                    settings.extremeSlopeRange, true);
+
+            float introBlend = Smooth01(Mathf.InverseLerp(480f, 540f, distance));
+            return Mathf.Lerp(initial, mountain, introBlend);
+        }
+
+        public static float GetMountainsTargetSlope(MapProfile profile, float distance)
+        {
+            if (profile == null || !profile.useMountainsTerrain) return 0f;
+            MountainsSettings settings = profile.mountains ?? new MountainsSettings();
+            float d = Mathf.Max(0f, distance);
+            float introEnd = Mathf.Max(500f, profile.introEndDistance);
+            float easyEnd = Mathf.Max(introEnd + 500f, profile.easyEndDistance);
+            float normalEnd = Mathf.Max(easyEnd + 500f, profile.normalEndDistance);
+            float peakDistance = Mathf.Max(Mathf.Max(normalEnd + 1000f, profile.hardEndDistance),
+                settings.peakDifficultyDistance);
+            float progressiveStart = Mathf.Max(normalEnd + 500f, peakDistance - 2500f);
+            if (d < introEnd) return 12f;
+            if (d < easyEnd) return MountainCellAngle(profile, d, introEnd, 200f,
+                settings.easySlopeRange, false, settings);
+            if (d < normalEnd) return MountainCellAngle(profile, d, easyEnd, 250f,
+                settings.mediumSlopeRange, false, settings);
+            if (d < progressiveStart) return MountainCellAngle(profile, d, normalEnd, 250f,
+                settings.hardSlopeRange, false, settings);
+            if (d < peakDistance)
+            {
+                float progress = Smooth01(Mathf.InverseLerp(progressiveStart, peakDistance, d));
+                Vector2 progressiveRange = Vector2.Lerp(settings.hardSlopeRange,
+                    settings.extremeSlopeRange, progress);
+                return MountainCellAngle(profile, d, progressiveStart, 250f,
+                    progressiveRange, false, settings);
+            }
+            return MountainCellAngle(profile, d, peakDistance, 250f,
+                settings.extremeSlopeRange, true, settings);
+        }
+
+        private static float SampleMountainCell(MapProfile profile, MountainsSettings settings, float distance,
+            float phaseStart, float cellLength, Vector2 slopeRange, bool allowExceptional)
+        {
+            float position = Mathf.Max(0f, distance - phaseStart) / cellLength;
+            int cell = Mathf.FloorToInt(position);
+            float t = position - cell;
+            float angle = MountainCellAngle(profile, distance, phaseStart, cellLength, slopeRange,
+                allowExceptional, settings);
+            float recovery = Mathf.Clamp(settings.recoveryWidthFraction, .03f, .18f);
+            float crestHalf = Mathf.Clamp(settings.crestWidthFraction, .01f, .12f) * .5f;
+            float ascentStart = recovery;
+            float ascentEnd = .5f - crestHalf;
+            float descentStart = .5f + crestHalf;
+            float descentEnd = 1f - recovery;
+            float run = Mathf.Max(1f, (ascentEnd - ascentStart) * cellLength);
+            float height = Mathf.Tan(angle * Mathf.Deg2Rad) * run;
+            float shape;
+            if (t <= ascentStart || t >= descentEnd) shape = 0f;
+            else if (t < ascentEnd) shape = (t - ascentStart) / Mathf.Max(.001f, ascentEnd - ascentStart);
+            else if (t <= descentStart) shape = 1f;
+            else shape = 1f - (t - descentStart) / Mathf.Max(.001f, descentEnd - descentStart);
+
+            float edgeTaper = Mathf.Sin(Mathf.PI * Mathf.Clamp01((t - recovery) /
+                Mathf.Max(.001f, 1f - recovery * 2f)));
+            edgeTaper *= edgeTaper;
+            // Preserve visible rock rhythm without silently raising an authored 60-degree face to 80 degrees.
+            float detailAmplitude = Mathf.Lerp(settings.maximumMiniBumpHeight * .25f,
+                settings.maximumMiniBumpHeight * .44f,
+                Mathf.InverseLerp(500f, Mathf.Max(1000f, settings.peakDifficultyDistance), distance));
+            return profile.baseHeight + Mathf.Max(0f, shape) * height +
+                   SampleMountainRockRhythm(profile, settings, distance) * detailAmplitude * edgeTaper;
+        }
+
+        private static float MountainCellAngle(MapProfile profile, float distance, float phaseStart,
+            float cellLength, Vector2 range, bool allowExceptional, MountainsSettings settings)
+        {
+            int cell = Mathf.Max(0, Mathf.FloorToInt((Mathf.Max(phaseStart, distance) - phaseStart) / cellLength));
+            uint seed = CombinedSeed(profile);
+            float variant = Hash01(seed, cell * 1877 + Mathf.RoundToInt(phaseStart) * 13 + 97);
+            int interval = Mathf.Max(3, settings.exceptionalEveryCells);
+            if (allowExceptional && PositiveModulo(cell + profile.seed, interval) == interval - 1)
+                return Mathf.Clamp(settings.exceptionalSlope - (1f - variant) * 1.25f, 75f, 80f);
+            return Mathf.Lerp(Mathf.Min(range.x, range.y), Mathf.Max(range.x, range.y), variant);
+        }
+
+        private static float SampleMountainRockRhythm(MapProfile profile, MountainsSettings settings,
+            float distance)
+        {
+            uint seed = CombinedSeed(profile);
+            float phaseA = Hash01(seed, 401) * TwoPi;
+            float phaseB = Hash01(seed, 409) * TwoPi;
+            float minWave = Mathf.Max(4f, settings.miniBumpMinimumWavelength);
+            float maxWave = Mathf.Max(minWave, settings.miniBumpMaximumWavelength);
+            return Mathf.Sin(distance * TwoPi / minWave + phaseA) * .48f +
+                   Mathf.Sin(distance * TwoPi / Mathf.Lerp(minWave, maxWave, .58f) + phaseB) * .34f +
+                   Mathf.Sin(distance * TwoPi / maxWave + phaseA * .37f) * .18f;
         }
 
         private static float SampleProceduralProfileHeight(MapProfile profile, float worldX)
@@ -433,11 +571,11 @@ namespace AnimeHillRacing.Terrain
             {
                 float roll = Hash01(seed, index * 977 + attempt * 131 + 41);
                 ArenaSegmentType candidate = WeightedArenaCandidate(roll, difficulty);
-                if (index < 2 && (candidate == ArenaSegmentType.FloatingPlatform ||
+                if (index < 5 && (candidate == ArenaSegmentType.FloatingPlatform ||
                                   candidate == ArenaSegmentType.LongJump ||
                                   candidate == ArenaSegmentType.Lava ||
                                   candidate == ArenaSegmentType.MixedObstacle)) continue;
-                if (difficulty < .32f && candidate == ArenaSegmentType.MixedObstacle) continue;
+                if (difficulty < .42f && candidate == ArenaSegmentType.MixedObstacle) continue;
                 bool recent = false;
                 for (int back = 1; back <= recentCount && history.Count - back >= 0; back++)
                     if (history[history.Count - back] == candidate) { recent = true; break; }
@@ -447,11 +585,11 @@ namespace AnimeHillRacing.Terrain
             {
                 ArenaSegmentType candidate = ArenaCandidateTypes[i];
                 if (candidate == ArenaSegmentType.Recovery ||
-                    (index < 2 && (candidate == ArenaSegmentType.FloatingPlatform ||
+                    (index < 5 && (candidate == ArenaSegmentType.FloatingPlatform ||
                                    candidate == ArenaSegmentType.LongJump ||
                                    candidate == ArenaSegmentType.Lava ||
                                    candidate == ArenaSegmentType.MixedObstacle)) ||
-                    (difficulty < .32f && candidate == ArenaSegmentType.MixedObstacle)) continue;
+                    (difficulty < .42f && candidate == ArenaSegmentType.MixedObstacle)) continue;
                 bool recent = false;
                 for (int back = 1; back <= recentCount && history.Count - back >= 0; back++)
                     if (history[history.Count - back] == candidate) { recent = true; break; }
@@ -464,9 +602,9 @@ namespace AnimeHillRacing.Terrain
         {
             float[] weights =
             {
-                1.25f, 1.15f, .75f + difficulty * .45f, .25f + difficulty * .95f,
-                .22f + difficulty * 1.05f, .18f + difficulty * .9f, .85f, .85f,
-                .08f + difficulty * 1.25f, 0f
+                1.35f, 1.20f, .80f + difficulty * .40f, .20f + difficulty * .70f,
+                .16f + difficulty * .62f, .08f + difficulty * .48f, .95f, .95f,
+                .04f + difficulty * .78f, 0f
             };
             float total = 0f;
             for (int i = 0; i < weights.Length; i++) total += weights[i];
@@ -506,23 +644,32 @@ namespace AnimeHillRacing.Terrain
             if (type == ArenaSegmentType.FloatingPlatform || type == ArenaSegmentType.LongJump ||
                 (type == ArenaSegmentType.MixedObstacle && difficulty >= .45f))
             {
-                layout.gapStart = start + length * Mathf.Lerp(.38f, .33f, difficulty);
+                bool mixed = type == ArenaSegmentType.MixedObstacle;
+                layout.gapStart = start + length * (mixed ? .38f : Mathf.Lerp(.38f, .33f, difficulty));
                 float gapLength = Mathf.Lerp(settings.minimumGapLength, settings.maximumGapLength, difficulty) *
                                   Mathf.Lerp(.88f, 1.08f, variant);
                 if (type != ArenaSegmentType.LongJump)
                 {
                     layout.platformWidth = Mathf.Lerp(settings.easyPlatformWidth,
                         settings.hardPlatformWidth, difficulty) * Mathf.Lerp(.94f, 1.06f, variant);
-                    gapLength = Mathf.Max(gapLength, layout.platformWidth + 6f);
+                    // Two metres of clear air at each side are enough to expose the precision landing,
+                    // while keeping both halves of the jump reachable by the slowest Arena vehicles.
+                    gapLength = Mathf.Max(gapLength, layout.platformWidth + 4f);
                 }
-                layout.gapEnd = Mathf.Min(start + length * .69f, layout.gapStart + gapLength);
+                layout.gapEnd = Mathf.Min(start + length * (mixed ? .60f : .69f),
+                    layout.gapStart + gapLength);
                 if (type != ArenaSegmentType.LongJump)
                 {
                     float centerMinimum = layout.gapStart + layout.platformWidth * .5f + 1f;
                     float centerMaximum = layout.gapEnd - layout.platformWidth * .5f - 1f;
                     layout.platformCenterX = Mathf.Lerp(centerMinimum, centerMaximum, variant);
-                    layout.platformY = SampleArenaBase(profile, layout.platformCenterX) +
-                                       Mathf.Lerp(.25f, 1.1f, difficulty);
+                    float rampRise = Mathf.Lerp(settings.baseRampRise, settings.maximumRampRise, difficulty);
+                    float takeoffY = SampleArenaBase(profile, layout.gapStart) + rampRise -
+                                     settings.platformTakeoffDrop;
+                    float landingY = SampleArenaBase(profile, layout.gapEnd) +
+                                     settings.platformLandingClearance;
+                    layout.platformY = Mathf.Lerp(takeoffY, landingY,
+                        Mathf.Lerp(.43f, .60f, variant));
                 }
             }
 
@@ -530,15 +677,19 @@ namespace AnimeHillRacing.Terrain
             {
                 float lavaLength = Mathf.Lerp(settings.minimumLavaLength, settings.maximumLavaLength,
                     difficulty) * Mathf.Lerp(.9f, 1.08f, 1f - variant);
-                layout.lavaStart = start + length * (type == ArenaSegmentType.MixedObstacle ? .72f : .40f);
-                layout.lavaEnd = Mathf.Min(start + length * .93f, layout.lavaStart + lavaLength);
+                bool mixedWithGap = type == ArenaSegmentType.MixedObstacle && layout.HasGap;
+                layout.lavaStart = mixedWithGap
+                    ? Mathf.Max(start + length * .79f, layout.gapEnd + settings.landingSafetyLength)
+                    : start + length * (type == ArenaSegmentType.MixedObstacle ? .72f : .40f);
+                layout.lavaEnd = Mathf.Min(start + length * (mixedWithGap ? .97f : .93f),
+                    layout.lavaStart + lavaLength);
             }
             if (type == ArenaSegmentType.TireObstacle || type == ArenaSegmentType.MixedObstacle)
             {
                 layout.tireCount = Mathf.Clamp(Mathf.RoundToInt(Mathf.Lerp(settings.minimumTires,
                     settings.maximumTires, difficulty) + (variant > .72f ? 1f : 0f)),
                     settings.minimumTires, settings.maximumTires);
-                layout.tireStart = start + length * (type == ArenaSegmentType.MixedObstacle ? .19f : .43f);
+                layout.tireStart = start + length * (type == ArenaSegmentType.MixedObstacle ? .08f : .43f);
                 layout.tireSpacing = settings.tireRadius * Mathf.Lerp(2.05f, 2.38f, variant);
             }
             return layout;
@@ -632,6 +783,25 @@ namespace AnimeHillRacing.Terrain
             ArenaSegmentLayout layout = GetArenaSegment(profile, GetArenaSegmentIndex(profile, worldX));
             if (!layout.HasGap) return false;
             return worldX >= layout.gapStart && worldX < layout.gapEnd;
+        }
+
+        public static bool IsArenaReservedObstacleZone(MapProfile profile, float worldX)
+        {
+            if (profile == null || !profile.useArenaTerrain || profile.arena == null) return false;
+            ArenaSettings settings = profile.arena;
+            ArenaSegmentLayout layout = GetArenaSegment(profile, GetArenaSegmentIndex(profile, worldX));
+            float clearance = Mathf.Max(0f, settings.pickupObstacleClearance);
+            if (layout.HasGap && worldX >= layout.gapStart - 14f - clearance &&
+                worldX <= layout.gapEnd + settings.landingSafetyLength + clearance) return true;
+            if (layout.HasLava && worldX >= layout.lavaStart - clearance &&
+                worldX <= layout.lavaEnd + clearance) return true;
+            if (layout.HasTires)
+            {
+                float lastTire = layout.tireStart + Mathf.Max(0, layout.tireCount - 1) * layout.tireSpacing;
+                if (worldX >= layout.tireStart - settings.tireRadius - clearance &&
+                    worldX <= lastTire + settings.tireRadius + clearance) return true;
+            }
+            return false;
         }
 
         public static float SampleCityHighwayHeight(MapProfile profile, float worldX)
@@ -1209,7 +1379,7 @@ namespace AnimeHillRacing.Terrain
             float maxDelta = Mathf.Min(maxSlopeDelta, profile.maxHeightDeltaPerSample);
             float previousHeight;
             float previousSlope;
-            if (profile.supportsLiquidExposure)
+            if (profile.supportsLiquidExposure || profile.useMountainsTerrain)
             {
                 for (int i = 0; i < sampleCount; i++)
                 {

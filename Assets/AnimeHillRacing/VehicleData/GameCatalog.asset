@@ -16,10 +16,10 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 734abd4148b9f954695b05ff7baeb5f3, type: 2}
   - {fileID: 11400000, guid: a24e83bdab6f43b5899a0fb747ddc110, type: 2}
   - {fileID: 11400000, guid: 5ace0000000000000000000000000021, type: 2}
-  - {fileID: 11400000, guid: a6e10000000000000000000000000210, type: 2}
   - {fileID: 11400000, guid: 2fac8165a6689da43a42017727a28c6c, type: 2}
   - {fileID: 11400000, guid: d1000000000000000000000000000001, type: 2}
   - {fileID: 11400000, guid: 233edfec9bb52bf4c9ee7abea81a0f1a, type: 2}
+  - {fileID: 11400000, guid: 04df7ba6956c8a44d9684f829f1dbe9d, type: 2}
   - {fileID: 11400000, guid: 27bfdf3c2b4455d40bb5ab70cdc6c598, type: 2}
   - {fileID: 11400000, guid: d9d4cd6695315c14e84bc68003b8a284, type: 2}
   vehicles:
@@ -28,6 +28,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 032dd7dff06b0d94897f8be09f3b6083, type: 2}
   - {fileID: 11400000, guid: 6a6a36dc97149804cb97aa36e859f14a, type: 2}
   - {fileID: 11400000, guid: b4a11ad1000000000000000000000001, type: 2}
+  - {fileID: 11400000, guid: 76e7b3cdd95064d4fb52d77c5b69781e, type: 2}
+  - {fileID: 11400000, guid: e752a9af792eeab49ad358fc257796df, type: 2}
   drivers:
   - {fileID: 11400000, guid: 993719216a499e44792c2cf9c86449ad, type: 2}
   upgradeEconomy: {fileID: 11400000, guid: 61951021c4546264c940b3e45f86b8ea, type: 2}

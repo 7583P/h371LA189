@@ -29,10 +29,12 @@ namespace AnimeHillRacing.Vehicle
         [Min(0)] public int formulaFinalUpgradeCost = 150000;
         [Min(0)] public int rallyFinalUpgradeCost = 100000;
         [Min(0)] public int sportBikeFinalUpgradeCost = 200000;
+        [Min(0)] public int aerialSateliteFinalUpgradeCost = 120000;
         [Min(0)] public int jeepFirstUpgradeCost = 1000;
         [Min(0)] public int formulaFirstUpgradeCost = 2500;
         [Min(0)] public int rallyFirstUpgradeCost = 1800;
         [Min(0)] public int sportBikeFirstUpgradeCost = 3000;
+        [Min(0)] public int aerialSateliteFirstUpgradeCost = 2000;
         [Range(1f, 3f)] public float costExponent = 1.45f;
         [Min(1)] public int roundingStep = 250;
 
@@ -79,10 +81,12 @@ namespace AnimeHillRacing.Vehicle
 
         public int FinalCost(VehicleArchetype archetype) => archetype == VehicleArchetype.Formula
             ? formulaFinalUpgradeCost : archetype == VehicleArchetype.Rally ? rallyFinalUpgradeCost :
-            archetype == VehicleArchetype.SportBike ? sportBikeFinalUpgradeCost : jeepFinalUpgradeCost;
+            archetype == VehicleArchetype.SportBike ? sportBikeFinalUpgradeCost :
+            archetype == VehicleArchetype.AerialSatelite ? aerialSateliteFinalUpgradeCost : jeepFinalUpgradeCost;
 
         private int FirstCost(VehicleArchetype archetype) => archetype == VehicleArchetype.Formula
             ? formulaFirstUpgradeCost : archetype == VehicleArchetype.Rally ? rallyFirstUpgradeCost :
-            archetype == VehicleArchetype.SportBike ? sportBikeFirstUpgradeCost : jeepFirstUpgradeCost;
+            archetype == VehicleArchetype.SportBike ? sportBikeFirstUpgradeCost :
+            archetype == VehicleArchetype.AerialSatelite ? aerialSateliteFirstUpgradeCost : jeepFirstUpgradeCost;
     }
 }

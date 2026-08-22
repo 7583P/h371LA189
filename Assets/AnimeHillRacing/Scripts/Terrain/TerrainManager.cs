@@ -30,6 +30,7 @@ namespace AnimeHillRacing.Terrain
             new List<EdgeCollider2D>(4);
         private PhysicsMaterial2D authoritativeTerrainMaterial2D;
         private readonly List<Vector2> authoritativeSurfaceKnots2D = new List<Vector2>(512);
+        private bool hasMountainsSafetyPosition;
         private readonly List<NeonLiquidHazard> liquidHazardPool = new List<NeonLiquidHazard>(12);
         private readonly Dictionary<long, NeonLiquidHazard> activeLiquidHazards =
             new Dictionary<long, NeonLiquidHazard>();
@@ -58,12 +59,15 @@ namespace AnimeHillRacing.Terrain
             : TerrainSectionKind.Fast;
         public float CurrentFuelSpacing => fuelSequence.CurrentSpacing;
         public float NextFuelSequencePosition => fuelSequence.NextPosition;
+        public float CurrentMountainsTargetSlope => mapProfile != null && mapProfile.useMountainsTerrain
+            ? TerrainGenerator.GetMountainsTargetSlope(mapProfile, VehicleWorldX) : 0f;
         public EdgeCollider2D AuthoritativeCollider2D => authoritativeTerrainCollider2D;
         private float VehicleWorldX => vehicle != null && vehicle.Body2D != null
             ? vehicle.Body2D.position.x
             : vehicle != null ? vehicle.transform.position.x : 0f;
-        private int RuntimeSamples => mapProfile != null && mapProfile.useSpaceTerrain
-            ? Mathf.Max(samples, 96) : mapProfile != null && mapProfile.useArenaTerrain
+        private int RuntimeSamples => mapProfile != null && mapProfile.useMountainsTerrain
+            ? Mathf.Max(samples, 192) : mapProfile != null && mapProfile.useSpaceTerrain
+                ? Mathf.Max(samples, 96) : mapProfile != null && mapProfile.useArenaTerrain
                 ? Mathf.Max(samples, 80) : samples;
 
         private void Awake()
@@ -97,6 +101,10 @@ namespace AnimeHillRacing.Terrain
             }
             RebuildAuthoritativeTerrainCollider();
             RebuildAuthoritativeTerrainCollider2D();
+            if (mapProfile.useMountainsTerrain && vehicle.Body2D != null)
+            {
+                hasMountainsSafetyPosition = true;
+            }
             PrewarmLiquidHazards(count + 2);
             RefreshLiquidHazards();
             PrewarmSpaceEvents(3);
@@ -167,6 +175,66 @@ namespace AnimeHillRacing.Terrain
             RefreshSpaceEvents();
             RefreshArenaEvents();
         }
+
+        private void FixedUpdate()
+        {
+            if (mapProfile == null || !mapProfile.useMountainsTerrain || vehicle == null ||
+                vehicle.Body2D == null || chunks == null)
+            {
+                hasMountainsSafetyPosition = false;
+                return;
+            }
+
+            Rigidbody2D body = vehicle.Body2D;
+            Vector2 current = body.position;
+            if (!hasMountainsSafetyPosition)
+            {
+                hasMountainsSafetyPosition = true;
+                return;
+            }
+
+            if (TrySampleAuthoritativeSurface(current.x, out float surfaceY, out _) &&
+                current.y < surfaceY - .22f)
+            {
+                // Mountains never contains intentional gaps. If the chassis centre has crossed beneath
+                // the exact rendered surface, Box2D missed a fast/steep contact. Move every articulated
+                // Rigidbody2D together so joints remain intact and the vehicle cannot fall through the map.
+                float wheelRadius = vehicle.Definition != null ? vehicle.Definition.wheelRadius : .6f;
+                float safeY = surfaceY + Mathf.Max(.95f, wheelRadius * 1.55f);
+                Vector2 correction = new Vector2(0f, safeY - current.y);
+                Rigidbody2D[] bodies = vehicle.GetComponentsInChildren<Rigidbody2D>(true);
+                for (int i = 0; i < bodies.Length; i++)
+                {
+                    Rigidbody2D part = bodies[i];
+                    if (part == null) continue;
+                    part.position += correction;
+                    Vector2 velocity = part.linearVelocity;
+                    velocity.y = Mathf.Max(0f, velocity.y * .1f);
+                    part.linearVelocity = velocity;
+                    part.angularVelocity *= .35f;
+                }
+                current = body.position;
+            }
+
+        }
+
+#if UNITY_EDITOR
+        private void OnDrawGizmosSelected()
+        {
+            if (mapProfile == null || !mapProfile.useMountainsTerrain) return;
+            float start = vehicle != null ? Mathf.Max(0f, VehicleWorldX - 10f) : 0f;
+            Vector3 previous = new Vector3(start, TerrainGenerator.SampleHeight(mapProfile, start), 0f);
+            for (float x = start + 2f; x <= start + 120f; x += 2f)
+            {
+                Vector3 point = new Vector3(x, TerrainGenerator.SampleHeight(mapProfile, x), 0f);
+                float slope = Mathf.Abs(Mathf.Atan2(point.y - previous.y, point.x - previous.x) * Mathf.Rad2Deg);
+                Gizmos.color = Color.Lerp(new Color(.35f, .85f, .45f), new Color(1f, .22f, .08f),
+                    Mathf.InverseLerp(20f, 80f, slope));
+                Gizmos.DrawLine(previous, point);
+                previous = point;
+            }
+        }
+#endif
 
         public bool TrySampleAuthoritativeSurface(float worldX, out float height, out float slopeDegrees)
         {
@@ -295,7 +363,8 @@ namespace AnimeHillRacing.Terrain
                     bounciness = 0f
                 };
             }
-            authoritativeTerrainCollider2D.edgeRadius = 0f;
+            authoritativeTerrainCollider2D.edgeRadius = mapProfile != null && mapProfile.useMountainsTerrain
+                ? .14f : 0f;
             authoritativeTerrainCollider2D.sharedMaterial = mapProfile != null && mapProfile.groundPhysicsMaterial2D != null
                 ? mapProfile.groundPhysicsMaterial2D : authoritativeTerrainMaterial2D;
         }
@@ -377,7 +446,7 @@ namespace AnimeHillRacing.Terrain
                 GameObject child = new GameObject($"Authoritative Terrain 2D Segment {authoritativeTerrainColliderSegments2D.Count + 1}");
                 child.transform.SetParent(transform, false);
                 EdgeCollider2D collider = child.AddComponent<EdgeCollider2D>();
-                collider.edgeRadius = 0f;
+                collider.edgeRadius = mapProfile != null && mapProfile.useMountainsTerrain ? .14f : 0f;
                 collider.sharedMaterial = mapProfile != null && mapProfile.groundPhysicsMaterial2D != null
                     ? mapProfile.groundPhysicsMaterial2D : authoritativeTerrainMaterial2D;
                 authoritativeTerrainColliderSegments2D.Add(collider);
@@ -488,6 +557,7 @@ namespace AnimeHillRacing.Terrain
                     float x = group.anchorDistance + point.distanceOffset;
                     if (x < start || x >= end || TerrainGenerator.IsLiquidPool(mapProfile, x) ||
                         TerrainGenerator.IsTerrainGap(mapProfile, x) ||
+                        TerrainGenerator.IsArenaReservedObstacleZone(mapProfile, x) ||
                         !chunk.TrySampleSurface(x, out float y, out _)) continue;
                     CoinPickup pickup = pickupPool.SpawnCoin(point.value,
                         new Vector3(x, y + route.surfaceOffset + point.heightOffset, 0f), x,
@@ -508,12 +578,12 @@ namespace AnimeHillRacing.Terrain
             while (fuelSequence.NextPosition < end && safety++ < 128)
             {
                 float targetDistance = fuelSequence.NextPosition;
-                if (TerrainGenerator.IsTerrainGap(mapProfile, targetDistance))
+                Vector3 position = FindAccessibleFuelPosition(chunk, start, end, targetDistance);
+                if (float.IsNaN(position.x))
                 {
                     fuelSequence.Advance(targetDistance + 12f);
                     continue;
                 }
-                Vector3 position = FindAccessibleFuelPosition(chunk, start, end, targetDistance);
                 PickupBase pickup = pickupPool.Spawn(PickupKind.Fuel, position, position.x);
                 chunk.TrackPickup(pickup);
                 fuelSequence.Advance(position.x);
@@ -536,7 +606,8 @@ namespace AnimeHillRacing.Terrain
                     float offset = i == 0 ? 0f : i * step * side;
                     float candidateX = Mathf.Clamp(targetDistance + offset, chunkStart + 2f, chunkEnd - 2f);
                     if (TerrainGenerator.IsLiquidPool(mapProfile, candidateX) ||
-                        TerrainGenerator.IsTerrainGap(mapProfile, candidateX)) continue;
+                        TerrainGenerator.IsTerrainGap(mapProfile, candidateX) ||
+                        TerrainGenerator.IsArenaReservedObstacleZone(mapProfile, candidateX)) continue;
                     if (!chunk.TrySampleSurface(candidateX, out float candidateY, out float slope))
                         continue;
                     float absoluteSlope = Mathf.Abs(slope);
@@ -552,7 +623,9 @@ namespace AnimeHillRacing.Terrain
                         return new Vector3(candidateX, candidateY + .68f, 0f);
                 }
             }
-            return new Vector3(bestX, bestY + .68f, 0f);
+            return bestSlope < float.MaxValue
+                ? new Vector3(bestX, bestY + .68f, 0f)
+                : new Vector3(float.NaN, float.NaN, 0f);
         }
 
         public void AssignRuntimeReferences(MapProfile profile, VehicleRuntimeBase targetVehicle, PickupPool pool)

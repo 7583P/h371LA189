@@ -185,10 +185,12 @@ namespace AnimeHillRacing.Terrain
                 ? profile.terrainEdgeMaterial : profile.terrainMaterial;
             edgeRenderer.startWidth = profile.terrainEdgeWidth;
             edgeRenderer.endWidth = profile.terrainEdgeWidth;
-            if (profile.supportsLiquidExposure || profile.useSeparateTerrainMaterials)
+            if (profile.supportsLiquidExposure || profile.useSeparateTerrainMaterials ||
+                profile.useSpaceTerrain || profile.useArenaTerrain)
             {
-                // Textured maps use the surface submesh as their edge. Neon also contains real gaps, so a
-                // single LineRenderer would bridge them. In both cases the extra line is intentionally omitted.
+                // Textured maps use the surface submesh as their edge. Tracks with real gaps must also omit
+                // this single continuous line: otherwise it draws a convincing but non-collidable false floor
+                // across every void even though the rendered terrain mesh and authoritative colliders are cut.
                 edgeRenderer.positionCount = 0;
                 name = $"Terrain Chunk {index}";
                 if (preservePickups) RepositionTrackedPickups();

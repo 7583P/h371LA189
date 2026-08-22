@@ -8,12 +8,14 @@ namespace AnimeHillRacing.CameraSystem
         [SerializeField] private EnvironmentDefinition environment;
         [SerializeField] private SpriteRenderer skyRenderer;
         [SerializeField] private SpriteRenderer[] mountainSegments;
+        [SerializeField] private SpriteRenderer[] farMountainSegments;
         [SerializeField] private SpriteRenderer[] nearMountainSegments;
         [SerializeField] private SpriteRenderer[] cloudSegments;
         [SerializeField] private SpriteRenderer sunRenderer;
         [SerializeField] private SpriteRenderer earthRenderer;
 
         private float tileWidth;
+        private float farTileWidth;
         private float nearTileWidth;
         private float initialCameraY;
         private int lastScreenWidth;
@@ -40,6 +42,7 @@ namespace AnimeHillRacing.CameraSystem
         {
             if (displayCamera == null || environment == null) return;
             EnsureCloudPool();
+            EnsureFarMountainPool();
             EnsureNearMountainPool();
             EnsureCelestials();
             if (environment.overrideCameraBackground)
@@ -74,6 +77,22 @@ namespace AnimeHillRacing.CameraSystem
                 mountainSegments[i].sprite = environment.mountains;
                 mountainSegments[i].color = Color.white;
                 mountainSegments[i].transform.localScale = Vector3.one * scaleMountain;
+            }
+
+            float farSourceHeight = environment.farMountains != null
+                ? environment.farMountains.bounds.size.y : 1f;
+            float farScale = environment.farMountainVisualHeight / Mathf.Max(.001f, farSourceHeight);
+            float farSourceWidth = environment.farMountains != null
+                ? environment.farMountains.bounds.size.x : 1f;
+            farTileWidth = farSourceWidth * farScale * (1f - environment.farMountainSeamOverlap);
+            if (farMountainSegments != null)
+            {
+                for (int i = 0; i < farMountainSegments.Length; i++)
+                {
+                    if (farMountainSegments[i] == null) continue;
+                    farMountainSegments[i].sprite = environment.farMountains;
+                    farMountainSegments[i].transform.localScale = Vector3.one * farScale;
+                }
             }
 
             float nearSourceHeight = environment.nearMountains != null
@@ -156,6 +175,29 @@ namespace AnimeHillRacing.CameraSystem
                     nearMountainSegments[i].gameObject.SetActive(i < required);
         }
 
+        private void EnsureFarMountainPool()
+        {
+            int required = environment.farMountains != null
+                ? Mathf.Clamp(environment.pooledFarMountainSegments, 3, 7) : 0;
+            if (farMountainSegments == null) farMountainSegments = new SpriteRenderer[0];
+            if (farMountainSegments.Length < required)
+            {
+                var expanded = new SpriteRenderer[required];
+                for (int i = 0; i < farMountainSegments.Length; i++) expanded[i] = farMountainSegments[i];
+                for (int i = farMountainSegments.Length; i < required; i++)
+                {
+                    GameObject segment = new GameObject($"Far Mountain Segment {i + 1} - Pooled");
+                    segment.transform.SetParent(transform, false);
+                    expanded[i] = segment.AddComponent<SpriteRenderer>();
+                    expanded[i].sortingOrder = -60;
+                }
+                farMountainSegments = expanded;
+            }
+            for (int i = 0; i < farMountainSegments.Length; i++)
+                if (farMountainSegments[i] != null)
+                    farMountainSegments[i].gameObject.SetActive(i < required);
+        }
+
         private void EnsureCloudPool()
         {
             int required = environment.clouds != null && environment.clouds.Length > 0
@@ -199,6 +241,13 @@ namespace AnimeHillRacing.CameraSystem
             UpdatePanoramaPositions(mountainSegments, cameraPosition.x,
                 WorldFollowFactor(environment.mountainParallaxX, environment.useRelativeParallaxSpeeds),
                 tileWidth, y, 10f, environment.mirrorAlternatingMountainTiles);
+
+            float farY = CalculateLayerVerticalPosition(environment.farMountainBaseY, cameraPosition.y,
+                initialCameraY, environment.farMountainParallaxY,
+                environment.lockFarMountainsVerticalToCamera);
+            UpdatePanoramaPositions(farMountainSegments, cameraPosition.x,
+                WorldFollowFactor(environment.farMountainParallaxX, environment.useRelativeParallaxSpeeds),
+                farTileWidth, farY, 11f, environment.mirrorAlternatingFarMountainTiles);
 
             float nearY = CalculateLayerVerticalPosition(environment.nearMountainBaseY, cameraPosition.y,
                 initialCameraY, environment.nearMountainParallaxY,

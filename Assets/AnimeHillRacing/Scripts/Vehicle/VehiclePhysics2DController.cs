@@ -47,6 +47,7 @@ namespace AnimeHillRacing.Vehicle
         private float wheelSlip;
         private float currentFrontTorqueRatio = 0.5f;
         private MapProfile terrainProfile;
+        private AerialThrusterController aerialThrusters;
 
         public override float SpeedMps => body != null ? Vector2.Dot(body.linearVelocity, (Vector2)body.transform.right) : 0f;
         public override float ProgressPosition => body != null ? body.position.x : transform.position.x;
@@ -71,6 +72,7 @@ namespace AnimeHillRacing.Vehicle
 
         public Suspension2DController FrontSuspension => frontSuspension;
         public Suspension2DController RearSuspension => rearSuspension;
+        public VehicleUpgradeState UpgradeState => upgrades;
 
         public bool FrontWheelBelowSurface => frontSuspension != null && frontSuspension.IsBelowSurface;
         public bool RearWheelBelowSurface => rearSuspension != null && rearSuspension.IsBelowSurface;
@@ -97,6 +99,7 @@ namespace AnimeHillRacing.Vehicle
             engine = GetComponent<EngineController>();
             transmission = GetComponent<TransmissionController>();
             fuel = GetComponent<FuelSystem>();
+            aerialThrusters = GetComponent<AerialThrusterController>();
 
             if (definition == null)
             {
@@ -115,6 +118,7 @@ namespace AnimeHillRacing.Vehicle
 
             if (input == null) input = GetComponentInParent<VehicleInputController>() ?? FindFirstObjectByType<VehicleInputController>();
             InitializeSuspensions();
+            aerialThrusters?.Initialize(this, input, fuel);
         }
 
         private void ConfigureChassisBody()
@@ -154,18 +158,20 @@ namespace AnimeHillRacing.Vehicle
                 suspensionFrequency * 1.35f, tuneProgress);
             float tunedDamping = Mathf.Lerp(Mathf.Max(1.25f, suspensionDampingRatio),
                 Mathf.Max(1.50f, suspensionDampingRatio * 1.55f), tuneProgress);
+            float effectiveTravel = stats.suspensionTravel > .05f
+                ? stats.suspensionTravel : suspensionTravel;
 
             if (frontSuspension != null)
             {
                 frontSuspension.Initialize(body, definition, stats, definition.FrontWheelAnchor,
                     definition.frontWheelVisualPosition.y, frontRadius,
-                    suspensionTravel, tunedFrequency, tunedDamping, stats.grip, driveMethod);
+                    effectiveTravel, tunedFrequency, tunedDamping, stats.grip, driveMethod);
             }
             if (rearSuspension != null)
             {
                 rearSuspension.Initialize(body, definition, stats, definition.RearWheelAnchor,
                     definition.rearWheelVisualPosition.y, rearRadius,
-                    suspensionTravel, tunedFrequency, tunedDamping, stats.grip, driveMethod);
+                    effectiveTravel, tunedFrequency, tunedDamping, stats.grip, driveMethod);
             }
         }
 
@@ -192,6 +198,8 @@ namespace AnimeHillRacing.Vehicle
                 engine?.Initialize(definition, stats, fuel);
                 transmission?.Initialize(definition, TransmissionMode.Auto);
                 InitializeSuspensions();
+                if (aerialThrusters == null) aerialThrusters = GetComponent<AerialThrusterController>();
+                aerialThrusters?.Initialize(this, input, fuel);
             }
         }
 
@@ -242,8 +250,12 @@ namespace AnimeHillRacing.Vehicle
             chassisContactSinceLastStep = false;
 
             // 3. Process Input & Drive
-            float gas = driveEnabled ? inputState.Gas : 0f;
-            float brake = driveEnabled ? inputState.BrakeRaw : 0f;
+            bool physicalGas = input != null ? input.PhysicalGasPressed : inputState.Gas > .5f;
+            bool physicalBrake = input != null ? input.PhysicalBrakePressed : inputState.BrakeRaw > .5f;
+            bool flightOverride = aerialThrusters != null &&
+                                  aerialThrusters.StepPhysics(dt, driveEnabled, physicalGas, physicalBrake);
+            float gas = driveEnabled && !flightOverride ? inputState.Gas : 0f;
+            float brake = driveEnabled && !flightOverride ? inputState.BrakeRaw : 0f;
             UpdateDriveDirection(gas, brake);
 
             bool hasFuel = fuel != null ? fuel.FuelNormalized > 0f : true;
@@ -255,7 +267,7 @@ namespace AnimeHillRacing.Vehicle
             ApplyDrive(gas, brake, hasFuel, dt);
             ApplyDrag();
             ApplyAerodynamicDownforce();
-            ApplyAirControl(inputState, dt);
+            if (!flightOverride) ApplyAirControl(inputState, dt);
         }
 
         private void ApplyDrive(float gas, float brake, bool hasFuel, float dt)
@@ -310,6 +322,17 @@ namespace AnimeHillRacing.Vehicle
                     float slopeCompensation = body != null && AnyWheelGrounded
                         ? body.mass * Physics2D.gravity.magnitude * Mathf.Sin(Mathf.Deg2Rad * Mathf.Clamp(pitchAngle, -65f, 65f)) : 0f;
 
+                    // This bounded, contact-dependent assist only fills the small authority gap on specialist
+                    // climbs. Tire friction still decides whether the vehicle hooks up or spins.
+                    if (AnyWheelGrounded && pitchAngle > definition.climbAssistStartAngle &&
+                        definition.maxClimbAssist > 0f)
+                    {
+                        float climb01 = Mathf.InverseLerp(definition.climbAssistStartAngle,
+                            definition.climbAssistFullAngle, pitchAngle);
+                        float speedAuthority = 1f - .55f * Mathf.Clamp01(forwardSpeed / 18f);
+                        driveAcc += definition.maxClimbAssist * climb01 * speedAuthority;
+                    }
+
                     float requiredForce = (body.mass * driveAcc + resistanceCompensation + Mathf.Max(0f, slopeCompensation)) * gas;
                     targetTotalTorque = requiredForce * definition.wheelRadius;
                     break;
@@ -321,7 +344,10 @@ namespace AnimeHillRacing.Vehicle
             currentDriveTorque = Mathf.MoveTowards(currentDriveTorque, targetTotalTorque, rampRate * dt);
 
             // Dynamic Hill Adaptive AWD for Hill Adventurer
-            bool isAdaptive4x4 = definition != null && definition.archetype == VehicleArchetype.HillAdventurer;
+            bool isAdaptive4x4 = definition != null &&
+                                 (definition.adaptiveAllWheelDrive ||
+                                  definition.archetype == VehicleArchetype.HillAdventurer ||
+                                  definition.archetype == VehicleArchetype.Buggy);
             float frontTorqueRatio = 0.5f;
             if (isAdaptive4x4 && frontSuspension != null && rearSuspension != null)
             {
@@ -329,9 +355,9 @@ namespace AnimeHillRacing.Vehicle
                 bool rearGrounded = rearSuspension.IsGrounded;
                 float targetFrontRatio = 0.5f;
                 if (frontGrounded && !rearGrounded)
-                    targetFrontRatio = 0.75f;
+                    targetFrontRatio = definition.groundedWheelTorqueShare;
                 else if (!frontGrounded && rearGrounded)
-                    targetFrontRatio = 0.25f;
+                    targetFrontRatio = 1f - definition.groundedWheelTorqueShare;
                 else
                     targetFrontRatio = 0.5f;
 
@@ -432,7 +458,9 @@ namespace AnimeHillRacing.Vehicle
             // CRITICAL RULE: If ANY wheel touches ground or if chassis is grounded, AIR CONTROL = 0!
             if (FrontWheelGrounded || RearWheelGrounded || ChassisGrounded)
             {
-                body.angularDamping = definition.twoWheelAngularDamping;
+                float speed01 = Mathf.Clamp01(Mathf.Abs(SpeedMps) / Mathf.Max(1f, stats.topSpeedMps));
+                body.angularDamping = definition.twoWheelAngularDamping +
+                                      definition.highSpeedDamping * speed01 * speed01;
                 return;
             }
 

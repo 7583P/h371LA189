@@ -1,0 +1,704 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using AnimeHillRacing.CameraSystem;
+using AnimeHillRacing.Core;
+using AnimeHillRacing.EditorTools;
+using AnimeHillRacing.Road;
+using AnimeHillRacing.Terrain;
+using AnimeHillRacing.Vehicle;
+using UnityEditor;
+using UnityEngine;
+
+namespace AnimeHillRacing.Editor
+{
+    public static class BuggyMountainsInstaller
+    {
+        private const string SessionKey = "AHR.BuggyMountainsInstaller.v2";
+        private const string Root = "Assets/AnimeHillRacing";
+        private const string BuggyBodyPath = "Assets/Art/Vehicles/Buggy/Buggy_Body.png";
+        private const string BuggyWheelPath = "Assets/Art/Vehicles/Buggy/Buggy_Wheel.png";
+        private const string BuggyAssetPath = Root + "/VehicleData/BuggyVehicle.asset";
+        private const string Buggy2DPrefabPath = Root + "/Prefabs/Vehicles/Buggy_2D.prefab";
+        private const string Buggy3DPrefabPath = Root + "/Prefabs/Vehicles/Buggy_3D.prefab";
+        private const string MountainsAssetPath = Root + "/MapProfiles/Mountains.asset";
+        private const string MountainsEnvironmentPath = Root + "/MapProfiles/MountainsEnvironment.asset";
+        private const string MountainsArtRoot = "Assets/Art/Backgrounds/Mountains";
+        private const string MountainsAnimeHorizonPath = MountainsArtRoot + "/Mountains_AnimeHorizon.png";
+        private const string MountainsTerrainRoot = "Assets/Art/Terrain/Mountains";
+
+        [InitializeOnLoadMethod]
+        private static void QueueAutomaticInstall()
+        {
+            if (SessionState.GetBool(SessionKey, false)) return;
+            SessionState.SetBool(SessionKey, true);
+            EditorApplication.delayCall += () =>
+            {
+                if (EditorApplication.isPlayingOrWillChangePlaymode)
+                {
+                    SessionState.SetBool(SessionKey, false);
+                    return;
+                }
+                Install();
+            };
+        }
+
+        [MenuItem("Anime Hill Racing/Content/Install Buggy and Mountains")]
+        public static void Install()
+        {
+            EnsureFolder(MountainsArtRoot);
+            EnsureFolder(MountainsTerrainRoot);
+            GenerateMountainsTextures();
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+
+            ConfigureSprite(BuggyBodyPath, 2048, true);
+            ConfigureSprite(BuggyWheelPath, 2048, true);
+            ConfigureSprite(MountainsArtRoot + "/Mountains_Sky.png", 1024, false);
+            ConfigureSprite(MountainsArtRoot + "/Mountains_Far.png", 1024, true);
+            ConfigureSprite(MountainsArtRoot + "/Mountains_Mid.png", 1024, true);
+            ConfigureSprite(MountainsArtRoot + "/Mountains_Near.png", 1024, true);
+            ConfigureSprite(MountainsAnimeHorizonPath, 2048, false);
+            ConfigureTiledTexture(MountainsTerrainRoot + "/Mountains_Rock.png");
+
+            Sprite body = AssetDatabase.LoadAssetAtPath<Sprite>(BuggyBodyPath);
+            Sprite wheel = AssetDatabase.LoadAssetAtPath<Sprite>(BuggyWheelPath);
+            if (body == null || wheel == null)
+                throw new InvalidOperationException("Buggy source sprites could not be imported.");
+
+            VehicleDefinition buggy = LoadOrCreate<VehicleDefinition>(BuggyAssetPath);
+            ConfigureBuggy(buggy, body, wheel);
+            BuildBuggyPrefabs(buggy);
+
+            EnvironmentDefinition environment = LoadOrCreate<EnvironmentDefinition>(MountainsEnvironmentPath);
+            ConfigureMountainsEnvironment(environment);
+            MapProfile mountains = LoadOrCreate<MapProfile>(MountainsAssetPath);
+            ConfigureMountainsProfile(mountains, environment);
+            RegisterInCatalog(buggy, mountains);
+
+            EditorUtility.SetDirty(buggy);
+            EditorUtility.SetDirty(environment);
+            EditorUtility.SetDirty(mountains);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            AdventureBox2DGoldenInstaller.InstallGoldenBox2D();
+            ValidateInstallation(buggy, mountains);
+            AssetDatabase.SaveAssets();
+            Debug.Log("BUGGY_MOUNTAINS_INSTALL_OK|vehicle=buggy-01|track=mountains|chunks=pooled|seed=40822");
+        }
+
+        private static void ConfigureBuggy(VehicleDefinition v, Sprite body, Sprite wheel)
+        {
+            v.vehicleId = "buggy-01";
+            v.displayName = "BUGGY";
+            v.archetype = VehicleArchetype.Buggy;
+            v.unlockedByDefault = true;
+            v.gemPrice = 0;
+            v.allowsBlueprintProgression = true;
+            v.engineMaxTunes = 20;
+            v.accelerationMaxTunes = 15;
+            v.suspensionMaxTunes = 15;
+            v.gripMaxTunes = 15;
+            v.fuelMaxTunes = 16;
+            v.airControlMaxTunes = 0;
+            v.downforceMaxTunes = 0;
+            v.turboMaxTunes = 0;
+            v.tuneTargets = new VehicleDefinition.TuneTargets
+            {
+                engineTopSpeedKmh = Values(128f, 220f, v.engineMaxTunes, .88f),
+                accelerationZeroToHundredSeconds = Values(7.6f, 4f, v.accelerationMaxTunes, .82f),
+                gripRatings = Values(260f, 820f, v.gripMaxTunes, 1.08f),
+                airControlTorque = new[] { 3600f },
+                airborneDownforceAcceleration = new[] { 0f },
+                fuelRunDurationSeconds = Values(36f, 60f, v.fuelMaxTunes, 1f)
+            };
+
+            v.mass = 760f;
+            v.wheelMass = 36f;
+            v.wheelRadius = .60f;
+            v.halfWheelbase = 1.88f;
+            v.halfTrack = .88f;
+            v.topSpeedMps = 220f / 3.6f;
+            v.brakeForce = 15500f;
+            v.reverseForce = 6100f;
+            v.airControlTorque = 3600f;
+            v.maxAirAngularVelocity = 2.2f;
+            v.airAngularAcceleration = 13f;
+            v.airAngularDamping = .55f;
+            v.oneWheelAngularDamping = .13f;
+            v.twoWheelAngularDamping = .42f;
+            v.maximumPassiveAngularVelocity = 7.5f;
+            v.collisionPitchInertiaMultiplier = 1.75f;
+            v.maximumDepenetrationVelocity = 4f;
+            v.chassisAirControlMultiplier = .10f;
+            v.accelerationForceCalibration = 1f;
+            v.centerOfMass = new Vector3(-.06f, -.43f, 0f);
+            v.adaptiveAllWheelDrive = true;
+            v.groundedWheelTorqueShare = .84f;
+            v.maxClimbAssist = 1.65f;
+            v.climbAssistStartAngle = 58f;
+            v.climbAssistFullAngle = 75f;
+            v.highSpeedDamping = .72f;
+
+            v.engine.idleRpm = 1050f;
+            v.engine.redlineRpm = 7200f;
+            v.engine.limiterRpm = 7550f;
+            v.engine.minTorqueNm = 285f;
+            v.engine.maxTorqueNm = 620f;
+            v.engine.drivetrainEfficiency = .87f;
+            v.engine.torqueCurve = new AnimationCurve(new Keyframe(0f, .82f), new Keyframe(.28f, 1f),
+                new Keyframe(.64f, .96f), new Keyframe(1f, .66f));
+            v.engine.speedTorqueCurve = new AnimationCurve(new Keyframe(0f, 1f), new Keyframe(.48f, 1f),
+                new Keyframe(.76f, .82f), new Keyframe(.92f, .38f), new Keyframe(1.02f, 0f));
+            v.transmission.forwardGearRatios = new[] { 5.40f, 3.72f, 2.78f, 2.20f, 1.82f, 1.54f, 1.32f };
+            v.transmission.reverseRatio = 3.6f;
+            v.transmission.finalDrive = 4.10f;
+            v.transmission.autoShiftDuration = .30f;
+            v.transmission.autoTorqueDuringShift = .20f;
+            v.transmission.autoUpshiftRpm = 6650f;
+            v.transmission.autoDownshiftRpm = 3100f;
+            v.transmission.perfectShiftDuration = .15f;
+            v.transmission.badShiftDuration = .38f;
+            v.transmission.perfectTorqueDuringShift = .48f;
+            v.transmission.badTorqueDuringShift = .08f;
+            v.transmission.perfectRpmWindow = new Vector2(6100f, 6900f);
+
+            v.suspension.restLength = .72f;
+            v.suspension.minTravel = .34f;
+            v.suspension.maxTravel = .50f;
+            v.suspension.compressionTravelRatio = .82f;
+            v.suspension.targetSag01 = .31f;
+            v.suspension.stiffnessTuneScale = new Vector2(.82f, 1.02f);
+            v.suspension.dampingRatio = new Vector2(.82f, 1.12f);
+            v.suspension.compressionDampingMultiplier = .82f;
+            v.suspension.reboundDampingMultiplier = 1.25f;
+            v.suspension.compressionDampingTuneScale = new Vector2(.80f, 1.10f);
+            v.suspension.reboundDampingTuneScale = new Vector2(.92f, 1.55f);
+            v.suspension.reboundAccelerationTune = new Vector2(1.55f, .55f);
+            v.suspension.wheelContactTolerance = new Vector2(.016f, .032f);
+            v.suspension.landingDampingScale = new Vector2(1.08f, 1.52f);
+            v.suspension.landingDampingDuration = .19f;
+            v.suspension.bumpStopStart = .76f;
+            v.suspension.progressiveSpringMultiplier = 2.8f;
+            v.suspension.hardStopSpringMultiplier = 8.5f;
+            v.suspension.maximumAcceleration = 31f;
+            v.suspension.maximumReboundAcceleration = .75f;
+
+            v.grip.minGrip = 1.35f;
+            v.grip.maxGrip = 3.55f;
+            v.grip.slipThreshold = .14f;
+            v.grip.slidingGripMultiplier = .58f;
+            v.grip.tractionRecoveryPerSecond = 5.2f;
+            v.grip.rollingResistance = .019f;
+            v.grip.aerodynamicDrag = .40f;
+            v.grip.maximumPhysicsFriction = 4.2f;
+            v.fuel.capacityUnits = 100f;
+            v.fuel.minimumRunDurationSeconds = 36f;
+            v.fuel.maximumRunDurationSeconds = 60f;
+            v.fuel.referenceRunDurationSeconds = 60f;
+
+            v.visualWidth = 5.55f;
+            v.bodyVisualOffset = new Vector2(0f, .25f);
+            v.rearWheelVisualPosition = new Vector2(-1.88f, -.60f);
+            v.frontWheelVisualPosition = new Vector2(1.88f, -.60f);
+            v.wheelVisualDiameter = 1.20f;
+            v.rearWheelVisualDiameter = 0f;
+            v.frontWheelVisualDiameter = 0f;
+            v.flipBodyX = false;
+            v.previewSprite = body;
+            v.skins = new[] { Option("buggy-skin-default", "DEFAULT", body) };
+            v.wheels = new[] { Option("buggy-wheel-default", "MOUNTAIN GRIP", wheel) };
+
+            VehicleDefinition hill = AssetDatabase.LoadAssetAtPath<VehicleDefinition>(
+                Root + "/VehicleData/HillAdventurerVehicle.asset");
+            v.driverPose = hill != null && hill.driverPose != null
+                ? JsonUtility.FromJson<VehicleDefinition.DriverPose>(JsonUtility.ToJson(hill.driverPose))
+                : new VehicleDefinition.DriverPose();
+            v.driverPose.rootPosition = new Vector2(-.33f, .29f);
+            v.driverPose.rootScale = .80f;
+        }
+
+        private static VehicleDefinition.CustomizationOption Option(string id, string name, Sprite sprite) =>
+            new VehicleDefinition.CustomizationOption
+            {
+                optionId = id, displayName = name, sprite = sprite, unlockedByDefault = true,
+                gemPrice = 0, allowsBlueprintProgression = true,
+                visibleSize = sprite != null ? (Vector2)sprite.bounds.size : Vector2.one,
+                visualOffset = Vector2.zero
+            };
+
+        private static float[] Values(float start, float end, int count, float exponent)
+        {
+            float[] values = new float[Mathf.Max(1, count)];
+            for (int i = 0; i < values.Length; i++)
+            {
+                float t = values.Length <= 1 ? 1f : i / (float)(values.Length - 1);
+                values[i] = Mathf.Lerp(start, end, Mathf.Pow(t, exponent));
+            }
+            values[values.Length - 1] = end;
+            return values;
+        }
+
+        private static void BuildBuggyPrefabs(VehicleDefinition definition)
+        {
+            GameObject source2D = AssetDatabase.LoadAssetAtPath<GameObject>(
+                Root + "/Prefabs/Vehicles/HillAdventurer_2D.prefab");
+            GameObject source3D = AssetDatabase.LoadAssetAtPath<GameObject>(
+                Root + "/Prefabs/Vehicles/HillAdventurer_3D.prefab");
+            if (source2D == null || source3D == null)
+                throw new InvalidOperationException("Hill Adventurer source prefabs are required to preserve the proven vehicle hierarchy.");
+
+            definition.gameplayPrefab2D = CloneBuggy2D(source2D, definition);
+            definition.gameplayPrefab3D = CloneBuggy3D(source3D, definition);
+        }
+
+        private static GameObject CloneBuggy2D(GameObject source, VehicleDefinition definition)
+        {
+            GameObject root = UnityEngine.Object.Instantiate(source);
+            root.name = "Buggy_2D";
+            try
+            {
+                VehiclePhysics2DController controller = root.GetComponent<VehiclePhysics2DController>();
+                VehicleVisual2D visual = root.GetComponentInChildren<VehicleVisual2D>(true);
+                Suspension2DController front = null;
+                Suspension2DController rear = null;
+                foreach (Suspension2DController point in root.GetComponentsInChildren<Suspension2DController>(true))
+                {
+                    if (point.name.IndexOf("front", StringComparison.OrdinalIgnoreCase) >= 0) front = point;
+                    else if (point.name.IndexOf("rear", StringComparison.OrdinalIgnoreCase) >= 0) rear = point;
+                }
+                if (controller == null || visual == null || front == null || rear == null)
+                    throw new InvalidOperationException("The source 2D prefab is missing its Box2D vehicle hierarchy.");
+
+                SerializedObject controllerData = new SerializedObject(controller);
+                controllerData.FindProperty("definition").objectReferenceValue = definition;
+                controllerData.FindProperty("frontSuspension").objectReferenceValue = front;
+                controllerData.FindProperty("rearSuspension").objectReferenceValue = rear;
+                controllerData.FindProperty("suspensionFrequency").floatValue = 3.6f;
+                controllerData.FindProperty("suspensionDampingRatio").floatValue = 1.03f;
+                controllerData.FindProperty("suspensionTravel").floatValue = .50f;
+                controllerData.FindProperty("torqueRampSeconds").floatValue = .16f;
+                controllerData.ApplyModifiedPropertiesWithoutUndo();
+
+                SpriteRenderer bodyRenderer = visual.BodyRenderer;
+                SpriteRenderer frontRenderer = visual.FrontWheelRenderer;
+                SpriteRenderer rearRenderer = visual.RearWheelRenderer;
+                ArticulatedDriver2D driver = visual.GetComponentInChildren<ArticulatedDriver2D>(true);
+                DriverDefinition defaultDriver = AssetDatabase.LoadAssetAtPath<DriverDefinition>(
+                    Root + "/VehicleData/StickmanBlack.asset");
+                visual.Assign(controller, bodyRenderer.transform, frontRenderer.transform, rearRenderer.transform,
+                    driver != null ? driver.transform : visual.transform, definition.wheelRadius);
+                visual.AssignCustomization(definition, bodyRenderer, frontRenderer, rearRenderer, driver, defaultDriver);
+                bodyRenderer.gameObject.name = "BUGGY Body";
+                rearRenderer.transform.localPosition = definition.rearWheelVisualPosition;
+                frontRenderer.transform.localPosition = definition.frontWheelVisualPosition;
+                rear.transform.localPosition = definition.rearWheelVisualPosition;
+                front.transform.localPosition = definition.frontWheelVisualPosition;
+
+                CapsuleCollider2D chassis = root.GetComponent<CapsuleCollider2D>();
+                if (chassis != null)
+                {
+                    chassis.direction = CapsuleDirection2D.Horizontal;
+                    chassis.offset = new Vector2(0f, .18f);
+                    chassis.size = new Vector2(4.05f, .72f);
+                }
+                Rigidbody2D rigidbody = root.GetComponent<Rigidbody2D>();
+                if (rigidbody != null) rigidbody.mass = definition.mass;
+                return PrefabUtility.SaveAsPrefabAsset(root, Buggy2DPrefabPath);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        private static GameObject CloneBuggy3D(GameObject source, VehicleDefinition definition)
+        {
+            GameObject root = UnityEngine.Object.Instantiate(source);
+            root.name = "Buggy_3D";
+            try
+            {
+                RoadVehicleController controller = root.GetComponent<RoadVehicleController>();
+                VehicleVisual3D visual = root.GetComponentInChildren<VehicleVisual3D>(true);
+                if (controller != null) controller.Assign(definition, null);
+                if (visual != null)
+                {
+                    SerializedObject data = new SerializedObject(visual);
+                    SpriteRenderer[] bodies = ObjectArray<SpriteRenderer>(data.FindProperty("bodyRenderers"));
+                    SpriteRenderer[] wheels = ObjectArray<SpriteRenderer>(data.FindProperty("wheelRenderers"));
+                    for (int i = 0; i < bodies.Length; i++) if (bodies[i] != null) bodies[i].sprite = definition.previewSprite;
+                    for (int i = 0; i < wheels.Length; i++) if (wheels[i] != null) wheels[i].sprite = definition.wheels[0].sprite;
+                    visual.AssignCustomization(definition, bodies, wheels,
+                        visual.GetComponentInChildren<ArticulatedDriver2D>(true),
+                        AssetDatabase.LoadAssetAtPath<DriverDefinition>(Root + "/VehicleData/StickmanBlack.asset"));
+                }
+                CapsuleCollider chassis = root.GetComponent<CapsuleCollider>();
+                if (chassis != null)
+                {
+                    chassis.direction = 2;
+                    chassis.center = new Vector3(0f, .38f, 0f);
+                    chassis.radius = .58f;
+                    chassis.height = 4.10f;
+                }
+                return PrefabUtility.SaveAsPrefabAsset(root, Buggy3DPrefabPath);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        private static T[] ObjectArray<T>(SerializedProperty array) where T : UnityEngine.Object
+        {
+            if (array == null || !array.isArray) return Array.Empty<T>();
+            T[] result = new T[array.arraySize];
+            for (int i = 0; i < result.Length; i++)
+                result[i] = array.GetArrayElementAtIndex(i).objectReferenceValue as T;
+            return result;
+        }
+
+        private static void ConfigureMountainsEnvironment(EnvironmentDefinition environment)
+        {
+            environment.environmentId = "mountains";
+            environment.sky = AssetDatabase.LoadAssetAtPath<Sprite>(MountainsArtRoot + "/Mountains_Sky.png");
+            environment.farMountains = null;
+            environment.mountains = AssetDatabase.LoadAssetAtPath<Sprite>(MountainsAnimeHorizonPath);
+            environment.nearMountains = null;
+            environment.overrideCameraBackground = true;
+            environment.cameraBackgroundColor = new Color(.36f, .49f, .61f, 1f);
+            environment.useRelativeParallaxSpeeds = true;
+            environment.lockVerticalToCamera = true;
+            environment.lockFarMountainsVerticalToCamera = true;
+            environment.lockNearMountainsVerticalToCamera = true;
+            environment.coverViewportVertically = false;
+            environment.farMountainParallaxX = .08f;
+            environment.mountainParallaxX = .12f;
+            environment.nearMountainParallaxX = .36f;
+            environment.farMountainParallaxY = .018f;
+            environment.mountainParallaxY = .032f;
+            environment.nearMountainParallaxY = .05f;
+            environment.farMountainVisualHeight = 17.5f;
+            environment.mountainVisualHeight = 18f;
+            environment.nearMountainVisualHeight = 19.5f;
+            environment.farMountainBaseY = -3.3f;
+            environment.mountainBaseY = -1.2f;
+            environment.nearMountainBaseY = -4.3f;
+            environment.pooledFarMountainSegments = 5;
+            environment.pooledMountainSegments = 5;
+            environment.pooledNearMountainSegments = 5;
+            environment.mirrorAlternatingFarMountainTiles = false;
+            environment.mirrorAlternatingMountainTiles = true;
+            environment.mirrorAlternatingNearMountainTiles = false;
+            environment.farMountainSeamOverlap = .012f;
+            environment.seamOverlap = .012f;
+            environment.nearMountainSeamOverlap = .012f;
+            environment.clouds = Array.Empty<Sprite>();
+        }
+
+        private static void ConfigureMountainsProfile(MapProfile profile, EnvironmentDefinition environment)
+        {
+            profile.mapId = "mountains";
+            profile.displayName = "MOUNTAINS";
+            profile.supportedGameMode = GameModeType.Adventure2_5D;
+            profile.seed = 40822;
+            profile.introEndDistance = 500f;
+            profile.easyEndDistance = 2500f;
+            profile.normalEndDistance = 5000f;
+            profile.hardEndDistance = 10000f;
+            profile.baseHeight = 0f;
+            profile.amplitude = 250f;
+            profile.maximumDifficulty = 1f;
+            profile.introductoryAmplitude = .18f;
+            profile.sectionLength = 125f;
+            profile.maxSlopeAngle = 80f;
+            profile.maxHeightDeltaPerSample = 12f;
+            profile.maximumCrestSharpness = 18f;
+            profile.smoothingPasses = 2;
+            profile.minimumValleyWidth = 22f;
+            profile.minimumLandingLength = 18f;
+            profile.coinDensityPer100m = 8f;
+            profile.initialFuelGap = 5f;
+            profile.fuelGapIncrease = 5f;
+            profile.fuelPlacementSearchRadius = 30f;
+            profile.fuelPlacementSearchStep = 2f;
+            profile.fuelMaximumPlacementSlope = 20f;
+            profile.useMountainsTerrain = true;
+            profile.useArenaTerrain = false;
+            profile.useSpaceTerrain = false;
+            profile.useCityHighwayTerrain = false;
+            profile.supportsLiquidExposure = false;
+            profile.mountains = new MountainsSettings
+            {
+                peakDifficultyDistance = 10000f,
+                miniBumpMinimumWavelength = 7.5f,
+                miniBumpMaximumWavelength = 18f,
+                initialMiniBumpHeight = .20f,
+                maximumMiniBumpHeight = 1.10f,
+                easySlopeRange = new Vector2(20f, 45f),
+                mediumSlopeRange = new Vector2(40f, 60f),
+                hardSlopeRange = new Vector2(55f, 70f),
+                extremeSlopeRange = new Vector2(65f, 75f),
+                exceptionalSlope = 79f,
+                exceptionalEveryCells = 7,
+                crestWidthFraction = .032f,
+                recoveryWidthFraction = .07f
+            };
+            profile.environment = environment;
+            Texture2D rock = AssetDatabase.LoadAssetAtPath<Texture2D>(MountainsTerrainRoot + "/Mountains_Rock.png");
+            profile.terrainMaterial = LoadOrCreateMaterial(Root + "/Materials/MountainsRock.mat", rock,
+                new Color(.47f, .49f, .52f, 1f));
+            profile.terrainEdgeMaterial = LoadOrCreateMaterial(Root + "/Materials/MountainsRockSurface.mat", rock,
+                new Color(.62f, .64f, .66f, 1f));
+            profile.useSeparateTerrainMaterials = true;
+            profile.fitAuthoredTerrainTexture = false;
+            profile.terrainTextureRepeatWidth = 18f;
+            profile.terrainVisualDepth = 360f;
+            profile.terrainEdgeWidth = .24f;
+            profile.groundPhysicsMaterial = LoadOrCreatePhysicsMaterial(
+                Root + "/Materials/MountainsGround.physicMaterial", .95f);
+            profile.groundPhysicsMaterial2D = LoadOrCreatePhysicsMaterial2D(
+                Root + "/Materials/MountainsGround2D.physicsMaterial2D", 2.8f);
+        }
+
+        private static void RegisterInCatalog(VehicleDefinition buggy, MapProfile mountains)
+        {
+            GameCatalog catalog = AssetDatabase.LoadAssetAtPath<GameCatalog>(Root + "/VehicleData/GameCatalog.asset");
+            if (catalog == null) throw new InvalidOperationException("GameCatalog.asset is missing.");
+            var vehicles = new List<VehicleDefinition>(catalog.vehicles ?? Array.Empty<VehicleDefinition>());
+            vehicles.RemoveAll(item => item == null || item.vehicleId == buggy.vehicleId);
+            vehicles.Add(buggy);
+            catalog.vehicles = vehicles.ToArray();
+            var maps = new List<MapDefinition>(catalog.maps ?? Array.Empty<MapDefinition>());
+            maps.RemoveAll(item => item == null || item.mapId == mountains.mapId);
+            int roadIndex = maps.FindIndex(item => item != null && item.supportedGameMode != GameModeType.Adventure2_5D);
+            if (roadIndex < 0) maps.Add(mountains); else maps.Insert(roadIndex, mountains);
+            catalog.maps = maps.ToArray();
+            EditorUtility.SetDirty(catalog);
+        }
+
+        private static void ValidateInstallation(VehicleDefinition buggy, MapProfile mountains)
+        {
+            var max = new VehicleUpgradeState
+            {
+                engineTune = buggy.engineMaxTunes, accelerationTune = buggy.accelerationMaxTunes,
+                suspensionTune = buggy.suspensionMaxTunes, gripTune = buggy.gripMaxTunes,
+                fuelTune = buggy.fuelMaxTunes
+            };
+            ResolvedVehicleStats stats = buggy.Resolve(max);
+            if (Mathf.Abs(stats.topSpeedMps * 3.6f - 220f) > .1f ||
+                Mathf.Abs(stats.zeroToHundredTargetSeconds - 4f) > .01f ||
+                Mathf.Abs(stats.totalRunFuelDuration - 60f) > .01f || stats.suspensionTravel < .49f)
+                throw new InvalidOperationException("Buggy resolved statistics do not match the authored contract.");
+
+            float[] maxima = new float[5];
+            Mesh mesh = new Mesh();
+            float endHeight = 0f;
+            float endSlope = 0f;
+            const float chunkLength = 80f;
+            const int samples = 96;
+            int chunkCount = Mathf.CeilToInt(12000f / chunkLength);
+            for (int chunk = 0; chunk < chunkCount; chunk++)
+            {
+                TerrainGenerator.BuildMesh(mesh, mountains, chunk * chunkLength, chunkLength, samples, 10f,
+                    chunk > 0, endHeight, endSlope, out float[] heights, out endHeight, out endSlope);
+                float dx = chunkLength / samples;
+                for (int i = 1; i < heights.Length; i++)
+                {
+                    float distance = chunk * chunkLength + i * dx;
+                    float angle = Mathf.Abs(Mathf.Atan2(heights[i] - heights[i - 1], dx) * Mathf.Rad2Deg);
+                    int band = distance < 500f ? 0 : distance < 2500f ? 1 : distance < 5000f ? 2 :
+                        distance < 10000f ? 3 : 4;
+                    maxima[band] = Mathf.Max(maxima[band], angle);
+                }
+            }
+            UnityEngine.Object.DestroyImmediate(mesh);
+            if (maxima[4] < 75f || maxima[4] > 80.1f || maxima[3] < 60f ||
+                Mathf.Abs(mountains.hardEndDistance - 10000f) > .01f ||
+                mountains.mountains == null ||
+                Mathf.Abs(mountains.mountains.peakDifficultyDistance - 10000f) > .01f)
+                throw new InvalidOperationException($"Mountains slope audit failed: {string.Join(",", maxima)}");
+            Debug.Log($"BUGGY_STATS_OK|vmax={stats.topSpeedMps * 3.6f:F1}|zero100={stats.zeroToHundredTargetSeconds:F2}" +
+                      $"|fuel={stats.totalRunFuelDuration:F1}|travel={stats.suspensionTravel:F2}|grip={stats.gripRating}");
+            Debug.Log($"MOUNTAINS_SLOPE_AUDIT_OK|0-500={maxima[0]:F1}|500-2500={maxima[1]:F1}" +
+                      $"|2500-5000={maxima[2]:F1}|5000-10000={maxima[3]:F1}|10000+={maxima[4]:F1}");
+        }
+
+        private static Material LoadOrCreateMaterial(string path, Texture texture, Color color)
+        {
+            Material material = AssetDatabase.LoadAssetAtPath<Material>(path);
+            Shader shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Texture");
+            if (material == null)
+            {
+                material = new Material(shader);
+                AssetDatabase.CreateAsset(material, path);
+            }
+            else if (shader != null) material.shader = shader;
+            material.mainTexture = texture;
+            material.color = color;
+            EditorUtility.SetDirty(material);
+            return material;
+        }
+
+        private static PhysicsMaterial LoadOrCreatePhysicsMaterial(string path, float friction)
+        {
+            PhysicsMaterial material = AssetDatabase.LoadAssetAtPath<PhysicsMaterial>(path);
+            if (material == null)
+            {
+                material = new PhysicsMaterial("MountainsGround");
+                AssetDatabase.CreateAsset(material, path);
+            }
+            material.dynamicFriction = friction;
+            material.staticFriction = friction;
+            material.bounciness = 0f;
+            EditorUtility.SetDirty(material);
+            return material;
+        }
+
+        private static PhysicsMaterial2D LoadOrCreatePhysicsMaterial2D(string path, float friction)
+        {
+            PhysicsMaterial2D material = AssetDatabase.LoadAssetAtPath<PhysicsMaterial2D>(path);
+            if (material == null)
+            {
+                material = new PhysicsMaterial2D("MountainsGround2D");
+                AssetDatabase.CreateAsset(material, path);
+            }
+            material.friction = friction;
+            material.bounciness = 0f;
+            EditorUtility.SetDirty(material);
+            return material;
+        }
+
+        private static void GenerateMountainsTextures()
+        {
+            WriteSky(MountainsArtRoot + "/Mountains_Sky.png");
+            WriteMountainLayer(MountainsArtRoot + "/Mountains_Far.png", 0,
+                new Color32(126, 145, 159, 170));
+            WriteMountainLayer(MountainsArtRoot + "/Mountains_Mid.png", 1,
+                new Color32(82, 101, 116, 225));
+            WriteMountainLayer(MountainsArtRoot + "/Mountains_Near.png", 2,
+                new Color32(48, 57, 66, 255));
+            WriteRockTexture(MountainsTerrainRoot + "/Mountains_Rock.png");
+        }
+
+        private static void WriteSky(string assetPath)
+        {
+            const int width = 1024;
+            const int height = 512;
+            Texture2D texture = new Texture2D(width, height, TextureFormat.RGBA32, false);
+            Color top = new Color32(91, 120, 151, 255);
+            Color middle = new Color32(169, 184, 190, 255);
+            Color horizon = new Color32(238, 220, 165, 255);
+            Color32[] pixels = new Color32[width * height];
+            for (int y = 0; y < height; y++)
+            {
+                float t = y / (float)(height - 1);
+                Color color = t < .48f ? Color.Lerp(horizon, middle, t / .48f) :
+                    Color.Lerp(middle, top, (t - .48f) / .52f);
+                for (int x = 0; x < width; x++) pixels[y * width + x] = color;
+            }
+            texture.SetPixels32(pixels);
+            texture.Apply(false, false);
+            File.WriteAllBytes(Absolute(assetPath), texture.EncodeToPNG());
+            UnityEngine.Object.DestroyImmediate(texture);
+        }
+
+        private static void WriteMountainLayer(string assetPath, int layer, Color32 baseColor)
+        {
+            const int width = 1024;
+            const int height = 512;
+            Texture2D texture = new Texture2D(width, height, TextureFormat.RGBA32, false);
+            Color32[] pixels = new Color32[width * height];
+            float baseLine = Mathf.Lerp(.10f, .035f, layer / 2f);
+            for (int x = 0; x < width; x++)
+            {
+                float phase = x / (float)(width - 1) * Mathf.PI * 2f;
+                float ridge = baseLine + .20f + layer * .055f +
+                              Mathf.Sin(phase * (2 + layer) + .65f) * (.07f + layer * .018f) +
+                              Mathf.Sin(phase * (5 + layer) + 1.4f) * (.035f + layer * .012f) +
+                              Mathf.Abs(Mathf.Sin(phase * (3 + layer) - .35f)) * (.12f + layer * .035f);
+                int ridgePixel = Mathf.Clamp(Mathf.RoundToInt(ridge * height), 1, height - 1);
+                for (int y = 0; y <= ridgePixel; y++)
+                {
+                    float altitude = y / (float)Mathf.Max(1, ridgePixel);
+                    float facet = .92f + .08f * Mathf.Sin(phase * 11f + y * .027f);
+                    Color color = (Color)baseColor * Mathf.Lerp(.78f, 1.08f, altitude) * facet;
+                    color.a = baseColor.a / 255f;
+                    pixels[y * width + x] = color;
+                }
+            }
+            texture.SetPixels32(pixels);
+            texture.Apply(false, false);
+            File.WriteAllBytes(Absolute(assetPath), texture.EncodeToPNG());
+            UnityEngine.Object.DestroyImmediate(texture);
+        }
+
+        private static void WriteRockTexture(string assetPath)
+        {
+            const int width = 512;
+            const int height = 256;
+            Texture2D texture = new Texture2D(width, height, TextureFormat.RGBA32, false);
+            Color32[] pixels = new Color32[width * height];
+            for (int y = 0; y < height; y++)
+            for (int x = 0; x < width; x++)
+            {
+                float u = x / (float)(width - 1) * Mathf.PI * 2f;
+                float v = y / (float)(height - 1) * Mathf.PI * 2f;
+                float grain = Mathf.Sin(u * 7f + Mathf.Sin(v * 3f)) * .045f +
+                              Mathf.Sin(v * 5f - u * 2f) * .035f +
+                              Mathf.Abs(Mathf.Sin(u * 2f + v * 2f)) * .025f;
+                float topLight = Mathf.SmoothStep(0f, .12f, y / (float)height) * .05f;
+                float value = Mathf.Clamp01(.44f + grain + topLight);
+                pixels[y * width + x] = new Color(value * .94f, value * .97f, value, 1f);
+            }
+            texture.SetPixels32(pixels);
+            texture.Apply(false, false);
+            File.WriteAllBytes(Absolute(assetPath), texture.EncodeToPNG());
+            UnityEngine.Object.DestroyImmediate(texture);
+        }
+
+        private static void ConfigureSprite(string path, int maxSize, bool alpha)
+        {
+            TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (importer == null) return;
+            importer.textureType = TextureImporterType.Sprite;
+            importer.spriteImportMode = SpriteImportMode.Single;
+            importer.spritePixelsPerUnit = 100f;
+            importer.alphaIsTransparency = alpha;
+            importer.mipmapEnabled = false;
+            importer.filterMode = FilterMode.Bilinear;
+            importer.textureCompression = TextureImporterCompression.Compressed;
+            importer.maxTextureSize = maxSize;
+            importer.SaveAndReimport();
+        }
+
+        private static void ConfigureTiledTexture(string path)
+        {
+            TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (importer == null) return;
+            importer.textureType = TextureImporterType.Default;
+            importer.wrapMode = TextureWrapMode.Repeat;
+            importer.mipmapEnabled = true;
+            importer.filterMode = FilterMode.Bilinear;
+            importer.textureCompression = TextureImporterCompression.Compressed;
+            importer.maxTextureSize = 512;
+            importer.SaveAndReimport();
+        }
+
+        private static string Absolute(string assetPath) =>
+            Path.Combine(Directory.GetParent(Application.dataPath).FullName, assetPath.Replace('/', Path.DirectorySeparatorChar));
+
+        private static void EnsureFolder(string path)
+        {
+            string absolute = Absolute(path);
+            if (!Directory.Exists(absolute)) Directory.CreateDirectory(absolute);
+        }
+
+        private static T LoadOrCreate<T>(string path) where T : ScriptableObject
+        {
+            T asset = AssetDatabase.LoadAssetAtPath<T>(path);
+            if (asset != null) return asset;
+            asset = ScriptableObject.CreateInstance<T>();
+            AssetDatabase.CreateAsset(asset, path);
+            return asset;
+        }
+    }
+}

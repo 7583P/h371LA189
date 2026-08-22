@@ -10,7 +10,9 @@ namespace AnimeHillRacing.Vehicle
         Formula,
         Rally,
         SportBike,
-        HillAdventurer
+        HillAdventurer,
+        Buggy,
+        AerialSatelite
     }
 
     [CreateAssetMenu(menuName = "Anime Hill Racing/Vehicle Definition", fileName = "MainVehicle")]
@@ -227,6 +229,8 @@ namespace AnimeHillRacing.Vehicle
             [Min(.1f)] public float tractionRecoveryPerSecond = 5.5f;
             [Min(0f)] public float rollingResistance = 0.018f;
             [Min(0f)] public float aerodynamicDrag = 0.46f;
+            [Tooltip("Maximum Box2D tire friction authored for this vehicle. Existing vehicles retain the legacy 2.4 cap.")]
+            [Range(.6f, 5f)] public float maximumPhysicsFriction = 2.4f;
         }
 
         [Serializable]
@@ -272,6 +276,16 @@ namespace AnimeHillRacing.Vehicle
         [Min(1f)] public float maximumPassiveAngularVelocity = 8f;
         [Tooltip("Physical-wheel force correction used only by the 2.5D drivetrain. Road vehicles apply the authored acceleration directly.")]
         [Range(0.25f, 2f)] public float accelerationForceCalibration = 1f;
+        [Header("Climbing / AWD")]
+        [Tooltip("Moves torque toward the wheel that still has terrain contact instead of locking a fixed split.")]
+        public bool adaptiveAllWheelDrive;
+        [Range(.5f, .95f)] public float groundedWheelTorqueShare = .75f;
+        [Tooltip("Limited extra acceleration available only under throttle on steep, grounded climbs.")]
+        [Min(0f)] public float maxClimbAssist;
+        [Range(20f, 80f)] public float climbAssistStartAngle = 55f;
+        [Range(30f, 85f)] public float climbAssistFullAngle = 75f;
+        [Tooltip("Additional angular damping blended in close to top speed while grounded.")]
+        [Min(0f)] public float highSpeedDamping;
         public Vector3 centerOfMass = new Vector3(0f, -0.25f, 0f);
 
         [Header("Systems")]
@@ -478,10 +492,12 @@ namespace AnimeHillRacing.Vehicle
             if (slot == 2) return VehicleUpgradeType.Suspension;
             if (slot == 3) return VehicleUpgradeType.Grip;
             if (slot == 5 && archetype == VehicleArchetype.Formula) return VehicleUpgradeType.Downforce;
+            if (slot == 5 && archetype == VehicleArchetype.AerialSatelite) return VehicleUpgradeType.Turbo;
             return VehicleUpgradeType.Fuel;
         }
 
-        public int GetTuneSlotCount() => archetype == VehicleArchetype.Formula ? 6 : 5;
+        public int GetTuneSlotCount() => archetype == VehicleArchetype.Formula ||
+                                         archetype == VehicleArchetype.AerialSatelite ? 6 : 5;
 
         public string GetTuneDisplayName(VehicleUpgradeType type)
         {
@@ -493,7 +509,8 @@ namespace AnimeHillRacing.Vehicle
                 case VehicleUpgradeType.Grip: return "GRIP";
                 case VehicleUpgradeType.AirControl: return "AIR CONTROL";
                 case VehicleUpgradeType.Downforce: return "DOWNFORCE";
-                case VehicleUpgradeType.Turbo: return "ACCELERATION";
+                case VehicleUpgradeType.Turbo: return archetype == VehicleArchetype.AerialSatelite
+                    ? "THRUSTERS" : "ACCELERATION";
                 default: return "FUEL";
             }
         }
@@ -603,6 +620,11 @@ namespace AnimeHillRacing.Vehicle
             grip.slipThreshold = Mathf.Clamp(grip.slipThreshold, .02f, 1f);
             grip.slidingGripMultiplier = Mathf.Clamp(grip.slidingGripMultiplier, .1f, 1f);
             grip.tractionRecoveryPerSecond = Mathf.Max(.1f, grip.tractionRecoveryPerSecond);
+            grip.maximumPhysicsFriction = Mathf.Clamp(grip.maximumPhysicsFriction, .6f, 5f);
+            groundedWheelTorqueShare = Mathf.Clamp(groundedWheelTorqueShare, .5f, .95f);
+            climbAssistFullAngle = Mathf.Max(climbAssistStartAngle + 1f, climbAssistFullAngle);
+            maxClimbAssist = Mathf.Max(0f, maxClimbAssist);
+            highSpeedDamping = Mathf.Max(0f, highSpeedDamping);
             if (engine.speedTorqueCurve == null || engine.speedTorqueCurve.length == 0)
                 engine.speedTorqueCurve = new AnimationCurve(new Keyframe(0f, 1f), new Keyframe(.55f, 1f),
                     new Keyframe(.82f, .68f), new Keyframe(.96f, .22f), new Keyframe(1.04f, 0f));

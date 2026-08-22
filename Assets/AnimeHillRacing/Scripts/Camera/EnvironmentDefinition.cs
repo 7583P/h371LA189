@@ -41,6 +41,18 @@ namespace AnimeHillRacing.CameraSystem
         [Tooltip("Mirrors alternating panorama cells so consecutive edges match without an obvious copy seam.")]
         public bool mirrorAlternatingMountainTiles;
 
+        [Header("Optional Far Panorama Layer")]
+        [Tooltip("A faint panorama behind the main mountains. Useful for three-depth parallax environments.")]
+        public Sprite farMountains;
+        [Range(.01f, .20f)] public float farMountainParallaxX = .08f;
+        [Range(0f, .08f)] public float farMountainParallaxY = .025f;
+        public bool lockFarMountainsVerticalToCamera = true;
+        [Min(1f)] public float farMountainVisualHeight = 18f;
+        public float farMountainBaseY = -1f;
+        [Range(3, 7)] public int pooledFarMountainSegments = 5;
+        [Range(0f, .05f)] public float farMountainSeamOverlap = .01f;
+        public bool mirrorAlternatingFarMountainTiles = true;
+
         [Header("Optional Near Panorama Layer")]
         [Tooltip("An additional transparent panorama rendered in front of the main mountains.")]
         public Sprite nearMountains;

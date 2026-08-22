@@ -16,9 +16,11 @@ MonoBehaviour:
   formulaFinalUpgradeCost: 150000
   rallyFinalUpgradeCost: 100000
   sportBikeFinalUpgradeCost: 200000
+  aerialSateliteFinalUpgradeCost: 120000
   jeepFirstUpgradeCost: 1000
   formulaFirstUpgradeCost: 2500
   rallyFirstUpgradeCost: 1800
   sportBikeFirstUpgradeCost: 3000
+  aerialSateliteFirstUpgradeCost: 2000
   costExponent: 1.45
   roundingStep: 250

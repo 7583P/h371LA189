@@ -35,6 +35,9 @@ namespace AnimeHillRacing.Vehicle
         public float RawThrottleInput => State.Gas;
         public float RawBrakeInput => State.BrakeRaw;
         public float RawSteeringInput => State.Steer;
+        public bool PhysicalGasPressed { get; private set; }
+        public bool PhysicalBrakePressed { get; private set; }
+        public bool BothPedalsPressed => PhysicalGasPressed && PhysicalBrakePressed;
 
         public VehicleInputState State { get; private set; }
         public bool RetryPressedThisFrame { get; private set; }
@@ -57,6 +60,8 @@ namespace AnimeHillRacing.Vehicle
                 : 0f;
             ResolveTouchPedals(out bool resolvedTouchGas, out bool resolvedTouchBrake);
             bool hasTouchPedal = touchGas || touchBrake;
+            PhysicalGasPressed = inputEnabled && (hasTouchPedal ? touchGas : keyboardGas);
+            PhysicalBrakePressed = inputEnabled && (hasTouchPedal ? touchBrake : keyboardBrake);
             bool gas = inputEnabled && (hasTouchPedal ? resolvedTouchGas : keyboardGas);
             bool brake = inputEnabled && (hasTouchPedal ? resolvedTouchBrake : keyboardBrake);
             bool brakePhysicallyPressed = inputEnabled && (touchBrake || keyboardBrake);
@@ -120,6 +125,8 @@ namespace AnimeHillRacing.Vehicle
             brakePressedAt = 0f;
             brakeTapPending = false;
             State = default;
+            PhysicalGasPressed = false;
+            PhysicalBrakePressed = false;
         }
 
         public bool ConsumeBrakeTap()

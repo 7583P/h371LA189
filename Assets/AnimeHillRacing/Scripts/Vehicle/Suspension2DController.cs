@@ -169,7 +169,8 @@ namespace AnimeHillRacing.Vehicle
             // PhysicsMaterial2D for arcade tire grip
             runtimeWheelMaterial = new PhysicsMaterial2D($"{name}_Tire2D")
             {
-                friction = Mathf.Clamp(gripRating / 150f, 0.6f, 2.4f),
+                friction = Mathf.Clamp(gripRating / 150f, 0.6f,
+                    definition != null ? definition.grip.maximumPhysicsFriction : 2.4f),
                 bounciness = 0f
             };
             wheelCollider.sharedMaterial = runtimeWheelMaterial;

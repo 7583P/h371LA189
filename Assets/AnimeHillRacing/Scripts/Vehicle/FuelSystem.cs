@@ -12,6 +12,7 @@ namespace AnimeHillRacing.Vehicle
         public float CurrentConsumptionNormalizedPerSecond { get; private set; }
         public float CurrentConsumptionPerSecond { get; private set; }
         public bool CanConsume { get; private set; } = true;
+        public float ConsumptionMultiplier { get; private set; } = 1f;
 
         public void Initialize(VehicleDefinition definition, ResolvedVehicleStats stats)
         {
@@ -21,6 +22,7 @@ namespace AnimeHillRacing.Vehicle
             CurrentConsumptionNormalizedPerSecond = 0f;
             CurrentConsumptionPerSecond = 0f;
             CanConsume = true;
+            ConsumptionMultiplier = 1f;
         }
 
         public void TickRun(float deltaTime, bool runIsActive)
@@ -31,7 +33,7 @@ namespace AnimeHillRacing.Vehicle
                 CurrentConsumptionPerSecond = 0f;
                 return;
             }
-            CurrentConsumptionNormalizedPerSecond = 1f / TotalRunDurationSeconds;
+            CurrentConsumptionNormalizedPerSecond = ConsumptionMultiplier / TotalRunDurationSeconds;
             CurrentConsumptionPerSecond = CurrentConsumptionNormalizedPerSecond * MaxFuel;
             CurrentFuel = Mathf.Max(0f, CurrentFuel - CurrentConsumptionPerSecond * Mathf.Max(0f, deltaTime));
         }
@@ -61,6 +63,11 @@ namespace AnimeHillRacing.Vehicle
                 CurrentConsumptionNormalizedPerSecond = 0f;
                 CurrentConsumptionPerSecond = 0f;
             }
+        }
+
+        public void SetConsumptionMultiplier(float multiplier)
+        {
+            ConsumptionMultiplier = Mathf.Clamp(multiplier, 1f, 4f);
         }
     }
 }

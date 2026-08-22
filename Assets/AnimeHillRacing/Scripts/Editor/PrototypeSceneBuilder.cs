@@ -123,6 +123,12 @@ namespace AnimeHillRacing.Editor
         private const string CountrysideMountainsPath = CountrysideRoot + "/Countryside_Mountains.png";
         private const string CountrysideTerrainPath = CountrysideRoot + "/Terrain.png";
         private const string CountrysideGroundPath = CountrysideRoot + "/Ground.png";
+        private const string NorthPoleRoot = "Assets/Art/Backgrounds/NorthPole";
+        private const string NorthPoleSkyPath = NorthPoleRoot + "/NorthPole_Sky.png";
+        private const string NorthPolePanoramaPath = NorthPoleRoot + "/NorthPole_Panorama.png";
+        private const string NorthPoleNearPinesPath = NorthPoleRoot + "/NorthPole_NearPines.png";
+        private const string NorthPoleTerrainPath = NorthPoleRoot + "/Terrain.png";
+        private const string NorthPoleGroundPath = NorthPoleRoot + "/Ground.png";
         private const string CityRoot = "Assets/Art/Backgrounds/City";
         private const string CitySkyPath = CityRoot + "/Sky.png";
         private const string CityBackgroundPath = CityRoot + "/Background.png";
@@ -176,6 +182,11 @@ namespace AnimeHillRacing.Editor
             public Sprite neonCaution;
             public Sprite countrysideTerrain;
             public Sprite countrysideGround;
+            public Sprite northPoleSky;
+            public Sprite northPolePanorama;
+            public Sprite northPoleNearPines;
+            public Sprite northPoleTerrain;
+            public Sprite northPoleGround;
             public Sprite citySky;
             public Sprite cityBackground;
             public Sprite cityTerrain;
@@ -206,13 +217,16 @@ namespace AnimeHillRacing.Editor
             public Sprite legendaryChestClosed, legendaryChestOpen, coinsChest, chestShelf;
             public DriverDefinition stickmanBlack;
             public EnvironmentDefinition countrysideEnvironment;
+            public EnvironmentDefinition northPoleEnvironment;
             public EnvironmentDefinition neonCityEnvironment;
             public EnvironmentDefinition cityEnvironment;
             public MapProfile countryside;
+            public MapProfile northPole;
             public MapProfile neonCity;
             public MapProfile city;
             public CoinRouteDefinition countrysideCoinRoute;
             public TerrainElevationProfile elevation;
+            public TerrainElevationProfile northPoleElevation;
             public RoadCurvatureProfile curvature;
             public RoadMapProfile countrysideRoad;
             public CircuitDefinition testCircuit;
@@ -221,6 +235,8 @@ namespace AnimeHillRacing.Editor
             public ChestCatalog chestCatalog;
             public Material countrysideMaterial;
             public Material countrysideEdgeMaterial;
+            public Material northPoleMaterial;
+            public Material northPoleEdgeMaterial;
             public Material neonCityMaterial;
             public Material neonCityEdgeMaterial;
             public Material cityTerrainMaterial;
@@ -269,6 +285,7 @@ namespace AnimeHillRacing.Editor
             BuiltAssets assets = CreateAssets();
             ValidateCustomizationContract(assets);
             ValidateCountrysideTerrainContract(assets.countryside);
+            ValidateNorthPoleContract(assets);
             ValidateNeonCityContract(assets);
             ValidateCityContract(assets);
             ValidateVehiclePhysicsContract(assets);
@@ -409,6 +426,7 @@ namespace AnimeHillRacing.Editor
             BuiltAssets assets = CreateAssets();
             ValidateCustomizationContract(assets);
             ValidateCountrysideTerrainContract(assets.countryside);
+            ValidateNorthPoleContract(assets);
             ValidateNeonCityContract(assets);
             ValidateCityContract(assets);
             ValidateVehiclePhysicsContract(assets);
@@ -1401,7 +1419,8 @@ namespace AnimeHillRacing.Editor
             importer.mipmapEnabled = false;
             bool tiled = path == NeonLiquidPath || path == NeonTerrainPath || path == NeonGroundPath ||
                          path == CityTerrainPath || path == CityGroundPath ||
-                         path == CountrysideTerrainPath || path == CountrysideGroundPath;
+                         path == CountrysideTerrainPath || path == CountrysideGroundPath ||
+                         path == NorthPoleTerrainPath || path == NorthPoleGroundPath;
             importer.wrapMode = tiled ? TextureWrapMode.Repeat : TextureWrapMode.Clamp;
             importer.filterMode = FilterMode.Bilinear;
             importer.textureCompression = TextureImporterCompression.CompressedHQ;
@@ -1579,6 +1598,48 @@ namespace AnimeHillRacing.Editor
                       "bonus=(Flips+Backflips)*5 only.");
         }
 
+        private static void ValidateNorthPoleContract(BuiltAssets assets)
+        {
+            MapProfile profile = assets.northPole;
+            EnvironmentDefinition environment = profile != null ? profile.environment : null;
+            if (profile == null || profile == assets.countryside || profile.mapId != "north-pole" ||
+                profile.elevationProfile == null || profile.elevationProfile != assets.northPoleElevation ||
+                profile.coinRoute != assets.countrysideCoinRoute || profile.supportsLiquidExposure ||
+                profile.terrainMaterial != assets.northPoleMaterial ||
+                profile.terrainEdgeMaterial != assets.northPoleEdgeMaterial)
+                throw new System.InvalidOperationException(
+                    "North Pole must be an independent 2D profile using the shared stable terrain and pickup systems.");
+            if (environment == null || environment.sky != assets.northPoleSky ||
+                environment.mountains != assets.northPolePanorama ||
+                environment.nearMountains != assets.northPoleNearPines ||
+                environment.mountainParallaxX <= 0f ||
+                environment.nearMountainParallaxX <= environment.mountainParallaxX ||
+                !environment.useRelativeParallaxSpeeds ||
+                !environment.lockVerticalToCamera || !environment.lockNearMountainsVerticalToCamera)
+                throw new System.InvalidOperationException(
+                    "North Pole requires sky, distant panorama and near-pine layers with ordered parallax speeds.");
+            if (profile.amplitude <= assets.countryside.amplitude * 1.5f ||
+                profile.sectionLength <= assets.countryside.sectionLength ||
+                profile.minimumValleyWidth <= assets.countryside.minimumValleyWidth ||
+                profile.smoothingPasses < assets.countryside.smoothingPasses ||
+                profile.maxSlopeAngle <= assets.countryside.maxSlopeAngle)
+                throw new System.InvalidOperationException(
+                    "North Pole terrain parameters must remain more aggressive, broad and smooth than Countryside.");
+
+            TerrainDifficultyAudit countryside = AuditGeneratedTerrain(assets.countryside, 6000f);
+            TerrainDifficultyAudit northPole = AuditGeneratedTerrain(profile, 6000f);
+            if (northPole.HeightRange < countryside.HeightRange * 1.35f ||
+                northPole.maximumSlope < countryside.maximumSlope + 3f ||
+                northPole.maximumSlope > profile.maxSlopeAngle + .1f)
+                throw new System.InvalidOperationException(
+                    $"North Pole terrain audit failed: range/slope={northPole.HeightRange:0.0}m/" +
+                    $"{northPole.maximumSlope:0.0} degrees; Countryside={countryside.HeightRange:0.0}m/" +
+                    $"{countryside.maximumSlope:0.0} degrees.");
+            Debug.Log($"NORTH_POLE_TERRAIN_PASS: 0-6000m range {northPole.HeightRange:0.0}m " +
+                      $"(Countryside {countryside.HeightRange:0.0}m), max slope " +
+                      $"{northPole.maximumSlope:0.0} degrees, two-layer continuous parallax configured.");
+        }
+
         private static void ValidateNeonCityContract(BuiltAssets assets)
         {
             MapProfile profile = assets.neonCity;
@@ -1591,14 +1652,15 @@ namespace AnimeHillRacing.Editor
                 Mathf.Abs((lockedYLow + 80f) - (lockedYHigh - 120f)) > .001f)
                 throw new System.InvalidOperationException(
                     "Neon City background must remain vertically locked to the camera with horizontal parallax enabled.");
-            if (assets.catalog.CountMaps(GameModeType.Adventure2_5D) != 4 ||
+            if (assets.catalog.CountMaps(GameModeType.Adventure2_5D) != 5 ||
                 assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 0)?.mapId != "countryside" ||
-                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 1)?.mapId != "neon-city" ||
-                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 2)?.mapId != "city" ||
-                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 3)?.mapId != "rainyer" ||
+                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 1)?.mapId != "north-pole" ||
+                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 2)?.mapId != "neon-city" ||
+                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 3)?.mapId != "city" ||
+                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 4)?.mapId != "rainyer" ||
                 rainyer == null || assets.catalog.FindMap("rainyer", GameModeType.Adventure2_5D) != rainyer)
                 throw new System.InvalidOperationException(
-                    "Adventure track selector requires Countryside, Neon City, City and Rainyer profiles.");
+                    "Adventure track selector requires Countryside, North Pole, Neon City, City and Rainyer profiles.");
             if (profile == null || !profile.supportsLiquidExposure || profile.liquidChallenges == null ||
                 profile.liquidChallenges.cycleLength != 6000f ||
                 profile.liquidChallenges.challengesPerCycle != 8 ||
@@ -4493,6 +4555,8 @@ namespace AnimeHillRacing.Editor
                 DriverUpperArmPath, DriverForearmPath, DriverThighPath, DriverLowerLegPath,
                 DriverGlassesPath, DriverFireGlassesPath, DriverScarfPath,
                  CountrysideSkyPath, CountrysideMountainsPath, CountrysideTerrainPath, CountrysideGroundPath,
+                 NorthPoleSkyPath, NorthPolePanoramaPath, NorthPoleNearPinesPath,
+                 NorthPoleTerrainPath, NorthPoleGroundPath,
                  CitySkyPath, CityBackgroundPath,
                 CityTerrainPath, CityGroundPath, FuelCanPath, Coin01Path, Coin05Path,
                 BronzeChestClosedPath, BronzeChestOpenPath, SilverChestClosedPath, SilverChestOpenPath,
@@ -4500,6 +4564,7 @@ namespace AnimeHillRacing.Editor
                 LegendaryChestClosedPath, LegendaryChestOpenPath, CoinsChestPath, ChestShelfPath };
             for (int i = 0; i < spritePaths.Length; i++)
                 ConfigureFormulaSprite(spritePaths[i], spritePaths[i].StartsWith(CountrysideRoot) ||
+                    spritePaths[i].StartsWith(NorthPoleRoot) ||
                     spritePaths[i].StartsWith(NeonRoot) ||
                     spritePaths[i].StartsWith(CityRoot) ||
                     spritePaths[i].StartsWith(ButtonRoot) ||
@@ -4547,6 +4612,11 @@ namespace AnimeHillRacing.Editor
             assets.neonCaution = AssetDatabase.LoadAssetAtPath<Sprite>(NeonCautionPath);
             assets.countrysideTerrain = AssetDatabase.LoadAssetAtPath<Sprite>(CountrysideTerrainPath);
             assets.countrysideGround = AssetDatabase.LoadAssetAtPath<Sprite>(CountrysideGroundPath);
+            assets.northPoleSky = AssetDatabase.LoadAssetAtPath<Sprite>(NorthPoleSkyPath);
+            assets.northPolePanorama = AssetDatabase.LoadAssetAtPath<Sprite>(NorthPolePanoramaPath);
+            assets.northPoleNearPines = AssetDatabase.LoadAssetAtPath<Sprite>(NorthPoleNearPinesPath);
+            assets.northPoleTerrain = AssetDatabase.LoadAssetAtPath<Sprite>(NorthPoleTerrainPath);
+            assets.northPoleGround = AssetDatabase.LoadAssetAtPath<Sprite>(NorthPoleGroundPath);
             assets.citySky = AssetDatabase.LoadAssetAtPath<Sprite>(CitySkyPath);
             assets.cityBackground = AssetDatabase.LoadAssetAtPath<Sprite>(CityBackgroundPath);
             assets.cityTerrain = AssetDatabase.LoadAssetAtPath<Sprite>(CityTerrainPath);
@@ -4591,6 +4661,10 @@ namespace AnimeHillRacing.Editor
                 assets.countrysideTerrain != null ? assets.countrysideTerrain.texture : null);
             assets.countrysideEdgeMaterial = UnlitTextureMaterialAsset("CountrysideGround",
                 assets.countrysideGround != null ? assets.countrysideGround.texture : null);
+            assets.northPoleMaterial = UnlitTextureMaterialAsset("NorthPoleTerrain",
+                assets.northPoleTerrain != null ? assets.northPoleTerrain.texture : null);
+            assets.northPoleEdgeMaterial = UnlitTextureMaterialAsset("NorthPoleGround",
+                assets.northPoleGround != null ? assets.northPoleGround.texture : null);
             assets.neonCityMaterial = UnlitTextureMaterialAsset("NeonCityTerrain", assets.neonTerrain != null
                 ? assets.neonTerrain.texture : null);
             assets.neonCityEdgeMaterial = UnlitTextureMaterialAsset("NeonCityEdge", assets.neonGround != null
@@ -5185,6 +5259,98 @@ namespace AnimeHillRacing.Editor
             assets.countryside.environment = assets.countrysideEnvironment;
             EditorUtility.SetDirty(assets.countrysideEnvironment);
 
+            // North Pole deliberately shares Countryside's proven chunk/collider/pickup architecture.
+            // Only its authored visuals and independent terrain profile are more aggressive.
+            assets.northPoleEnvironment = LoadOrCreate<EnvironmentDefinition>(
+                Root + "/MapProfiles/NorthPoleEnvironment.asset");
+            assets.northPoleEnvironment.environmentId = "north-pole";
+            assets.northPoleEnvironment.sky = assets.northPoleSky;
+            assets.northPoleEnvironment.mountains = assets.northPolePanorama;
+            assets.northPoleEnvironment.clouds = new Sprite[0];
+            assets.northPoleEnvironment.mountainParallaxX = .04f;
+            assets.northPoleEnvironment.mountainParallaxY = 0f;
+            assets.northPoleEnvironment.useRelativeParallaxSpeeds = true;
+            assets.northPoleEnvironment.lockVerticalToCamera = true;
+            assets.northPoleEnvironment.coverViewportVertically = true;
+            assets.northPoleEnvironment.mountainVisualHeight = 24.5f;
+            assets.northPoleEnvironment.mountainBaseY = 0f;
+            assets.northPoleEnvironment.pooledMountainSegments = 5;
+            assets.northPoleEnvironment.seamOverlap = .008f;
+            assets.northPoleEnvironment.mirrorAlternatingMountainTiles = true;
+            assets.northPoleEnvironment.nearMountains = assets.northPoleNearPines;
+            assets.northPoleEnvironment.nearMountainParallaxX = .11f;
+            assets.northPoleEnvironment.nearMountainParallaxY = 0f;
+            assets.northPoleEnvironment.lockNearMountainsVerticalToCamera = true;
+            assets.northPoleEnvironment.nearMountainVisualHeight = 23f;
+            assets.northPoleEnvironment.nearMountainBaseY = 5.3f;
+            assets.northPoleEnvironment.pooledNearMountainSegments = 5;
+            assets.northPoleEnvironment.nearMountainSeamOverlap = .008f;
+            assets.northPoleEnvironment.mirrorAlternatingNearMountainTiles = true;
+            EditorUtility.SetDirty(assets.northPoleEnvironment);
+
+            assets.northPole = LoadOrCreate<MapProfile>(Root + "/MapProfiles/NorthPole.asset");
+            assets.northPole.mapId = "north-pole";
+            assets.northPole.displayName = "NORTH POLE";
+            assets.northPole.supportedGameMode = GameModeType.Adventure2_5D;
+            assets.northPole.seed = 87231;
+            assets.northPole.coinRoute = assets.countrysideCoinRoute;
+            assets.northPole.baseHeight = 0f;
+            assets.northPole.amplitude = 38f;
+            assets.northPole.frequency = .012f;
+            assets.northPole.smoothing = .72f;
+            assets.northPole.hillSize = 1.2f;
+            assets.northPole.introductoryAmplitude = .20f;
+            assets.northPole.introEndDistance = 750f;
+            assets.northPole.easyEndDistance = 3000f;
+            assets.northPole.normalEndDistance = 6000f;
+            assets.northPole.hardEndDistance = 15000f;
+            assets.northPole.difficultyCurve = new AnimationCurve(
+                new Keyframe(0f, .04f), new Keyframe(.25f, .30f), new Keyframe(.60f, .64f),
+                new Keyframe(.80f, .86f), new Keyframe(1f, 1f));
+            assets.northPole.maximumDifficulty = 1f;
+            assets.northPole.sectionLength = 80f;
+            assets.northPole.recoveryEverySections = 4;
+            assets.northPole.technicalSectionChance = .52f;
+            assets.northPole.technicalDetailStrength = .82f;
+            assets.northPole.flatFeatureWeight = .06f;
+            assets.northPole.hillFeatureWeight = .46f;
+            assets.northPole.valleyFeatureWeight = .32f;
+            assets.northPole.technicalFeatureWeight = .16f;
+            assets.northPole.maxSlopeAngle = 40f;
+            assets.northPole.maxHeightDeltaPerSample = Mathf.Tan(40f * Mathf.Deg2Rad) * (80f / 48f);
+            assets.northPole.minimumValleyWidth = 30f;
+            assets.northPole.minimumLandingLength = 22f;
+            assets.northPole.maximumCrestSharpness = 5.5f;
+            assets.northPole.smoothingPasses = 2;
+            assets.northPole.initialFuelGap = 5f;
+            assets.northPole.fuelGapIncrease = 5f;
+            assets.northPole.fuelPlacementSearchRadius = 36f;
+            assets.northPole.fuelPlacementSearchStep = 2f;
+            assets.northPole.fuelMaximumPlacementSlope = 14f;
+            assets.northPole.environment = assets.northPoleEnvironment;
+            assets.northPole.terrainMaterial = assets.northPoleMaterial;
+            assets.northPole.terrainEdgeMaterial = assets.northPoleEdgeMaterial;
+            assets.northPole.useSeparateTerrainMaterials = true;
+            assets.northPole.fitAuthoredTerrainTexture = true;
+            assets.northPole.terrainTextureRepeatWidth = assets.northPoleGround != null
+                ? assets.northPoleGround.rect.width / assets.northPoleGround.pixelsPerUnit : 17.74f;
+            assets.northPole.terrainWallUvRange = new Vector2(0f, 1f);
+            assets.northPole.terrainSurfaceUvRange = new Vector2(.40f, .50f);
+            assets.northPole.terrainSurfaceContactV = .50f;
+            assets.northPole.terrainFillStartV = .43f;
+            assets.northPole.groundPhysicsMaterial = assets.groundPhysics;
+            assets.northPole.terrainEdgeWidth = .18f;
+            assets.northPole.terrainVisualDepth = 30f;
+            assets.northPole.supportsLiquidExposure = false;
+            EditorUtility.SetDirty(assets.northPole);
+
+            assets.northPoleElevation = LoadOrCreate<TerrainElevationProfile>(
+                Root + "/MapProfiles/NorthPoleElevation.asset");
+            assets.northPoleElevation.AssignSource(assets.northPole);
+            assets.northPole.elevationProfile = assets.northPoleElevation;
+            EditorUtility.SetDirty(assets.northPoleElevation);
+            EditorUtility.SetDirty(assets.northPole);
+
             assets.cityEnvironment = LoadOrCreate<EnvironmentDefinition>(Root + "/MapProfiles/CityEnvironment.asset");
             assets.cityEnvironment.environmentId = "city";
             assets.cityEnvironment.sky = assets.citySky;
@@ -5444,9 +5610,9 @@ namespace AnimeHillRacing.Editor
             MapDefinition rainyer = AssetDatabase.LoadAssetAtPath<MapDefinition>(
                 Root + "/MapProfiles/Rainyer.asset");
             assets.catalog.maps = rainyer != null
-                ? new MapDefinition[] { assets.countryside, assets.neonCity, assets.city, rainyer,
+                ? new MapDefinition[] { assets.countryside, assets.northPole, assets.neonCity, assets.city, rainyer,
                     assets.countrysideRoad, assets.testCircuit }
-                : new MapDefinition[] { assets.countryside, assets.neonCity, assets.city,
+                : new MapDefinition[] { assets.countryside, assets.northPole, assets.neonCity, assets.city,
                     assets.countrysideRoad, assets.testCircuit };
             assets.catalog.vehicles = new[] { assets.jeep, assets.formula, assets.rally, assets.sportBike, assets.hillAdventurer };
             assets.catalog.drivers = new[] { assets.stickmanBlack };
@@ -7017,7 +7183,8 @@ namespace AnimeHillRacing.Editor
             string path = Root + "/Materials/" + name + ".mat";
             Material material = AssetDatabase.LoadAssetAtPath<Material>(path);
             bool needsTransparency = name == "CityTerrain" || name == "CityGround" ||
-                                     name == "CountrysideTerrain" || name == "CountrysideGround";
+                                     name == "CountrysideTerrain" || name == "CountrysideGround" ||
+                                     name == "NorthPoleTerrain" || name == "NorthPoleGround";
             Shader shader = needsTransparency
                 ? Shader.Find("AnimeHillRacing/Transparent Texture") ?? Shader.Find("Sprites/Default")
                 : Shader.Find("Unlit/Texture") ?? Shader.Find("Sprites/Default");
@@ -7030,8 +7197,10 @@ namespace AnimeHillRacing.Editor
             else if (material.shader != shader) material.shader = shader;
             material.mainTexture = texture;
             material.color = Color.white;
-            if (name == "CityTerrain" || name == "CountrysideTerrain") material.renderQueue = 2450;
-            else if (name == "CityGround" || name == "CountrysideGround") material.renderQueue = 2451;
+            if (name == "CityTerrain" || name == "CountrysideTerrain" || name == "NorthPoleTerrain")
+                material.renderQueue = 2450;
+            else if (name == "CityGround" || name == "CountrysideGround" || name == "NorthPoleGround")
+                material.renderQueue = 2451;
             EditorUtility.SetDirty(material);
             return material;
         }

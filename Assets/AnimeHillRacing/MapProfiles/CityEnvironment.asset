@@ -43,6 +43,7 @@ MonoBehaviour:
   pooledClouds: 8
   mountainParallaxX: 0.18
   mountainParallaxY: 0.04
+  useRelativeParallaxSpeeds: 0
   lockVerticalToCamera: 1
   coverViewportVertically: 0
   mountainVisualHeight: 15.5
@@ -50,3 +51,12 @@ MonoBehaviour:
   pooledMountainSegments: 5
   seamOverlap: 0.016
   mirrorAlternatingMountainTiles: 0
+  nearMountains: {fileID: 0}
+  nearMountainParallaxX: 0.11
+  nearMountainParallaxY: 0.05
+  lockNearMountainsVerticalToCamera: 1
+  nearMountainVisualHeight: 16
+  nearMountainBaseY: -2
+  pooledNearMountainSegments: 5
+  nearMountainSeamOverlap: 0.01
+  mirrorAlternatingNearMountainTiles: 1

@@ -21,8 +21,10 @@ namespace AnimeHillRacing.CameraSystem
         [Range(0f, .6f)] public float cloudBobAmplitude = .18f;
         public Vector2 cloudBobPeriodRange = new Vector2(18f, 32f);
         [Range(4, 12)] public int pooledClouds = 8;
-        [Range(.15f, .25f)] public float mountainParallaxX = .20f;
-        [Range(.03f, .06f)] public float mountainParallaxY = .04f;
+        [Range(.01f, .25f)] public float mountainParallaxX = .20f;
+        [Range(0f, .08f)] public float mountainParallaxY = .04f;
+        [Tooltip("When enabled, horizontal values represent visible screen motion: 0 is fixed to the camera and 1 moves like terrain. Existing environments keep legacy world-follow semantics.")]
+        public bool useRelativeParallaxSpeeds;
         [Tooltip("Keeps the background at a fixed vertical position in camera space while retaining horizontal parallax.")]
         public bool lockVerticalToCamera;
         [Tooltip("Scales and centers an opaque panorama so its outer edge remains beyond the camera viewport.")]
@@ -33,5 +35,17 @@ namespace AnimeHillRacing.CameraSystem
         [Range(0f, .05f)] public float seamOverlap = .012f;
         [Tooltip("Mirrors alternating panorama cells so consecutive edges match without an obvious copy seam.")]
         public bool mirrorAlternatingMountainTiles;
+
+        [Header("Optional Near Panorama Layer")]
+        [Tooltip("An additional transparent panorama rendered in front of the main mountains.")]
+        public Sprite nearMountains;
+        [Range(.02f, .30f)] public float nearMountainParallaxX = .11f;
+        [Range(0f, .10f)] public float nearMountainParallaxY = .05f;
+        public bool lockNearMountainsVerticalToCamera = true;
+        [Min(1f)] public float nearMountainVisualHeight = 16f;
+        public float nearMountainBaseY = -2f;
+        [Range(3, 7)] public int pooledNearMountainSegments = 5;
+        [Range(0f, .05f)] public float nearMountainSeamOverlap = .01f;
+        public bool mirrorAlternatingNearMountainTiles = true;
     }
 }

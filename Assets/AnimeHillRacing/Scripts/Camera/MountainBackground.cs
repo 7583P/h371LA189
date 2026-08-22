@@ -8,9 +8,11 @@ namespace AnimeHillRacing.CameraSystem
         [SerializeField] private EnvironmentDefinition environment;
         [SerializeField] private SpriteRenderer skyRenderer;
         [SerializeField] private SpriteRenderer[] mountainSegments;
+        [SerializeField] private SpriteRenderer[] nearMountainSegments;
         [SerializeField] private SpriteRenderer[] cloudSegments;
 
         private float tileWidth;
+        private float nearTileWidth;
         private float initialCameraY;
         private int lastScreenWidth;
         private int lastScreenHeight;
@@ -35,6 +37,7 @@ namespace AnimeHillRacing.CameraSystem
         {
             if (displayCamera == null || environment == null) return;
             EnsureCloudPool();
+            EnsureNearMountainPool();
             lastScreenWidth = Screen.width; lastScreenHeight = Screen.height;
             if (skyRenderer != null)
             {
@@ -61,6 +64,46 @@ namespace AnimeHillRacing.CameraSystem
                 mountainSegments[i].sprite = environment.mountains;
                 mountainSegments[i].transform.localScale = Vector3.one * scaleMountain;
             }
+
+            float nearSourceHeight = environment.nearMountains != null
+                ? environment.nearMountains.bounds.size.y : 1f;
+            float nearScale = environment.nearMountainVisualHeight /
+                              Mathf.Max(.001f, nearSourceHeight);
+            float nearSourceWidth = environment.nearMountains != null
+                ? environment.nearMountains.bounds.size.x : 1f;
+            nearTileWidth = nearSourceWidth * nearScale *
+                            (1f - environment.nearMountainSeamOverlap);
+            if (nearMountainSegments == null) return;
+            for (int i = 0; i < nearMountainSegments.Length; i++)
+            {
+                if (nearMountainSegments[i] == null) continue;
+                nearMountainSegments[i].sprite = environment.nearMountains;
+                nearMountainSegments[i].transform.localScale = Vector3.one * nearScale;
+            }
+        }
+
+        private void EnsureNearMountainPool()
+        {
+            int required = environment.nearMountains != null
+                ? Mathf.Clamp(environment.pooledNearMountainSegments, 3, 7) : 0;
+            if (nearMountainSegments == null) nearMountainSegments = new SpriteRenderer[0];
+            if (nearMountainSegments.Length < required)
+            {
+                var expanded = new SpriteRenderer[required];
+                for (int i = 0; i < nearMountainSegments.Length; i++)
+                    expanded[i] = nearMountainSegments[i];
+                for (int i = nearMountainSegments.Length; i < required; i++)
+                {
+                    GameObject segment = new GameObject($"Near Mountain Segment {i + 1} - Pooled");
+                    segment.transform.SetParent(transform, false);
+                    expanded[i] = segment.AddComponent<SpriteRenderer>();
+                    expanded[i].sortingOrder = -35;
+                }
+                nearMountainSegments = expanded;
+            }
+            for (int i = 0; i < nearMountainSegments.Length; i++)
+                if (nearMountainSegments[i] != null)
+                    nearMountainSegments[i].gameObject.SetActive(i < required);
         }
 
         private void EnsureCloudPool()
@@ -98,26 +141,51 @@ namespace AnimeHillRacing.CameraSystem
             if (skyRenderer != null)
                 skyRenderer.transform.position = new Vector3(cameraPosition.x, cameraPosition.y, 14f);
 
-            float parallaxOriginX = cameraPosition.x * environment.mountainParallaxX;
-            int centerIndex = Mathf.RoundToInt((cameraPosition.x - parallaxOriginX) / tileWidth);
             // A camera-space lock must move the renderer with the camera in world space. This makes
             // its vertical position visually constant while horizontal parallax continues normally.
             float y = environment.coverViewportVertically
                 ? cameraPosition.y : CalculateVerticalPosition(environment, cameraPosition.y, initialCameraY);
-            int count = mountainSegments != null ? mountainSegments.Length : 0;
-            int half = count / 2;
-            for (int i = 0; i < count; i++)
+            UpdatePanoramaPositions(mountainSegments, cameraPosition.x,
+                WorldFollowFactor(environment.mountainParallaxX, environment.useRelativeParallaxSpeeds),
+                tileWidth, y, 10f, environment.mirrorAlternatingMountainTiles);
+
+            float nearY = CalculateLayerVerticalPosition(environment.nearMountainBaseY, cameraPosition.y,
+                initialCameraY, environment.nearMountainParallaxY,
+                environment.lockNearMountainsVerticalToCamera);
+            UpdatePanoramaPositions(nearMountainSegments, cameraPosition.x,
+                WorldFollowFactor(environment.nearMountainParallaxX, environment.useRelativeParallaxSpeeds),
+                nearTileWidth, nearY, 9f,
+                environment.mirrorAlternatingNearMountainTiles);
+            UpdateCloudPositions(cameraPosition);
+        }
+
+        private static void UpdatePanoramaPositions(SpriteRenderer[] segments, float cameraX,
+            float worldFollow, float width, float y, float z, bool mirrorAlternating)
+        {
+            if (segments == null || segments.Length == 0 || width <= .001f) return;
+
+            // Use doubles for the cell math so a recycled layer remains stable after long teleports.
+            // The final Transform is still a float, but no whole tile is selected from rounded float math.
+            double originX = (double)cameraX * worldFollow;
+            int centerIndex = (int)System.Math.Round(((double)cameraX - originX) / width);
+            int half = segments.Length / 2;
+            for (int i = 0; i < segments.Length; i++)
             {
-                if (mountainSegments[i] == null) continue;
+                SpriteRenderer renderer = segments[i];
+                if (renderer == null || !renderer.gameObject.activeSelf) continue;
                 int cell = centerIndex + i - half;
-                float x = parallaxOriginX + cell * tileWidth;
-                mountainSegments[i].transform.position = new Vector3(x, y, 10f);
+                float x = (float)(originX + cell * (double)width);
+                renderer.transform.position = new Vector3(x, y, z);
                 // A mirrored panorama joins right-to-right and left-to-left at alternating cells. This
                 // keeps one authored background running indefinitely without a visible copy/reset seam.
-                mountainSegments[i].flipX = environment.mirrorAlternatingMountainTiles &&
-                                             PositiveModulo(cell, 2) != 0;
+                renderer.flipX = mirrorAlternating && PositiveModulo(cell, 2) != 0;
             }
-            UpdateCloudPositions(cameraPosition);
+        }
+
+        private static float WorldFollowFactor(float configuredSpeed, bool useRelativeSpeed)
+        {
+            float speed = Mathf.Clamp01(configuredSpeed);
+            return useRelativeSpeed ? 1f - speed : speed;
         }
 
         private void UpdateCloudPositions(Vector3 cameraPosition)
@@ -216,9 +284,15 @@ namespace AnimeHillRacing.CameraSystem
             float cameraY, float cameraStartY)
         {
             if (definition == null) return 0f;
+            return CalculateLayerVerticalPosition(definition.mountainBaseY, cameraY, cameraStartY,
+                definition.mountainParallaxY, definition.lockVerticalToCamera);
+        }
+
+        private static float CalculateLayerVerticalPosition(float baseY, float cameraY,
+            float cameraStartY, float parallaxY, bool lockToCamera)
+        {
             float cameraDelta = cameraY - cameraStartY;
-            return definition.mountainBaseY + cameraDelta *
-                   (definition.lockVerticalToCamera ? 1f : definition.mountainParallaxY);
+            return baseY + cameraDelta * (lockToCamera ? 1f : parallaxY);
         }
 
         public void Assign(Camera camera, EnvironmentDefinition definition, SpriteRenderer sky,

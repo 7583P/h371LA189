@@ -103,6 +103,7 @@ namespace AnimeHillRacing.Terrain
             RebuildAuthoritativeTerrainCollider2D();
             if (mapProfile.useMountainsTerrain && vehicle.Body2D != null)
             {
+                LiftMountainVehicleClearOfSurface();
                 hasMountainsSafetyPosition = true;
             }
             PrewarmLiquidHazards(count + 2);
@@ -202,20 +203,62 @@ namespace AnimeHillRacing.Terrain
                 float wheelRadius = vehicle.Definition != null ? vehicle.Definition.wheelRadius : .6f;
                 float safeY = surfaceY + Mathf.Max(.95f, wheelRadius * 1.55f);
                 Vector2 correction = new Vector2(0f, safeY - current.y);
-                Rigidbody2D[] bodies = vehicle.GetComponentsInChildren<Rigidbody2D>(true);
-                for (int i = 0; i < bodies.Length; i++)
-                {
-                    Rigidbody2D part = bodies[i];
-                    if (part == null) continue;
-                    part.position += correction;
-                    Vector2 velocity = part.linearVelocity;
-                    velocity.y = Mathf.Max(0f, velocity.y * .1f);
-                    part.linearVelocity = velocity;
-                    part.angularVelocity *= .35f;
-                }
-                current = body.position;
+                TranslateMountainVehicle(correction, true);
             }
 
+            // A wheel can start penetrating before the much higher chassis centre crosses the surface.
+            // Correcting both tire centres every physics step prevents a wheel from becoming wedged in a
+            // steep face and also recovers safely if Box2D misses a fast contact near a chunk boundary.
+            LiftMountainVehicleClearOfSurface();
+        }
+
+        private void LiftMountainVehicleClearOfSurface()
+        {
+            if (vehicle == null || vehicle.Body2D == null) return;
+            float wheelRadius = vehicle.Definition != null ? vehicle.Definition.wheelRadius : .6f;
+            float requiredLift = 0f;
+            VehiclePhysics2DController physics = vehicle as VehiclePhysics2DController;
+            Suspension2DController[] suspensions = physics != null
+                ? new[] { physics.RearSuspension, physics.FrontSuspension }
+                : vehicle.GetComponentsInChildren<Suspension2DController>(true);
+            for (int i = 0; i < suspensions.Length; i++)
+            {
+                Rigidbody2D wheel = suspensions[i] != null ? suspensions[i].WheelBody : null;
+                if (wheel == null || !TrySampleAuthoritativeSurface(wheel.position.x, out float surfaceY,
+                        out float slopeDegrees))
+                    continue;
+                float slopeCosine = Mathf.Max(.30f, Mathf.Cos(Mathf.Abs(slopeDegrees) * Mathf.Deg2Rad));
+                float verticalTireClearance = wheelRadius / slopeCosine + .055f;
+                requiredLift = Mathf.Max(requiredLift,
+                    surfaceY + verticalTireClearance - wheel.position.y);
+            }
+            if (requiredLift <= .001f) return;
+
+            Vector2 correction = Vector2.up * requiredLift;
+            TranslateMountainVehicle(correction, false);
+        }
+
+        private void TranslateMountainVehicle(Vector2 correction, bool dampVelocity)
+        {
+            if (vehicle == null) return;
+            MoveMountainBody(vehicle.Body2D, correction, dampVelocity);
+            VehiclePhysics2DController physics = vehicle as VehiclePhysics2DController;
+            if (physics == null) return;
+            MoveMountainBody(physics.RearSuspension != null ? physics.RearSuspension.WheelBody : null,
+                correction, dampVelocity);
+            MoveMountainBody(physics.FrontSuspension != null ? physics.FrontSuspension.WheelBody : null,
+                correction, dampVelocity);
+        }
+
+        private static void MoveMountainBody(Rigidbody2D part, Vector2 correction, bool dampVelocity)
+        {
+            if (part == null) return;
+            part.position += correction;
+            if (!dampVelocity) return;
+            Vector2 velocity = part.linearVelocity;
+            velocity.y = Mathf.Max(0f, velocity.y * .1f);
+            part.linearVelocity = velocity;
+            part.angularVelocity *= .35f;
         }
 
 #if UNITY_EDITOR
@@ -374,10 +417,6 @@ namespace AnimeHillRacing.Terrain
             if (mapProfile == null || vehicle == null || vehicle.Body2D == null || chunks == null) return;
             EnsureAuthoritativeTerrainCollider();
 
-            const int pointsBehind = 30;
-            const int pointsAhead = 180;
-            const int pointCount = pointsBehind + pointsAhead + 1;
-
             // The rendered road is the processed surfaceHeights polyline (smoothing, slope/crest limiting and
             // chunk-boundary continuity included). Sampling TerrainGenerator.SampleHeight again produced a
             // different invisible road. Reuse the exact rendered knots so visual and Box2D geometry are one
@@ -399,15 +438,12 @@ namespace AnimeHillRacing.Terrain
                 return;
             }
 
-            float centerX = vehicle.Body2D.position.x;
-            int centerKnot = 0;
-            while (centerKnot + 1 < authoritativeSurfaceKnots2D.Count &&
-                   authoritativeSurfaceKnots2D[centerKnot + 1].x <= centerX)
-                centerKnot++;
-
-            int firstKnot = Mathf.Clamp(centerKnot - pointsBehind, 0,
-                Mathf.Max(0, authoritativeSurfaceKnots2D.Count - pointCount));
-            int selectedCount = Mathf.Min(pointCount, authoritativeSurfaceKnots2D.Count - firstKnot);
+            // Keep collision across the complete loaded terrain window. The old fixed 180-point look-ahead
+            // ended around 75 m while recycling happened at 80 m, creating a real five-metre false void at
+            // the start of Mountains. Loaded chunks are already pooled, so using all their knots is stable
+            // and ensures the collider always extends beyond the next recycle boundary in both directions.
+            const int firstKnot = 0;
+            int selectedCount = authoritativeSurfaceKnots2D.Count;
             int segmentIndex = 0;
             int runStart = 0;
             for (int edge = 0; edge < selectedCount - 1; edge++)

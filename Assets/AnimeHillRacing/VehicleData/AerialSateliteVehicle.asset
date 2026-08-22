@@ -30,7 +30,7 @@ MonoBehaviour:
     bundleType: 0
     allowsBlueprintProgression: 1
     visibleDiameter: 0
-    visibleSize: {x: 15.14, y: 7.55}
+    visibleSize: {x: 18.57, y: 6.39}
     visualOffset: {x: 0, y: 0}
   wheels:
   - optionId: aerial-satelite-wheel
@@ -114,13 +114,18 @@ MonoBehaviour:
       visible: 1
       sortingOrder: 6
   visualWidth: 6.15
-  flipBodyX: 0
+  flipBodyX: 1
   bodyVisualOffset: {x: 0, y: 0.31}
   rearWheelVisualPosition: {x: -2.28, y: -0.57}
   frontWheelVisualPosition: {x: 2.28, y: -0.57}
   wheelVisualDiameter: 1.18
   rearWheelVisualDiameter: 0
   frontWheelVisualDiameter: 0
+  underbodyAttachmentSprite: {fileID: 21300000, guid: e76ef9a167a3ec84d907086fc5e42ed5, type: 3}
+  underbodyAttachmentPositions:
+  - {x: -1.02, y: -0.38}
+  - {x: 1.02, y: -0.38}
+  underbodyAttachmentVisualWidth: 0.7
   engineMaxTunes: 16
   accelerationMaxTunes: 14
   suspensionMaxTunes: 14

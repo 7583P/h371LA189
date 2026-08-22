@@ -42,6 +42,7 @@ namespace AnimeHillRacing.CameraSystem
         {
             if (displayCamera == null || environment == null) return;
             EnsureCloudPool();
+            EnsureMountainPool();
             EnsureFarMountainPool();
             EnsureNearMountainPool();
             EnsureCelestials();
@@ -173,6 +174,30 @@ namespace AnimeHillRacing.CameraSystem
             for (int i = 0; i < nearMountainSegments.Length; i++)
                 if (nearMountainSegments[i] != null)
                     nearMountainSegments[i].gameObject.SetActive(i < required);
+        }
+
+        private void EnsureMountainPool()
+        {
+            int required = environment.mountains != null
+                ? Mathf.Clamp(environment.pooledMountainSegments, 3, 7) : 0;
+            if (mountainSegments == null) mountainSegments = new SpriteRenderer[0];
+            if (mountainSegments.Length < required)
+            {
+                var expanded = new SpriteRenderer[required];
+                for (int i = 0; i < mountainSegments.Length; i++)
+                    expanded[i] = mountainSegments[i];
+                for (int i = mountainSegments.Length; i < required; i++)
+                {
+                    GameObject segment = new GameObject($"Mountain Segment {i + 1} - Pooled");
+                    segment.transform.SetParent(transform, false);
+                    expanded[i] = segment.AddComponent<SpriteRenderer>();
+                    expanded[i].sortingOrder = -50;
+                }
+                mountainSegments = expanded;
+            }
+            for (int i = 0; i < mountainSegments.Length; i++)
+                if (mountainSegments[i] != null)
+                    mountainSegments[i].gameObject.SetActive(i < required);
         }
 
         private void EnsureFarMountainPool()

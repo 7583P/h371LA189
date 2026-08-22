@@ -25,7 +25,7 @@ namespace AnimeHillRacing.Editor
             ValidateEconomy(definition, catalog.upgradeEconomy);
             ValidateFuelAndFlight(definition);
             if (logResult)
-                Debug.Log("AERIAL_SATELITE_VERIFICATION_OK|fuelNormal=60s|fuelThrusters=30s|takeoff=pass|autoFlight=pass|noFuelForce=off|maxUpgrade=120000");
+                Debug.Log("AERIAL_SATELITE_VERIFICATION_OK|fuelNormal=60s|fuelThrusters=30s|takeoff=pass|independentPedals=pass|thrust=50-100|noFuelForce=off|maxUpgrade=120000");
         }
 
         private static void ValidateEconomy(VehicleDefinition definition, UpgradeEconomyDefinition economy)
@@ -64,12 +64,14 @@ namespace AnimeHillRacing.Editor
                 VehiclePhysics2DController vehicle = rig.AddComponent<VehiclePhysics2DController>();
                 AerialThrusterController aerial = rig.AddComponent<AerialThrusterController>();
                 vehicle.AssignRuntimeReferences(definition, null, null, null);
+                vehicle.UpgradeState.turboTune = 1;
                 aerial.Initialize(vehicle, null, fuel);
 
                 float forceStart = ReadTotalForce(body).y;
                 Step(aerial, true, false, 12);
                 float gasForce = ReadTotalForce(body).y - forceStart;
-                if (aerial.State != AerialFlightState.Flying || gasForce <= 0f)
+                if (aerial.State != AerialFlightState.Flying || gasForce <= 0f ||
+                    aerial.CurrentRightPower <= .5f || aerial.CurrentLeftPower > .001f)
                     throw new InvalidOperationException("Aerial gas/automatic FlightMode validation failed.");
 
                 aerial.Initialize(vehicle, null, fuel);
@@ -77,6 +79,7 @@ namespace AnimeHillRacing.Editor
                 Step(aerial, false, true, 12);
                 float brakeForce = ReadTotalForce(body).y - forceStart;
                 if (aerial.State != AerialFlightState.Flying || brakeForce <= 0f ||
+                    aerial.CurrentLeftPower <= .5f || aerial.CurrentRightPower > .001f ||
                     Mathf.Abs(gasForce - brakeForce) > Mathf.Max(1f, gasForce * .02f))
                     throw new InvalidOperationException("Aerial brake flight thrust does not match gas thrust.");
 
@@ -90,6 +93,16 @@ namespace AnimeHillRacing.Editor
                 if (aerial.State != AerialFlightState.Flying ||
                     boostForce <= gasForce * 1.1f || boostForce <= body.mass * Physics2D.gravity.magnitude)
                     throw new InvalidOperationException("Aerial dual-pedal boost is not stronger than single-pedal thrust.");
+
+                vehicle.UpgradeState.turboTune = definition.turboMaxTunes;
+                aerial.Initialize(vehicle, null, fuel);
+                forceStart = ReadTotalForce(body).y;
+                aerial.StepPhysics(.02f, true, true, true);
+                Step(aerial, true, true, 11);
+                float maximumTuneForce = ReadTotalForce(body).y - forceStart;
+                if (maximumTuneForce < boostForce * 1.85f)
+                    throw new InvalidOperationException(
+                        $"Aerial maximum thruster tune is not close to twice base authority: {maximumTuneForce / Mathf.Max(1f, boostForce):0.00}x.");
 
                 fuel.SetNormalized(0f);
                 Vector2 forceBefore = ReadTotalForce(body);

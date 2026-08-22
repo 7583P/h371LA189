@@ -10,7 +10,7 @@ namespace AnimeHillRacing.Editor
 {
     public static class AerialSateliteInstaller
     {
-        private const string SessionKey = "AHR.AerialSateliteInstaller.v9";
+        private const string SessionKey = "AHR.AerialSateliteInstaller.v16";
         private const string Root = "Assets/AnimeHillRacing";
         private const string ArtRoot = "Assets/Art/Vehicles/AerialSatelite";
         private const string DefinitionPath = Root + "/VehicleData/AerialSateliteVehicle.asset";
@@ -54,8 +54,8 @@ namespace AnimeHillRacing.Editor
                 throw new InvalidOperationException("Aerial Satelite sprites could not be imported.");
 
             VehicleDefinition definition = LoadOrCreate<VehicleDefinition>(DefinitionPath);
-            ConfigureDefinition(definition, body, wheel);
-            BuildPrefabs(definition, flame);
+            ConfigureDefinition(definition, body, wheel, thruster);
+            BuildPrefabs(definition, thruster, flame);
             Register(definition);
             EditorUtility.SetDirty(definition);
             AssetDatabase.SaveAssets();
@@ -65,7 +65,7 @@ namespace AnimeHillRacing.Editor
             Debug.Log("AERIAL_SATELITE_INSTALL_OK|vehicle=aerial-satelite-01|top=200kmh|zeroTo100=5s|fuel=60s|thrusterFuel=2x|maxUpgrade=120000");
         }
 
-        private static void ConfigureDefinition(VehicleDefinition v, Sprite body, Sprite wheel)
+        private static void ConfigureDefinition(VehicleDefinition v, Sprite body, Sprite wheel, Sprite thruster)
         {
             v.vehicleId = "aerial-satelite-01";
             v.displayName = "AERIAL SATELITE";
@@ -177,10 +177,16 @@ namespace AnimeHillRacing.Editor
             v.wheelVisualDiameter = 1.18f;
             v.rearWheelVisualDiameter = 0f;
             v.frontWheelVisualDiameter = 0f;
-            v.flipBodyX = false;
+            v.flipBodyX = true;
             v.previewSprite = body;
             v.skins = new[] { Option("aerial-satelite-default", "WHITE & GOLD", body) };
             v.wheels = new[] { Option("aerial-satelite-wheel", "AERIAL GRIP", wheel) };
+            v.underbodyAttachmentSprite = thruster;
+            v.underbodyAttachmentPositions = new[]
+            {
+                new Vector2(-1.02f, -.38f), new Vector2(1.02f, -.38f)
+            };
+            v.underbodyAttachmentVisualWidth = .70f;
 
             VehicleDefinition source = AssetDatabase.LoadAssetAtPath<VehicleDefinition>(
                 Root + "/VehicleData/HillAdventurerVehicle.asset");
@@ -191,17 +197,18 @@ namespace AnimeHillRacing.Editor
             v.driverPose.rootScale = .78f;
         }
 
-        private static void BuildPrefabs(VehicleDefinition definition, Sprite flame)
+        private static void BuildPrefabs(VehicleDefinition definition, Sprite thruster, Sprite flame)
         {
             GameObject source2D = AssetDatabase.LoadAssetAtPath<GameObject>(Root + "/Prefabs/Vehicles/HillAdventurer_2D.prefab");
             GameObject source3D = AssetDatabase.LoadAssetAtPath<GameObject>(Root + "/Prefabs/Vehicles/HillAdventurer_3D.prefab");
             if (source2D == null || source3D == null)
                 throw new InvalidOperationException("Hill Adventurer source prefabs are required.");
-            definition.gameplayPrefab2D = Clone2D(source2D, definition, flame);
+            definition.gameplayPrefab2D = Clone2D(source2D, definition, thruster, flame);
             definition.gameplayPrefab3D = Clone3D(source3D, definition);
         }
 
-        private static GameObject Clone2D(GameObject source, VehicleDefinition definition, Sprite flame)
+        private static GameObject Clone2D(GameObject source, VehicleDefinition definition, Sprite thruster,
+            Sprite flame)
         {
             GameObject root = UnityEngine.Object.Instantiate(source);
             root.name = "AerialSatelite_2D";
@@ -258,9 +265,11 @@ namespace AnimeHillRacing.Editor
                 cabin.offset = new Vector2(.65f, .59f);
                 cabin.size = new Vector2(.92f, 1.34f);
 
-                Transform left = CreateThruster("Left Thruster Point", rig, new Vector2(-.70f, -.70f), flame,
+                Transform left = CreateThruster("Left Thruster Point", rig, new Vector2(-1.02f, -.38f),
+                    thruster, flame,
                     out SpriteRenderer leftFlame);
-                Transform right = CreateThruster("Right Thruster Point", rig, new Vector2(.70f, -.70f), flame,
+                Transform right = CreateThruster("Right Thruster Point", rig, new Vector2(1.02f, -.38f),
+                    thruster, flame,
                     out SpriteRenderer rightFlame);
                 AerialThrusterVfx vfx = rig.gameObject.AddComponent<AerialThrusterVfx>();
                 vfx.Assign(leftFlame, rightFlame);
@@ -277,20 +286,28 @@ namespace AnimeHillRacing.Editor
             }
         }
 
-        private static Transform CreateThruster(string name, Transform parent, Vector2 position, Sprite flame,
-            out SpriteRenderer flameRenderer)
+        private static Transform CreateThruster(string name, Transform parent, Vector2 position,
+            Sprite thruster, Sprite flame, out SpriteRenderer flameRenderer)
         {
             Transform point = new GameObject(name).transform;
             point.SetParent(parent, false);
             point.localPosition = position;
 
+            Transform hardwareTransform = new GameObject("Compact Thruster Hardware").transform;
+            hardwareTransform.SetParent(point, false);
+            SpriteRenderer hardwareRenderer = hardwareTransform.gameObject.AddComponent<SpriteRenderer>();
+            hardwareRenderer.sprite = thruster;
+            hardwareRenderer.sortingOrder = 12;
+            float hardwareScale = VehicleDefinition.SpriteWidthScale(thruster, .70f);
+            hardwareTransform.localScale = Vector3.one * hardwareScale;
+
             Transform flameTransform = new GameObject("White-Cyan Flame").transform;
             flameTransform.SetParent(point, false);
-            flameTransform.localPosition = new Vector3(0f, -.58f, 0f);
+            flameTransform.localPosition = new Vector3(0f, -.44f, 0f);
             flameRenderer = flameTransform.gameObject.AddComponent<SpriteRenderer>();
             flameRenderer.sprite = flame;
             flameRenderer.sortingOrder = 9;
-            float flameScale = VehicleDefinition.SpriteWidthScale(flame, .34f);
+            float flameScale = VehicleDefinition.SpriteWidthScale(flame, .28f);
             flameTransform.localScale = new Vector3(flameScale, flameScale * 2.0f, 1f);
             flameRenderer.enabled = false;
             return point;
@@ -370,10 +387,40 @@ namespace AnimeHillRacing.Editor
             if (prefab == null || prefab.GetComponent<AerialThrusterController>() == null ||
                 prefab.GetComponentsInChildren<Suspension2DController>(true).Length != 2)
                 throw new InvalidOperationException("Aerial Satelite 2D prefab is incomplete.");
+            Transform thrusterRig = prefab.transform.Find("Aerial Thruster Rig");
+            Transform leftThruster = thrusterRig != null ? thrusterRig.Find("Left Thruster Point") : null;
+            Transform rightThruster = thrusterRig != null ? thrusterRig.Find("Right Thruster Point") : null;
+            if (!definition.flipBodyX || leftThruster == null || rightThruster == null ||
+                leftThruster.localPosition.x > -.95f || rightThruster.localPosition.x < .95f ||
+                Mathf.Abs(leftThruster.localPosition.y + .38f) > .01f ||
+                Mathf.Abs(rightThruster.localPosition.y + .38f) > .01f ||
+                definition.underbodyAttachmentSprite == null ||
+                definition.underbodyAttachmentPositions == null ||
+                definition.underbodyAttachmentPositions.Length != 2 ||
+                definition.underbodyAttachmentVisualWidth < .68f)
+                throw new InvalidOperationException(
+                    "Aerial Satelite must face right with two medium, separated thrusters between its wheels.");
             GameCatalog catalog = AssetDatabase.LoadAssetAtPath<GameCatalog>(Root + "/VehicleData/GameCatalog.asset");
             if (catalog?.upgradeEconomy == null ||
                 catalog.upgradeEconomy.FinalCost(VehicleArchetype.AerialSatelite) != 120000)
                 throw new InvalidOperationException("Aerial Satelite maximum upgrade price must be exactly 120000.");
+
+            int catalogEntries = 0;
+            int aerialIndex = -1;
+            VehicleDefinition[] catalogVehicles = catalog.vehicles ?? Array.Empty<VehicleDefinition>();
+            for (int i = 0; i < catalogVehicles.Length; i++)
+            {
+                VehicleDefinition vehicle = catalogVehicles[i];
+                if (vehicle == null || vehicle.vehicleId != definition.vehicleId) continue;
+                catalogEntries++;
+                aerialIndex = i;
+            }
+            if (catalogEntries != 1)
+                throw new InvalidOperationException(
+                    "Aerial Satelite must appear exactly once in GameCatalog for Garage and PreStart selection.");
+
+            Debug.Log($"AERIAL_CATALOG_OK|index={aerialIndex}|vehicles={catalogVehicles.Length}|garage=visible|prestart=visible");
+            Debug.Log($"AERIAL_VISUAL_LAYOUT_OK|faces=right|thrusters={leftThruster.localPosition.x:F2},{rightThruster.localPosition.x:F2}|height={leftThruster.localPosition.y:F2}|size=medium|preview=visible");
         }
 
         private static float[] Values(float start, float end, int count, float exponent)

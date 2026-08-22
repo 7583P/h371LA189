@@ -113,14 +113,17 @@ MonoBehaviour:
       scale: {x: 1, y: 1}
       visible: 1
       sortingOrder: 6
-  visualWidth: 5.55
+  visualWidth: 4.85
   flipBodyX: 0
-  bodyVisualOffset: {x: 0, y: 0.25}
-  rearWheelVisualPosition: {x: -1.88, y: -0.6}
-  frontWheelVisualPosition: {x: 1.88, y: -0.6}
-  wheelVisualDiameter: 1.2
+  bodyVisualOffset: {x: 0, y: 0.2}
+  rearWheelVisualPosition: {x: -1.8, y: -0.53}
+  frontWheelVisualPosition: {x: 1.8, y: -0.53}
+  wheelVisualDiameter: 1.06
   rearWheelVisualDiameter: 0
   frontWheelVisualDiameter: 0
+  underbodyAttachmentSprite: {fileID: 0}
+  underbodyAttachmentPositions: []
+  underbodyAttachmentVisualWidth: 0
   engineMaxTunes: 20
   accelerationMaxTunes: 15
   suspensionMaxTunes: 15
@@ -133,8 +136,8 @@ MonoBehaviour:
   detachableRoofSprite: {fileID: 0}
   mass: 760
   wheelMass: 36
-  wheelRadius: 0.6
-  halfWheelbase: 1.88
+  wheelRadius: 0.53
+  halfWheelbase: 1.8
   halfTrack: 0.88
   topSpeedMps: 61.111115
   brakeForce: 15500

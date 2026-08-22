@@ -19,11 +19,9 @@ namespace AnimeHillRacing.Vehicle
         [SerializeField] private Transform rightThrusterPoint;
         [SerializeField] private AerialThrusterVfx thrusterVfx;
 
-        [Header("Acceleration produced by the pair")]
-        [SerializeField, Min(0f)] private float singlePedalVerticalAcceleration = 15f;
-        [SerializeField, Min(0f)] private float dualPedalVerticalAcceleration = 13.8f;
-        [SerializeField, Min(0f)] private float singlePedalForwardAcceleration = 2.8f;
-        [SerializeField, Min(0f)] private float dualPedalForwardAcceleration = 3.8f;
+        [Header("Acceleration produced by the pair at maximum tune")]
+        [SerializeField, Min(9.82f)] private float maximumPairVerticalAcceleration = 22f;
+        [SerializeField, Range(.1f, 1f)] private float initialTuneAuthority = .50f;
         [SerializeField, Range(.05f, .3f)] private float ignitionFadeSeconds = .15f;
         [SerializeField, Range(.05f, .3f)] private float airborneConfirmationSeconds = .14f;
         [SerializeField, Range(.05f, .35f)] private float landingConfirmationSeconds = .18f;
@@ -42,7 +40,9 @@ namespace AnimeHillRacing.Vehicle
         private float bothGroundedTimer;
 
         public AerialFlightState State { get; private set; } = AerialFlightState.Grounded;
-        public float CurrentPower { get; private set; }
+        public float CurrentLeftPower { get; private set; }
+        public float CurrentRightPower { get; private set; }
+        public float CurrentPower => Mathf.Max(CurrentLeftPower, CurrentRightPower);
         public bool ThrustersActive => CurrentPower > .01f && fuel != null && fuel.FuelNormalized > 0f;
         public bool OverridesGroundDrive => State != AerialFlightState.Grounded;
 
@@ -54,9 +54,9 @@ namespace AnimeHillRacing.Vehicle
             body = owner != null ? owner.Body2D : GetComponent<Rigidbody2D>();
             fuel = fuelSystem != null ? fuelSystem : GetComponent<FuelSystem>();
             State = AerialFlightState.Grounded;
-            airborneTimer = bothGroundedTimer = CurrentPower = 0f;
+            airborneTimer = bothGroundedTimer = CurrentLeftPower = CurrentRightPower = 0f;
             fuel?.SetConsumptionMultiplier(1f);
-            thrusterVfx?.SetPower(0f);
+            thrusterVfx?.SetPower(0f, 0f, TuneProgress());
         }
 
         public void AssignVisuals(Transform leftPoint, Transform rightPoint, AerialThrusterVfx vfx)
@@ -98,61 +98,72 @@ namespace AnimeHillRacing.Vehicle
                     break;
             }
 
-            bool requested = driveEnabled && hasFuel && (State == AerialFlightState.Takeoff
-                ? dualPedals
-                : State == AerialFlightState.Flying || State == AerialFlightState.Landing
-                    ? gasPressed || brakePressed
-                    : false);
-            bool boosted = gasPressed && brakePressed;
-            float targetPower = requested ? (boosted ? 1f : .82f) : 0f;
-            float fade = targetPower > CurrentPower ? ignitionFadeSeconds : .09f;
-            CurrentPower = Mathf.MoveTowards(CurrentPower, targetPower, dt / Mathf.Max(.02f, fade));
+            bool flightControlsEnabled = State == AerialFlightState.Takeoff ||
+                                         State == AerialFlightState.Flying ||
+                                         State == AerialFlightState.Landing;
+            float targetLeft = driveEnabled && hasFuel && flightControlsEnabled && brakePressed ? 1f : 0f;
+            float targetRight = driveEnabled && hasFuel && flightControlsEnabled && gasPressed ? 1f : 0f;
+            CurrentLeftPower = MovePower(CurrentLeftPower, targetLeft, dt);
+            CurrentRightPower = MovePower(CurrentRightPower, targetRight, dt);
 
+            float tune = TuneProgress();
             fuel.SetConsumptionMultiplier(CurrentPower > .01f ? 2f : 1f);
-            thrusterVfx?.SetPower(CurrentPower);
+            thrusterVfx?.SetPower(CurrentLeftPower, CurrentRightPower, tune);
             if (CurrentPower > .001f && hasFuel)
-                ApplyThrustAndStabilization(boosted);
+                ApplyIndependentThrust(tune);
 
             return OverridesGroundDrive;
         }
 
-        private void ApplyThrustAndStabilization(bool boosted)
+        private float MovePower(float current, float target, float dt)
         {
-            float tune = vehicle.Definition != null
+            float fade = target > current ? ignitionFadeSeconds : .09f;
+            return Mathf.MoveTowards(current, target, dt / Mathf.Max(.02f, fade));
+        }
+
+        private float TuneProgress()
+        {
+            return vehicle != null && vehicle.Definition != null
                 ? VehicleDefinition.UpgradeProgress(vehicle.UpgradeState.turboTune,
                     vehicle.Definition.turboMaxTunes)
                 : 0f;
-            float tuneScale = Mathf.Lerp(.88f, 1.18f, tune);
-            float verticalAcceleration = (boosted ? dualPedalVerticalAcceleration :
-                singlePedalVerticalAcceleration) * tuneScale;
-            float forwardAcceleration = (boosted ? dualPedalForwardAcceleration :
-                singlePedalForwardAcceleration) * tuneScale;
+        }
+
+        private void ApplyIndependentThrust(float tune)
+        {
+            float tuneAuthority = Mathf.Lerp(initialTuneAuthority, 1f, tune);
             float riseAuthority = Mathf.Lerp(1f, minimumHighRiseAuthority,
                 Mathf.InverseLerp(verticalVelocityAttenuationRange.x,
                     verticalVelocityAttenuationRange.y, body.linearVelocity.y));
-            Vector2 force = ((Vector2)transform.up * verticalAcceleration * riseAuthority +
-                             (Vector2)transform.right * forwardAcceleration) * body.mass * CurrentPower * .5f;
+            Vector2 forcePerThruster = (Vector2)transform.up *
+                                       (maximumPairVerticalAcceleration * tuneAuthority * riseAuthority *
+                                        body.mass * .5f);
 
             Vector2 leftPosition = leftThrusterPoint != null ? leftThrusterPoint.position :
                 body.worldCenterOfMass + (Vector2)transform.right * -.55f;
             Vector2 rightPosition = rightThrusterPoint != null ? rightThrusterPoint.position :
                 body.worldCenterOfMass + (Vector2)transform.right * .55f;
-            body.AddForceAtPosition(force, leftPosition, ForceMode2D.Force);
-            body.AddForceAtPosition(force, rightPosition, ForceMode2D.Force);
+            if (CurrentLeftPower > .001f)
+                body.AddForceAtPosition(forcePerThruster * CurrentLeftPower, leftPosition, ForceMode2D.Force);
+            if (CurrentRightPower > .001f)
+                body.AddForceAtPosition(forcePerThruster * CurrentRightPower, rightPosition, ForceMode2D.Force);
 
+            // Stabilization is intentionally weak and only acts while both pedals are balanced. A single
+            // pedal therefore rotates the car in the air instead of being cancelled by the autopilot.
+            float balancedPower = Mathf.Min(CurrentLeftPower, CurrentRightPower);
             float angleRadians = Mathf.DeltaAngle(0f, body.rotation) * Mathf.Deg2Rad;
             float angularVelocityRadians = body.angularVelocity * Mathf.Deg2Rad;
             float correctiveTorque = -body.inertia *
                                      (angleRadians * uprightAngularAcceleration +
-                                      angularVelocityRadians * angularVelocityDamping) * CurrentPower;
+                                      angularVelocityRadians * angularVelocityDamping) * balancedPower * .32f;
             body.AddTorque(correctiveTorque, ForceMode2D.Force);
         }
 
         private void OnDisable()
         {
-            CurrentPower = 0f;
+            CurrentLeftPower = CurrentRightPower = 0f;
             fuel?.SetConsumptionMultiplier(1f);
-            thrusterVfx?.SetPower(0f);
+            thrusterVfx?.SetPower(0f, 0f, TuneProgress());
         }
 
 #if UNITY_EDITOR

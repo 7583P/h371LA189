@@ -151,6 +151,9 @@ MonoBehaviour:
   wheelVisualDiameter: 0.9
   rearWheelVisualDiameter: 0
   frontWheelVisualDiameter: 0
+  underbodyAttachmentSprite: {fileID: 0}
+  underbodyAttachmentPositions: []
+  underbodyAttachmentVisualWidth: 0
   engineMaxTunes: 14
   accelerationMaxTunes: 15
   suspensionMaxTunes: 12
@@ -182,6 +185,12 @@ MonoBehaviour:
   twoWheelAngularDamping: 0.34
   maximumPassiveAngularVelocity: 8
   accelerationForceCalibration: 0.4
+  adaptiveAllWheelDrive: 0
+  groundedWheelTorqueShare: 0.75
+  maxClimbAssist: 0
+  climbAssistStartAngle: 55
+  climbAssistFullAngle: 75
+  highSpeedDamping: 0
   centerOfMass: {x: 0.08, y: -0.06, z: 0}
   engine:
     idleRpm: 1100
@@ -336,6 +345,7 @@ MonoBehaviour:
     tractionRecoveryPerSecond: 3.2
     rollingResistance: 0.018
     aerodynamicDrag: 0.46
+    maximumPhysicsFriction: 2.4
   fuel:
     capacityUnits: 100
     minimumRunDurationSeconds: 15

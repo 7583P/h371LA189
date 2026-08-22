@@ -1868,6 +1868,7 @@ namespace AnimeHillRacing.Editor
         {
             MapProfile profile = assets.neonCity;
             MapProfile rainyer = AssetDatabase.LoadAssetAtPath<MapProfile>(Root + "/MapProfiles/Rainyer.asset");
+            MapProfile mountains = AssetDatabase.LoadAssetAtPath<MapProfile>(Root + "/MapProfiles/Mountains.asset");
             EnvironmentDefinition neonEnvironment = profile != null ? profile.environment : null;
             float lockedYLow = MountainBackground.CalculateVerticalPosition(neonEnvironment, -80f, 5f);
             float lockedYHigh = MountainBackground.CalculateVerticalPosition(neonEnvironment, 120f, 5f);
@@ -1876,16 +1877,18 @@ namespace AnimeHillRacing.Editor
                 Mathf.Abs((lockedYLow + 80f) - (lockedYHigh - 120f)) > .001f)
                 throw new System.InvalidOperationException(
                     "Neon City background must remain vertically locked to the camera with horizontal parallax enabled.");
-            if (assets.catalog.CountMaps(GameModeType.Adventure2_5D) != 6 ||
+            if (assets.catalog.CountMaps(GameModeType.Adventure2_5D) != 7 ||
                 assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 0)?.mapId != "countryside" ||
                 assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 1)?.mapId != "north-pole" ||
                 assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 2)?.mapId != "space" ||
                 assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 3)?.mapId != "neon-city" ||
                 assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 4)?.mapId != "city" ||
                 assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 5)?.mapId != "rainyer" ||
-                rainyer == null || assets.catalog.FindMap("rainyer", GameModeType.Adventure2_5D) != rainyer)
+                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 6)?.mapId != "mountains" ||
+                rainyer == null || assets.catalog.FindMap("rainyer", GameModeType.Adventure2_5D) != rainyer ||
+                mountains == null || assets.catalog.FindMap("mountains", GameModeType.Adventure2_5D) != mountains)
                 throw new System.InvalidOperationException(
-                    "Adventure track selector requires Countryside, North Pole, Space, Neon City, City and Rainyer profiles.");
+                    "Adventure track selector requires Countryside, North Pole, Space, Neon City, City, Rainyer and Mountains profiles.");
             if (profile == null || !profile.supportsLiquidExposure || profile.liquidChallenges == null ||
                 profile.liquidChallenges.cycleLength != 6000f ||
                 profile.liquidChallenges.challengesPerCycle != 8 ||
@@ -5849,11 +5852,14 @@ namespace AnimeHillRacing.Editor
             assets.catalog.maps = maps.ToArray();
             VehicleDefinition buggy = AssetDatabase.LoadAssetAtPath<VehicleDefinition>(
                 Root + "/VehicleData/BuggyVehicle.asset");
+            VehicleDefinition aerialSatelite = AssetDatabase.LoadAssetAtPath<VehicleDefinition>(
+                Root + "/VehicleData/AerialSateliteVehicle.asset");
             var vehicles = new System.Collections.Generic.List<VehicleDefinition>
             {
                 assets.jeep, assets.formula, assets.rally, assets.sportBike, assets.hillAdventurer
             };
             if (buggy != null) vehicles.Add(buggy);
+            if (aerialSatelite != null) vehicles.Add(aerialSatelite);
             assets.catalog.vehicles = vehicles.ToArray();
             assets.catalog.drivers = new[] { assets.stickmanBlack };
             assets.catalog.upgradeEconomy = assets.economy;

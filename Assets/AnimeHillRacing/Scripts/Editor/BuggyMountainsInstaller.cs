@@ -14,7 +14,7 @@ namespace AnimeHillRacing.Editor
 {
     public static class BuggyMountainsInstaller
     {
-        private const string SessionKey = "AHR.BuggyMountainsInstaller.v2";
+        private const string SessionKey = "AHR.BuggyMountainsInstaller.v8";
         private const string Root = "Assets/AnimeHillRacing";
         private const string BuggyBodyPath = "Assets/Art/Vehicles/Buggy/Buggy_Body.png";
         private const string BuggyWheelPath = "Assets/Art/Vehicles/Buggy/Buggy_Wheel.png";
@@ -114,8 +114,8 @@ namespace AnimeHillRacing.Editor
 
             v.mass = 760f;
             v.wheelMass = 36f;
-            v.wheelRadius = .60f;
-            v.halfWheelbase = 1.88f;
+            v.wheelRadius = .53f;
+            v.halfWheelbase = 1.80f;
             v.halfTrack = .88f;
             v.topSpeedMps = 220f / 3.6f;
             v.brakeForce = 15500f;
@@ -196,11 +196,11 @@ namespace AnimeHillRacing.Editor
             v.fuel.maximumRunDurationSeconds = 60f;
             v.fuel.referenceRunDurationSeconds = 60f;
 
-            v.visualWidth = 5.55f;
-            v.bodyVisualOffset = new Vector2(0f, .25f);
-            v.rearWheelVisualPosition = new Vector2(-1.88f, -.60f);
-            v.frontWheelVisualPosition = new Vector2(1.88f, -.60f);
-            v.wheelVisualDiameter = 1.20f;
+            v.visualWidth = 4.85f;
+            v.bodyVisualOffset = new Vector2(0f, .20f);
+            v.rearWheelVisualPosition = new Vector2(-1.80f, -.53f);
+            v.frontWheelVisualPosition = new Vector2(1.80f, -.53f);
+            v.wheelVisualDiameter = 1.06f;
             v.rearWheelVisualDiameter = 0f;
             v.frontWheelVisualDiameter = 0f;
             v.flipBodyX = false;
@@ -298,8 +298,8 @@ namespace AnimeHillRacing.Editor
                 if (chassis != null)
                 {
                     chassis.direction = CapsuleDirection2D.Horizontal;
-                    chassis.offset = new Vector2(0f, .18f);
-                    chassis.size = new Vector2(4.05f, .72f);
+                    chassis.offset = new Vector2(0f, .17f);
+                    chassis.size = new Vector2(3.58f, .63f);
                 }
                 Rigidbody2D rigidbody = root.GetComponent<Rigidbody2D>();
                 if (rigidbody != null) rigidbody.mass = definition.mass;
@@ -335,9 +335,9 @@ namespace AnimeHillRacing.Editor
                 if (chassis != null)
                 {
                     chassis.direction = 2;
-                    chassis.center = new Vector3(0f, .38f, 0f);
-                    chassis.radius = .58f;
-                    chassis.height = 4.10f;
+                    chassis.center = new Vector3(0f, .33f, 0f);
+                    chassis.radius = .51f;
+                    chassis.height = 3.62f;
                 }
                 return PrefabUtility.SaveAsPrefabAsset(root, Buggy3DPrefabPath);
             }
@@ -369,7 +369,8 @@ namespace AnimeHillRacing.Editor
             environment.lockVerticalToCamera = true;
             environment.lockFarMountainsVerticalToCamera = true;
             environment.lockNearMountainsVerticalToCamera = true;
-            environment.coverViewportVertically = false;
+            environment.coverViewportVertically = true;
+            environment.coverViewportVerticalOffset = 5f;
             environment.farMountainParallaxX = .08f;
             environment.mountainParallaxX = .12f;
             environment.nearMountainParallaxX = .36f;
@@ -377,10 +378,10 @@ namespace AnimeHillRacing.Editor
             environment.mountainParallaxY = .032f;
             environment.nearMountainParallaxY = .05f;
             environment.farMountainVisualHeight = 17.5f;
-            environment.mountainVisualHeight = 18f;
+            environment.mountainVisualHeight = 24.5f;
             environment.nearMountainVisualHeight = 19.5f;
             environment.farMountainBaseY = -3.3f;
-            environment.mountainBaseY = -1.2f;
+            environment.mountainBaseY = 0f;
             environment.nearMountainBaseY = -4.3f;
             environment.pooledFarMountainSegments = 5;
             environment.pooledMountainSegments = 5;
@@ -486,7 +487,10 @@ namespace AnimeHillRacing.Editor
             ResolvedVehicleStats stats = buggy.Resolve(max);
             if (Mathf.Abs(stats.topSpeedMps * 3.6f - 220f) > .1f ||
                 Mathf.Abs(stats.zeroToHundredTargetSeconds - 4f) > .01f ||
-                Mathf.Abs(stats.totalRunFuelDuration - 60f) > .01f || stats.suspensionTravel < .49f)
+                Mathf.Abs(stats.totalRunFuelDuration - 60f) > .01f || stats.suspensionTravel < .49f ||
+                Mathf.Abs(buggy.visualWidth - 4.85f) > .001f ||
+                Mathf.Abs(buggy.wheelRadius - .53f) > .001f ||
+                Mathf.Abs(buggy.wheelVisualDiameter - 1.06f) > .001f)
                 throw new InvalidOperationException("Buggy resolved statistics do not match the authored contract.");
 
             float[] maxima = new float[5];
@@ -516,10 +520,68 @@ namespace AnimeHillRacing.Editor
                 mountains.mountains == null ||
                 Mathf.Abs(mountains.mountains.peakDifficultyDistance - 10000f) > .01f)
                 throw new InvalidOperationException($"Mountains slope audit failed: {string.Join(",", maxima)}");
+            ValidateMountainsBackdrop(mountains.environment);
+            ValidateCatalogTrackOrder();
             Debug.Log($"BUGGY_STATS_OK|vmax={stats.topSpeedMps * 3.6f:F1}|zero100={stats.zeroToHundredTargetSeconds:F2}" +
-                      $"|fuel={stats.totalRunFuelDuration:F1}|travel={stats.suspensionTravel:F2}|grip={stats.gripRating}");
+                      $"|fuel={stats.totalRunFuelDuration:F1}|travel={stats.suspensionTravel:F2}|grip={stats.gripRating}|width={buggy.visualWidth:F2}");
             Debug.Log($"MOUNTAINS_SLOPE_AUDIT_OK|0-500={maxima[0]:F1}|500-2500={maxima[1]:F1}" +
                       $"|2500-5000={maxima[2]:F1}|5000-10000={maxima[3]:F1}|10000+={maxima[4]:F1}");
+        }
+
+        private static void ValidateMountainsBackdrop(EnvironmentDefinition environment)
+        {
+            if (environment == null || environment.mountains == null || !environment.coverViewportVertically ||
+                environment.coverViewportVerticalOffset < 4f)
+                throw new InvalidOperationException("Mountains horizon is not configured to remain visible.");
+            if (AssetDatabase.GetAssetPath(environment.mountains) != MountainsAnimeHorizonPath)
+                throw new InvalidOperationException("Mountains is not using the generated anime horizon panorama.");
+            Texture2D horizonTexture = environment.mountains.texture;
+            if (horizonTexture == null || horizonTexture.width < 1500 ||
+                horizonTexture.width / (float)Mathf.Max(1, horizonTexture.height) < 1.8f)
+                throw new InvalidOperationException("Mountains anime horizon must be a wide production panorama.");
+
+            GameObject root = new GameObject("Mountains Backdrop Validation");
+            try
+            {
+                Camera camera = new GameObject("Validation Camera").AddComponent<Camera>();
+                camera.transform.SetParent(root.transform, false);
+                camera.orthographic = true;
+                camera.orthographicSize = 11.5f;
+                SpriteRenderer sky = new GameObject("Validation Sky").AddComponent<SpriteRenderer>();
+                sky.transform.SetParent(root.transform, false);
+                MountainBackground background = root.AddComponent<MountainBackground>();
+                background.Assign(camera, environment, sky, Array.Empty<SpriteRenderer>());
+                background.ApplyEnvironment(environment);
+                int pooledMountains = 0;
+                SpriteRenderer[] renderers = root.GetComponentsInChildren<SpriteRenderer>(true);
+                for (int i = 0; i < renderers.Length; i++)
+                    if (renderers[i] != null && renderers[i].name.StartsWith("Mountain Segment"))
+                        pooledMountains++;
+                if (pooledMountains < environment.pooledMountainSegments)
+                    throw new InvalidOperationException(
+                        $"Mountains background pool has {pooledMountains} segments, expected {environment.pooledMountainSegments}.");
+                Debug.Log($"MOUNTAINS_BACKGROUND_OK|asset={MountainsAnimeHorizonPath}|size={horizonTexture.width}x{horizonTexture.height}|parallax={environment.mountainParallaxX:F2}");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        private static void ValidateCatalogTrackOrder()
+        {
+            GameCatalog catalog = AssetDatabase.LoadAssetAtPath<GameCatalog>(Root + "/VehicleData/GameCatalog.asset");
+            string[] expected =
+            {
+                "countryside", "north-pole", "space", "neon-city", "city", "rainyer", "mountains"
+            };
+            if (catalog == null || catalog.CountMaps(GameModeType.Adventure2_5D) != expected.Length)
+                throw new InvalidOperationException("Adventure catalog does not contain all seven tracks.");
+            for (int i = 0; i < expected.Length; i++)
+                if (catalog.GetCompatibleMap(GameModeType.Adventure2_5D, i)?.mapId != expected[i])
+                    throw new InvalidOperationException(
+                        $"Adventure track {i} is not {expected[i]} in the selector catalog.");
+            Debug.Log("ADVENTURE_TRACK_SELECTOR_OK|countryside|north-pole|space|neon-city|city|rainyer|mountains");
         }
 
         private static Material LoadOrCreateMaterial(string path, Texture texture, Color color)

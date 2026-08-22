@@ -209,6 +209,7 @@ MonoBehaviour:
     tireMass: 17
     tireFriction: 0.82
     tireBounciness: 0.035
+    tireSurfaceClearance: 0.14
     platformSprite: {fileID: 0}
     easyPlatformWidth: 13
     hardPlatformWidth: 8.5
@@ -217,6 +218,8 @@ MonoBehaviour:
     platformAngularDamping: 3.2
     platformWeightTorque: 2.2
     platformCenteringTorque: 1.1
+    platformTakeoffDrop: 0.65
+    platformLandingClearance: 1.1
     lavaSprite: {fileID: 0}
     minimumLavaLength: 10
     maximumLavaLength: 24
@@ -225,6 +228,24 @@ MonoBehaviour:
     lavaMaximumSpeed: 6.5
     lavaEntrySeconds: 0.18
     lavaRecoverySeconds: 0.85
+    lavaBankInset: 0.35
+    lavaTriggerHeightAboveSurface: 1.25
+    pickupObstacleClearance: 4
+  useMountainsTerrain: 0
+  mountains:
+    peakDifficultyDistance: 10000
+    miniBumpMinimumWavelength: 7
+    miniBumpMaximumWavelength: 18
+    initialMiniBumpHeight: 0.22
+    maximumMiniBumpHeight: 1.15
+    easySlopeRange: {x: 20, y: 45}
+    mediumSlopeRange: {x: 40, y: 60}
+    hardSlopeRange: {x: 55, y: 70}
+    extremeSlopeRange: {x: 65, y: 75}
+    exceptionalSlope: 79.5
+    exceptionalEveryCells: 7
+    crestWidthFraction: 0.035
+    recoveryWidthFraction: 0.07
   rainstorm:
     permanentRain: 0
     maximumParticles: 520

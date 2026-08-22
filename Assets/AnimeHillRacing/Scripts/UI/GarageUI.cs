@@ -681,7 +681,7 @@ namespace AnimeHillRacing.UI
                 case VehicleUpgradeType.Grip: return $"GRIP  {stats.gripRating} / {VehicleDefinition.GlobalGripMaximum}";
                 case VehicleUpgradeType.Downforce: return $"{stats.airborneDownforceAcceleration:0.0} m/s²";
                 case VehicleUpgradeType.Turbo: return vehicle.archetype == VehicleArchetype.AerialSatelite
-                    ? $"THRUST  {Mathf.Lerp(88f, 118f, VehicleDefinition.UpgradeProgress(state.turboTune, vehicle.turboMaxTunes)):0}%"
+                    ? $"THRUST  {Mathf.Lerp(50f, 100f, VehicleDefinition.UpgradeProgress(state.turboTune, vehicle.turboMaxTunes)):0}%"
                     : $"0-100  {stats.zeroToHundredTargetSeconds:0.00}s";
                 default: return $"RUN TIME  {stats.totalRunFuelDuration:0.0}s";
             }

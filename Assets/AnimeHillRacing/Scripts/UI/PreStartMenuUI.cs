@@ -831,9 +831,9 @@ namespace AnimeHillRacing.UI
                 case VehicleUpgradeType.Turbo:
                     if (vehicle.archetype == VehicleArchetype.AerialSatelite)
                     {
-                        float currentThrust = Mathf.Lerp(88f, 118f,
+                        float currentThrust = Mathf.Lerp(50f, 100f,
                             VehicleDefinition.UpgradeProgress(current.turboTune, vehicle.turboMaxTunes));
-                        float nextThrust = Mathf.Lerp(88f, 118f,
+                        float nextThrust = Mathf.Lerp(50f, 100f,
                             VehicleDefinition.UpgradeProgress(next.turboTune, vehicle.turboMaxTunes));
                         return atMax ? $"THRUST  {currentThrust:0}%   MAX"
                             : $"THRUST  {currentThrust:0}%{arrow}{nextThrust:0}%";

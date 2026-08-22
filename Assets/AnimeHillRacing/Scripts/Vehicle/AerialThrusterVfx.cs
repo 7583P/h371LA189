@@ -18,7 +18,7 @@ namespace AnimeHillRacing.Vehicle
             leftFlame = left;
             rightFlame = right;
             CacheScales();
-            SetPower(0f);
+            SetPower(0f, 0f, 0f);
         }
 
         private void Awake() => CacheScales();
@@ -29,25 +29,31 @@ namespace AnimeHillRacing.Vehicle
             if (rightFlame != null) rightBaseScale = rightFlame.transform.localScale;
         }
 
-        public void SetPower(float normalizedPower)
+        public void SetPower(float leftPower, float rightPower, float tuneProgress)
         {
-            power = Mathf.Clamp01(normalizedPower);
-            Apply(leftFlame, leftBaseScale, 0f);
-            Apply(rightFlame, rightBaseScale, 1.7f);
+            float tune = Mathf.Clamp01(tuneProgress);
+            power = Mathf.Max(Mathf.Clamp01(leftPower), Mathf.Clamp01(rightPower));
+            Apply(leftFlame, leftBaseScale, Mathf.Clamp01(leftPower), tune, 0f);
+            Apply(rightFlame, rightBaseScale, Mathf.Clamp01(rightPower), tune, 1.7f);
         }
 
-        private void Apply(SpriteRenderer renderer, Vector3 baseScale, float phase)
+        private void Apply(SpriteRenderer renderer, Vector3 baseScale, float thrusterPower,
+            float tune, float phase)
         {
             if (renderer == null) return;
-            bool visible = power > .008f;
+            bool visible = thrusterPower > .008f;
             renderer.enabled = visible;
             if (!visible) return;
 
-            float pulse = 1f + Mathf.Sin(Time.unscaledTime * 19f + phase) * subtlePulse * power;
-            renderer.transform.localScale = new Vector3(baseScale.x * (.78f + .22f * power),
-                baseScale.y * (.18f + .82f * power) * pulse, baseScale.z);
-            Color color = flameColor;
-            color.a = Mathf.SmoothStep(0f, 1f, power);
+            float pulse = 1f + Mathf.Sin(Time.unscaledTime * 19f + phase) * subtlePulse * thrusterPower;
+            float tuneWidth = Mathf.Lerp(.72f, 1.25f, tune);
+            float tuneLength = Mathf.Lerp(.68f, 1.55f, tune);
+            renderer.transform.localScale = new Vector3(
+                baseScale.x * tuneWidth * (.74f + .26f * thrusterPower),
+                baseScale.y * tuneLength * (.22f + .78f * thrusterPower) * pulse,
+                baseScale.z);
+            Color color = Color.Lerp(new Color(.64f, .88f, 1f, 1f), flameColor, tune);
+            color.a = Mathf.Lerp(.58f, 1f, tune) * Mathf.SmoothStep(0f, 1f, thrusterPower);
             renderer.color = color;
         }
     }

@@ -25,6 +25,7 @@ namespace AnimeHillRacing.UI
         private Vector2 lastTargetSize;
         private bool animateElectricSkin;
         private bool animateHillAdventurerSkin;
+        private SpriteRenderer[] underbodyAttachments = new SpriteRenderer[0];
 
         public SpriteRenderer BodyRenderer => body;
         public SpriteRenderer RearWheelRenderer => rearWheel;
@@ -170,6 +171,7 @@ namespace AnimeHillRacing.UI
                 wheelSortingOrder);
             ApplyWheel(frontWheel, wheelOption, vehicle.frontWheelVisualPosition, vehicle.FrontWheelDiameter,
                 wheelSortingOrder);
+            ApplyUnderbodyAttachments(vehicle);
             warmUpFrames = 3;
             RenderNow();
         }
@@ -204,6 +206,48 @@ namespace AnimeHillRacing.UI
             renderer.sortingOrder = sortingOrder;
             renderer.transform.localScale = Vector3.one *
                                             appliedVehicle.WheelCustomizationScale(option, diameter);
+        }
+
+        private void ApplyUnderbodyAttachments(VehicleDefinition vehicle)
+        {
+            Vector2[] positions = vehicle.underbodyAttachmentPositions;
+            int required = vehicle.underbodyAttachmentSprite != null && positions != null &&
+                           vehicle.underbodyAttachmentVisualWidth > 0f
+                ? positions.Length : 0;
+            EnsureUnderbodyAttachmentPool(required);
+            for (int i = 0; i < underbodyAttachments.Length; i++)
+            {
+                SpriteRenderer renderer = underbodyAttachments[i];
+                if (renderer == null) continue;
+                bool active = i < required;
+                renderer.gameObject.SetActive(active);
+                if (!active) continue;
+                renderer.sprite = vehicle.underbodyAttachmentSprite;
+                renderer.sortingOrder = 12;
+                renderer.flipX = false;
+                renderer.transform.localPosition = new Vector3(positions[i].x, positions[i].y, -.03f);
+                float scale = VehicleDefinition.SpriteWidthScale(vehicle.underbodyAttachmentSprite,
+                    vehicle.underbodyAttachmentVisualWidth);
+                renderer.transform.localScale = Vector3.one * scale;
+                if (body != null) renderer.sharedMaterial = body.sharedMaterial;
+            }
+        }
+
+        private void EnsureUnderbodyAttachmentPool(int required)
+        {
+            if (underbodyAttachments.Length >= required) return;
+            var expanded = new SpriteRenderer[required];
+            for (int i = 0; i < underbodyAttachments.Length; i++) expanded[i] = underbodyAttachments[i];
+            Transform parent = previewRoot != null ? previewRoot : transform;
+            for (int i = underbodyAttachments.Length; i < required; i++)
+            {
+                GameObject attachment = new GameObject($"Preview Underbody Attachment {i + 1}");
+                attachment.hideFlags = HideFlags.DontSave;
+                attachment.layer = parent.gameObject.layer;
+                attachment.transform.SetParent(parent, false);
+                expanded[i] = attachment.AddComponent<SpriteRenderer>();
+            }
+            underbodyAttachments = expanded;
         }
     }
 }

@@ -108,6 +108,12 @@ namespace AnimeHillRacing.Vehicle
         [Min(0f)] public float rearWheelVisualDiameter;
         [Min(0f)] public float frontWheelVisualDiameter;
 
+        [Header("Optional Underbody Attachments")]
+        [Tooltip("Accessory rendered over the body in Garage, Main Menu and PreStart previews.")]
+        public Sprite underbodyAttachmentSprite;
+        public Vector2[] underbodyAttachmentPositions = Array.Empty<Vector2>();
+        [Min(0f)] public float underbodyAttachmentVisualWidth;
+
         [Header("Per-Vehicle Tune Limits")]
         [Min(0)] public int engineMaxTunes = 14;
         [Min(0)] public int accelerationMaxTunes = 15;

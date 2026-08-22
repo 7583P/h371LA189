@@ -15,6 +15,8 @@ MonoBehaviour:
   environmentId: countryside
   sky: {fileID: 21300000, guid: ced41b0fef1084b42969721c68956cb6, type: 3}
   mountains: {fileID: 21300000, guid: a6116bcf8435eb24fb79d4b5b5310f68, type: 3}
+  overrideCameraBackground: 0
+  cameraBackgroundColor: {r: 0.005, g: 0.004, b: 0.012, a: 1}
   clouds: []
   cloudParallaxX: 0.09
   cloudSpacing: 18
@@ -31,6 +33,7 @@ MonoBehaviour:
   useRelativeParallaxSpeeds: 0
   lockVerticalToCamera: 1
   coverViewportVertically: 0
+  coverViewportVerticalOffset: 0
   mountainVisualHeight: 19
   mountainBaseY: 1
   pooledMountainSegments: 5
@@ -45,3 +48,14 @@ MonoBehaviour:
   pooledNearMountainSegments: 5
   nearMountainSeamOverlap: 0.01
   mirrorAlternatingNearMountainTiles: 1
+  sun: {fileID: 0}
+  earth: {fileID: 0}
+  sunCameraOffset: {x: -1, y: 3.5}
+  earthCameraOffset: {x: 7, y: 2.2}
+  sunRelativeParallax: 0.003
+  earthRelativeParallax: 0.009
+  sunVisualWidth: 6.5
+  earthVisualWidth: 5.2
+  celestialRepeatSpan: 72
+  starTwinkleSpeed: 2.15
+  starTwinkleAmount: 0.26

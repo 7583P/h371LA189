@@ -1,4 +1,5 @@
 using AnimeHillRacing.Pickups;
+using AnimeHillRacing.Terrain;
 using UnityEngine;
 
 namespace AnimeHillRacing.Vehicle
@@ -8,9 +9,15 @@ namespace AnimeHillRacing.Vehicle
         [SerializeField] private ArticulatedDriver2D driver;
         [SerializeField] private Rigidbody vehicleBody;
         [SerializeField] private Rigidbody2D vehicleBody2D;
+        [SerializeField, Range(-.25f, .65f)] private float fatalSurfaceUpDot = .35f;
         private CrashDetector crashDetector;
         private RallyRoofDamage rallyRoofDamage;
+        private Collider headCollider;
+        private Collider2D headCollider2D;
         private float nextAllowedImpact;
+        private bool crashTriggered;
+        private readonly Collider[] overlapResults3D = new Collider[12];
+        private readonly Collider2D[] overlapResults2D = new Collider2D[12];
 
         private void Awake()
         {
@@ -22,8 +29,16 @@ namespace AnimeHillRacing.Vehicle
             if (vehicleBody == null) vehicleBody = GetComponentInParent<Rigidbody>();
             if (vehicleBody2D == null) vehicleBody2D = GetComponentInParent<Rigidbody2D>();
             if (crashDetector == null) crashDetector = GetComponentInParent<CrashDetector>() ?? FindFirstObjectByType<CrashDetector>();
-            if (rallyRoofDamage == null) rallyRoofDamage = GetComponentInParent<RallyRoofDamage>();
+            if (rallyRoofDamage == null)
+            {
+                rallyRoofDamage = GetComponentInParent<RallyRoofDamage>();
+                VehicleRuntimeBase owner = GetComponentInParent<VehicleRuntimeBase>();
+                if (rallyRoofDamage == null && owner != null)
+                    rallyRoofDamage = owner.GetComponentInChildren<RallyRoofDamage>(true);
+            }
             if (driver == null) driver = GetComponentInParent<ArticulatedDriver2D>();
+            if (headCollider == null) headCollider = GetComponent<Collider>();
+            if (headCollider2D == null) headCollider2D = GetComponent<Collider2D>();
         }
 
         public void Assign(ArticulatedDriver2D owner, Rigidbody body, Rigidbody2D body2D = null)
@@ -39,6 +54,44 @@ namespace AnimeHillRacing.Vehicle
         private void OnTriggerEnter2D(Collider2D other) => ProcessImpact2D(other);
         private void OnTriggerStay2D(Collider2D other) => ProcessImpact2D(other);
 
+        private void FixedUpdate()
+        {
+            if (crashTriggered || Time.time < nextAllowedImpact) return;
+            EnsureReferences();
+
+            // Trigger callbacks can be skipped when a fast rotating head begins a physics step already
+            // overlapping a thin EdgeCollider2D. Query the head volume as a fallback so a resting or
+            // tunnelling head/terrain overlap is still recognized on the following physics step.
+            if (vehicleBody2D != null && headCollider2D != null && headCollider2D.enabled)
+            {
+                ContactFilter2D filter = new ContactFilter2D { useTriggers = false };
+                int count = headCollider2D.Overlap(filter, overlapResults2D);
+                for (int i = 0; i < count; i++)
+                {
+                    Collider2D other = overlapResults2D[i];
+                    if (!GroundContactFilter.IsGround2D(other, vehicleBody2D.transform)) continue;
+                    ProcessImpact2D(other);
+                    break;
+                }
+                return;
+            }
+
+            if (vehicleBody != null && headCollider != null && headCollider.enabled)
+            {
+                Bounds bounds = headCollider.bounds;
+                float radius = Mathf.Max(bounds.extents.x, bounds.extents.y, bounds.extents.z);
+                int count = Physics.OverlapSphereNonAlloc(bounds.center, radius, overlapResults3D,
+                    ~0, QueryTriggerInteraction.Ignore);
+                for (int i = 0; i < count; i++)
+                {
+                    Collider other = overlapResults3D[i];
+                    if (!GroundContactFilter.IsGround(other, vehicleBody.transform)) continue;
+                    ProcessImpact3D(other);
+                    break;
+                }
+            }
+        }
+
         private void ProcessImpact3D(Collider other)
         {
             EnsureReferences();
@@ -49,17 +102,8 @@ namespace AnimeHillRacing.Vehicle
             float speed = vehicleBody != null ? vehicleBody.GetPointVelocity(transform.position).magnitude : 3f;
             driver?.TriggerHeadImpact(speed);
 
-            // Always check real chassis upright orientation (NOT the floppy animated head sprite)
-            Transform chassisTransform = vehicleBody != null ? vehicleBody.transform : transform.root;
-            Vector3 chassisUp = chassisTransform.up;
-            float uprightDot = Vector3.Dot(chassisUp, Vector3.up);
-
-            // If the vehicle is upright on its wheels (climbing slopes, driving over hills without rolling over),
-            // touching or grazing the terrain slope behind the seat is NEVER a fatal crash.
-            if (uprightDot > -0.05f)
-            {
-                return; // Vehicle is upright on its wheels!
-            }
+            float surfaceUpDot = SurfaceRelativeUpDot();
+            if (surfaceUpDot > fatalSurfaceUpDot) return;
 
             // If this is a Rally vehicle and the roof is intact, the roof protects the driver.
             if (rallyRoofDamage != null && !rallyRoofDamage.RoofDetached)
@@ -67,7 +111,7 @@ namespace AnimeHillRacing.Vehicle
                 return; // Intact roof protects driver!
             }
 
-            Debug.Log($"[DriverHeadImpact] Overturned fatal head impact! Hit: {other.name} | ChassisUprightDot: {uprightDot:0.00} | Speed: {speed:0.0}m/s", this);
+            Debug.Log($"[DriverHeadImpact] Fatal head impact! Hit: {other.name} | SurfaceUpDot: {surfaceUpDot:0.00} | Speed: {speed:0.0}m/s", this);
             TriggerDriverDown();
         }
 
@@ -81,31 +125,40 @@ namespace AnimeHillRacing.Vehicle
             float speed = vehicleBody2D != null ? vehicleBody2D.GetPointVelocity(transform.position).magnitude : 3f;
             driver?.TriggerHeadImpact(speed);
 
-            Transform chassisTransform = vehicleBody2D != null ? vehicleBody2D.transform : transform.root;
-            Vector2 chassisUp2D = (Vector2)chassisTransform.up;
-            float uprightDot = Vector2.Dot(chassisUp2D, Vector2.up);
-
-            if (uprightDot > -0.05f)
-            {
-                return; // Vehicle is upright on its wheels!
-            }
+            float surfaceUpDot = SurfaceRelativeUpDot();
+            if (surfaceUpDot > fatalSurfaceUpDot) return;
 
             if (rallyRoofDamage != null && !rallyRoofDamage.RoofDetached)
             {
                 return; // Intact roof protects driver!
             }
 
-            Debug.Log($"[DriverHeadImpact] 2D Overturned fatal head impact! Hit: {other.name} | ChassisUprightDot: {uprightDot:0.00} | Speed: {speed:0.0}m/s", this);
+            Debug.Log($"[DriverHeadImpact] 2D fatal head impact! Hit: {other.name} | SurfaceUpDot: {surfaceUpDot:0.00} | Speed: {speed:0.0}m/s", this);
             TriggerDriverDown();
+        }
+
+        private float SurfaceRelativeUpDot()
+        {
+            Transform chassisTransform = vehicleBody2D != null ? vehicleBody2D.transform
+                : vehicleBody != null ? vehicleBody.transform : transform.root;
+            Vector3 surfaceUp = Vector3.up;
+            TerrainManager terrain = TerrainManager.Instance;
+            if (terrain != null && terrain.TrySampleAuthoritativeSurface(transform.position.x,
+                    out _, out float slopeDegrees))
+                surfaceUp = Quaternion.Euler(0f, 0f, slopeDegrees) * Vector3.up;
+            return Vector3.Dot(chassisTransform.up.normalized, surfaceUp.normalized);
         }
 
         private void TriggerDriverDown()
         {
+            if (crashTriggered) return;
             // Head exposed (roof broken on Rally, or open-cockpit vehicle) -> lethal head impact
             if (crashDetector == null) crashDetector = GetComponentInParent<CrashDetector>();
             if (crashDetector == null) crashDetector = FindFirstObjectByType<CrashDetector>();
 
-            crashDetector?.NotifyDriverHeadGroundImpact();
+            if (crashDetector == null) return;
+            crashTriggered = true;
+            crashDetector.NotifyDriverHeadGroundImpact();
         }
     }
 

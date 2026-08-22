@@ -58,7 +58,13 @@ namespace AnimeHillRacing.Vehicle
                 ? ActiveDefinition.gameplayPrefab2D : ActiveDefinition.gameplayPrefab3D;
             if (prefab == null) { Debug.LogError($"{ActiveDefinition.displayName}: gameplay prefab missing."); enabled = false; return; }
 
-            GameObject instance = Instantiate(prefab, spawnPosition, Quaternion.Euler(spawnEulerAngles));
+            Vector3 resolvedSpawnPosition = spawnPosition;
+            if (mode == GameModeType.Adventure2_5D && terrainProfile != null)
+            {
+                float surfaceHeight = TerrainGenerator.SampleHeight(terrainProfile, spawnPosition.x);
+                resolvedSpawnPosition.y = Mathf.Max(spawnPosition.y, surfaceHeight + 2.8f);
+            }
+            GameObject instance = Instantiate(prefab, resolvedSpawnPosition, Quaternion.Euler(spawnEulerAngles));
             instance.name = ActiveDefinition.displayName + " - Active";
             SpawnedVehicle = instance.GetComponent<VehicleRuntimeBase>();
             if (SpawnedVehicle == null) { Debug.LogError("Selected vehicle prefab has no VehicleRuntimeBase."); return; }

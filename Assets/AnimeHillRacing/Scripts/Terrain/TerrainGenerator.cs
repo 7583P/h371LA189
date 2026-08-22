@@ -56,10 +56,59 @@ namespace AnimeHillRacing.Terrain
         public float liquidSurfaceY;
     }
 
+    public struct SpaceChallengeLayout
+    {
+        public int phase;
+        public float eventDistance;
+        public float approachStart;
+        public float rampStart;
+        public float gapStart;
+        public float gapEnd;
+        public float landingEnd;
+        public float recoveryEnd;
+        public float warningX;
+        public float baselineHeight;
+        public float gapLength;
+        public float blackHoleDiameter;
+    }
+
+    public struct ArenaSegmentLayout
+    {
+        public int index;
+        public ArenaSegmentType type;
+        public float start;
+        public float end;
+        public float difficulty;
+        public float variant;
+        public float gapStart;
+        public float gapEnd;
+        public float platformCenterX;
+        public float platformY;
+        public float platformWidth;
+        public float lavaStart;
+        public float lavaEnd;
+        public float tireStart;
+        public float tireSpacing;
+        public int tireCount;
+        public bool HasGap => gapEnd > gapStart;
+        public bool HasPlatform => platformWidth > 0f;
+        public bool HasLava => lavaEnd > lavaStart;
+        public bool HasTires => tireCount > 0;
+    }
+
     public static class TerrainGenerator
     {
         private const float TwoPi = Mathf.PI * 2f;
         public const int NeonTemplateSectionCount = 10;
+        private static readonly Dictionary<uint, List<ArenaSegmentType>> ArenaSegmentHistory =
+            new Dictionary<uint, List<ArenaSegmentType>>();
+        private static readonly ArenaSegmentType[] ArenaCandidateTypes =
+        {
+            ArenaSegmentType.Bumpy, ArenaSegmentType.Ramp, ArenaSegmentType.TireObstacle,
+            ArenaSegmentType.Lava, ArenaSegmentType.FloatingPlatform, ArenaSegmentType.LongJump,
+            ArenaSegmentType.TechnicalClimb, ArenaSegmentType.TechnicalDescent,
+            ArenaSegmentType.MixedObstacle, ArenaSegmentType.Recovery
+        };
 
         // Exact authored order inside every 6000 m cycle:
         // Warmup -> Rolling Hills -> Gradual Descent -> Bumpy Flat -> Staircases -> Broken Terrain ->
@@ -247,20 +296,32 @@ namespace AnimeHillRacing.Terrain
 
         public static float SampleHeight(MapProfile profile, float worldX)
         {
+            if (profile != null && profile.useArenaTerrain)
+                return SampleArenaHeight(profile, worldX);
             if (profile != null && profile.useCityHighwayTerrain)
                 return SampleCityHighwayHeight(profile, worldX);
             if (profile != null && profile.supportsLiquidExposure)
                 return SampleNeonHeight(profile, worldX);
+            if (profile != null && profile.useSpaceTerrain)
+                return SampleSpaceHeight(profile, worldX);
             return profile != null && profile.elevationProfile != null
                 ? profile.elevationProfile.GetHeightAtDistance(worldX)
-                : SampleProfileHeight(profile, worldX);
+                : SampleProceduralProfileHeight(profile, worldX);
         }
 
         public static float SampleProfileHeight(MapProfile profile, float worldX)
         {
             if (profile == null) return 0f;
+            if (profile.useArenaTerrain) return SampleArenaHeight(profile, worldX);
             if (profile.useCityHighwayTerrain) return SampleCityHighwayHeight(profile, worldX);
             if (profile.supportsLiquidExposure) return SampleNeonHeight(profile, worldX);
+            if (profile.useSpaceTerrain) return SampleSpaceHeight(profile, worldX);
+            return SampleProceduralProfileHeight(profile, worldX);
+        }
+
+        private static float SampleProceduralProfileHeight(MapProfile profile, float worldX)
+        {
+            if (profile == null) return 0f;
             float distance = Mathf.Max(0f, worldX);
             float difficulty = profile.EvaluateDifficulty(distance * Core.GameManager.LogicalDistanceScale);
             float amplitudeProgress = profile.introductoryAmplitude +
@@ -280,9 +341,297 @@ namespace AnimeHillRacing.Terrain
             float phase = Hash01(seed, 73) * TwoPi;
             float broadVariation = Mathf.Sin(worldX * frequency * 0.38f + phase) * 0.12f;
             float perlinVariation = (Mathf.PerlinNoise(seed * 0.000031f + worldX * frequency * 0.24f, 0.417f) * 2f - 1f) * 0.08f;
-            float startFlatten = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((worldX + 20f) / 120f));
-            return profile.baseHeight + (featureShape + broadVariation + perlinVariation) *
-                   profile.amplitude * amplitudeProgress * startFlatten;
+            float immediateSpaceRelief = profile.useSpaceTerrain
+                ? Mathf.Sin((worldX + 34f) * TwoPi / 172f) * .24f +
+                  Mathf.Sin((worldX + 9f) * TwoPi / 69f) * .10f
+                : 0f;
+            // Other maps retain their gentle intro. Space becomes demanding after its short safe launch.
+            float startFlatten = profile.useSpaceTerrain
+                ? 1f : Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((worldX + 20f) / 120f));
+            float generatedHeight = profile.baseHeight +
+                                    (featureShape + broadVariation + perlinVariation + immediateSpaceRelief) *
+                                    profile.amplitude * amplitudeProgress * startFlatten;
+            if (!profile.useSpaceTerrain) return generatedHeight;
+
+            // The first 100 metres are deliberately ordinary and low-relief so every vehicle has a
+            // reliable launch surface. Difficulty blends back in from 100 to 160 metres without a seam.
+            float gentleFadeIn = Smooth01(Mathf.InverseLerp(0f, 14f, distance));
+            float gentleHeight = profile.baseHeight + gentleFadeIn *
+                                 (Mathf.Sin(distance * TwoPi / 128f) * .52f +
+                                  Mathf.Sin(distance * TwoPi / 47f) * .11f);
+            float difficultTerrainBlend = Smooth01(Mathf.InverseLerp(100f, 160f, distance));
+            return Mathf.Lerp(gentleHeight, generatedHeight, difficultTerrainBlend);
+        }
+
+        public static int GetArenaSegmentIndex(MapProfile profile, float worldX)
+        {
+            float length = profile != null && profile.arena != null
+                ? Mathf.Max(70f, profile.arena.segmentLength) : 104f;
+            return Mathf.Max(0, Mathf.FloorToInt(Mathf.Max(0f, worldX) / length));
+        }
+
+        public static ArenaSegmentType GetArenaSegmentType(MapProfile profile, int segmentIndex)
+        {
+            if (profile == null) return ArenaSegmentType.Bumpy;
+            ArenaSettings settings = profile.arena ?? new ArenaSettings();
+            uint key = CombinedSeed(profile) ^ (uint)Mathf.RoundToInt(settings.segmentLength * 100f) * 747796405u;
+            if (!ArenaSegmentHistory.TryGetValue(key, out List<ArenaSegmentType> history))
+            {
+                history = new List<ArenaSegmentType>(64);
+                ArenaSegmentHistory.Add(key, history);
+            }
+            int target = Mathf.Max(0, segmentIndex);
+            while (history.Count <= target)
+            {
+                int index = history.Count;
+                float distance = (index + .5f) * Mathf.Max(70f, settings.segmentLength);
+                float difficulty = Mathf.Clamp01(profile.EvaluateDifficulty(
+                    distance * Core.GameManager.LogicalDistanceScale));
+                ArenaSegmentType selected = SelectArenaType(profile, settings, history, index, difficulty);
+                history.Add(selected);
+            }
+            return history[target];
+        }
+
+        private static ArenaSegmentType SelectArenaType(MapProfile profile, ArenaSettings settings,
+            List<ArenaSegmentType> history, int index, float difficulty)
+        {
+            if (index == 0) return ArenaSegmentType.Bumpy;
+            int technicalStreak = 0;
+            for (int i = history.Count - 1; i >= 0 && IsArenaTechnical(history[i]); i--) technicalStreak++;
+            int recoveryInterval = Mathf.Clamp(settings.recoveryInterval, 4, 10);
+            int recentCount = Mathf.Clamp(settings.recentSegmentHistory, 3, 6);
+            bool recoveryRecent = false;
+            for (int back = 1; back <= recentCount && history.Count - back >= 0; back++)
+                if (history[history.Count - back] == ArenaSegmentType.Recovery)
+                {
+                    recoveryRecent = true;
+                    break;
+                }
+            bool needsSafety = technicalStreak >= Mathf.Clamp(settings.maximumTechnicalStreak, 2, 5);
+            bool scheduledRecovery = index % recoveryInterval == recoveryInterval - 1;
+            if ((needsSafety || scheduledRecovery) && !recoveryRecent)
+                return ArenaSegmentType.Recovery;
+            if (needsSafety)
+            {
+                ArenaSegmentType[] safeTypes =
+                {
+                    ArenaSegmentType.Bumpy, ArenaSegmentType.Ramp,
+                    ArenaSegmentType.TechnicalClimb, ArenaSegmentType.TechnicalDescent
+                };
+                for (int safe = 0; safe < safeTypes.Length; safe++)
+                {
+                    bool recent = false;
+                    for (int back = 1; back <= recentCount && history.Count - back >= 0; back++)
+                        if (history[history.Count - back] == safeTypes[safe]) { recent = true; break; }
+                    if (!recent) return safeTypes[safe];
+                }
+            }
+
+            uint seed = CombinedSeed(profile);
+            for (int attempt = 0; attempt < 40; attempt++)
+            {
+                float roll = Hash01(seed, index * 977 + attempt * 131 + 41);
+                ArenaSegmentType candidate = WeightedArenaCandidate(roll, difficulty);
+                if (index < 2 && (candidate == ArenaSegmentType.FloatingPlatform ||
+                                  candidate == ArenaSegmentType.LongJump ||
+                                  candidate == ArenaSegmentType.Lava ||
+                                  candidate == ArenaSegmentType.MixedObstacle)) continue;
+                if (difficulty < .32f && candidate == ArenaSegmentType.MixedObstacle) continue;
+                bool recent = false;
+                for (int back = 1; back <= recentCount && history.Count - back >= 0; back++)
+                    if (history[history.Count - back] == candidate) { recent = true; break; }
+                if (!recent) return candidate;
+            }
+            for (int i = 0; i < ArenaCandidateTypes.Length; i++)
+            {
+                ArenaSegmentType candidate = ArenaCandidateTypes[i];
+                if (candidate == ArenaSegmentType.Recovery ||
+                    (index < 2 && (candidate == ArenaSegmentType.FloatingPlatform ||
+                                   candidate == ArenaSegmentType.LongJump ||
+                                   candidate == ArenaSegmentType.Lava ||
+                                   candidate == ArenaSegmentType.MixedObstacle)) ||
+                    (difficulty < .32f && candidate == ArenaSegmentType.MixedObstacle)) continue;
+                bool recent = false;
+                for (int back = 1; back <= recentCount && history.Count - back >= 0; back++)
+                    if (history[history.Count - back] == candidate) { recent = true; break; }
+                if (!recent) return candidate;
+            }
+            return ArenaSegmentType.Bumpy;
+        }
+
+        private static ArenaSegmentType WeightedArenaCandidate(float roll, float difficulty)
+        {
+            float[] weights =
+            {
+                1.25f, 1.15f, .75f + difficulty * .45f, .25f + difficulty * .95f,
+                .22f + difficulty * 1.05f, .18f + difficulty * .9f, .85f, .85f,
+                .08f + difficulty * 1.25f, 0f
+            };
+            float total = 0f;
+            for (int i = 0; i < weights.Length; i++) total += weights[i];
+            float choice = roll * total;
+            for (int i = 0; i < weights.Length; i++)
+            {
+                choice -= weights[i];
+                if (choice <= 0f) return ArenaCandidateTypes[i];
+            }
+            return ArenaSegmentType.Bumpy;
+        }
+
+        private static bool IsArenaTechnical(ArenaSegmentType type) =>
+            type == ArenaSegmentType.FloatingPlatform || type == ArenaSegmentType.LongJump ||
+            type == ArenaSegmentType.MixedObstacle || type == ArenaSegmentType.TireObstacle ||
+            type == ArenaSegmentType.Lava;
+
+        public static ArenaSegmentLayout GetArenaSegment(MapProfile profile, int segmentIndex)
+        {
+            ArenaSettings settings = profile != null && profile.arena != null
+                ? profile.arena : new ArenaSettings();
+            int index = Mathf.Max(0, segmentIndex);
+            float length = Mathf.Max(70f, settings.segmentLength);
+            float start = index * length;
+            float difficulty = profile != null ? Mathf.Clamp01(profile.EvaluateDifficulty(
+                (start + length * .5f) * Core.GameManager.LogicalDistanceScale)) : 0f;
+            uint seed = CombinedSeed(profile);
+            float variant = Hash01(seed, index * 1597 + 211);
+            ArenaSegmentType type = GetArenaSegmentType(profile, index);
+            var layout = new ArenaSegmentLayout
+            {
+                index = index, type = type, start = start, end = start + length,
+                difficulty = difficulty, variant = variant,
+                gapStart = -1f, gapEnd = -1f, lavaStart = -1f, lavaEnd = -1f
+            };
+
+            if (type == ArenaSegmentType.FloatingPlatform || type == ArenaSegmentType.LongJump ||
+                (type == ArenaSegmentType.MixedObstacle && difficulty >= .45f))
+            {
+                layout.gapStart = start + length * Mathf.Lerp(.38f, .33f, difficulty);
+                float gapLength = Mathf.Lerp(settings.minimumGapLength, settings.maximumGapLength, difficulty) *
+                                  Mathf.Lerp(.88f, 1.08f, variant);
+                if (type != ArenaSegmentType.LongJump)
+                {
+                    layout.platformWidth = Mathf.Lerp(settings.easyPlatformWidth,
+                        settings.hardPlatformWidth, difficulty) * Mathf.Lerp(.94f, 1.06f, variant);
+                    gapLength = Mathf.Max(gapLength, layout.platformWidth + 6f);
+                }
+                layout.gapEnd = Mathf.Min(start + length * .69f, layout.gapStart + gapLength);
+                if (type != ArenaSegmentType.LongJump)
+                {
+                    float centerMinimum = layout.gapStart + layout.platformWidth * .5f + 1f;
+                    float centerMaximum = layout.gapEnd - layout.platformWidth * .5f - 1f;
+                    layout.platformCenterX = Mathf.Lerp(centerMinimum, centerMaximum, variant);
+                    layout.platformY = SampleArenaBase(profile, layout.platformCenterX) +
+                                       Mathf.Lerp(.25f, 1.1f, difficulty);
+                }
+            }
+
+            if (type == ArenaSegmentType.Lava || type == ArenaSegmentType.MixedObstacle)
+            {
+                float lavaLength = Mathf.Lerp(settings.minimumLavaLength, settings.maximumLavaLength,
+                    difficulty) * Mathf.Lerp(.9f, 1.08f, 1f - variant);
+                layout.lavaStart = start + length * (type == ArenaSegmentType.MixedObstacle ? .72f : .40f);
+                layout.lavaEnd = Mathf.Min(start + length * .93f, layout.lavaStart + lavaLength);
+            }
+            if (type == ArenaSegmentType.TireObstacle || type == ArenaSegmentType.MixedObstacle)
+            {
+                layout.tireCount = Mathf.Clamp(Mathf.RoundToInt(Mathf.Lerp(settings.minimumTires,
+                    settings.maximumTires, difficulty) + (variant > .72f ? 1f : 0f)),
+                    settings.minimumTires, settings.maximumTires);
+                layout.tireStart = start + length * (type == ArenaSegmentType.MixedObstacle ? .19f : .43f);
+                layout.tireSpacing = settings.tireRadius * Mathf.Lerp(2.05f, 2.38f, variant);
+            }
+            return layout;
+        }
+
+        private static float SampleArenaBase(MapProfile profile, float worldX)
+        {
+            ArenaSettings settings = profile != null && profile.arena != null
+                ? profile.arena : new ArenaSettings();
+            float length = Mathf.Max(70f, settings.segmentLength);
+            float distance = Mathf.Max(0f, worldX);
+            int index = Mathf.FloorToInt(distance / length);
+            float t = distance / length - index;
+            uint seed = CombinedSeed(profile);
+            float anchorA = index == 0 ? profile.baseHeight : profile.baseHeight +
+                (Hash01(seed, index * 641 + 73) * 2f - 1f) * 2.1f;
+            float anchorB = profile.baseHeight +
+                (Hash01(seed, (index + 1) * 641 + 73) * 2f - 1f) * 2.1f;
+            return Mathf.Lerp(anchorA, anchorB, Smooth01(t));
+        }
+
+        private static float SampleArenaHeight(MapProfile profile, float worldX)
+        {
+            if (profile == null) return 0f;
+            ArenaSettings settings = profile.arena ?? new ArenaSettings();
+            float distance = Mathf.Max(0f, worldX);
+            int index = GetArenaSegmentIndex(profile, distance);
+            ArenaSegmentLayout layout = GetArenaSegment(profile, index);
+            float length = Mathf.Max(70f, settings.segmentLength);
+            float t = Mathf.Clamp01((distance - layout.start) / length);
+            float envelope = Mathf.Sin(t * Mathf.PI);
+            envelope *= envelope;
+            float baseline = SampleArenaBase(profile, distance);
+            float difficulty = layout.difficulty;
+            float phase = layout.variant * TwoPi;
+            float bumpCycles = Mathf.Lerp(length / settings.maximumBumpWavelength,
+                length / settings.minimumBumpWavelength, difficulty);
+            float bumps = (Mathf.Sin(t * TwoPi * bumpCycles + phase) * .68f +
+                           Mathf.Sin(t * TwoPi * (bumpCycles * .53f + 1f) - phase * .7f) * .32f) *
+                          envelope * settings.baseBumpHeight * Mathf.Lerp(.65f, 1.65f, difficulty);
+            float shape = 0f;
+            switch (layout.type)
+            {
+                case ArenaSegmentType.Bumpy:
+                    shape = bumps;
+                    break;
+                case ArenaSegmentType.Ramp:
+                    shape = Mathf.Pow(envelope, 1.35f) * Mathf.Lerp(settings.baseRampRise,
+                        settings.maximumRampRise, difficulty) + bumps * .28f;
+                    break;
+                case ArenaSegmentType.TireObstacle:
+                    shape = bumps * .48f - envelope * .35f;
+                    break;
+                case ArenaSegmentType.Lava:
+                    shape = -envelope * Mathf.Lerp(.8f, 1.7f, difficulty) + bumps * .18f;
+                    break;
+                case ArenaSegmentType.TechnicalClimb:
+                    shape = envelope * (1.5f + t * Mathf.Lerp(2.4f, 4.5f, difficulty)) + bumps * .42f;
+                    break;
+                case ArenaSegmentType.TechnicalDescent:
+                    shape = -envelope * (1.4f + (1f - t) * Mathf.Lerp(2.2f, 4.2f, difficulty)) + bumps * .42f;
+                    break;
+                case ArenaSegmentType.Recovery:
+                    shape = bumps * .08f;
+                    break;
+                default:
+                    shape = bumps * .32f;
+                    break;
+            }
+
+            if (layout.HasGap)
+            {
+                float rampStart = layout.gapStart - Mathf.Lerp(17f, 13f, difficulty);
+                float rampRise = Mathf.Lerp(settings.baseRampRise, settings.maximumRampRise, difficulty);
+                if (distance >= rampStart && distance < layout.gapStart)
+                    shape += Smooth01(Mathf.InverseLerp(rampStart, layout.gapStart, distance)) * rampRise;
+                else if (distance >= layout.gapStart && distance < layout.gapEnd)
+                    shape += rampRise;
+                else if (distance >= layout.gapEnd &&
+                         distance < layout.gapEnd + settings.landingSafetyLength)
+                    shape -= .25f * (1f - Smooth01(Mathf.InverseLerp(layout.gapEnd,
+                        layout.gapEnd + settings.landingSafetyLength, distance)));
+            }
+            float introBlend = Smooth01(Mathf.InverseLerp(12f, 70f, distance));
+            return Mathf.Lerp(profile.baseHeight, baseline + shape, introBlend);
+        }
+
+        public static bool IsArenaGap(MapProfile profile, float worldX)
+        {
+            if (profile == null || !profile.useArenaTerrain || profile.arena == null) return false;
+            ArenaSegmentLayout layout = GetArenaSegment(profile, GetArenaSegmentIndex(profile, worldX));
+            if (!layout.HasGap) return false;
+            return worldX >= layout.gapStart && worldX < layout.gapEnd;
         }
 
         public static float SampleCityHighwayHeight(MapProfile profile, float worldX)
@@ -424,6 +773,125 @@ namespace AnimeHillRacing.Terrain
         }
 
         public static bool IsLiquidGap(MapProfile profile, float worldX) => false;
+
+        public static SpaceChallengeLayout GetSpaceChallenge(MapProfile profile, int phase)
+        {
+            SpaceChallengeSettings settings = profile != null ? profile.spaceChallenges : null;
+            int safePhase = Mathf.Max(1, phase);
+            float interval = settings != null ? Mathf.Max(250f, settings.eventInterval) : 2000f;
+            float rampLength = settings != null ? Mathf.Max(4f, settings.rampLength) : 15f;
+            float eventDistance = safePhase * interval;
+            float gapLength = settings != null
+                ? settings.initialGapLength + (safePhase - 1) * settings.gapIncreasePerPhase
+                : 10f + (safePhase - 1) * 5f;
+            float rampStart = eventDistance;
+            float gapStart = rampStart + rampLength;
+            float gapEnd = gapStart + gapLength;
+            float landingLength = settings != null ? settings.landingLength : 42f;
+            float recoveryLength = settings != null ? settings.recoveryLength : 86f;
+            float baseline = SampleProceduralProfileHeight(profile, rampStart);
+            float diameter = settings != null
+                ? Mathf.Min(settings.baseDiameter + Mathf.Max(0f, gapLength - settings.initialGapLength) *
+                    settings.diameterGrowthPerGapMetre, settings.maximumDiameter)
+                : 5.5f;
+            return new SpaceChallengeLayout
+            {
+                phase = safePhase,
+                eventDistance = eventDistance,
+                approachStart = rampStart - (settings != null ? settings.approachLength : 200f),
+                rampStart = rampStart,
+                gapStart = gapStart,
+                gapEnd = gapEnd,
+                landingEnd = gapEnd + landingLength,
+                recoveryEnd = gapEnd + landingLength + recoveryLength,
+                warningX = rampStart - (settings != null ? settings.warningDistance : 100f),
+                baselineHeight = baseline,
+                gapLength = gapLength,
+                blackHoleDiameter = diameter
+            };
+        }
+
+        public static bool TryGetSpaceChallengeNearDistance(MapProfile profile, float distance,
+            out SpaceChallengeLayout challenge)
+        {
+            challenge = default;
+            if (profile == null || !profile.useSpaceTerrain || profile.spaceChallenges == null) return false;
+            float interval = Mathf.Max(250f, profile.spaceChallenges.eventInterval);
+            int center = Mathf.Max(1, Mathf.FloorToInt(distance / interval));
+            for (int phase = Mathf.Max(1, center - 1); phase <= center + 2; phase++)
+            {
+                SpaceChallengeLayout candidate = GetSpaceChallenge(profile, phase);
+                float blendLength = profile.spaceChallenges != null
+                    ? profile.spaceChallenges.approachBlendLength : 45f;
+                if (distance < candidate.approachStart - blendLength ||
+                    distance > candidate.recoveryEnd + 40f) continue;
+                challenge = candidate;
+                return true;
+            }
+            return false;
+        }
+
+        public static bool IsTerrainGap(MapProfile profile, float worldX)
+        {
+            if (profile != null && profile.useArenaTerrain) return IsArenaGap(profile, worldX);
+            if (profile == null || !profile.useSpaceTerrain || profile.spaceChallenges == null) return false;
+            float interval = Mathf.Max(250f, profile.spaceChallenges.eventInterval);
+            int phase = Mathf.Max(1, Mathf.FloorToInt(worldX / interval));
+            for (int candidatePhase = Mathf.Max(1, phase - 1); candidatePhase <= phase + 1; candidatePhase++)
+            {
+                SpaceChallengeLayout layout = GetSpaceChallenge(profile, candidatePhase);
+                float landingStart = GetSpaceLandingStart(layout);
+                // The ramp is part of the continuous terrain. Only the real void loses geometry, and a
+                // short landing overlap prevents sample rounding from opening a second invisible gap.
+                if (worldX >= layout.gapStart && worldX < landingStart) return true;
+            }
+            return false;
+        }
+
+        private static float SampleSpaceHeight(MapProfile profile, float worldX)
+        {
+            float general = profile != null && profile.elevationProfile != null
+                ? profile.elevationProfile.GetHeightAtDistance(worldX)
+                : SampleProceduralProfileHeight(profile, worldX);
+            if (!TryGetSpaceChallengeNearDistance(profile, worldX, out SpaceChallengeLayout layout))
+                return general;
+            SpaceChallengeSettings settings = profile.spaceChallenges;
+            float baseline = layout.baselineHeight;
+            float blendStart = layout.approachStart - Mathf.Max(10f, settings.approachBlendLength);
+            if (worldX < blendStart) return general;
+            if (worldX < layout.approachStart)
+            {
+                float t = Smooth01(Mathf.InverseLerp(blendStart, layout.approachStart, worldX));
+                return Mathf.Lerp(general, baseline, t);
+            }
+            // The final 200m are exactly flat so the sign is readable and the jump setup is reliable.
+            if (worldX < layout.rampStart) return baseline;
+            if (worldX < layout.gapStart)
+            {
+                float rampLength = Mathf.Max(.001f, layout.gapStart - layout.rampStart);
+                float flatEnd = rampLength * Mathf.Clamp(settings.rampFlatFraction, .05f, .5f);
+                float rampDistance = worldX - layout.rampStart;
+                if (rampDistance <= flatEnd) return baseline;
+                float rampT = Mathf.InverseLerp(flatEnd, rampLength, rampDistance);
+                return baseline + Mathf.Lerp(0f, settings.rampRise, rampT);
+            }
+            float landingStart = GetSpaceLandingStart(layout);
+            if (worldX < landingStart) return baseline + settings.rampRise;
+            float landingHeight = baseline - settings.landingDrop;
+            if (worldX < layout.landingEnd) return landingHeight;
+            if (worldX < layout.recoveryEnd)
+            {
+                float t = Smooth01(Mathf.InverseLerp(layout.landingEnd, layout.recoveryEnd, worldX));
+                return Mathf.Lerp(landingHeight, general, t);
+            }
+            return general;
+        }
+
+        private static float GetSpaceLandingStart(SpaceChallengeLayout layout)
+        {
+            float overlap = Mathf.Min(.75f, Mathf.Max(.2f, layout.gapLength * .08f));
+            return layout.gapEnd - overlap;
+        }
 
         public static bool IsLiquidPool(MapProfile profile, float worldX) =>
             TryGetLiquidChallengeAtDistance(profile, worldX, out _);
@@ -590,6 +1058,15 @@ namespace AnimeHillRacing.Terrain
 
         public static TerrainSectionKind GetSectionKind(MapProfile profile, int sectionIndex)
         {
+            if (profile != null && profile.useArenaTerrain)
+            {
+                ArenaSegmentType arenaType = GetArenaSegmentType(profile, Mathf.Max(0, sectionIndex));
+                if (arenaType == ArenaSegmentType.Recovery) return TerrainSectionKind.Recovery;
+                if (IsArenaTechnical(arenaType)) return TerrainSectionKind.Technical;
+                if (arenaType == ArenaSegmentType.Ramp || arenaType == ArenaSegmentType.Bumpy)
+                    return TerrainSectionKind.Rolling;
+                return TerrainSectionKind.Fast;
+            }
             float distance = Mathf.Max(0f, sectionIndex * profile.sectionLength);
             TerrainFeatureType feature = GetFeatureType(profile, sectionIndex, profile.EvaluateDifficulty(distance));
             if (feature == TerrainFeatureType.FlatRecovery)
@@ -774,6 +1251,25 @@ namespace AnimeHillRacing.Terrain
                 }
             }
 
+            if (profile.useSpaceTerrain && profile.spaceChallenges != null)
+            {
+                // Reapply authored event geometry after generic smoothing. This keeps the flat approach,
+                // integrated launch ramp and landing pad aligned with their visuals and physics.
+                for (int i = 0; i < sampleCount; i++)
+                {
+                    float worldX = chunkStartX + i * dx;
+                    if (!TryGetSpaceChallengeNearDistance(profile, worldX, out SpaceChallengeLayout layout))
+                        continue;
+                    float blendStart = layout.approachStart -
+                                       Mathf.Max(10f, profile.spaceChallenges.approachBlendLength);
+                    if (worldX < blendStart || worldX > layout.recoveryEnd) continue;
+                    surfaceHeights[i] = EvaluateFloat32Precision(SampleSpaceHeight(profile, worldX), worldX);
+                }
+                previousHeight = surfaceHeights[sampleCount - 1];
+                previousSlope = sampleCount > 1
+                    ? (surfaceHeights[sampleCount - 1] - surfaceHeights[sampleCount - 2]) / dx : 0f;
+            }
+
             endHeight = previousHeight;
             endSlope = previousSlope;
             float skirtBottom = profile.baseHeight - profile.amplitude *
@@ -820,7 +1316,7 @@ namespace AnimeHillRacing.Terrain
                 vertices[vertex + 3] = new Vector3(localX, groundBottomY, -width * .5f);  // Ground bottom
                 vertices[vertex + 4] = new Vector3(localX, surfaceY, -width * .5f);       // Physical surface front
                 vertices[vertex + 5] = new Vector3(localX, surfaceY, width * .5f);         // Surface back
-                if (profile.fitAuthoredTerrainTexture)
+                if (profile.fitAuthoredTerrainTexture || profile.useSpaceTerrain)
                 {
                     // Ground's authored visible band is mapped to its side-facing ribbon. The contact V can
                     // sit inside that band so foliage may extend above the road while the continuous turf line
@@ -848,10 +1344,10 @@ namespace AnimeHillRacing.Terrain
             for (int i = 0; i < sampleCount - 1; i++)
             {
                 float segmentWorldX = chunkStartX + (i + .5f) * dx;
-                if (IsLiquidGap(profile, segmentWorldX)) continue;
+                if (IsTerrainGap(profile, segmentWorldX)) continue;
                 int vertex = i * 6;
                 int next = vertex + 6;
-                if (profile.fitAuthoredTerrainTexture)
+                if (profile.fitAuthoredTerrainTexture || profile.useSpaceTerrain)
                 {
                     surfaceTriangles.Add(vertex + 2);
                     surfaceTriangles.Add(next + 2);
@@ -907,7 +1403,14 @@ namespace AnimeHillRacing.Terrain
         {
             depthBelowSurface = 0f;
             riseAboveSurface = 0f;
-            if (profile == null || !profile.fitAuthoredTerrainTexture) return;
+            if (profile == null) return;
+            if (profile.useSpaceTerrain)
+            {
+                depthBelowSurface = .52f;
+                riseAboveSurface = .07f;
+                return;
+            }
+            if (!profile.fitAuthoredTerrainTexture) return;
             Texture texture = profile.terrainEdgeMaterial != null
                 ? profile.terrainEdgeMaterial.mainTexture : null;
             if (texture == null || texture.width <= 0 || texture.height <= 0) return;
@@ -926,7 +1429,9 @@ namespace AnimeHillRacing.Terrain
 
         public static float CalculateTerrainFillDepth(MapProfile profile)
         {
-            if (profile == null || !profile.fitAuthoredTerrainTexture) return 0f;
+            if (profile == null) return 0f;
+            if (profile.useSpaceTerrain) return .46f;
+            if (!profile.fitAuthoredTerrainTexture) return 0f;
             Texture texture = profile.terrainEdgeMaterial != null
                 ? profile.terrainEdgeMaterial.mainTexture : null;
             if (texture == null || texture.width <= 0 || texture.height <= 0) return 0f;
@@ -960,7 +1465,7 @@ namespace AnimeHillRacing.Terrain
             }
             for (int i = 0; i < sampleCount - 1; i++)
             {
-                if (IsLiquidGap(profile, chunkStartX + (i + .5f) * dx)) continue;
+                if (IsTerrainGap(profile, chunkStartX + (i + .5f) * dx)) continue;
                 int vertex = i * 2;
                 int next = vertex + 2;
                 triangles.Add(vertex);

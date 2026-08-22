@@ -26,14 +26,24 @@ namespace AnimeHillRacing.Terrain
         private MeshCollider authoritativeTerrainCollider;
         private Mesh authoritativeTerrainMesh;
         private EdgeCollider2D authoritativeTerrainCollider2D;
+        private readonly List<EdgeCollider2D> authoritativeTerrainColliderSegments2D =
+            new List<EdgeCollider2D>(4);
         private PhysicsMaterial2D authoritativeTerrainMaterial2D;
-        private Vector2[] authoritativeTerrainPoints2D;
         private readonly List<Vector2> authoritativeSurfaceKnots2D = new List<Vector2>(512);
         private readonly List<NeonLiquidHazard> liquidHazardPool = new List<NeonLiquidHazard>(12);
         private readonly Dictionary<long, NeonLiquidHazard> activeLiquidHazards =
             new Dictionary<long, NeonLiquidHazard>();
         private readonly HashSet<long> requiredLiquidHazards = new HashSet<long>();
         private readonly List<long> liquidKeyBuffer = new List<long>(12);
+        private readonly List<SpaceGapEvent> spaceEventPool = new List<SpaceGapEvent>(4);
+        private readonly Dictionary<int, SpaceGapEvent> activeSpaceEvents = new Dictionary<int, SpaceGapEvent>();
+        private readonly HashSet<int> requiredSpaceEvents = new HashSet<int>();
+        private readonly List<int> spaceEventKeyBuffer = new List<int>(4);
+        private readonly List<ArenaSegmentEvent> arenaEventPool = new List<ArenaSegmentEvent>(8);
+        private readonly Dictionary<int, ArenaSegmentEvent> activeArenaEvents =
+            new Dictionary<int, ArenaSegmentEvent>();
+        private readonly HashSet<int> requiredArenaEvents = new HashSet<int>();
+        private readonly List<int> arenaEventKeyBuffer = new List<int>(8);
 
         public static TerrainManager Instance { get; private set; }
 
@@ -52,6 +62,9 @@ namespace AnimeHillRacing.Terrain
         private float VehicleWorldX => vehicle != null && vehicle.Body2D != null
             ? vehicle.Body2D.position.x
             : vehicle != null ? vehicle.transform.position.x : 0f;
+        private int RuntimeSamples => mapProfile != null && mapProfile.useSpaceTerrain
+            ? Mathf.Max(samples, 96) : mapProfile != null && mapProfile.useArenaTerrain
+                ? Mathf.Max(samples, 80) : samples;
 
         private void Awake()
         {
@@ -86,6 +99,10 @@ namespace AnimeHillRacing.Terrain
             RebuildAuthoritativeTerrainCollider2D();
             PrewarmLiquidHazards(count + 2);
             RefreshLiquidHazards();
+            PrewarmSpaceEvents(3);
+            RefreshSpaceEvents();
+            PrewarmArenaEvents(6);
+            RefreshArenaEvents();
         }
 
         private void Update()
@@ -147,6 +164,8 @@ namespace AnimeHillRacing.Terrain
             RebuildAuthoritativeTerrainCollider();
             RebuildAuthoritativeTerrainCollider2D();
             RefreshLiquidHazards();
+            RefreshSpaceEvents();
+            RefreshArenaEvents();
         }
 
         public bool TrySampleAuthoritativeSurface(float worldX, out float height, out float slopeDegrees)
@@ -154,6 +173,7 @@ namespace AnimeHillRacing.Terrain
             height = 0f;
             slopeDegrees = 0f;
             if (chunks == null) return false;
+            if (TerrainGenerator.IsTerrainGap(mapProfile, worldX)) return false;
 
             int targetIndex = Mathf.FloorToInt(worldX / Mathf.Max(1f, chunkLength));
             TerrainChunk chunk = FindChunk(targetIndex);
@@ -176,6 +196,8 @@ namespace AnimeHillRacing.Terrain
                 RebuildAuthoritativeTerrainCollider();
                 RebuildAuthoritativeTerrainCollider2D();
                 RefreshLiquidHazards();
+                RefreshSpaceEvents();
+                RefreshArenaEvents();
             }
         }
 
@@ -190,6 +212,8 @@ namespace AnimeHillRacing.Terrain
             RebuildAuthoritativeTerrainCollider();
             RebuildAuthoritativeTerrainCollider2D();
             RefreshLiquidHazards();
+            RefreshSpaceEvents();
+            RefreshArenaEvents();
         }
 
         private void RegenerateLoadedSurfacesAscending()
@@ -201,7 +225,7 @@ namespace AnimeHillRacing.Terrain
                 if (chunk == null) continue;
                 if (previous != null)
                 {
-                    chunk.RegenerateSurface(index, mapProfile, chunkLength, samples, width, pickupPool,
+                    chunk.RegenerateSurface(index, mapProfile, chunkLength, RuntimeSamples, width, pickupPool,
                         true, previous.EndHeight, previous.EndSlope);
                     chunk.SetChunkColliderEnabled(false);
                 }
@@ -226,7 +250,7 @@ namespace AnimeHillRacing.Terrain
         {
             TerrainChunk previous = FindChunk(index - 1);
             bool hasBoundary = previous != null;
-            chunk.Generate(index, mapProfile, chunkLength, samples, width, pickupPool, hasBoundary,
+            chunk.Generate(index, mapProfile, chunkLength, RuntimeSamples, width, pickupPool, hasBoundary,
                 hasBoundary ? previous.EndHeight : 0f, hasBoundary ? previous.EndSlope : 0f);
             // Physics uses the single welded collider assembled from every rendered surface knot. Enabling
             // this chunk collider too would create duplicate, partially overlapping edges at every seam.
@@ -261,6 +285,8 @@ namespace AnimeHillRacing.Terrain
                 if (authoritativeTerrainCollider2D == null)
                     authoritativeTerrainCollider2D = child.gameObject.AddComponent<EdgeCollider2D>();
             }
+            if (!authoritativeTerrainColliderSegments2D.Contains(authoritativeTerrainCollider2D))
+                authoritativeTerrainColliderSegments2D.Insert(0, authoritativeTerrainCollider2D);
             if (authoritativeTerrainMaterial2D == null)
             {
                 authoritativeTerrainMaterial2D = new PhysicsMaterial2D("AuthoritativeTerrain2D")
@@ -300,7 +326,7 @@ namespace AnimeHillRacing.Terrain
 
             if (authoritativeSurfaceKnots2D.Count < 2)
             {
-                authoritativeTerrainCollider2D.enabled = false;
+                SetActiveColliderSegmentCount(0);
                 return;
             }
 
@@ -313,18 +339,57 @@ namespace AnimeHillRacing.Terrain
             int firstKnot = Mathf.Clamp(centerKnot - pointsBehind, 0,
                 Mathf.Max(0, authoritativeSurfaceKnots2D.Count - pointCount));
             int selectedCount = Mathf.Min(pointCount, authoritativeSurfaceKnots2D.Count - firstKnot);
-            if (authoritativeTerrainPoints2D == null || authoritativeTerrainPoints2D.Length != selectedCount)
-                authoritativeTerrainPoints2D = new Vector2[selectedCount];
+            int segmentIndex = 0;
+            int runStart = 0;
+            for (int edge = 0; edge < selectedCount - 1; edge++)
+            {
+                Vector2 a = authoritativeSurfaceKnots2D[firstKnot + edge];
+                Vector2 b = authoritativeSurfaceKnots2D[firstKnot + edge + 1];
+                if (!TerrainGenerator.IsTerrainGap(mapProfile, (a.x + b.x) * .5f)) continue;
+                if (edge - runStart + 1 >= 2)
+                    WriteColliderSegment(segmentIndex++, firstKnot + runStart, edge - runStart + 1);
+                runStart = edge + 1;
+            }
+            if (selectedCount - runStart >= 2)
+                WriteColliderSegment(segmentIndex++, firstKnot + runStart, selectedCount - runStart);
+            SetActiveColliderSegmentCount(segmentIndex);
+        }
 
-            Transform colliderTransform = authoritativeTerrainCollider2D.transform;
-            for (int i = 0; i < selectedCount; i++)
+        private void WriteColliderSegment(int segmentIndex, int firstKnot, int pointCount)
+        {
+            EdgeCollider2D collider = GetColliderSegment(segmentIndex);
+            var points = new Vector2[pointCount];
+            Transform colliderTransform = collider.transform;
+            for (int i = 0; i < pointCount; i++)
             {
                 Vector2 world = authoritativeSurfaceKnots2D[firstKnot + i];
                 Vector3 local = colliderTransform.InverseTransformPoint(new Vector3(world.x, world.y, 0f));
-                authoritativeTerrainPoints2D[i] = new Vector2(local.x, local.y);
+                points[i] = new Vector2(local.x, local.y);
             }
-            authoritativeTerrainCollider2D.points = authoritativeTerrainPoints2D;
-            authoritativeTerrainCollider2D.enabled = true;
+            collider.points = points;
+            collider.enabled = true;
+        }
+
+        private EdgeCollider2D GetColliderSegment(int index)
+        {
+            while (authoritativeTerrainColliderSegments2D.Count <= index)
+            {
+                GameObject child = new GameObject($"Authoritative Terrain 2D Segment {authoritativeTerrainColliderSegments2D.Count + 1}");
+                child.transform.SetParent(transform, false);
+                EdgeCollider2D collider = child.AddComponent<EdgeCollider2D>();
+                collider.edgeRadius = 0f;
+                collider.sharedMaterial = mapProfile != null && mapProfile.groundPhysicsMaterial2D != null
+                    ? mapProfile.groundPhysicsMaterial2D : authoritativeTerrainMaterial2D;
+                authoritativeTerrainColliderSegments2D.Add(collider);
+            }
+            return authoritativeTerrainColliderSegments2D[index];
+        }
+
+        private void SetActiveColliderSegmentCount(int count)
+        {
+            for (int i = count; i < authoritativeTerrainColliderSegments2D.Count; i++)
+                if (authoritativeTerrainColliderSegments2D[i] != null)
+                    authoritativeTerrainColliderSegments2D[i].enabled = false;
         }
 
         private void RebuildAuthoritativeTerrainCollider()
@@ -359,7 +424,7 @@ namespace AnimeHillRacing.Terrain
                         int previous = (pairCount - 1) * 2;
                         int current = pairCount * 2;
                         float segmentX = (previousWorldX + leftWorld.x) * .5f;
-                        if (!TerrainGenerator.IsLiquidGap(mapProfile, segmentX))
+                        if (!TerrainGenerator.IsTerrainGap(mapProfile, segmentX))
                         {
                             triangles.Add(previous);
                             triangles.Add(previous + 1);
@@ -374,12 +439,34 @@ namespace AnimeHillRacing.Terrain
                 }
             }
 
+            bool hasNonDegenerateTriangle = false;
+            for (int triangle = 0; triangle + 2 < triangles.Count; triangle += 3)
+            {
+                Vector3 a = vertices[triangles[triangle]];
+                Vector3 b = vertices[triangles[triangle + 1]];
+                Vector3 c = vertices[triangles[triangle + 2]];
+                if (Vector3.Cross(b - a, c - a).sqrMagnitude <= .00000001f) continue;
+                hasNonDegenerateTriangle = true;
+                break;
+            }
+
+            // A loaded range can temporarily contain only the authored Space void. Unity rejects an
+            // empty/degenerate MeshCollider, so leave it disabled until solid terrain is loaded again.
+            if (!hasNonDegenerateTriangle)
+            {
+                authoritativeTerrainCollider.sharedMesh = null;
+                authoritativeTerrainCollider.enabled = false;
+                authoritativeTerrainMesh.Clear();
+                return;
+            }
+
             authoritativeTerrainMesh.Clear();
             authoritativeTerrainMesh.SetVertices(vertices);
             authoritativeTerrainMesh.SetTriangles(triangles, 0, true);
             authoritativeTerrainMesh.RecalculateNormals();
             authoritativeTerrainMesh.RecalculateBounds();
             authoritativeTerrainCollider.sharedMesh = null;
+            authoritativeTerrainCollider.enabled = true;
             authoritativeTerrainCollider.sharedMesh = authoritativeTerrainMesh;
         }
 
@@ -400,6 +487,7 @@ namespace AnimeHillRacing.Terrain
                     CoinRoutePoint point = route.GetPoint(group, pointIndex);
                     float x = group.anchorDistance + point.distanceOffset;
                     if (x < start || x >= end || TerrainGenerator.IsLiquidPool(mapProfile, x) ||
+                        TerrainGenerator.IsTerrainGap(mapProfile, x) ||
                         !chunk.TrySampleSurface(x, out float y, out _)) continue;
                     CoinPickup pickup = pickupPool.SpawnCoin(point.value,
                         new Vector3(x, y + route.surfaceOffset + point.heightOffset, 0f), x,
@@ -420,6 +508,11 @@ namespace AnimeHillRacing.Terrain
             while (fuelSequence.NextPosition < end && safety++ < 128)
             {
                 float targetDistance = fuelSequence.NextPosition;
+                if (TerrainGenerator.IsTerrainGap(mapProfile, targetDistance))
+                {
+                    fuelSequence.Advance(targetDistance + 12f);
+                    continue;
+                }
                 Vector3 position = FindAccessibleFuelPosition(chunk, start, end, targetDistance);
                 PickupBase pickup = pickupPool.Spawn(PickupKind.Fuel, position, position.x);
                 chunk.TrackPickup(pickup);
@@ -442,7 +535,8 @@ namespace AnimeHillRacing.Terrain
                 {
                     float offset = i == 0 ? 0f : i * step * side;
                     float candidateX = Mathf.Clamp(targetDistance + offset, chunkStart + 2f, chunkEnd - 2f);
-                    if (TerrainGenerator.IsLiquidPool(mapProfile, candidateX)) continue;
+                    if (TerrainGenerator.IsLiquidPool(mapProfile, candidateX) ||
+                        TerrainGenerator.IsTerrainGap(mapProfile, candidateX)) continue;
                     if (!chunk.TrySampleSurface(candidateX, out float candidateY, out float slope))
                         continue;
                     float absoluteSlope = Mathf.Abs(slope);
@@ -535,6 +629,124 @@ namespace AnimeHillRacing.Terrain
                     return liquidHazardPool[i];
             PrewarmLiquidHazards(liquidHazardPool.Count + 1);
             return liquidHazardPool[liquidHazardPool.Count - 1];
+        }
+
+        private void PrewarmSpaceEvents(int count)
+        {
+            if (mapProfile == null || !mapProfile.useSpaceTerrain) return;
+            while (spaceEventPool.Count < count)
+            {
+                GameObject eventObject = new GameObject("Space Void - Available Pooled Instance");
+                eventObject.transform.SetParent(transform, false);
+                SpaceGapEvent spaceEvent = eventObject.AddComponent<SpaceGapEvent>();
+                eventObject.SetActive(false);
+                spaceEventPool.Add(spaceEvent);
+            }
+        }
+
+        private void RefreshSpaceEvents()
+        {
+            if (mapProfile == null || !mapProfile.useSpaceTerrain || mapProfile.spaceChallenges == null)
+            {
+                for (int i = 0; i < spaceEventPool.Count; i++) spaceEventPool[i]?.Deactivate();
+                activeSpaceEvents.Clear();
+                return;
+            }
+
+            float loadedStart = minimumLoadedIndex * chunkLength;
+            float loadedEnd = (maximumLoadedIndex + 1) * chunkLength;
+            float interval = Mathf.Max(250f, mapProfile.spaceChallenges.eventInterval);
+            int firstPhase = Mathf.Max(1, Mathf.FloorToInt((loadedStart - 220f) / interval));
+            int lastPhase = Mathf.Max(1, Mathf.CeilToInt((loadedEnd + 120f) / interval));
+            requiredSpaceEvents.Clear();
+            for (int phase = firstPhase; phase <= lastPhase; phase++)
+            {
+                SpaceChallengeLayout layout = TerrainGenerator.GetSpaceChallenge(mapProfile, phase);
+                if (layout.recoveryEnd < loadedStart || layout.warningX > loadedEnd) continue;
+                requiredSpaceEvents.Add(phase);
+                if (activeSpaceEvents.ContainsKey(phase)) continue;
+                SpaceGapEvent spaceEvent = GetAvailableSpaceEvent();
+                spaceEvent.Configure(mapProfile, layout, width, gameManager);
+                activeSpaceEvents.Add(phase, spaceEvent);
+            }
+
+            spaceEventKeyBuffer.Clear();
+            foreach (KeyValuePair<int, SpaceGapEvent> pair in activeSpaceEvents)
+                if (!requiredSpaceEvents.Contains(pair.Key)) spaceEventKeyBuffer.Add(pair.Key);
+            for (int i = 0; i < spaceEventKeyBuffer.Count; i++)
+            {
+                int phase = spaceEventKeyBuffer[i];
+                activeSpaceEvents[phase].Deactivate();
+                activeSpaceEvents.Remove(phase);
+            }
+        }
+
+        private SpaceGapEvent GetAvailableSpaceEvent()
+        {
+            for (int i = 0; i < spaceEventPool.Count; i++)
+                if (spaceEventPool[i] != null && !spaceEventPool[i].gameObject.activeSelf)
+                    return spaceEventPool[i];
+            PrewarmSpaceEvents(spaceEventPool.Count + 1);
+            return spaceEventPool[spaceEventPool.Count - 1];
+        }
+
+        private void PrewarmArenaEvents(int count)
+        {
+            if (mapProfile == null || !mapProfile.useArenaTerrain) return;
+            while (arenaEventPool.Count < count)
+            {
+                GameObject eventObject = new GameObject("Arena Segment - Available Pooled Instance");
+                eventObject.transform.SetParent(transform, false);
+                ArenaSegmentEvent arenaEvent = eventObject.AddComponent<ArenaSegmentEvent>();
+                eventObject.SetActive(false);
+                arenaEventPool.Add(arenaEvent);
+            }
+        }
+
+        private void RefreshArenaEvents()
+        {
+            if (mapProfile == null || !mapProfile.useArenaTerrain || mapProfile.arena == null)
+            {
+                for (int i = 0; i < arenaEventPool.Count; i++) arenaEventPool[i]?.Deactivate();
+                activeArenaEvents.Clear();
+                return;
+            }
+            float loadedStart = minimumLoadedIndex * chunkLength;
+            float loadedEnd = (maximumLoadedIndex + 1) * chunkLength;
+            float segmentLength = Mathf.Max(70f, mapProfile.arena.segmentLength);
+            int firstSegment = Mathf.Max(0, Mathf.FloorToInt((loadedStart - segmentLength) / segmentLength));
+            int lastSegment = Mathf.Max(0, Mathf.CeilToInt((loadedEnd + segmentLength) / segmentLength));
+            requiredArenaEvents.Clear();
+            for (int segment = firstSegment; segment <= lastSegment; segment++)
+            {
+                ArenaSegmentLayout layout = TerrainGenerator.GetArenaSegment(mapProfile, segment);
+                if (!layout.HasTires && !layout.HasPlatform && !layout.HasLava) continue;
+                if (layout.end < loadedStart || layout.start > loadedEnd) continue;
+                requiredArenaEvents.Add(segment);
+                if (activeArenaEvents.ContainsKey(segment)) continue;
+                ArenaSegmentEvent arenaEvent = GetAvailableArenaEvent();
+                arenaEvent.Configure(mapProfile, layout, width);
+                activeArenaEvents.Add(segment, arenaEvent);
+            }
+
+            arenaEventKeyBuffer.Clear();
+            foreach (KeyValuePair<int, ArenaSegmentEvent> pair in activeArenaEvents)
+                if (!requiredArenaEvents.Contains(pair.Key)) arenaEventKeyBuffer.Add(pair.Key);
+            for (int i = 0; i < arenaEventKeyBuffer.Count; i++)
+            {
+                int key = arenaEventKeyBuffer[i];
+                activeArenaEvents[key].Deactivate();
+                activeArenaEvents.Remove(key);
+            }
+        }
+
+        private ArenaSegmentEvent GetAvailableArenaEvent()
+        {
+            for (int i = 0; i < arenaEventPool.Count; i++)
+                if (arenaEventPool[i] != null && !arenaEventPool[i].gameObject.activeSelf)
+                    return arenaEventPool[i];
+            PrewarmArenaEvents(arenaEventPool.Count + 1);
+            return arenaEventPool[arenaEventPool.Count - 1];
         }
 
         private void OnDestroy()

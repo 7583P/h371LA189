@@ -10,6 +10,8 @@ namespace AnimeHillRacing.CameraSystem
         [SerializeField] private SpriteRenderer[] mountainSegments;
         [SerializeField] private SpriteRenderer[] nearMountainSegments;
         [SerializeField] private SpriteRenderer[] cloudSegments;
+        [SerializeField] private SpriteRenderer sunRenderer;
+        [SerializeField] private SpriteRenderer earthRenderer;
 
         private float tileWidth;
         private float nearTileWidth;
@@ -31,6 +33,7 @@ namespace AnimeHillRacing.CameraSystem
             if (displayCamera == null || environment == null) return;
             if (Screen.width != lastScreenWidth || Screen.height != lastScreenHeight) ApplyAssetsAndScale();
             UpdatePositions();
+            UpdateSpaceAnimation();
         }
 
         private void ApplyAssetsAndScale()
@@ -38,10 +41,17 @@ namespace AnimeHillRacing.CameraSystem
             if (displayCamera == null || environment == null) return;
             EnsureCloudPool();
             EnsureNearMountainPool();
+            EnsureCelestials();
+            if (environment.overrideCameraBackground)
+            {
+                displayCamera.clearFlags = CameraClearFlags.SolidColor;
+                displayCamera.backgroundColor = environment.cameraBackgroundColor;
+            }
             lastScreenWidth = Screen.width; lastScreenHeight = Screen.height;
             if (skyRenderer != null)
             {
                 skyRenderer.sprite = environment.sky;
+                skyRenderer.color = Color.white;
                 float sourceWidth = environment.sky != null ? environment.sky.bounds.size.x : 1f;
                 float sourceHeight = environment.sky != null ? environment.sky.bounds.size.y : 1f;
                 float viewHeight = displayCamera.orthographicSize * 2.08f;
@@ -62,6 +72,7 @@ namespace AnimeHillRacing.CameraSystem
             {
                 if (mountainSegments[i] == null) continue;
                 mountainSegments[i].sprite = environment.mountains;
+                mountainSegments[i].color = Color.white;
                 mountainSegments[i].transform.localScale = Vector3.one * scaleMountain;
             }
 
@@ -80,6 +91,45 @@ namespace AnimeHillRacing.CameraSystem
                 nearMountainSegments[i].sprite = environment.nearMountains;
                 nearMountainSegments[i].transform.localScale = Vector3.one * nearScale;
             }
+        }
+
+        private void EnsureCelestials()
+        {
+            sunRenderer = EnsureCelestialRenderer(sunRenderer, "Space Sun - Pooled", -46);
+            earthRenderer = EnsureCelestialRenderer(earthRenderer, "Space Earth - Pooled", -45);
+            ConfigureCelestial(sunRenderer, environment.sun, environment.sunVisualWidth);
+            ConfigureCelestial(earthRenderer, environment.earth, environment.earthVisualWidth);
+            if (sunRenderer != null)
+            {
+                sunRenderer.color = Color.white;
+            }
+            if (earthRenderer != null) earthRenderer.color = Color.white;
+        }
+
+        private SpriteRenderer EnsureCelestialRenderer(SpriteRenderer renderer, string objectName, int order)
+        {
+            if (renderer == null)
+            {
+                Transform child = transform.Find(objectName);
+                if (child == null)
+                {
+                    child = new GameObject(objectName).transform;
+                    child.SetParent(transform, false);
+                }
+                renderer = child.GetComponent<SpriteRenderer>();
+                if (renderer == null) renderer = child.gameObject.AddComponent<SpriteRenderer>();
+            }
+            renderer.sortingOrder = order;
+            return renderer;
+        }
+
+        private static void ConfigureCelestial(SpriteRenderer renderer, Sprite sprite, float visualWidth)
+        {
+            if (renderer == null) return;
+            renderer.sprite = sprite;
+            renderer.gameObject.SetActive(sprite != null);
+            float sourceWidth = sprite != null ? sprite.bounds.size.x : 1f;
+            renderer.transform.localScale = Vector3.one * (visualWidth / Mathf.Max(.001f, sourceWidth));
         }
 
         private void EnsureNearMountainPool()
@@ -144,7 +194,8 @@ namespace AnimeHillRacing.CameraSystem
             // A camera-space lock must move the renderer with the camera in world space. This makes
             // its vertical position visually constant while horizontal parallax continues normally.
             float y = environment.coverViewportVertically
-                ? cameraPosition.y : CalculateVerticalPosition(environment, cameraPosition.y, initialCameraY);
+                ? cameraPosition.y + environment.coverViewportVerticalOffset
+                : CalculateVerticalPosition(environment, cameraPosition.y, initialCameraY);
             UpdatePanoramaPositions(mountainSegments, cameraPosition.x,
                 WorldFollowFactor(environment.mountainParallaxX, environment.useRelativeParallaxSpeeds),
                 tileWidth, y, 10f, environment.mirrorAlternatingMountainTiles);
@@ -157,6 +208,50 @@ namespace AnimeHillRacing.CameraSystem
                 nearTileWidth, nearY, 9f,
                 environment.mirrorAlternatingNearMountainTiles);
             UpdateCloudPositions(cameraPosition);
+            UpdateCelestialPosition(sunRenderer, cameraPosition, environment.sunCameraOffset,
+                environment.sunRelativeParallax, environment.celestialRepeatSpan, 12.3f);
+            UpdateCelestialPosition(earthRenderer, cameraPosition, environment.earthCameraOffset,
+                environment.earthRelativeParallax, environment.celestialRepeatSpan, 12.2f);
+        }
+
+        private static void UpdateCelestialPosition(SpriteRenderer renderer, Vector3 cameraPosition,
+            Vector2 authoredOffset, float relativeParallax, float repeatSpan, float z)
+        {
+            if (renderer == null || !renderer.gameObject.activeSelf) return;
+            double span = System.Math.Max(24.0, repeatSpan);
+            double relativeX = authoredOffset.x - (double)cameraPosition.x * Mathf.Clamp01(relativeParallax);
+            relativeX -= System.Math.Floor((relativeX + span * .5) / span) * span;
+            renderer.transform.position = new Vector3((float)(cameraPosition.x + relativeX),
+                cameraPosition.y + authoredOffset.y, z);
+        }
+
+        private void UpdateSpaceAnimation()
+        {
+            if (environment == null || environment.environmentId != "space") return;
+
+            float time = Time.unscaledTime;
+            float speed = Mathf.Max(.25f, environment.starTwinkleSpeed);
+            float amount = Mathf.Clamp(environment.starTwinkleAmount, 0f, .5f);
+            if (skyRenderer != null)
+                skyRenderer.color = TwinkleColor(time * speed * .73f + .8f, amount * .7f);
+            if (mountainSegments != null)
+            {
+                for (int i = 0; i < mountainSegments.Length; i++)
+                {
+                    SpriteRenderer renderer = mountainSegments[i];
+                    if (renderer == null || !renderer.gameObject.activeSelf) continue;
+                    renderer.color = TwinkleColor(time * speed * (1f + i * .07f) + i * 1.71f, amount);
+                }
+            }
+
+        }
+
+        private static Color TwinkleColor(float phase, float amount)
+        {
+            // The fourth power creates short, independent flashes instead of a uniform breathing effect.
+            float flash = Mathf.Pow(Mathf.Clamp01(.5f + .5f * Mathf.Sin(phase)), 4f);
+            float brightness = 1f - amount + amount * flash;
+            return new Color(brightness, brightness, Mathf.Min(1f, brightness + .035f), 1f);
         }
 
         private static void UpdatePanoramaPositions(SpriteRenderer[] segments, float cameraX,

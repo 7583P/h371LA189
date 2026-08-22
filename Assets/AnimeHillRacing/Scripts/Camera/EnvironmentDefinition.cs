@@ -8,6 +8,9 @@ namespace AnimeHillRacing.CameraSystem
         public string environmentId = "countryside";
         public Sprite sky;
         public Sprite mountains;
+        [Header("Camera Backdrop")]
+        public bool overrideCameraBackground;
+        public Color cameraBackgroundColor = new Color(.005f, .004f, .012f, 1f);
         [Header("Optional Cloud Layer")]
         public Sprite[] clouds;
         [Range(.04f, .18f)] public float cloudParallaxX = .09f;
@@ -29,6 +32,8 @@ namespace AnimeHillRacing.CameraSystem
         public bool lockVerticalToCamera;
         [Tooltip("Scales and centers an opaque panorama so its outer edge remains beyond the camera viewport.")]
         public bool coverViewportVertically;
+        [Tooltip("Vertical camera-space offset used when the panorama covers the viewport.")]
+        public float coverViewportVerticalOffset;
         [Min(1f)] public float mountainVisualHeight = 17f;
         public float mountainBaseY = -4f;
         [Range(3, 7)] public int pooledMountainSegments = 5;
@@ -47,5 +52,20 @@ namespace AnimeHillRacing.CameraSystem
         [Range(3, 7)] public int pooledNearMountainSegments = 5;
         [Range(0f, .05f)] public float nearMountainSeamOverlap = .01f;
         public bool mirrorAlternatingNearMountainTiles = true;
+
+        [Header("Optional Space Celestials")]
+        public Sprite sun;
+        public Sprite earth;
+        public Vector2 sunCameraOffset = new Vector2(-1f, 3.5f);
+        public Vector2 earthCameraOffset = new Vector2(7f, 2.2f);
+        [Range(0f, .05f)] public float sunRelativeParallax = .003f;
+        [Range(0f, .08f)] public float earthRelativeParallax = .009f;
+        [Min(2f)] public float sunVisualWidth = 6.5f;
+        [Min(1f)] public float earthVisualWidth = 5.2f;
+        [Min(24f)] public float celestialRepeatSpan = 72f;
+
+        [Header("Optional Space Star Animation")]
+        [Range(.25f, 6f)] public float starTwinkleSpeed = 2.15f;
+        [Range(0f, .5f)] public float starTwinkleAmount = .26f;
     }
 }

@@ -129,6 +129,8 @@ namespace AnimeHillRacing.Editor
         private const string NorthPoleNearPinesPath = NorthPoleRoot + "/NorthPole_NearPines.png";
         private const string NorthPoleTerrainPath = NorthPoleRoot + "/Terrain.png";
         private const string NorthPoleGroundPath = NorthPoleRoot + "/Ground.png";
+        private const string SpaceMapPath = Root + "/MapProfiles/Space.asset";
+        private const string ArenaMapPath = Root + "/MapProfiles/Arena.asset";
         private const string CityRoot = "Assets/Art/Backgrounds/City";
         private const string CitySkyPath = CityRoot + "/Sky.png";
         private const string CityBackgroundPath = CityRoot + "/Background.png";
@@ -222,6 +224,8 @@ namespace AnimeHillRacing.Editor
             public EnvironmentDefinition cityEnvironment;
             public MapProfile countryside;
             public MapProfile northPole;
+            public MapProfile space;
+            public MapProfile arena;
             public MapProfile neonCity;
             public MapProfile city;
             public CoinRouteDefinition countrysideCoinRoute;
@@ -286,6 +290,8 @@ namespace AnimeHillRacing.Editor
             ValidateCustomizationContract(assets);
             ValidateCountrysideTerrainContract(assets.countryside);
             ValidateNorthPoleContract(assets);
+            ValidateSpaceContract(assets);
+            ValidateArenaContract(assets);
             ValidateNeonCityContract(assets);
             ValidateCityContract(assets);
             ValidateVehiclePhysicsContract(assets);
@@ -427,6 +433,8 @@ namespace AnimeHillRacing.Editor
             ValidateCustomizationContract(assets);
             ValidateCountrysideTerrainContract(assets.countryside);
             ValidateNorthPoleContract(assets);
+            ValidateSpaceContract(assets);
+            ValidateArenaContract(assets);
             ValidateNeonCityContract(assets);
             ValidateCityContract(assets);
             ValidateVehiclePhysicsContract(assets);
@@ -668,6 +676,9 @@ namespace AnimeHillRacing.Editor
                     Root + "/VehicleData/UpgradeEconomy.asset"),
                 catalog = AssetDatabase.LoadAssetAtPath<GameCatalog>(Root + "/VehicleData/GameCatalog.asset"),
                 countryside = AssetDatabase.LoadAssetAtPath<MapProfile>(Root + "/MapProfiles/Countryside.asset"),
+                northPole = AssetDatabase.LoadAssetAtPath<MapProfile>(Root + "/MapProfiles/NorthPole.asset"),
+                space = AssetDatabase.LoadAssetAtPath<MapProfile>(SpaceMapPath),
+                arena = AssetDatabase.LoadAssetAtPath<MapProfile>(ArenaMapPath),
                 neonCity = AssetDatabase.LoadAssetAtPath<MapProfile>(Root + "/MapProfiles/NeonCity.asset"),
                 neonLiquid = AssetDatabase.LoadAssetAtPath<Sprite>(NeonLiquidPath),
                 neonCaution = AssetDatabase.LoadAssetAtPath<Sprite>(NeonCautionPath),
@@ -1640,6 +1651,207 @@ namespace AnimeHillRacing.Editor
                       $"{northPole.maximumSlope:0.0} degrees, two-layer continuous parallax configured.");
         }
 
+        private static void ValidateSpaceContract(BuiltAssets assets)
+        {
+            MapProfile profile = assets.space != null
+                ? assets.space : AssetDatabase.LoadAssetAtPath<MapProfile>(SpaceMapPath);
+            if (profile == null || profile.mapId != "space" || !profile.useSpaceTerrain ||
+                profile.supportsLiquidExposure || profile.environment == null ||
+                profile.spaceChallenges == null || profile.terrainMaterial == null ||
+                profile.terrainEdgeMaterial == null || profile.spaceChallenges.rampMaterial == null ||
+                profile.spaceChallenges.blackHoleSprite == null || profile.spaceChallenges.warningSprite == null)
+                throw new System.InvalidOperationException(
+                    "Space requires an independent profile, lunar materials and complete pooled void artwork.");
+
+            SpaceChallengeSettings settings = profile.spaceChallenges;
+            SpaceChallengeLayout first = TerrainGenerator.GetSpaceChallenge(profile, 1);
+            SpaceChallengeLayout second = TerrainGenerator.GetSpaceChallenge(profile, 2);
+            if (Mathf.Abs(first.eventDistance - 2000f) > .01f ||
+                Mathf.Abs(first.warningX - 1900f) > .01f ||
+                Mathf.Abs(settings.approachLength - 200f) > .01f ||
+                Mathf.Abs(TerrainGenerator.SampleHeight(profile, first.rampStart - 199f) -
+                          first.baselineHeight) > .001f ||
+                Mathf.Abs(TerrainGenerator.SampleHeight(profile, first.rampStart - 1f) -
+                          first.baselineHeight) > .001f ||
+                TerrainGenerator.IsTerrainGap(profile, first.rampStart + 1f) ||
+                TerrainGenerator.SampleHeight(profile, first.gapStart - 1f) <= first.baselineHeight + 1f ||
+                Mathf.Abs(first.gapLength - 10f) > .01f || Mathf.Abs(second.gapLength - 15f) > .01f ||
+                !TerrainGenerator.IsTerrainGap(profile, (first.gapStart + first.gapEnd) * .5f) ||
+                TerrainGenerator.IsTerrainGap(profile, first.gapEnd - .25f) ||
+                TerrainGenerator.IsTerrainGap(profile, first.gapEnd + 1f) ||
+                Mathf.Abs(TerrainGenerator.GetSpaceChallenge(profile, 10).gapLength - 55f) > .01f ||
+                settings.maximumDiameter < settings.baseDiameter || settings.rampRise < 5f ||
+                settings.rampFlatFraction > .1f)
+                throw new System.InvalidOperationException(
+                    "Space void cadence, 100m warning, +5m growth, terrain removal or safety caps are invalid.");
+
+            EnvironmentDefinition environment = profile.environment;
+            if (!environment.overrideCameraBackground || environment.sky == null ||
+                environment.mountains == null || environment.sun == null || environment.earth == null ||
+                !environment.useRelativeParallaxSpeeds || !environment.coverViewportVertically ||
+                !Mathf.Approximately(environment.earthRelativeParallax, 0f) ||
+                Mathf.Approximately(environment.sunRelativeParallax, environment.earthRelativeParallax) ||
+                environment.starTwinkleAmount <= 0f)
+                throw new System.InvalidOperationException(
+                    "Space needs a twinkling starfield and stable non-blinking Sun/Earth layers.");
+            float introMinimum = float.MaxValue;
+            float introMaximum = float.MinValue;
+            for (int distance = 0; distance <= 100; distance += 5)
+            {
+                float height = TerrainGenerator.SampleHeight(profile, distance);
+                introMinimum = Mathf.Min(introMinimum, height);
+                introMaximum = Mathf.Max(introMaximum, height);
+            }
+            if (Mathf.Abs(TerrainGenerator.SampleHeight(profile, 0f) - profile.baseHeight) > .01f ||
+                introMaximum - introMinimum > 2f)
+                throw new System.InvalidOperationException(
+                    "Space requires a low-relief, spawn-safe opening for its first 100 metres.");
+            if (assets.northPole != null &&
+                (profile.EvaluateDifficulty(0f) <= assets.northPole.EvaluateDifficulty(0f) ||
+                 profile.amplitude <= assets.northPole.amplitude))
+                throw new System.InvalidOperationException(
+                    "Space must recover its high difficulty after the protected 100m opening.");
+            Debug.Log("SPACE_TRACK_PASS: spawn-safe 100m opening, hard lunar terrain, pooled 2000m void events, " +
+                      "integrated ramps, solid landings, 100m warnings and twinkling deep-space backdrop configured.");
+        }
+
+        [MenuItem("Anime Hill Racing/Validate Arena Track")]
+        public static void ValidateArenaTrack()
+        {
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            ValidateArenaContract(LoadImplementedAuditAssets());
+        }
+
+        private static void ValidateArenaContract(BuiltAssets assets)
+        {
+            MapProfile profile = assets.arena != null
+                ? assets.arena : AssetDatabase.LoadAssetAtPath<MapProfile>(ArenaMapPath);
+            if (profile == null || profile.mapId != "arena" || !profile.useArenaTerrain ||
+                profile.useSpaceTerrain || profile.useCityHighwayTerrain || profile.supportsLiquidExposure ||
+                profile.arena == null || profile.environment == null || profile.terrainMaterial == null ||
+                profile.terrainEdgeMaterial != profile.terrainMaterial || profile.useSeparateTerrainMaterials ||
+                profile.terrainMaterial.mainTexture == null)
+                throw new System.InvalidOperationException(
+                    "Arena requires its independent stunt generator and one unified textured dirt material.");
+
+            ArenaSettings settings = profile.arena;
+            if (settings.tireSprite == null || settings.platformSprite == null || settings.lavaSprite == null ||
+                settings.recentSegmentHistory < 4 || settings.maximumTechnicalStreak > 3 ||
+                settings.minimumBumpWavelength < 5f || settings.maximumBumpWavelength <= settings.minimumBumpWavelength ||
+                settings.maximumPlatformTilt < 20f || settings.maximumPlatformTilt > 30f ||
+                settings.easyPlatformWidth <= settings.hardPlatformWidth || settings.lavaDragStrength < 4f ||
+                settings.lavaMaximumSpeed > 8f || settings.lavaRecoverySeconds <= 0f)
+                throw new System.InvalidOperationException(
+                    "Arena stunt assets, coarse bumps, platform limits or temporary lava physics are invalid.");
+
+            EnvironmentDefinition environment = profile.environment;
+            if (environment.environmentId != "arena" || !environment.overrideCameraBackground ||
+                environment.sky == null || environment.mountains == null ||
+                environment.clouds == null || environment.clouds.Length != 0 ||
+                !environment.useRelativeParallaxSpeeds || !environment.lockVerticalToCamera ||
+                environment.mountainParallaxX <= 0f || environment.mountainParallaxX > .08f ||
+                environment.sun != null || environment.earth != null ||
+                environment.cameraBackgroundColor.maxColorComponent > .08f)
+                throw new System.InvalidOperationException(
+                    "Arena needs its neutral night sky, pooled stadium grandstand and stable slow parallax.");
+
+            var history = new List<ArenaSegmentType>(96);
+            var encountered = new HashSet<ArenaSegmentType>();
+            int recoveryCount = 0;
+            int technicalStreak = 0;
+            bool foundTires = false, foundPlatform = false, foundLava = false, foundLongJump = false;
+            ArenaSegmentLayout physicalLayout = default;
+            bool foundCombinedPhysicalLayout = false;
+            for (int segment = 0; segment < 96; segment++)
+            {
+                ArenaSegmentLayout layout = TerrainGenerator.GetArenaSegment(profile, segment);
+                encountered.Add(layout.type);
+                for (int back = 1; back <= settings.recentSegmentHistory && history.Count - back >= 0; back++)
+                    if (history[history.Count - back] == layout.type)
+                        throw new System.InvalidOperationException(
+                            $"Arena repeated {layout.type} inside its {settings.recentSegmentHistory}-segment history at {segment}.");
+                history.Add(layout.type);
+
+                bool technical = layout.type == ArenaSegmentType.FloatingPlatform ||
+                                 layout.type == ArenaSegmentType.LongJump ||
+                                 layout.type == ArenaSegmentType.MixedObstacle ||
+                                 layout.type == ArenaSegmentType.TireObstacle ||
+                                 layout.type == ArenaSegmentType.Lava;
+                technicalStreak = technical ? technicalStreak + 1 : 0;
+                if (technicalStreak > settings.maximumTechnicalStreak)
+                    throw new System.InvalidOperationException("Arena generated too many technical segments without recovery.");
+                if (layout.type == ArenaSegmentType.Recovery) recoveryCount++;
+
+                float boundary = layout.start;
+                if (segment > 0 && Mathf.Abs(TerrainGenerator.SampleHeight(profile, boundary - .02f) -
+                                             TerrainGenerator.SampleHeight(profile, boundary + .02f)) > .18f)
+                    throw new System.InvalidOperationException($"Arena terrain is discontinuous at segment {segment}.");
+
+                if (layout.HasGap)
+                {
+                    float gapLength = layout.gapEnd - layout.gapStart;
+                    if (gapLength < settings.minimumGapLength * .85f ||
+                        gapLength > settings.maximumGapLength * 1.1f ||
+                        !TerrainGenerator.IsTerrainGap(profile, (layout.gapStart + layout.gapEnd) * .5f) ||
+                        TerrainGenerator.IsTerrainGap(profile, layout.gapStart - .02f) ||
+                        TerrainGenerator.IsTerrainGap(profile, layout.gapEnd) ||
+                        layout.end - layout.gapEnd < settings.landingSafetyLength)
+                        throw new System.InvalidOperationException($"Arena gap/landing envelope is invalid at segment {segment}.");
+                }
+                if (layout.HasPlatform)
+                {
+                    foundPlatform = true;
+                    if (!layout.HasGap || layout.platformWidth < settings.hardPlatformWidth * .9f ||
+                        layout.platformCenterX - layout.platformWidth * .5f < layout.gapStart + .9f ||
+                        layout.platformCenterX + layout.platformWidth * .5f > layout.gapEnd - .9f)
+                        throw new System.InvalidOperationException(
+                            $"Arena platform is outside its reachable authored gap at segment {segment}.");
+                }
+                foundTires |= layout.HasTires;
+                foundLava |= layout.HasLava;
+                foundLongJump |= layout.type == ArenaSegmentType.LongJump && layout.HasGap;
+                if (!foundCombinedPhysicalLayout && layout.HasTires && layout.HasPlatform && layout.HasLava)
+                {
+                    physicalLayout = layout;
+                    foundCombinedPhysicalLayout = true;
+                }
+            }
+            if (encountered.Count < 9 || recoveryCount < 5 || !foundTires || !foundPlatform ||
+                !foundLava || !foundLongJump)
+                throw new System.InvalidOperationException(
+                    "Arena did not expose enough distinct obstacle, jump and recovery categories in its deterministic audit.");
+
+            if (!foundCombinedPhysicalLayout)
+            {
+                for (int segment = 96; segment < 320 && !foundCombinedPhysicalLayout; segment++)
+                {
+                    ArenaSegmentLayout layout = TerrainGenerator.GetArenaSegment(profile, segment);
+                    if (!layout.HasTires || !layout.HasPlatform || !layout.HasLava) continue;
+                    physicalLayout = layout;
+                    foundCombinedPhysicalLayout = true;
+                }
+            }
+            if (!foundCombinedPhysicalLayout)
+                throw new System.InvalidOperationException("Arena never generated its advanced combined obstacle segment.");
+
+            GameObject auditObject = new GameObject("Arena Physics Contract Audit");
+            try
+            {
+                ArenaSegmentEvent arenaEvent = auditObject.AddComponent<ArenaSegmentEvent>();
+                arenaEvent.Configure(profile, physicalLayout, 2f);
+                Physics2D.SyncTransforms();
+                if (!arenaEvent.AuditPhysicsComponents(physicalLayout, settings, out string problem))
+                    throw new System.InvalidOperationException("Arena physics audit failed: " + problem + ".");
+            }
+            finally
+            {
+                Object.DestroyImmediate(auditObject);
+            }
+            Debug.Log($"ARENA_TRACK_PASS: {encountered.Count} segment categories, no repeats inside the last " +
+                      $"{settings.recentSegmentHistory}, precise gaps/landings and physical tire/platform/lava " +
+                      "collider contracts validated.");
+        }
+
         private static void ValidateNeonCityContract(BuiltAssets assets)
         {
             MapProfile profile = assets.neonCity;
@@ -1652,15 +1864,17 @@ namespace AnimeHillRacing.Editor
                 Mathf.Abs((lockedYLow + 80f) - (lockedYHigh - 120f)) > .001f)
                 throw new System.InvalidOperationException(
                     "Neon City background must remain vertically locked to the camera with horizontal parallax enabled.");
-            if (assets.catalog.CountMaps(GameModeType.Adventure2_5D) != 5 ||
+            if (assets.catalog.CountMaps(GameModeType.Adventure2_5D) != 7 ||
                 assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 0)?.mapId != "countryside" ||
                 assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 1)?.mapId != "north-pole" ||
-                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 2)?.mapId != "neon-city" ||
-                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 3)?.mapId != "city" ||
-                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 4)?.mapId != "rainyer" ||
+                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 2)?.mapId != "space" ||
+                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 3)?.mapId != "arena" ||
+                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 4)?.mapId != "neon-city" ||
+                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 5)?.mapId != "city" ||
+                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 6)?.mapId != "rainyer" ||
                 rainyer == null || assets.catalog.FindMap("rainyer", GameModeType.Adventure2_5D) != rainyer)
                 throw new System.InvalidOperationException(
-                    "Adventure track selector requires Countryside, North Pole, Neon City, City and Rainyer profiles.");
+                    "Adventure track selector requires Countryside, North Pole, Space, Arena, Neon City, City and Rainyer profiles.");
             if (profile == null || !profile.supportsLiquidExposure || profile.liquidChallenges == null ||
                 profile.liquidChallenges.cycleLength != 6000f ||
                 profile.liquidChallenges.challengesPerCycle != 8 ||
@@ -5272,6 +5486,7 @@ namespace AnimeHillRacing.Editor
             assets.northPoleEnvironment.useRelativeParallaxSpeeds = true;
             assets.northPoleEnvironment.lockVerticalToCamera = true;
             assets.northPoleEnvironment.coverViewportVertically = true;
+            assets.northPoleEnvironment.coverViewportVerticalOffset = 2.6f;
             assets.northPoleEnvironment.mountainVisualHeight = 24.5f;
             assets.northPoleEnvironment.mountainBaseY = 0f;
             assets.northPoleEnvironment.pooledMountainSegments = 5;
@@ -5607,12 +5822,14 @@ namespace AnimeHillRacing.Editor
             };
             EditorUtility.SetDirty(assets.chestCatalog);
             assets.catalog = LoadOrCreate<GameCatalog>(Root + "/VehicleData/GameCatalog.asset");
+            assets.space = AssetDatabase.LoadAssetAtPath<MapProfile>(SpaceMapPath);
+            assets.arena = AssetDatabase.LoadAssetAtPath<MapProfile>(ArenaMapPath);
             MapDefinition rainyer = AssetDatabase.LoadAssetAtPath<MapDefinition>(
                 Root + "/MapProfiles/Rainyer.asset");
             assets.catalog.maps = rainyer != null
-                ? new MapDefinition[] { assets.countryside, assets.northPole, assets.neonCity, assets.city, rainyer,
+                ? new MapDefinition[] { assets.countryside, assets.northPole, assets.space, assets.arena, assets.neonCity, assets.city, rainyer,
                     assets.countrysideRoad, assets.testCircuit }
-                : new MapDefinition[] { assets.countryside, assets.northPole, assets.neonCity, assets.city,
+                : new MapDefinition[] { assets.countryside, assets.northPole, assets.space, assets.arena, assets.neonCity, assets.city,
                     assets.countrysideRoad, assets.testCircuit };
             assets.catalog.vehicles = new[] { assets.jeep, assets.formula, assets.rally, assets.sportBike, assets.hillAdventurer };
             assets.catalog.drivers = new[] { assets.stickmanBlack };

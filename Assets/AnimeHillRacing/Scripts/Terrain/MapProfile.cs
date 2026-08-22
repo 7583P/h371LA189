@@ -5,6 +5,67 @@ using AnimeHillRacing.CameraSystem;
 
 namespace AnimeHillRacing.Terrain
 {
+    public enum ArenaSegmentType
+    {
+        Bumpy,
+        Ramp,
+        TireObstacle,
+        Lava,
+        FloatingPlatform,
+        LongJump,
+        TechnicalClimb,
+        TechnicalDescent,
+        MixedObstacle,
+        Recovery
+    }
+
+    [System.Serializable]
+    public sealed class ArenaSettings
+    {
+        [Header("Segment Grammar")]
+        [Min(70f)] public float segmentLength = 104f;
+        [Range(3, 6)] public int recentSegmentHistory = 5;
+        [Range(2, 5)] public int maximumTechnicalStreak = 3;
+        [Range(4, 10)] public int recoveryInterval = 7;
+        [Min(.2f)] public float baseBumpHeight = 1.15f;
+        [Min(3f)] public float minimumBumpWavelength = 6.5f;
+        [Min(6f)] public float maximumBumpWavelength = 15f;
+        [Min(1f)] public float baseRampRise = 3.4f;
+        [Min(1f)] public float maximumRampRise = 5.8f;
+        [Min(6f)] public float minimumGapLength = 11f;
+        [Min(8f)] public float maximumGapLength = 24f;
+        [Min(8f)] public float landingSafetyLength = 22f;
+
+        [Header("Physical Tires")]
+        public Sprite tireSprite;
+        [Range(1, 6)] public int minimumTires = 2;
+        [Range(1, 8)] public int maximumTires = 5;
+        [Min(.4f)] public float tireRadius = 1.05f;
+        [Min(1f)] public float tireMass = 17f;
+        [Range(0f, 1f)] public float tireFriction = .82f;
+        [Range(0f, .4f)] public float tireBounciness = .035f;
+
+        [Header("Tilting Platform")]
+        public Sprite platformSprite;
+        [Min(5f)] public float easyPlatformWidth = 13f;
+        [Min(4f)] public float hardPlatformWidth = 8.5f;
+        [Range(10f, 35f)] public float maximumPlatformTilt = 25f;
+        [Min(.1f)] public float platformMass = 34f;
+        [Min(0f)] public float platformAngularDamping = 3.2f;
+        [Min(0f)] public float platformWeightTorque = 2.2f;
+        [Min(0f)] public float platformCenteringTorque = 1.1f;
+
+        [Header("Viscous Lava")]
+        public Sprite lavaSprite;
+        [Min(4f)] public float minimumLavaLength = 10f;
+        [Min(6f)] public float maximumLavaLength = 24f;
+        [Min(.2f)] public float lavaVisualDepth = 2.8f;
+        [Min(.1f)] public float lavaDragStrength = 7.5f;
+        [Min(.5f)] public float lavaMaximumSpeed = 6.5f;
+        [Min(.05f)] public float lavaEntrySeconds = .18f;
+        [Min(.05f)] public float lavaRecoverySeconds = .85f;
+    }
+
     [System.Serializable]
     public sealed class RainstormSettings
     {
@@ -76,6 +137,39 @@ namespace AnimeHillRacing.Terrain
 
         public static float[] DefaultStructuralRunUpPositions() =>
             new[] { 430f, 1280f, 2040f, 2770f, 3460f, 4140f, 4980f, 5530f };
+    }
+
+    [System.Serializable]
+    public sealed class SpaceChallengeSettings
+    {
+        [Header("Deterministic Void Layout")]
+        [Min(250f)] public float eventInterval = 2000f;
+        [Min(25f)] public float warningDistance = 100f;
+        [Min(120f), Tooltip("Exact flat run-up before the reusable ramp.")]
+        public float approachLength = 200f;
+        [Min(10f), Tooltip("Smooth transition from procedural terrain into the flat run-up.")]
+        public float approachBlendLength = 45f;
+        [Min(4f)] public float rampLength = 15f;
+        [Range(.05f, .5f)] public float rampFlatFraction = .08f;
+        [Min(.2f)] public float rampRise = 5.2f;
+        [Min(8f)] public float landingLength = 42f;
+        [Min(15f)] public float recoveryLength = 86f;
+        [Min(1f)] public float initialGapLength = 10f;
+        [Min(0f)] public float gapIncreasePerPhase = 5f;
+        [Min(0f)] public float landingDrop = .35f;
+
+        [Header("Black Hole")]
+        public Sprite blackHoleSprite;
+        [Min(.5f)] public float baseDiameter = 5.5f;
+        [Min(0f)] public float diameterGrowthPerGapMetre = .14f;
+        [Min(1f)] public float maximumDiameter = 10f;
+        public float verticalOffset = -1.8f;
+        [Range(.15f, .75f)] public float hazardRadiusFactor = .31f;
+
+        [Header("Reusable Props")]
+        public Sprite warningSprite;
+        [Min(.2f)] public float warningWidth = 3.2f;
+        public Material rampMaterial;
     }
 
     [CreateAssetMenu(menuName = "Anime Hill Racing/Map Profile", fileName = "MapProfile")]
@@ -154,6 +248,14 @@ namespace AnimeHillRacing.Terrain
         [Min(.1f)] public float neonAmplitudeSaturationCycles = 3f;
         public LiquidChallengeSettings liquidChallenges = new LiquidChallengeSettings();
 
+        [Header("Optional Space Void Challenges")]
+        public bool useSpaceTerrain;
+        public SpaceChallengeSettings spaceChallenges = new SpaceChallengeSettings();
+
+        [Header("Optional Arena Stunt Terrain")]
+        public bool useArenaTerrain;
+        public ArenaSettings arena = new ArenaSettings();
+
         [Header("Optional Rainstorm")]
         public RainstormSettings rainstorm = new RainstormSettings();
 
@@ -172,6 +274,8 @@ namespace AnimeHillRacing.Terrain
             fuelPlacementSearchStep = Mathf.Max(0.5f, fuelPlacementSearchStep);
             initialFuelGap = Mathf.Max(1f, initialFuelGap);
             liquidChallenges ??= new LiquidChallengeSettings();
+            spaceChallenges ??= new SpaceChallengeSettings();
+            arena ??= new ArenaSettings();
             rainstorm ??= new RainstormSettings();
             rainstorm.maximumParticles = Mathf.Clamp(rainstorm.maximumParticles, 100, 900);
             rainstorm.emissionRate = Mathf.Clamp(rainstorm.emissionRate, 20f, 300f);
@@ -195,6 +299,31 @@ namespace AnimeHillRacing.Terrain
                 liquidChallenges.recoveryLength = Mathf.Clamp(liquidChallenges.recoveryLength, 30f, 70f);
                 liquidChallenges.postRecoveryBlendLength = Mathf.Max(10f,
                     liquidChallenges.postRecoveryBlendLength);
+            }
+            if (useSpaceTerrain)
+            {
+                supportsLiquidExposure = false;
+                spaceChallenges.eventInterval = Mathf.Max(250f, spaceChallenges.eventInterval);
+                spaceChallenges.warningDistance = Mathf.Max(25f, spaceChallenges.warningDistance);
+                spaceChallenges.maximumDiameter = Mathf.Max(spaceChallenges.baseDiameter,
+                    spaceChallenges.maximumDiameter);
+                spaceChallenges.approachLength = Mathf.Max(120f, spaceChallenges.approachLength);
+                spaceChallenges.approachBlendLength = Mathf.Max(10f, spaceChallenges.approachBlendLength);
+                spaceChallenges.rampFlatFraction = Mathf.Clamp(spaceChallenges.rampFlatFraction, .05f, .5f);
+            }
+            if (useArenaTerrain)
+            {
+                useSpaceTerrain = false;
+                supportsLiquidExposure = false;
+                useCityHighwayTerrain = false;
+                arena.segmentLength = Mathf.Max(70f, arena.segmentLength);
+                arena.maximumGapLength = Mathf.Max(arena.minimumGapLength, arena.maximumGapLength);
+                arena.maximumBumpWavelength = Mathf.Max(arena.minimumBumpWavelength,
+                    arena.maximumBumpWavelength);
+                arena.maximumTires = Mathf.Max(arena.minimumTires, arena.maximumTires);
+                arena.hardPlatformWidth = Mathf.Min(arena.easyPlatformWidth,
+                    Mathf.Max(4f, arena.hardPlatformWidth));
+                arena.maximumLavaLength = Mathf.Max(arena.minimumLavaLength, arena.maximumLavaLength);
             }
         }
     }

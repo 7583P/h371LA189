@@ -148,6 +148,66 @@ MonoBehaviour:
     continuousViscosity: 2.4
     liquidDriveAcceleration: 9
     maximumSinkAcceleration: 8
+  useSpaceTerrain: 0
+  spaceChallenges:
+    eventInterval: 2000
+    warningDistance: 150
+    approachLength: 200
+    approachBlendLength: 45
+    rampLength: 15
+    rampFlatFraction: 0.08
+    rampRise: 5.2
+    landingLength: 42
+    recoveryLength: 86
+    initialGapLength: 10
+    gapIncreasePerPhase: 5
+    landingDrop: 0.35
+    blackHoleSprite: {fileID: 0}
+    baseDiameter: 5.5
+    diameterGrowthPerGapMetre: 0.14
+    maximumDiameter: 10
+    verticalOffset: -1.8
+    hazardRadiusFactor: 0.31
+    warningSprite: {fileID: 0}
+    warningWidth: 3.2
+    rampMaterial: {fileID: 0}
+  useArenaTerrain: 0
+  arena:
+    segmentLength: 104
+    recentSegmentHistory: 5
+    maximumTechnicalStreak: 3
+    recoveryInterval: 7
+    baseBumpHeight: 1.15
+    minimumBumpWavelength: 6.5
+    maximumBumpWavelength: 15
+    baseRampRise: 3.4
+    maximumRampRise: 5.8
+    minimumGapLength: 11
+    maximumGapLength: 24
+    landingSafetyLength: 22
+    tireSprite: {fileID: 0}
+    minimumTires: 2
+    maximumTires: 5
+    tireRadius: 1.05
+    tireMass: 17
+    tireFriction: 0.82
+    tireBounciness: 0.035
+    platformSprite: {fileID: 0}
+    easyPlatformWidth: 13
+    hardPlatformWidth: 8.5
+    maximumPlatformTilt: 25
+    platformMass: 34
+    platformAngularDamping: 3.2
+    platformWeightTorque: 2.2
+    platformCenteringTorque: 1.1
+    lavaSprite: {fileID: 0}
+    minimumLavaLength: 10
+    maximumLavaLength: 24
+    lavaVisualDepth: 2.8
+    lavaDragStrength: 7.5
+    lavaMaximumSpeed: 6.5
+    lavaEntrySeconds: 0.18
+    lavaRecoverySeconds: 0.85
   rainstorm:
     permanentRain: 0
     maximumParticles: 520

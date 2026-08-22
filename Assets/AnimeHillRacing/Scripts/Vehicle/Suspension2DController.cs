@@ -456,15 +456,13 @@ namespace AnimeHillRacing.Vehicle
                         compressionDampingForce = Mathf.Min(requestedDamping, passiveForceLimit);
                     }
 
-                    // During extension, bleed the bump-stop spring force instead of letting it launch the
-                    // chassis back upward. Clamping at zero keeps this passive: it never pulls the wheel and
-                    // chassis together or fabricates a downward impulse.
+                    // The WheelJoint already supplies the normal spring return. The progressive bump stop is
+                    // impact protection only; letting it continue pushing during extension duplicates the
+                    // spring and launches the chassis into a second bounce.
                     float reboundSpeed = Vector2.Dot(relativeVel, suspensionDir);
-                    float reboundDampingForce = reboundSpeed > 0f
-                        ? chassisBody.mass * reboundSpeed * bumpStopSpringMultiplier * 1.5f * bumpProgress
-                        : 0f;
-                    float totalForce = Mathf.Max(0f,
-                        bumpForce + compressionDampingForce - reboundDampingForce);
+                    float totalForce = reboundSpeed > 0f
+                        ? 0f
+                        : bumpForce + compressionDampingForce;
                     wheelBody.AddForce(-suspensionDir * totalForce, ForceMode2D.Force);
                     chassisBody.AddForceAtPosition(suspensionDir * totalForce, wheelBody.position, ForceMode2D.Force);
                 }

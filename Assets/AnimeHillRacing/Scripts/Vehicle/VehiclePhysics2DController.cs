@@ -148,12 +148,12 @@ namespace AnimeHillRacing.Vehicle
             // Tune-based suspension scaling: higher tune increases damping and high-impact control
             float tuneProgress = definition.suspensionMaxTunes > 1
                 ? (upgrades.suspensionTune - 1f) / (definition.suspensionMaxTunes - 1f) : 0f;
-            // Keep the 2D suspension firm and close to critically damped at every tune level. The old
-            // 0.60 base damping ratio stored too much spring energy and made the whole vehicle pogo after
-            // crests and landings, especially once aerodynamic load compressed the bump stops.
-            float tunedFrequency = Mathf.Lerp(suspensionFrequency, suspensionFrequency * 1.20f, tuneProgress);
-            float tunedDamping = Mathf.Lerp(Mathf.Max(1.0f, suspensionDampingRatio),
-                Mathf.Max(1.20f, suspensionDampingRatio * 1.35f), tuneProgress);
+            // Match the firm, heavily damped character of the former PhysX suspension. Box2D's original
+            // 0.60 base ratio was underdamped and allowed several oscillations after every landing.
+            float tunedFrequency = Mathf.Lerp(suspensionFrequency * 1.15f,
+                suspensionFrequency * 1.35f, tuneProgress);
+            float tunedDamping = Mathf.Lerp(Mathf.Max(1.25f, suspensionDampingRatio),
+                Mathf.Max(1.50f, suspensionDampingRatio * 1.55f), tuneProgress);
 
             if (frontSuspension != null)
             {

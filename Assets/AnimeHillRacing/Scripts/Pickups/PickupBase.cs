@@ -30,21 +30,28 @@ namespace AnimeHillRacing.Pickups
             if (triggerCollider == null) triggerCollider = GetComponent<Collider>();
             if (triggerCollider2D == null)
             {
-                Transform child2D = transform.Find("Trigger2D");
-                if (child2D == null)
+                // Unity does not allow a Collider2D beside the existing 3D Collider on this GameObject.
+                // Keep the 2D shape on a child and relay its callbacks explicitly to this pickup.
+                Transform triggerTransform = transform.Find("Trigger2D");
+                if (triggerTransform == null)
                 {
-                    GameObject go = new GameObject("Trigger2D");
-                    go.transform.SetParent(transform, false);
-                    child2D = go.transform;
+                    GameObject triggerObject = new GameObject("Trigger2D");
+                    triggerObject.transform.SetParent(transform, false);
+                    triggerTransform = triggerObject.transform;
                 }
-                triggerCollider2D = child2D.GetComponent<Collider2D>();
+
+                triggerCollider2D = triggerTransform.GetComponent<Collider2D>();
                 if (triggerCollider2D == null)
                 {
-                    CircleCollider2D circle = child2D.gameObject.AddComponent<CircleCollider2D>();
+                    CircleCollider2D circle = triggerTransform.gameObject.AddComponent<CircleCollider2D>();
                     circle.isTrigger = true;
                     circle.radius = 0.5f;
                     triggerCollider2D = circle;
                 }
+
+                PickupTrigger2DRelay relay = triggerTransform.GetComponent<PickupTrigger2DRelay>();
+                if (relay == null) relay = triggerTransform.gameObject.AddComponent<PickupTrigger2DRelay>();
+                relay.Assign(this);
             }
             if (renderers == null) renderers = GetComponentsInChildren<Renderer>(true);
             if (!scaleCached) { baseLocalScale = transform.localScale; scaleCached = true; }
@@ -55,7 +62,11 @@ namespace AnimeHillRacing.Pickups
             SpawnId = spawnId;
             SpawnVersion++;
             if (triggerCollider != null) triggerCollider.enabled = true;
-            if (triggerCollider2D != null) triggerCollider2D.enabled = true;
+            if (triggerCollider2D != null)
+            {
+                triggerCollider2D.isTrigger = true;
+                triggerCollider2D.enabled = true;
+            }
             if (renderers != null)
             {
                 for (int i = 0; i < renderers.Length; i++)
@@ -69,8 +80,8 @@ namespace AnimeHillRacing.Pickups
 
         private void OnTriggerEnter(Collider other) => TryCollect(other.GetComponentInParent<VehicleRuntimeBase>());
         private void OnTriggerStay(Collider other) => TryCollect(other.GetComponentInParent<VehicleRuntimeBase>());
-        private void OnTriggerEnter2D(Collider2D other) => TryCollect(ResolveVehicle2D(other));
-        private void OnTriggerStay2D(Collider2D other) => TryCollect(ResolveVehicle2D(other));
+
+        internal void HandleTrigger2D(Collider2D other) => TryCollect(ResolveVehicle2D(other));
 
         private static VehicleRuntimeBase ResolveVehicle2D(Collider2D other)
         {

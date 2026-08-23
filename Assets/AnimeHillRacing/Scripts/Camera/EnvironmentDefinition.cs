@@ -81,14 +81,15 @@ namespace AnimeHillRacing.CameraSystem
         [Range(0f, .5f)] public float starTwinkleAmount = .26f;
 
         [Header("Optional Cinematic Space Panorama")]
-        [Tooltip("Uses one camera-locked panorama with bounded ping-pong drift instead of repeating tiles.")]
+        [Tooltip("Uses a camera-locked panorama that scrolls continuously and recycles beyond the screen edges.")]
         public bool useCinematicSpacePanorama;
         public Shader cinematicSpacePanoramaShader;
-        [Tooltip("Adds a small safe overscan after covering the camera, leaving room for bounded horizontal drift.")]
+        [Tooltip("Adds a small safe overscan after covering the camera vertically.")]
         [Range(1f, 1.12f)] public float spacePanoramaOverscan = 1.04f;
-        public Vector2 spacePanoramaDriftAmplitude = new Vector2(.72f, .18f);
-        [Min(20f)] public float spacePanoramaDriftPeriod = 82f;
-        [Range(0f, .01f)] public float spacePanoramaBreathing = .0025f;
+        [Tooltip("Horizontal world units travelled per second. The panorama wraps seamlessly at its edges.")]
+        [Range(.01f, .5f)] public float spacePanoramaScrollSpeed = .075f;
+        [Tooltip("Mirrors alternating copies so adjacent image edges join without a hard reset seam.")]
+        public bool mirrorSpacePanoramaTiles = true;
         [Range(0f, .01f)] public float spaceNebulaFlowStrength = .0018f;
         [Range(.01f, .5f)] public float spaceNebulaFlowSpeed = .075f;
         [Range(0f, .2f)] public float spaceNebulaPulse = .055f;

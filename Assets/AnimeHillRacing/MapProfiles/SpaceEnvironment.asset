@@ -36,9 +36,9 @@ MonoBehaviour:
   coverViewportVerticalOffset: 0
   mountainVisualHeight: 24
   mountainBaseY: 0
-  pooledMountainSegments: 1
+  pooledMountainSegments: 3
   seamOverlap: 0.008
-  mirrorAlternatingMountainTiles: 0
+  mirrorAlternatingMountainTiles: 1
   farMountains: {fileID: 0}
   farMountainParallaxX: 0.08
   farMountainParallaxY: 0.025
@@ -71,9 +71,8 @@ MonoBehaviour:
   useCinematicSpacePanorama: 1
   cinematicSpacePanoramaShader: {fileID: 4800000, guid: 7b84cb860f2a4ef59e8d43ca54bb1801, type: 3}
   spacePanoramaOverscan: 1.04
-  spacePanoramaDriftAmplitude: {x: 0.34, y: 0}
-  spacePanoramaDriftPeriod: 86
-  spacePanoramaBreathing: 0
+  spacePanoramaScrollSpeed: 0.075
+  mirrorSpacePanoramaTiles: 1
   spaceNebulaFlowStrength: 0.0018
   spaceNebulaFlowSpeed: 0.075
   spaceNebulaPulse: 0.055

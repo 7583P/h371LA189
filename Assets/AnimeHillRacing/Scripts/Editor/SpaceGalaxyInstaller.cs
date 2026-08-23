@@ -8,7 +8,7 @@ namespace AnimeHillRacing.Editor
 {
     public static class SpaceGalaxyInstaller
     {
-        private const string SessionKey = "AHR.SpaceGalaxyInstaller.v6";
+        private const string SessionKey = "AHR.SpaceGalaxyInstaller.v7";
         private const string GalaxyPath = "Assets/Art/Backgrounds/Space/Space_Cosmic_Panorama_v4.png";
         private const string StarfieldPath = "Assets/Art/Backgrounds/Space/Space_Stars.png";
         private const string PanoramaShaderPath =
@@ -63,14 +63,13 @@ namespace AnimeHillRacing.Editor
             environment.useRelativeParallaxSpeeds = true;
             environment.coverViewportVertically = true;
             environment.lockVerticalToCamera = true;
-            environment.pooledMountainSegments = 1;
-            environment.mirrorAlternatingMountainTiles = false;
+            environment.pooledMountainSegments = 3;
+            environment.mirrorAlternatingMountainTiles = true;
             environment.useCinematicSpacePanorama = true;
             environment.cinematicSpacePanoramaShader = panoramaShader;
             environment.spacePanoramaOverscan = 1.04f;
-            environment.spacePanoramaDriftAmplitude = new Vector2(.34f, 0f);
-            environment.spacePanoramaDriftPeriod = 86f;
-            environment.spacePanoramaBreathing = 0f;
+            environment.spacePanoramaScrollSpeed = .075f;
+            environment.mirrorSpacePanoramaTiles = true;
             environment.spaceNebulaFlowStrength = .0018f;
             environment.spaceNebulaFlowSpeed = .075f;
             environment.spaceNebulaPulse = .055f;
@@ -106,7 +105,7 @@ namespace AnimeHillRacing.Editor
                 throw new InvalidOperationException("Space galaxy or black-hole coverage validation failed.");
 
             Debug.Log($"SPACE_UNIVERSE_INSTALL_OK|asset={GalaxyPath}|twinklingStars=56|shootingStars=cinematic|" +
-                      $"sun=removed|earth=removed|panorama=bounded-drift|void1={first.gapLength:0}/{first.blackHoleDiameter:0}|" +
+                      $"sun=removed|earth=removed|panorama=seamless-scroll|void1={first.gapLength:0}/{first.blackHoleDiameter:0}|" +
                       $"void10={tenth.gapLength:0}/{tenth.blackHoleDiameter:0}|top={firstTop:0.00}");
         }
     }

@@ -15,13 +15,16 @@ namespace AnimeHillRacing.CameraSystem
         [SerializeField] private SpriteRenderer earthRenderer;
 
         private TrailRenderer[] shootingStars;
+        private TrailRenderer[] shootingStarGlows;
         private SpriteRenderer[] shootingStarHeads;
+        private SpriteRenderer[] shootingStarBlooms;
         private Vector3[] shootingStarVelocities;
         private Vector3[] shootingStarAccelerations;
         private float[] shootingStarStartTimes;
         private float[] shootingStarStopTimes;
         private float[] shootingStarDisableTimes;
         private float[] shootingStarHeadScales;
+        private float[] shootingStarBloomScales;
         private Color[] shootingStarHeadColors;
         private Material shootingStarMaterial;
         private Material spacePanoramaMaterial;
@@ -102,8 +105,9 @@ namespace AnimeHillRacing.CameraSystem
             float scaleMountain;
             if (UsesCinematicSpacePanorama)
             {
-                float coverScale = Mathf.Max(viewWidthMountain / Mathf.Max(.001f, sourceWidthMountain),
-                    viewHeightMountain / Mathf.Max(.001f, mountainSourceHeight));
+                // The panorama is tiled horizontally, so only its height has to cover the camera.
+                // This preserves more of the authored planets on wide displays than a single cover-scaled image.
+                float coverScale = viewHeightMountain / Mathf.Max(.001f, mountainSourceHeight);
                 scaleMountain = coverScale * Mathf.Clamp(environment.spacePanoramaOverscan, 1f, 1.12f);
                 spacePanoramaBaseScale = scaleMountain;
                 spacePanoramaWidth = sourceWidthMountain * scaleMountain;
@@ -243,31 +247,52 @@ namespace AnimeHillRacing.CameraSystem
             if (shootingStars != null) return;
 
             shootingStars = new TrailRenderer[required];
+            shootingStarGlows = new TrailRenderer[required];
             shootingStarHeads = new SpriteRenderer[required];
+            shootingStarBlooms = new SpriteRenderer[required];
             shootingStarVelocities = new Vector3[required];
             shootingStarAccelerations = new Vector3[required];
             shootingStarStartTimes = new float[required];
             shootingStarStopTimes = new float[required];
             shootingStarDisableTimes = new float[required];
             shootingStarHeadScales = new float[required];
+            shootingStarBloomScales = new float[required];
             shootingStarHeadColors = new Color[required];
-            Gradient trailGradient = new Gradient();
-            trailGradient.SetKeys(
+            Gradient coreGradient = new Gradient();
+            coreGradient.SetKeys(
                 new[]
                 {
-                    new GradientColorKey(new Color(.12f, .32f, .72f), 0f),
-                    new GradientColorKey(new Color(.48f, .78f, 1f), .58f),
+                    new GradientColorKey(new Color(.10f, .28f, .62f), 0f),
+                    new GradientColorKey(new Color(.60f, .84f, 1f), .64f),
                     new GradientColorKey(Color.white, 1f)
                 },
                 new[]
                 {
                     new GradientAlphaKey(0f, 0f),
-                    new GradientAlphaKey(.16f, .28f),
-                    new GradientAlphaKey(.58f, .76f),
+                    new GradientAlphaKey(.10f, .24f),
+                    new GradientAlphaKey(.72f, .82f),
                     new GradientAlphaKey(1f, 1f)
                 });
-            AnimationCurve widthCurve = new AnimationCurve(
-                new Keyframe(0f, 0f), new Keyframe(.18f, .12f), new Keyframe(.72f, .38f),
+            Gradient glowGradient = new Gradient();
+            glowGradient.SetKeys(
+                new[]
+                {
+                    new GradientColorKey(new Color(.05f, .12f, .42f), 0f),
+                    new GradientColorKey(new Color(.22f, .58f, 1f), .68f),
+                    new GradientColorKey(new Color(1f, .72f, .42f), 1f)
+                },
+                new[]
+                {
+                    new GradientAlphaKey(0f, 0f),
+                    new GradientAlphaKey(.055f, .34f),
+                    new GradientAlphaKey(.22f, .84f),
+                    new GradientAlphaKey(.42f, 1f)
+                });
+            AnimationCurve coreWidthCurve = new AnimationCurve(
+                new Keyframe(0f, 0f), new Keyframe(.16f, .07f), new Keyframe(.70f, .31f),
+                new Keyframe(1f, 1f));
+            AnimationCurve glowWidthCurve = new AnimationCurve(
+                new Keyframe(0f, 0f), new Keyframe(.24f, .13f), new Keyframe(.76f, .52f),
                 new Keyframe(1f, 1f));
 
             CreateTwinklingStarSprite();
@@ -285,11 +310,31 @@ namespace AnimeHillRacing.CameraSystem
                 trail.numCornerVertices = 5;
                 trail.numCapVertices = 6;
                 trail.time = Mathf.Clamp(environment.shootingStarTrailSeconds, .2f, 1.2f);
-                trail.widthMultiplier = .075f;
-                trail.widthCurve = widthCurve;
-                trail.colorGradient = trailGradient;
-                trail.minVertexDistance = .035f;
+                trail.widthMultiplier = .052f;
+                trail.widthCurve = coreWidthCurve;
+                trail.colorGradient = coreGradient;
+                trail.minVertexDistance = .025f;
                 trail.emitting = false;
+
+                // TrailRenderer does not allow a second instance on the same GameObject in Unity.
+                // Keep the broader atmospheric glow on a child that follows the meteor root.
+                GameObject glowObject = new GameObject("Atmospheric Meteor Trail Glow");
+                glowObject.transform.SetParent(star.transform, false);
+                TrailRenderer glow = glowObject.AddComponent<TrailRenderer>();
+                glow.sharedMaterial = shootingStarMaterial;
+                glow.sortingLayerID = trail.sortingLayerID;
+                glow.sortingOrder = -48;
+                glow.alignment = LineAlignment.View;
+                glow.textureMode = LineTextureMode.Stretch;
+                glow.numCornerVertices = 7;
+                glow.numCapVertices = 8;
+                glow.time = trail.time * 1.18f;
+                glow.widthMultiplier = .17f;
+                glow.widthCurve = glowWidthCurve;
+                glow.colorGradient = glowGradient;
+                glow.minVertexDistance = .035f;
+                glow.emitting = false;
+                shootingStarGlows[i] = glow;
 
                 GameObject headObject = new GameObject("Atmospheric Comet Head");
                 headObject.transform.SetParent(star.transform, false);
@@ -299,6 +344,15 @@ namespace AnimeHillRacing.CameraSystem
                 head.sortingOrder = -46;
                 head.color = Color.clear;
                 shootingStarHeads[i] = head;
+
+                GameObject bloomObject = new GameObject("Atmospheric Meteor Bloom");
+                bloomObject.transform.SetParent(star.transform, false);
+                SpriteRenderer bloom = bloomObject.AddComponent<SpriteRenderer>();
+                bloom.sprite = twinklingStarSprite;
+                bloom.sortingLayerID = trail.sortingLayerID;
+                bloom.sortingOrder = -47;
+                bloom.color = Color.clear;
+                shootingStarBlooms[i] = bloom;
                 star.SetActive(false);
                 shootingStars[i] = trail;
             }
@@ -451,7 +505,7 @@ namespace AnimeHillRacing.CameraSystem
         private void EnsureMountainPool()
         {
             int required = environment.mountains != null
-                ? UsesCinematicSpacePanorama ? 1 : Mathf.Clamp(environment.pooledMountainSegments, 3, 7)
+                ? UsesCinematicSpacePanorama ? 3 : Mathf.Clamp(environment.pooledMountainSegments, 3, 7)
                 : 0;
             if (mountainSegments == null) mountainSegments = new SpriteRenderer[0];
             if (mountainSegments.Length < required)
@@ -567,18 +621,29 @@ namespace AnimeHillRacing.CameraSystem
 
         private void UpdateCinematicSpacePanorama(Vector3 cameraPosition, float baseY)
         {
-            if (mountainSegments == null || mountainSegments.Length == 0 || mountainSegments[0] == null) return;
-            SpriteRenderer panorama = mountainSegments[0];
-            float viewHeight = displayCamera.orthographicSize * 2f;
-            float viewWidth = viewHeight * displayCamera.aspect;
-            float availableX = Mathf.Max(0f, (spacePanoramaWidth - viewWidth) * .5f - .04f);
-            float period = Mathf.Max(20f, environment.spacePanoramaDriftPeriod);
-            float phase = Time.unscaledTime * TwoPi / period;
-            float driftX = Mathf.Sin(phase) * Mathf.Min(availableX,
-                Mathf.Abs(environment.spacePanoramaDriftAmplitude.x));
-            panorama.transform.position = new Vector3(cameraPosition.x + driftX, baseY, 10f);
-            panorama.transform.localScale = Vector3.one * spacePanoramaBaseScale;
-            panorama.flipX = false;
+            if (mountainSegments == null || mountainSegments.Length == 0 || spacePanoramaWidth <= .001f) return;
+
+            // Select the closest recycled cell with double precision. A tile that disappears on the
+            // left is immediately reused on the right (and vice versa), without a visible reset.
+            double scrollDistance = Time.unscaledTimeAsDouble * environment.spacePanoramaScrollSpeed;
+            double width = spacePanoramaWidth * (1d - Mathf.Clamp(environment.seamOverlap, 0f, .05f));
+            int centerCell = (int)System.Math.Round(scrollDistance / width);
+            int activeCount = 0;
+            for (int i = 0; i < mountainSegments.Length; i++)
+                if (mountainSegments[i] != null && mountainSegments[i].gameObject.activeSelf) activeCount++;
+            int half = activeCount / 2;
+            int activeIndex = 0;
+            for (int i = 0; i < mountainSegments.Length; i++)
+            {
+                SpriteRenderer panorama = mountainSegments[i];
+                if (panorama == null || !panorama.gameObject.activeSelf) continue;
+                int cell = centerCell + activeIndex - half;
+                float x = cameraPosition.x + (float)(cell * width - scrollDistance);
+                panorama.transform.position = new Vector3(x, baseY, 10f);
+                panorama.transform.localScale = Vector3.one * spacePanoramaBaseScale;
+                panorama.flipX = environment.mirrorSpacePanoramaTiles && PositiveModulo(cell, 2) != 0;
+                activeIndex++;
+            }
         }
 
         private void UpdateTwinklingStarPositions(Vector3 cameraPosition)
@@ -669,7 +734,11 @@ namespace AnimeHillRacing.CameraSystem
                     trail.transform.position += shootingStarVelocities[i] * deltaTime;
                 }
                 else
+                {
                     trail.emitting = false;
+                    if (shootingStarGlows != null && shootingStarGlows[i] != null)
+                        shootingStarGlows[i].emitting = false;
+                }
 
                 SpriteRenderer head = shootingStarHeads != null ? shootingStarHeads[i] : null;
                 if (head != null)
@@ -684,10 +753,22 @@ namespace AnimeHillRacing.CameraSystem
                     head.color = color;
                     float pulse = 1f + Mathf.Sin(time * 31f + i) * .07f;
                     head.transform.localScale = Vector3.one * (shootingStarHeadScales[i] * pulse);
+
+                    SpriteRenderer bloom = shootingStarBlooms != null ? shootingStarBlooms[i] : null;
+                    if (bloom != null)
+                    {
+                        Color bloomColor = color;
+                        bloomColor.a *= .30f;
+                        bloom.color = bloomColor;
+                        float bloomPulse = 1f + Mathf.Sin(time * 19f + i * 1.7f) * .11f;
+                        bloom.transform.localScale = Vector3.one * (shootingStarBloomScales[i] * bloomPulse);
+                    }
                 }
 
                 if (time < shootingStarDisableTimes[i]) continue;
                 trail.Clear();
+                if (shootingStarGlows != null && shootingStarGlows[i] != null)
+                    shootingStarGlows[i].Clear();
                 trail.gameObject.SetActive(false);
             }
 
@@ -732,13 +813,27 @@ namespace AnimeHillRacing.CameraSystem
             shootingStarStopTimes[slot] = time + flightSeconds;
             trail.time = Mathf.Clamp(environment.shootingStarTrailSeconds *
                                      Mathf.Lerp(.72f, 1.18f, Hash01(sequence * 467 + 59)), .2f, 1.2f);
-            trail.widthMultiplier = Mathf.Lerp(.045f, .095f, Hash01(sequence * 389 + 41));
-            shootingStarDisableTimes[slot] = shootingStarStopTimes[slot] + trail.time;
-            shootingStarHeadScales[slot] = Mathf.Lerp(.085f, .16f, Hash01(sequence * 719 + 107));
+            trail.widthMultiplier = Mathf.Lerp(.032f, .064f, Hash01(sequence * 389 + 41));
+            TrailRenderer glow = shootingStarGlows != null ? shootingStarGlows[slot] : null;
+            if (glow != null)
+            {
+                glow.time = trail.time * 1.18f;
+                glow.widthMultiplier = trail.widthMultiplier * Mathf.Lerp(2.7f, 3.6f,
+                    Hash01(sequence * 433 + 97));
+            }
+            shootingStarDisableTimes[slot] = shootingStarStopTimes[slot] + trail.time * 1.18f;
+            shootingStarHeadScales[slot] = Mathf.Lerp(.065f, .115f, Hash01(sequence * 719 + 107));
+            shootingStarBloomScales[slot] = shootingStarHeadScales[slot] * Mathf.Lerp(2.1f, 2.8f,
+                Hash01(sequence * 811 + 19));
             shootingStarHeadColors[slot] = Color.Lerp(new Color(.60f, .84f, 1f, .96f),
                 new Color(1f, .86f, .65f, .98f), Hash01(sequence * 829 + 13));
             trail.gameObject.SetActive(true);
             trail.Clear();
+            if (glow != null)
+            {
+                glow.Clear();
+                glow.emitting = true;
+            }
             trail.emitting = true;
         }
 

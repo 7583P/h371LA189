@@ -107,7 +107,7 @@ MonoBehaviour:
       sortingOrder: 3
       vehicleLayer: 0
     head:
-      position: {x: 0.10803339, y: 0.4222264}
+      position: {x: 0.14254186, y: 0.23818113}
       rotation: -3
       scale: {x: 0.032, y: 0.032}
       visible: 1
@@ -179,16 +179,24 @@ MonoBehaviour:
     accessoryOverrides:
     - accessoryId: fire-glasses
       pose:
-        position: {x: -0.1459554, y: 0.46399036}
+        position: {x: -0.09994459, y: 0.27994502}
         rotation: -3
         scale: {x: 1, y: 1}
-        visible: 0
+        visible: 1
         sortingOrder: 9
-        vehicleLayer: 0
+        vehicleLayer: 1
     - accessoryId: scarf
       pose:
         position: {x: -0.36370498, y: 0.27853236}
         rotation: 180
+        scale: {x: 1, y: 1}
+        visible: 1
+        sortingOrder: 9
+        vehicleLayer: 1
+    - accessoryId: glasses
+      pose:
+        position: {x: -0.0309276, y: 0.2569387}
+        rotation: -3
         scale: {x: 1, y: 1}
         visible: 1
         sortingOrder: 9

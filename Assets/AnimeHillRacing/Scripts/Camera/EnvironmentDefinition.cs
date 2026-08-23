@@ -79,5 +79,12 @@ namespace AnimeHillRacing.CameraSystem
         [Header("Optional Space Star Animation")]
         [Range(.25f, 6f)] public float starTwinkleSpeed = 2.15f;
         [Range(0f, .5f)] public float starTwinkleAmount = .26f;
+
+        [Header("Optional Space Shooting Stars")]
+        public bool enableShootingStars;
+        public Vector2 shootingStarIntervalRange = new Vector2(2.1f, 4.8f);
+        public Vector2 shootingStarSpeedRange = new Vector2(15f, 23f);
+        [Range(.2f, 1.2f)] public float shootingStarTrailSeconds = .58f;
+        [Range(1, 5)] public int shootingStarPoolSize = 3;
     }
 }

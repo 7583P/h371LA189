@@ -14,6 +14,14 @@ namespace AnimeHillRacing.CameraSystem
         [SerializeField] private SpriteRenderer sunRenderer;
         [SerializeField] private SpriteRenderer earthRenderer;
 
+        private TrailRenderer[] shootingStars;
+        private Vector3[] shootingStarVelocities;
+        private float[] shootingStarStopTimes;
+        private float[] shootingStarDisableTimes;
+        private Material shootingStarMaterial;
+        private float nextShootingStarAt;
+        private int shootingStarSequence;
+
         private float tileWidth;
         private float farTileWidth;
         private float nearTileWidth;
@@ -46,6 +54,7 @@ namespace AnimeHillRacing.CameraSystem
             EnsureFarMountainPool();
             EnsureNearMountainPool();
             EnsureCelestials();
+            EnsureShootingStarPool();
             if (environment.overrideCameraBackground)
             {
                 displayCamera.clearFlags = CameraClearFlags.SolidColor;
@@ -124,6 +133,80 @@ namespace AnimeHillRacing.CameraSystem
                 sunRenderer.color = Color.white;
             }
             if (earthRenderer != null) earthRenderer.color = Color.white;
+        }
+
+        private void EnsureShootingStarPool()
+        {
+            bool enabledForEnvironment = environment != null && environment.environmentId == "space" &&
+                                         environment.enableShootingStars;
+            int required = enabledForEnvironment
+                ? Mathf.Clamp(environment.shootingStarPoolSize, 1, 5) : 0;
+            if (shootingStars != null && shootingStars.Length != required)
+            {
+                for (int i = 0; i < shootingStars.Length; i++)
+                    if (shootingStars[i] != null) DestroyRuntimeObject(shootingStars[i].gameObject);
+                shootingStars = null;
+            }
+
+            if (required == 0)
+            {
+                if (shootingStarMaterial != null) DestroyRuntimeObject(shootingStarMaterial);
+                shootingStarMaterial = null;
+                return;
+            }
+
+            if (shootingStarMaterial == null)
+            {
+                Shader shader = Shader.Find("Sprites/Default");
+                if (shader != null)
+                    shootingStarMaterial = new Material(shader) { name = "Runtime Shooting Star Trail" };
+            }
+            if (shootingStars != null) return;
+
+            shootingStars = new TrailRenderer[required];
+            shootingStarVelocities = new Vector3[required];
+            shootingStarStopTimes = new float[required];
+            shootingStarDisableTimes = new float[required];
+            Gradient trailGradient = new Gradient();
+            trailGradient.SetKeys(
+                new[]
+                {
+                    new GradientColorKey(new Color(.32f, .68f, 1f), 0f),
+                    new GradientColorKey(new Color(.78f, .94f, 1f), .72f),
+                    new GradientColorKey(Color.white, 1f)
+                },
+                new[]
+                {
+                    new GradientAlphaKey(0f, 0f),
+                    new GradientAlphaKey(.42f, .58f),
+                    new GradientAlphaKey(1f, 1f)
+                });
+            AnimationCurve widthCurve = new AnimationCurve(
+                new Keyframe(0f, 0f), new Keyframe(.22f, .28f), new Keyframe(1f, 1f));
+
+            for (int i = 0; i < required; i++)
+            {
+                GameObject star = new GameObject($"Space Shooting Star {i + 1} - Pooled");
+                star.transform.SetParent(transform, false);
+                TrailRenderer trail = star.AddComponent<TrailRenderer>();
+                trail.sharedMaterial = shootingStarMaterial;
+                trail.sortingLayerID = skyRenderer != null ? skyRenderer.sortingLayerID : 0;
+                trail.sortingOrder = -47;
+                trail.alignment = LineAlignment.View;
+                trail.textureMode = LineTextureMode.Stretch;
+                trail.numCornerVertices = 2;
+                trail.numCapVertices = 2;
+                trail.time = Mathf.Clamp(environment.shootingStarTrailSeconds, .2f, 1.2f);
+                trail.widthMultiplier = .115f;
+                trail.widthCurve = widthCurve;
+                trail.colorGradient = trailGradient;
+                trail.emitting = false;
+                star.SetActive(false);
+                shootingStars[i] = trail;
+            }
+
+            shootingStarSequence = 0;
+            nextShootingStarAt = Time.unscaledTime + .75f;
         }
 
         private SpriteRenderer EnsureCelestialRenderer(SpriteRenderer renderer, string objectName, int order)
@@ -317,7 +400,68 @@ namespace AnimeHillRacing.CameraSystem
                     renderer.color = TwinkleColor(time * speed * (1f + i * .07f) + i * 1.71f, amount);
                 }
             }
+            UpdateShootingStars(time, Time.unscaledDeltaTime);
+        }
 
+        private void UpdateShootingStars(float time, float deltaTime)
+        {
+            if (!environment.enableShootingStars || shootingStars == null || displayCamera == null) return;
+
+            for (int i = 0; i < shootingStars.Length; i++)
+            {
+                TrailRenderer trail = shootingStars[i];
+                if (trail == null || !trail.gameObject.activeSelf) continue;
+                if (time < shootingStarStopTimes[i])
+                    trail.transform.position += shootingStarVelocities[i] * deltaTime;
+                else
+                    trail.emitting = false;
+
+                if (time < shootingStarDisableTimes[i]) continue;
+                trail.Clear();
+                trail.gameObject.SetActive(false);
+            }
+
+            if (time < nextShootingStarAt) return;
+            int slot = FindAvailableShootingStar();
+            SpawnShootingStar(slot, time);
+            float intervalT = Hash01(shootingStarSequence * 547 + 83);
+            nextShootingStarAt = time + LerpRange(environment.shootingStarIntervalRange,
+                intervalT, 2.1f, 4.8f);
+        }
+
+        private int FindAvailableShootingStar()
+        {
+            for (int i = 0; i < shootingStars.Length; i++)
+                if (shootingStars[i] != null && !shootingStars[i].gameObject.activeSelf) return i;
+            return PositiveModulo(shootingStarSequence, shootingStars.Length);
+        }
+
+        private void SpawnShootingStar(int slot, float time)
+        {
+            TrailRenderer trail = shootingStars[slot];
+            if (trail == null) return;
+
+            int sequence = shootingStarSequence++;
+            float viewHeight = displayCamera.orthographicSize * 2f;
+            float viewWidth = viewHeight * displayCamera.aspect;
+            float direction = Hash01(sequence * 193 + 29) > .5f ? 1f : -1f;
+            float heightT = Hash01(sequence * 347 + 71);
+            float speed = LerpRange(environment.shootingStarSpeedRange,
+                Hash01(sequence * 263 + 17), 15f, 23f);
+            Vector3 cameraPosition = displayCamera.transform.position;
+            trail.transform.position = new Vector3(
+                cameraPosition.x - direction * viewWidth * .58f,
+                cameraPosition.y + Mathf.Lerp(viewHeight * .12f, viewHeight * .46f, heightT),
+                11.8f);
+            shootingStarVelocities[slot] = new Vector3(direction * speed,
+                -speed * Mathf.Lerp(.16f, .28f, Hash01(sequence * 419 + 101)), 0f);
+            float flightSeconds = viewWidth * 1.18f / Mathf.Max(1f, speed);
+            shootingStarStopTimes[slot] = time + flightSeconds;
+            trail.time = Mathf.Clamp(environment.shootingStarTrailSeconds, .2f, 1.2f);
+            shootingStarDisableTimes[slot] = shootingStarStopTimes[slot] + trail.time;
+            trail.gameObject.SetActive(true);
+            trail.Clear();
+            trail.emitting = true;
         }
 
         private static Color TwinkleColor(float phase, float amount)
@@ -447,6 +591,18 @@ namespace AnimeHillRacing.CameraSystem
         {
             int result = value % modulus;
             return result < 0 ? result + modulus : result;
+        }
+
+        private static void DestroyRuntimeObject(Object target)
+        {
+            if (target == null) return;
+            if (Application.isPlaying) Destroy(target);
+            else DestroyImmediate(target);
+        }
+
+        private void OnDestroy()
+        {
+            if (shootingStarMaterial != null) DestroyRuntimeObject(shootingStarMaterial);
         }
 
         public static float CalculateVerticalPosition(EnvironmentDefinition definition,

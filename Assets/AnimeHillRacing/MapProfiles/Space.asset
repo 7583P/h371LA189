@@ -162,9 +162,9 @@ MonoBehaviour:
     gapIncreasePerPhase: 5
     landingDrop: 0.35
     blackHoleSprite: {fileID: 21300000, guid: 5ace0000000000000000000000000004, type: 3}
-    baseDiameter: 16
-    diameterGrowthPerGapMetre: 0.55
-    maximumDiameter: 80
+    baseDiameter: 10
+    diameterGrowthPerGapMetre: 1
+    maximumDiameter: 500
     verticalOffset: -1.8
     hazardRadiusFactor: 0.31
     warningSprite: {fileID: 21300000, guid: 5ace0000000000000000000000000005, type: 3}

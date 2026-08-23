@@ -115,16 +115,23 @@ namespace AnimeHillRacing.Terrain
                                                    (settings.warningWidth / Mathf.Max(.001f, warningSourceWidth));
 
             float blackHoleX = (layout.gapStart + layout.gapEnd) * .5f - layout.rampStart;
-            float blackHoleY = settings.verticalOffset;
-            ConfigureBlackHoleRenderer(outerRenderer, settings.blackHoleSprite, layout.blackHoleDiameter,
+            float blackHoleWidth = Mathf.Max(1f, layout.gapLength);
+            float blackHoleHeight = CalculateBlackHoleVisualHeight(blackHoleWidth);
+            float blackHoleY = CalculateBlackHoleCenterY(settings.verticalOffset, blackHoleWidth);
+            ConfigureBlackHoleRenderer(outerRenderer, settings.blackHoleSprite,
+                blackHoleWidth, blackHoleHeight,
                 blackHoleX, blackHoleY, -trackWidth * .5f - .18f, 5);
             ConfigureBlackHoleRenderer(innerRenderer, settings.blackHoleSprite,
-                layout.blackHoleDiameter * .68f, blackHoleX, blackHoleY, -trackWidth * .5f - .19f, 6);
+                blackHoleWidth * .68f, blackHoleHeight * .68f,
+                blackHoleX, blackHoleY, -trackWidth * .5f - .19f, 6);
             outerRenderer.color = Color.white;
             innerRenderer.color = new Color(1f, .72f, .25f, .78f);
             innerBaseScale = innerRenderer.transform.localScale;
 
-            float radius = Mathf.Max(.35f, layout.blackHoleDiameter * settings.hazardRadiusFactor);
+            float requestedRadius = Mathf.Max(.35f,
+                layout.blackHoleDiameter * settings.hazardRadiusFactor);
+            float maximumRadiusBelowRamp = Mathf.Max(.35f, -blackHoleY - .25f);
+            float radius = Mathf.Min(requestedRadius, maximumRadiusBelowRamp);
             hazard3D.center = new Vector3(blackHoleX, blackHoleY, 0f);
             hazard3D.radius = radius;
             hazard2D.offset = new Vector2(blackHoleX, blackHoleY);
@@ -134,18 +141,27 @@ namespace AnimeHillRacing.Terrain
             gameObject.SetActive(true);
         }
 
-        private static void ConfigureBlackHoleRenderer(SpriteRenderer renderer, Sprite sprite, float diameter,
-            float x, float y, float z, int sortingOrder)
+        public static float CalculateBlackHoleVisualHeight(float width) =>
+            Mathf.Clamp(Mathf.Max(1f, width) * .62f, 9f, 18f);
+
+        public static float CalculateBlackHoleCenterY(float authoredCenterY, float width)
+        {
+            const float clearanceBelowRamp = .2f;
+            return Mathf.Min(authoredCenterY,
+                -CalculateBlackHoleVisualHeight(width) * .5f - clearanceBelowRamp);
+        }
+
+        private static void ConfigureBlackHoleRenderer(SpriteRenderer renderer, Sprite sprite,
+            float width, float height, float x, float y, float z, int sortingOrder)
         {
             renderer.sprite = sprite;
             renderer.sortingOrder = sortingOrder;
             renderer.transform.localPosition = new Vector3(x, y, z);
             float sourceWidth = sprite != null ? sprite.bounds.size.x : 1f;
             float sourceHeight = sprite != null ? sprite.bounds.size.y : 1f;
-            float visualHeight = Mathf.Clamp(diameter * .62f, 9f, 18f);
             renderer.transform.localScale = new Vector3(
-                diameter / Mathf.Max(.001f, sourceWidth),
-                visualHeight / Mathf.Max(.001f, sourceHeight), 1f);
+                width / Mathf.Max(.001f, sourceWidth),
+                height / Mathf.Max(.001f, sourceHeight), 1f);
         }
 
         private void BuildRamp(SpaceChallengeSettings settings, float trackWidth)

@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: SpaceEnvironment
   m_EditorClassIdentifier: Assembly-CSharp::AnimeHillRacing.CameraSystem.EnvironmentDefinition
   environmentId: space
-  sky: {fileID: 21300000, guid: 5ace0000000000000000000000000014, type: 3}
-  mountains: {fileID: 21300000, guid: 5ace0000000000000000000000000014, type: 3}
+  sky: {fileID: 21300000, guid: b3a71d2c4e9f48689d7a41c2e6f503ab, type: 3}
+  mountains: {fileID: 21300000, guid: b3a71d2c4e9f48689d7a41c2e6f503ab, type: 3}
   overrideCameraBackground: 1
-  cameraBackgroundColor: {r: 0.002, g: 0.012, b: 0.07, a: 1}
+  cameraBackgroundColor: {r: 0.001, g: 0.002, b: 0.012, a: 1}
   clouds: []
   cloudParallaxX: 0.09
   cloudSpacing: 18
@@ -68,3 +68,8 @@ MonoBehaviour:
   celestialRepeatSpan: 72
   starTwinkleSpeed: 2.15
   starTwinkleAmount: 0
+  enableShootingStars: 1
+  shootingStarIntervalRange: {x: 2.1, y: 4.8}
+  shootingStarSpeedRange: {x: 15, y: 23}
+  shootingStarTrailSeconds: 0.58
+  shootingStarPoolSize: 3

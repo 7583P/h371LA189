@@ -8,8 +8,8 @@ namespace AnimeHillRacing.Editor
 {
     public static class SpaceGalaxyInstaller
     {
-        private const string SessionKey = "AHR.SpaceGalaxyInstaller.v1";
-        private const string GalaxyPath = "Assets/Art/Backgrounds/Space/Space_Galaxy_Blue_v2.png";
+        private const string SessionKey = "AHR.SpaceGalaxyInstaller.v2";
+        private const string GalaxyPath = "Assets/Art/Backgrounds/Space/Space_Universe_Dark_v3.png";
         private const string EnvironmentPath = "Assets/AnimeHillRacing/MapProfiles/SpaceEnvironment.asset";
         private const string ProfilePath = "Assets/AnimeHillRacing/MapProfiles/Space.asset";
 
@@ -21,7 +21,7 @@ namespace AnimeHillRacing.Editor
             EditorApplication.delayCall += Install;
         }
 
-        [MenuItem("Anime Hill Racing/Content/Install Space Blue Galaxy")]
+        [MenuItem("Anime Hill Racing/Content/Install Space Dark Universe")]
         public static void Install()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode)
@@ -52,14 +52,19 @@ namespace AnimeHillRacing.Editor
             environment.mountains = galaxy;
             environment.sun = null;
             environment.overrideCameraBackground = true;
-            environment.cameraBackgroundColor = new Color(.002f, .012f, .07f, 1f);
+            environment.cameraBackgroundColor = new Color(.001f, .002f, .012f, 1f);
             environment.useRelativeParallaxSpeeds = true;
             environment.coverViewportVertically = true;
             environment.starTwinkleAmount = 0f;
+            environment.enableShootingStars = true;
+            environment.shootingStarIntervalRange = new Vector2(2.1f, 4.8f);
+            environment.shootingStarSpeedRange = new Vector2(15f, 23f);
+            environment.shootingStarTrailSeconds = .58f;
+            environment.shootingStarPoolSize = 3;
 
-            profile.spaceChallenges.baseDiameter = 16f;
-            profile.spaceChallenges.diameterGrowthPerGapMetre = .55f;
-            profile.spaceChallenges.maximumDiameter = 80f;
+            profile.spaceChallenges.baseDiameter = profile.spaceChallenges.initialGapLength;
+            profile.spaceChallenges.diameterGrowthPerGapMetre = 1f;
+            profile.spaceChallenges.maximumDiameter = 500f;
 
             EditorUtility.SetDirty(environment);
             EditorUtility.SetDirty(profile);
@@ -67,14 +72,18 @@ namespace AnimeHillRacing.Editor
 
             SpaceChallengeLayout first = TerrainGenerator.GetSpaceChallenge(profile, 1);
             SpaceChallengeLayout tenth = TerrainGenerator.GetSpaceChallenge(profile, 10);
+            float firstTop = SpaceGapEvent.CalculateBlackHoleCenterY(
+                                 profile.spaceChallenges.verticalOffset, first.gapLength) +
+                             SpaceGapEvent.CalculateBlackHoleVisualHeight(first.gapLength) * .5f;
             if (environment.earth == null || environment.sun != null ||
-                first.blackHoleDiameter < first.gapLength + 5.99f ||
-                tenth.blackHoleDiameter < tenth.gapLength + 5.99f)
+                !environment.enableShootingStars ||
+                Mathf.Abs(first.blackHoleDiameter - first.gapLength) > .01f ||
+                Mathf.Abs(tenth.blackHoleDiameter - tenth.gapLength) > .01f || firstTop > -.19f)
                 throw new InvalidOperationException("Space galaxy or black-hole coverage validation failed.");
 
-            Debug.Log($"SPACE_GALAXY_INSTALL_OK|asset={GalaxyPath}|sun=removed|earth=kept|" +
-                      $"void1={first.gapLength:0}/{first.blackHoleDiameter:0}|" +
-                      $"void10={tenth.gapLength:0}/{tenth.blackHoleDiameter:0}");
+            Debug.Log($"SPACE_UNIVERSE_INSTALL_OK|asset={GalaxyPath}|shootingStars=animated|" +
+                      $"sun=removed|earth=kept|void1={first.gapLength:0}/{first.blackHoleDiameter:0}|" +
+                      $"void10={tenth.gapLength:0}/{tenth.blackHoleDiameter:0}|top={firstTop:0.00}");
         }
     }
 }

@@ -130,7 +130,7 @@ namespace AnimeHillRacing.Editor
         private const string NorthPoleTerrainPath = NorthPoleRoot + "/Terrain.png";
         private const string NorthPoleGroundPath = NorthPoleRoot + "/Ground.png";
         private const string SpaceMapPath = Root + "/MapProfiles/Space.asset";
-        private const string SpaceGalaxyPath = "Assets/Art/Backgrounds/Space/Space_Galaxy_Blue_v2.png";
+        private const string SpaceGalaxyPath = "Assets/Art/Backgrounds/Space/Space_Universe_Dark_v3.png";
         private const string ArenaMapPath = Root + "/MapProfiles/Arena.asset";
         private const string CityRoot = "Assets/Art/Backgrounds/City";
         private const string CitySkyPath = CityRoot + "/Sky.png";
@@ -1679,7 +1679,9 @@ namespace AnimeHillRacing.Editor
                 TerrainGenerator.IsTerrainGap(profile, first.gapEnd - .25f) ||
                 TerrainGenerator.IsTerrainGap(profile, first.gapEnd + 1f) ||
                 Mathf.Abs(TerrainGenerator.GetSpaceChallenge(profile, 10).gapLength - 55f) > .01f ||
-                settings.maximumDiameter < settings.baseDiameter || settings.rampRise < 5f ||
+                Mathf.Abs(first.blackHoleDiameter - first.gapLength) > .01f ||
+                Mathf.Abs(second.blackHoleDiameter - second.gapLength) > .01f ||
+                settings.rampRise < 5f ||
                 settings.rampFlatFraction > .1f)
                 throw new System.InvalidOperationException(
                     "Space void cadence, 100m warning, +5m growth, terrain removal or safety caps are invalid.");
@@ -1689,11 +1691,11 @@ namespace AnimeHillRacing.Editor
                 environment.mountains == null || environment.sun != null || environment.earth == null ||
                 !environment.useRelativeParallaxSpeeds || !environment.coverViewportVertically ||
                 !Mathf.Approximately(environment.earthRelativeParallax, 0f) ||
-                environment.starTwinkleAmount > .001f ||
+                environment.starTwinkleAmount > .001f || !environment.enableShootingStars ||
                 AssetDatabase.GetAssetPath(environment.sky) != SpaceGalaxyPath ||
                 AssetDatabase.GetAssetPath(environment.mountains) != SpaceGalaxyPath)
                 throw new System.InvalidOperationException(
-                    "Space needs the blue galaxy backdrop, no Sun, a stable Earth layer and no global blinking.");
+                    "Space needs the dark universe backdrop, animated shooting stars, no Sun, a stable Earth layer and no global blinking.");
             float introMinimum = float.MaxValue;
             float introMaximum = float.MinValue;
             for (int distance = 0; distance <= 100; distance += 5)
@@ -1712,7 +1714,7 @@ namespace AnimeHillRacing.Editor
                 throw new System.InvalidOperationException(
                     "Space must recover its high difficulty after the protected 100m opening.");
             Debug.Log("SPACE_TRACK_PASS: spawn-safe 100m opening, hard lunar terrain, pooled 2000m void events, " +
-                      "integrated ramps, solid landings, 100m warnings and vivid blue galaxy backdrop configured.");
+                      "width-fitted black holes, integrated ramps, 100m warnings, dark galaxies, auroras and animated shooting stars configured.");
         }
 
         private static void ValidateArenaContract(BuiltAssets assets)

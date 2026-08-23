@@ -960,13 +960,9 @@ namespace AnimeHillRacing.Terrain
             float landingLength = settings != null ? settings.landingLength : 42f;
             float recoveryLength = settings != null ? settings.recoveryLength : 86f;
             float baseline = SampleProceduralProfileHeight(profile, rampStart);
-            float authoredDiameter = settings != null
-                ? Mathf.Min(settings.baseDiameter + Mathf.Max(0f, gapLength - settings.initialGapLength) *
-                    settings.diameterGrowthPerGapMetre, settings.maximumDiameter)
-                : 5.5f;
-            // The event can keep growing beyond its authored styling cap. Its visible black-hole plate must
-            // always remain wider than the actual removed terrain or the centre of large voids looks empty.
-            float diameter = Mathf.Max(authoredDiameter, gapLength + 6f);
+            // The visible plate follows the removed terrain exactly: it fills the void without extending
+            // beneath the surrounding track or the launch/landing structures.
+            float diameter = gapLength;
             return new SpaceChallengeLayout
             {
                 phase = safePhase,

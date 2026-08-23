@@ -8,7 +8,7 @@ namespace AnimeHillRacing.Editor
 {
     public static class SpaceGalaxyInstaller
     {
-        private const string SessionKey = "AHR.SpaceGalaxyInstaller.v2";
+        private const string SessionKey = "AHR.SpaceGalaxyInstaller.v3";
         private const string GalaxyPath = "Assets/Art/Backgrounds/Space/Space_Universe_Dark_v3.png";
         private const string EnvironmentPath = "Assets/AnimeHillRacing/MapProfiles/SpaceEnvironment.asset";
         private const string ProfilePath = "Assets/AnimeHillRacing/MapProfiles/Space.asset";
@@ -55,7 +55,7 @@ namespace AnimeHillRacing.Editor
             environment.cameraBackgroundColor = new Color(.001f, .002f, .012f, 1f);
             environment.useRelativeParallaxSpeeds = true;
             environment.coverViewportVertically = true;
-            environment.starTwinkleAmount = 0f;
+            environment.starTwinkleAmount = .38f;
             environment.enableShootingStars = true;
             environment.shootingStarIntervalRange = new Vector2(2.1f, 4.8f);
             environment.shootingStarSpeedRange = new Vector2(15f, 23f);
@@ -76,12 +76,12 @@ namespace AnimeHillRacing.Editor
                                  profile.spaceChallenges.verticalOffset, first.gapLength) +
                              SpaceGapEvent.CalculateBlackHoleVisualHeight(first.gapLength) * .5f;
             if (environment.earth == null || environment.sun != null ||
-                !environment.enableShootingStars ||
+                !environment.enableShootingStars || environment.starTwinkleAmount < .25f ||
                 Mathf.Abs(first.blackHoleDiameter - first.gapLength) > .01f ||
                 Mathf.Abs(tenth.blackHoleDiameter - tenth.gapLength) > .01f || firstTop > -.19f)
                 throw new InvalidOperationException("Space galaxy or black-hole coverage validation failed.");
 
-            Debug.Log($"SPACE_UNIVERSE_INSTALL_OK|asset={GalaxyPath}|shootingStars=animated|" +
+            Debug.Log($"SPACE_UNIVERSE_INSTALL_OK|asset={GalaxyPath}|twinklingStars=28|shootingStars=animated|" +
                       $"sun=removed|earth=kept|void1={first.gapLength:0}/{first.blackHoleDiameter:0}|" +
                       $"void10={tenth.gapLength:0}/{tenth.blackHoleDiameter:0}|top={firstTop:0.00}");
         }

@@ -1691,11 +1691,11 @@ namespace AnimeHillRacing.Editor
                 environment.mountains == null || environment.sun != null || environment.earth == null ||
                 !environment.useRelativeParallaxSpeeds || !environment.coverViewportVertically ||
                 !Mathf.Approximately(environment.earthRelativeParallax, 0f) ||
-                environment.starTwinkleAmount > .001f || !environment.enableShootingStars ||
+                environment.starTwinkleAmount < .25f || !environment.enableShootingStars ||
                 AssetDatabase.GetAssetPath(environment.sky) != SpaceGalaxyPath ||
                 AssetDatabase.GetAssetPath(environment.mountains) != SpaceGalaxyPath)
                 throw new System.InvalidOperationException(
-                    "Space needs the dark universe backdrop, animated shooting stars, no Sun, a stable Earth layer and no global blinking.");
+                    "Space needs the dark universe backdrop, independent twinkling and shooting stars, no Sun and a stable Earth layer.");
             float introMinimum = float.MaxValue;
             float introMaximum = float.MinValue;
             for (int distance = 0; distance <= 100; distance += 5)

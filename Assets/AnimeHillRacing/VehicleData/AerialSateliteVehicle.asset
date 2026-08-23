@@ -30,7 +30,7 @@ MonoBehaviour:
     bundleType: 0
     allowsBlueprintProgression: 1
     visibleDiameter: 0
-    visibleSize: {x: 18.47, y: 7.1}
+    visibleSize: {x: 19.12, y: 5.68}
     visualOffset: {x: 0, y: 0}
   wheels:
   - optionId: aerial-satelite-wheel

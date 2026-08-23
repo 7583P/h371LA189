@@ -23,14 +23,34 @@ MonoBehaviour:
   allowsBlueprintProgression: 1
   skins:
   - optionId: buggy-skin-default
-    displayName: DEFAULT
+    displayName: BROWN
     sprite: {fileID: 21300000, guid: ba8f77a60c8d4da4a4f706d7236392a1, type: 3}
     unlockedByDefault: 1
     gemPrice: 0
     bundleType: 0
     allowsBlueprintProgression: 1
     visibleDiameter: 0
-    visibleSize: {x: 14.87, y: 5.4}
+    visibleSize: {x: 18.68, y: 5.83}
+    visualOffset: {x: 0, y: 0}
+  - optionId: buggy-skin-red
+    displayName: RACING RED
+    sprite: {fileID: 21300000, guid: c6f7d8e9a0b14c2d8e3f405162738495, type: 3}
+    unlockedByDefault: 0
+    gemPrice: 500
+    bundleType: 0
+    allowsBlueprintProgression: 1
+    visibleDiameter: 0
+    visibleSize: {x: 18.78, y: 6.07}
+    visualOffset: {x: 0, y: 0}
+  - optionId: buggy-skin-black-gold
+    displayName: BLACK & GOLD
+    sprite: {fileID: 21300000, guid: d7e8f9a0b1c24d3e9f405162738495a6, type: 3}
+    unlockedByDefault: 0
+    gemPrice: 500
+    bundleType: 0
+    allowsBlueprintProgression: 1
+    visibleDiameter: 0
+    visibleSize: {x: 18.63, y: 6.34}
     visualOffset: {x: 0, y: 0}
   wheels:
   - optionId: buggy-wheel-default

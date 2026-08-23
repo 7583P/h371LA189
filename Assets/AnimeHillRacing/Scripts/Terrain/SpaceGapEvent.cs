@@ -63,10 +63,10 @@ namespace AnimeHillRacing.Terrain
             if (warningRenderer == null) warningRenderer = warning.GetComponent<SpriteRenderer>();
             if (warningRenderer == null) warningRenderer = warning.gameObject.AddComponent<SpriteRenderer>();
 
-            Transform outer = GetOrCreate("Black Hole Outer Rotating Layer");
+            Transform outer = GetOrCreate("Black Hole Static Horizontal Core");
             if (outerRenderer == null) outerRenderer = outer.GetComponent<SpriteRenderer>();
             if (outerRenderer == null) outerRenderer = outer.gameObject.AddComponent<SpriteRenderer>();
-            Transform inner = GetOrCreate("Black Hole Inner Counter-Rotating Layer");
+            Transform inner = GetOrCreate("Black Hole Animated Orange Fire Ring");
             if (innerRenderer == null) innerRenderer = inner.GetComponent<SpriteRenderer>();
             if (innerRenderer == null) innerRenderer = inner.gameObject.AddComponent<SpriteRenderer>();
 
@@ -125,7 +125,7 @@ namespace AnimeHillRacing.Terrain
                 blackHoleWidth * .68f, blackHoleHeight * .68f,
                 blackHoleX, blackHoleY, -trackWidth * .5f - .19f, 6);
             outerRenderer.color = Color.white;
-            innerRenderer.color = new Color(1f, .72f, .25f, .78f);
+            innerRenderer.color = new Color(1f, .62f, .16f, .62f);
             innerBaseScale = innerRenderer.transform.localScale;
 
             float requestedRadius = Mathf.Max(.35f,
@@ -157,6 +157,7 @@ namespace AnimeHillRacing.Terrain
             renderer.sprite = sprite;
             renderer.sortingOrder = sortingOrder;
             renderer.transform.localPosition = new Vector3(x, y, z);
+            renderer.transform.localRotation = Quaternion.identity;
             float sourceWidth = sprite != null ? sprite.bounds.size.x : 1f;
             float sourceHeight = sprite != null ? sprite.bounds.size.y : 1f;
             renderer.transform.localScale = new Vector3(
@@ -197,10 +198,19 @@ namespace AnimeHillRacing.Terrain
         private void Update()
         {
             if (outerRenderer == null || innerRenderer == null) return;
-            outerRenderer.transform.Rotate(0f, 0f, -19f * Time.deltaTime);
-            innerRenderer.transform.Rotate(0f, 0f, 31f * Time.deltaTime);
-            float pulse = 1f + Mathf.Sin(Time.time * 2.1f + pulsePhase) * .045f;
-            innerRenderer.transform.localScale = innerBaseScale * pulse;
+            // The hole and its horizontal silhouette remain perfectly fixed beneath the ramp. Only the
+            // orange overlay flickers and breathes, like fire moving around an immobile event horizon.
+            outerRenderer.transform.localRotation = Quaternion.identity;
+            innerRenderer.transform.localRotation = Quaternion.identity;
+            float slowFlame = Mathf.Sin(Time.time * 2.35f + pulsePhase);
+            float fastFlame = Mathf.Sin(Time.time * 6.7f + pulsePhase * 1.91f);
+            float flame = Mathf.Clamp01(.5f + slowFlame * .34f + fastFlame * .16f);
+            innerRenderer.transform.localScale = new Vector3(
+                innerBaseScale.x * Mathf.Lerp(.985f, 1.018f, flame),
+                innerBaseScale.y * Mathf.Lerp(.97f, 1.035f, 1f - flame),
+                innerBaseScale.z);
+            innerRenderer.color = new Color(1f, Mathf.Lerp(.48f, .73f, flame),
+                Mathf.Lerp(.08f, .22f, flame), Mathf.Lerp(.48f, .72f, flame));
         }
 
         private void OnTriggerEnter(Collider other)

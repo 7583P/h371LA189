@@ -22,6 +22,16 @@ namespace AnimeHillRacing.CameraSystem
         private float nextShootingStarAt;
         private int shootingStarSequence;
 
+        private const int TwinklingStarCount = 28;
+        private SpriteRenderer[] twinklingStars;
+        private Vector2[] twinklingStarViewportPositions;
+        private float[] twinklingStarPhases;
+        private float[] twinklingStarSpeeds;
+        private float[] twinklingStarBaseScales;
+        private Color[] twinklingStarColors;
+        private Texture2D twinklingStarTexture;
+        private Sprite twinklingStarSprite;
+
         private float tileWidth;
         private float farTileWidth;
         private float nearTileWidth;
@@ -54,6 +64,7 @@ namespace AnimeHillRacing.CameraSystem
             EnsureFarMountainPool();
             EnsureNearMountainPool();
             EnsureCelestials();
+            EnsureTwinklingStarPool();
             EnsureShootingStarPool();
             if (environment.overrideCameraBackground)
             {
@@ -207,6 +218,97 @@ namespace AnimeHillRacing.CameraSystem
 
             shootingStarSequence = 0;
             nextShootingStarAt = Time.unscaledTime + .75f;
+        }
+
+        private void EnsureTwinklingStarPool()
+        {
+            bool enabledForEnvironment = environment != null && environment.environmentId == "space" &&
+                                         environment.starTwinkleAmount > .001f;
+            int required = enabledForEnvironment ? TwinklingStarCount : 0;
+            if (twinklingStars != null && twinklingStars.Length != required)
+            {
+                for (int i = 0; i < twinklingStars.Length; i++)
+                    if (twinklingStars[i] != null) DestroyRuntimeObject(twinklingStars[i].gameObject);
+                twinklingStars = null;
+            }
+
+            if (required == 0)
+            {
+                DestroyTwinklingStarAssets();
+                return;
+            }
+            if (twinklingStars != null) return;
+
+            CreateTwinklingStarSprite();
+            twinklingStars = new SpriteRenderer[required];
+            twinklingStarViewportPositions = new Vector2[required];
+            twinklingStarPhases = new float[required];
+            twinklingStarSpeeds = new float[required];
+            twinklingStarBaseScales = new float[required];
+            twinklingStarColors = new Color[required];
+
+            Color[] palette =
+            {
+                Color.white,
+                new Color(.64f, .82f, 1f, 1f),
+                new Color(1f, .82f, .54f, 1f)
+            };
+            for (int i = 0; i < required; i++)
+            {
+                GameObject star = new GameObject($"Space Twinkling Star {i + 1} - Pooled");
+                star.transform.SetParent(transform, false);
+                SpriteRenderer renderer = star.AddComponent<SpriteRenderer>();
+                renderer.sprite = twinklingStarSprite;
+                renderer.sortingLayerID = skyRenderer != null ? skyRenderer.sortingLayerID : 0;
+                renderer.sortingOrder = -48;
+                twinklingStars[i] = renderer;
+                twinklingStarViewportPositions[i] = new Vector2(
+                    Mathf.Lerp(.025f, .975f, Hash01(i * 277 + 31)),
+                    Mathf.Lerp(.08f, .96f, Hash01(i * 419 + 73)));
+                twinklingStarPhases[i] = Hash01(i * 613 + 109) * Mathf.PI * 2f;
+                twinklingStarSpeeds[i] = Mathf.Lerp(.72f, 2.45f, Hash01(i * 181 + 151));
+                twinklingStarBaseScales[i] = Mathf.Lerp(.045f, .13f, Hash01(i * 331 + 197));
+                twinklingStarColors[i] = palette[PositiveModulo(i * 5 + 1, palette.Length)];
+            }
+        }
+
+        private void CreateTwinklingStarSprite()
+        {
+            if (twinklingStarSprite != null) return;
+            const int size = 16;
+            twinklingStarTexture = new Texture2D(size, size, TextureFormat.RGBA32, false, true)
+            {
+                name = "Runtime Space Twinkling Star",
+                filterMode = FilterMode.Bilinear,
+                wrapMode = TextureWrapMode.Clamp
+            };
+            var pixels = new Color32[size * size];
+            float center = (size - 1) * .5f;
+            for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                float dx = Mathf.Abs(x - center);
+                float dy = Mathf.Abs(y - center);
+                float radial = Mathf.Exp(-(dx * dx + dy * dy) * .34f);
+                float horizontalRay = Mathf.Exp(-dy * dy * 1.5f) * Mathf.Exp(-dx * .34f) * .72f;
+                float verticalRay = Mathf.Exp(-dx * dx * 1.5f) * Mathf.Exp(-dy * .34f) * .72f;
+                byte alpha = (byte)Mathf.RoundToInt(Mathf.Clamp01(
+                    Mathf.Max(radial, Mathf.Max(horizontalRay, verticalRay))) * 255f);
+                pixels[y * size + x] = new Color32(255, 255, 255, alpha);
+            }
+            twinklingStarTexture.SetPixels32(pixels);
+            twinklingStarTexture.Apply(false, true);
+            twinklingStarSprite = Sprite.Create(twinklingStarTexture, new Rect(0f, 0f, size, size),
+                new Vector2(.5f, .5f), size);
+            twinklingStarSprite.name = "Runtime Space Twinkling Star";
+        }
+
+        private void DestroyTwinklingStarAssets()
+        {
+            if (twinklingStarSprite != null) DestroyRuntimeObject(twinklingStarSprite);
+            if (twinklingStarTexture != null) DestroyRuntimeObject(twinklingStarTexture);
+            twinklingStarSprite = null;
+            twinklingStarTexture = null;
         }
 
         private SpriteRenderer EnsureCelestialRenderer(SpriteRenderer renderer, string objectName, int order)
@@ -369,6 +471,24 @@ namespace AnimeHillRacing.CameraSystem
                 environment.sunRelativeParallax, environment.celestialRepeatSpan, 12.3f);
             UpdateCelestialPosition(earthRenderer, cameraPosition, environment.earthCameraOffset,
                 environment.earthRelativeParallax, environment.celestialRepeatSpan, 12.2f);
+            UpdateTwinklingStarPositions(cameraPosition);
+        }
+
+        private void UpdateTwinklingStarPositions(Vector3 cameraPosition)
+        {
+            if (twinklingStars == null || displayCamera == null) return;
+            float viewHeight = displayCamera.orthographicSize * 2f;
+            float viewWidth = viewHeight * displayCamera.aspect;
+            for (int i = 0; i < twinklingStars.Length; i++)
+            {
+                SpriteRenderer renderer = twinklingStars[i];
+                if (renderer == null) continue;
+                Vector2 viewport = twinklingStarViewportPositions[i];
+                renderer.transform.position = new Vector3(
+                    cameraPosition.x + (viewport.x - .5f) * viewWidth,
+                    cameraPosition.y + (viewport.y - .5f) * viewHeight,
+                    12f);
+            }
         }
 
         private static void UpdateCelestialPosition(SpriteRenderer renderer, Vector3 cameraPosition,
@@ -389,18 +509,38 @@ namespace AnimeHillRacing.CameraSystem
             float time = Time.unscaledTime;
             float speed = Mathf.Max(.25f, environment.starTwinkleSpeed);
             float amount = Mathf.Clamp(environment.starTwinkleAmount, 0f, .5f);
-            if (skyRenderer != null)
-                skyRenderer.color = TwinkleColor(time * speed * .73f + .8f, amount * .7f);
+            if (skyRenderer != null) skyRenderer.color = Color.white;
             if (mountainSegments != null)
             {
                 for (int i = 0; i < mountainSegments.Length; i++)
                 {
                     SpriteRenderer renderer = mountainSegments[i];
                     if (renderer == null || !renderer.gameObject.activeSelf) continue;
-                    renderer.color = TwinkleColor(time * speed * (1f + i * .07f) + i * 1.71f, amount);
+                    renderer.color = Color.white;
                 }
             }
+            UpdateTwinklingStars(time, speed, amount);
             UpdateShootingStars(time, Time.unscaledDeltaTime);
+        }
+
+        private void UpdateTwinklingStars(float time, float speed, float amount)
+        {
+            if (twinklingStars == null) return;
+            float animationBlend = Mathf.InverseLerp(0f, .5f, amount);
+            for (int i = 0; i < twinklingStars.Length; i++)
+            {
+                SpriteRenderer renderer = twinklingStars[i];
+                if (renderer == null) continue;
+                float phase = time * speed * twinklingStarSpeeds[i] + twinklingStarPhases[i];
+                float primary = Mathf.Pow(Mathf.Clamp01(.5f + .5f * Mathf.Sin(phase)), 5f);
+                float secondary = Mathf.Clamp01(.5f + .5f * Mathf.Sin(phase * .37f + i * 2.17f));
+                float flash = Mathf.Clamp01(primary * .82f + secondary * .18f);
+                Color tint = twinklingStarColors[i];
+                tint.a = Mathf.Lerp(.78f, Mathf.Lerp(.16f, 1f, flash), animationBlend);
+                renderer.color = tint;
+                float scale = twinklingStarBaseScales[i] * Mathf.Lerp(.82f, 1.28f, flash);
+                renderer.transform.localScale = Vector3.one * scale;
+            }
         }
 
         private void UpdateShootingStars(float time, float deltaTime)
@@ -462,14 +602,6 @@ namespace AnimeHillRacing.CameraSystem
             trail.gameObject.SetActive(true);
             trail.Clear();
             trail.emitting = true;
-        }
-
-        private static Color TwinkleColor(float phase, float amount)
-        {
-            // The fourth power creates short, independent flashes instead of a uniform breathing effect.
-            float flash = Mathf.Pow(Mathf.Clamp01(.5f + .5f * Mathf.Sin(phase)), 4f);
-            float brightness = 1f - amount + amount * flash;
-            return new Color(brightness, brightness, Mathf.Min(1f, brightness + .035f), 1f);
         }
 
         private static void UpdatePanoramaPositions(SpriteRenderer[] segments, float cameraX,
@@ -603,6 +735,7 @@ namespace AnimeHillRacing.CameraSystem
         private void OnDestroy()
         {
             if (shootingStarMaterial != null) DestroyRuntimeObject(shootingStarMaterial);
+            DestroyTwinklingStarAssets();
         }
 
         public static float CalculateVerticalPosition(EnvironmentDefinition definition,

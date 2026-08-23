@@ -67,7 +67,7 @@ MonoBehaviour:
   earthVisualWidth: 5.1
   celestialRepeatSpan: 72
   starTwinkleSpeed: 2.15
-  starTwinkleAmount: 0
+  starTwinkleAmount: 0.38
   enableShootingStars: 1
   shootingStarIntervalRange: {x: 2.1, y: 4.8}
   shootingStarSpeedRange: {x: 15, y: 23}

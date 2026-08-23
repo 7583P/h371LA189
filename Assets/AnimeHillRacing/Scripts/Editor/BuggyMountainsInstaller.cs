@@ -14,9 +14,11 @@ namespace AnimeHillRacing.Editor
 {
     public static class BuggyMountainsInstaller
     {
-        private const string SessionKey = "AHR.BuggyMountainsInstaller.v9";
+        private const string SessionKey = "AHR.BuggyMountainsInstaller.v10";
         private const string Root = "Assets/AnimeHillRacing";
         private const string BuggyBodyPath = "Assets/Art/Vehicles/Buggy/Buggy_Body.png";
+        private const string BuggyRedBodyPath = "Assets/Art/Vehicles/Buggy/Buggy_Body_Red.png";
+        private const string BuggyBlackGoldBodyPath = "Assets/Art/Vehicles/Buggy/Buggy_Body_BlackGold.png";
         private const string BuggyWheelPath = "Assets/Art/Vehicles/Buggy/Buggy_Wheel.png";
         private const string BuggyAssetPath = Root + "/VehicleData/BuggyVehicle.asset";
         private const string Buggy2DPrefabPath = Root + "/Prefabs/Vehicles/Buggy_2D.prefab";
@@ -52,6 +54,8 @@ namespace AnimeHillRacing.Editor
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
 
             ConfigureSprite(BuggyBodyPath, 2048, true);
+            ConfigureSprite(BuggyRedBodyPath, 2048, true);
+            ConfigureSprite(BuggyBlackGoldBodyPath, 2048, true);
             ConfigureSprite(BuggyWheelPath, 2048, true);
             ConfigureSprite(MountainsArtRoot + "/Mountains_Sky.png", 1024, false);
             ConfigureSprite(MountainsArtRoot + "/Mountains_Far.png", 1024, true);
@@ -61,12 +65,14 @@ namespace AnimeHillRacing.Editor
             ConfigureTiledTexture(MountainsTerrainRoot + "/Mountains_Rock.png");
 
             Sprite body = AssetDatabase.LoadAssetAtPath<Sprite>(BuggyBodyPath);
+            Sprite redBody = AssetDatabase.LoadAssetAtPath<Sprite>(BuggyRedBodyPath);
+            Sprite blackGoldBody = AssetDatabase.LoadAssetAtPath<Sprite>(BuggyBlackGoldBodyPath);
             Sprite wheel = AssetDatabase.LoadAssetAtPath<Sprite>(BuggyWheelPath);
-            if (body == null || wheel == null)
+            if (body == null || redBody == null || blackGoldBody == null || wheel == null)
                 throw new InvalidOperationException("Buggy source sprites could not be imported.");
 
             VehicleDefinition buggy = LoadOrCreate<VehicleDefinition>(BuggyAssetPath);
-            ConfigureBuggy(buggy, body, wheel);
+            ConfigureBuggy(buggy, body, redBody, blackGoldBody, wheel);
             BuildBuggyPrefabs(buggy);
 
             EnvironmentDefinition environment = LoadOrCreate<EnvironmentDefinition>(MountainsEnvironmentPath);
@@ -83,10 +89,11 @@ namespace AnimeHillRacing.Editor
             AdventureBox2DGoldenInstaller.InstallGoldenBox2D();
             ValidateInstallation(buggy, mountains);
             AssetDatabase.SaveAssets();
-            Debug.Log("BUGGY_MOUNTAINS_INSTALL_OK|vehicle=buggy-01|track=mountains|chunks=pooled|seed=40822");
+            Debug.Log("BUGGY_MOUNTAINS_INSTALL_OK|vehicle=buggy-01|skins=3|paidSkinPrice=500|track=mountains|chunks=pooled|seed=40822");
         }
 
-        private static void ConfigureBuggy(VehicleDefinition v, Sprite body, Sprite wheel)
+        private static void ConfigureBuggy(VehicleDefinition v, Sprite body, Sprite redBody,
+            Sprite blackGoldBody, Sprite wheel)
         {
             v.vehicleId = "buggy-01";
             v.displayName = "BUGGY";
@@ -205,7 +212,12 @@ namespace AnimeHillRacing.Editor
             v.frontWheelVisualDiameter = 0f;
             v.flipBodyX = false;
             v.previewSprite = body;
-            v.skins = new[] { Option("buggy-skin-default", "DEFAULT", body) };
+            v.skins = new[]
+            {
+                Option("buggy-skin-default", "BROWN", body),
+                Option("buggy-skin-red", "RACING RED", redBody, false, 500),
+                Option("buggy-skin-black-gold", "BLACK & GOLD", blackGoldBody, false, 500)
+            };
             v.wheels = new[] { Option("buggy-wheel-default", "MOUNTAIN GRIP", wheel) };
 
             VehicleDefinition hill = AssetDatabase.LoadAssetAtPath<VehicleDefinition>(
@@ -217,14 +229,22 @@ namespace AnimeHillRacing.Editor
             v.driverPose.rootScale = .80f;
         }
 
-        private static VehicleDefinition.CustomizationOption Option(string id, string name, Sprite sprite) =>
-            new VehicleDefinition.CustomizationOption
+        private static VehicleDefinition.CustomizationOption Option(string id, string name, Sprite sprite,
+            bool unlockedByDefault = true, int gemPrice = 0)
+        {
+            Vector2 visibleSize = sprite != null
+                ? VehicleVisualNormalizationEditor.MeasureAlphaVisibleSize(sprite)
+                : Vector2.one;
+            if (visibleSize.sqrMagnitude <= .0001f && sprite != null)
+                visibleSize = sprite.bounds.size;
+            return new VehicleDefinition.CustomizationOption
             {
-                optionId = id, displayName = name, sprite = sprite, unlockedByDefault = true,
-                gemPrice = 0, allowsBlueprintProgression = true,
-                visibleSize = sprite != null ? (Vector2)sprite.bounds.size : Vector2.one,
+                optionId = id, displayName = name, sprite = sprite, unlockedByDefault = unlockedByDefault,
+                gemPrice = gemPrice, allowsBlueprintProgression = true,
+                visibleSize = visibleSize,
                 visualOffset = Vector2.zero
             };
+        }
 
         private static float[] Values(float start, float end, int count, float exponent)
         {
@@ -478,6 +498,15 @@ namespace AnimeHillRacing.Editor
 
         private static void ValidateInstallation(VehicleDefinition buggy, MapProfile mountains)
         {
+            if (buggy.skins == null || buggy.skins.Length != 3 ||
+                buggy.skins[0] == null || !buggy.skins[0].unlockedByDefault || buggy.skins[0].gemPrice != 0 ||
+                buggy.skins[1] == null || buggy.skins[1].unlockedByDefault || buggy.skins[1].gemPrice != 500 ||
+                buggy.skins[2] == null || buggy.skins[2].unlockedByDefault || buggy.skins[2].gemPrice != 500 ||
+                buggy.skins[0].sprite == null || buggy.skins[1].sprite == null || buggy.skins[2].sprite == null ||
+                buggy.skins[0].sprite == buggy.skins[1].sprite || buggy.skins[1].sprite == buggy.skins[2].sprite ||
+                buggy.skins[0].sprite == buggy.skins[2].sprite)
+                throw new InvalidOperationException("Buggy skin catalog does not match the authored contract.");
+
             var max = new VehicleUpgradeState
             {
                 engineTune = buggy.engineMaxTunes, accelerationTune = buggy.accelerationMaxTunes,

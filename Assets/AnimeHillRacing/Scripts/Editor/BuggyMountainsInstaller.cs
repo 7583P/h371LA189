@@ -205,11 +205,14 @@ namespace AnimeHillRacing.Editor
 
             v.visualWidth = 4.85f;
             v.bodyVisualOffset = new Vector2(0f, .20f);
-            v.rearWheelVisualPosition = new Vector2(-1.80f, -.53f);
-            v.frontWheelVisualPosition = new Vector2(1.80f, -.53f);
+            if (!v.preserveWheelVisualPositions)
+            {
+                v.rearWheelVisualPosition = new Vector2(-1.80f, -.53f);
+                v.frontWheelVisualPosition = new Vector2(1.80f, -.53f);
+                v.rearWheelVisualDiameter = 0f;
+                v.frontWheelVisualDiameter = 0f;
+            }
             v.wheelVisualDiameter = 1.06f;
-            v.rearWheelVisualDiameter = 0f;
-            v.frontWheelVisualDiameter = 0f;
             v.flipBodyX = false;
             v.previewSprite = body;
             v.skins = new[]

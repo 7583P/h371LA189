@@ -15,6 +15,13 @@ namespace AnimeHillRacing.Vehicle
         AerialSatelite
     }
 
+    public enum DriverVehicleLayer
+    {
+        UsePartDefault,
+        BehindVehicle,
+        InFrontOfVehicle
+    }
+
     [CreateAssetMenu(menuName = "Anime Hill Racing/Vehicle Definition", fileName = "MainVehicle")]
     public sealed class VehicleDefinition : ScriptableObject
     {
@@ -49,6 +56,15 @@ namespace AnimeHillRacing.Vehicle
             public Vector2 scale;
             public bool visible;
             public int sortingOrder;
+            [Tooltip("Controls whether this driver part is rendered behind or in front of the vehicle body.")]
+            public DriverVehicleLayer vehicleLayer;
+
+            public bool RendersInFrontOfVehicle(bool partDefault)
+            {
+                if (vehicleLayer == DriverVehicleLayer.InFrontOfVehicle) return true;
+                if (vehicleLayer == DriverVehicleLayer.BehindVehicle) return false;
+                return partDefault;
+            }
 
             public static DriverPartPose Create(float x, float y, float rotationDegrees, float scaleX,
                 float scaleY, bool isVisible, int order)
@@ -149,6 +165,8 @@ namespace AnimeHillRacing.Vehicle
         public Sprite electricSkinOverlay;
         [Tooltip("Set by the Driver Pose Editor after an authored pose is saved. Content installers must preserve it.")]
         [HideInInspector] public bool preserveDriverPose;
+        [Tooltip("Set by the Driver Pose Editor after authored wheel positions or diameters are saved. Content installers must preserve them.")]
+        [HideInInspector] public bool preserveWheelVisualPositions;
         public DriverPose driverPose = new DriverPose();
         [Min(.1f)] public float visualWidth = 3.2f;
         public bool flipBodyX;

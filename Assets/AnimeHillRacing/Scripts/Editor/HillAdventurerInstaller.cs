@@ -283,12 +283,15 @@ namespace AnimeHillRacing.Editor
             // Visual Geometry based on Visible Content Alpha Bounds & Wheel Arches
             v.visualWidth = 6.20f;
             v.wheelVisualDiameter = 1.38f;
-            v.rearWheelVisualDiameter = 0f;
-            v.frontWheelVisualDiameter = 0f;
             v.flipBodyX = false;
             v.bodyVisualOffset = new Vector2(0f, 0.35f);
-            v.rearWheelVisualPosition = new Vector2(-1.88f, -0.65f);
-            v.frontWheelVisualPosition = new Vector2(2.10f, -0.65f);
+            if (!v.preserveWheelVisualPositions)
+            {
+                v.rearWheelVisualPosition = new Vector2(-1.88f, -0.65f);
+                v.frontWheelVisualPosition = new Vector2(2.10f, -0.65f);
+                v.rearWheelVisualDiameter = 0f;
+                v.frontWheelVisualDiameter = 0f;
+            }
             v.halfWheelbase = 1.99f;
             v.halfTrack = 0.82f;
 
@@ -348,8 +351,6 @@ namespace AnimeHillRacing.Editor
             v.bodyVisualOffset = new Vector2(0f, 0.08f);
 
             v.wheelVisualDiameter = 1.08f;
-            v.rearWheelVisualDiameter = 0f;
-            v.frontWheelVisualDiameter = 0f;
 
             // Recalibrate driver pose
             if (!v.preserveDriverPose && v.driverPose != null)
@@ -357,8 +358,13 @@ namespace AnimeHillRacing.Editor
                 v.driverPose.rootPosition = new Vector2(0.16f, 0.22f);
                 v.driverPose.rootScale = 0.95f;
             }
-            v.rearWheelVisualPosition = new Vector2(-1.75f, -0.28f);
-            v.frontWheelVisualPosition = new Vector2(1.75f, -0.28f);
+            if (!v.preserveWheelVisualPositions)
+            {
+                v.rearWheelVisualPosition = new Vector2(-1.75f, -0.28f);
+                v.frontWheelVisualPosition = new Vector2(1.75f, -0.28f);
+                v.rearWheelVisualDiameter = 0f;
+                v.frontWheelVisualDiameter = 0f;
+            }
             v.halfWheelbase = 1.75f;
 
             // Physics, mass, stats, tunes: ALL UNCHANGED

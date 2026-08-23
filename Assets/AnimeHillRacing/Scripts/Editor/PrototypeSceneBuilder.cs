@@ -2988,10 +2988,19 @@ namespace AnimeHillRacing.Editor
                             $"{definition.skins[optionIndex].optionId} is not normalized to canonical width.");
                 }
             }
-            if (Mathf.Abs(assets.jeep.FrontWheelAnchor - 1.24f) > .001f ||
+            float jeepRearAnchor = assets.jeep.RearWheelAnchor;
+            float jeepFrontAnchor = assets.jeep.FrontWheelAnchor;
+            bool invalidJeepAnchors = float.IsNaN(jeepRearAnchor) || float.IsInfinity(jeepRearAnchor) ||
+                                      float.IsNaN(jeepFrontAnchor) || float.IsInfinity(jeepFrontAnchor) ||
+                                      jeepFrontAnchor - jeepRearAnchor < .5f;
+            if (invalidJeepAnchors)
+                throw new System.InvalidOperationException(
+                    $"Jeep wheel anchors are invalid: rear={jeepRearAnchor}, front={jeepFrontAnchor}.");
+            if (assets.groundPhysics == null || assets.countryside == null || assets.countrysideRoad == null ||
                 assets.countryside.groundPhysicsMaterial != assets.groundPhysics ||
                 assets.countrysideRoad.groundPhysicsMaterial != assets.groundPhysics)
-                throw new System.InvalidOperationException("Jeep front axle or stable terrain physics material is not configured.");
+                throw new System.InvalidOperationException(
+                    "Countryside 2D and 3D must use the generated stable terrain physics material.");
             Debug.Log("Vehicle physics validation: low-friction zero-bounce sliding chassis, chassis-relative " +
                       "joint axes, bounded suspension, canonical skin sizes, visual/physical wheel anchors " +
                       "aligned and 2D wheels sorted above chassis.");
@@ -5002,10 +5011,14 @@ namespace AnimeHillRacing.Editor
             };
             assets.jeep.visualWidth = 3.80f;
             assets.jeep.flipBodyX = false;
-            assets.jeep.rearWheelVisualDiameter = 0f; assets.jeep.frontWheelVisualDiameter = 0f;
             assets.jeep.bodyVisualOffset = new Vector2(0f, .16f);
-            assets.jeep.rearWheelVisualPosition = new Vector2(-1.12f, -.44f);
-            assets.jeep.frontWheelVisualPosition = new Vector2(1.24f, -.44f);
+            if (!assets.jeep.preserveWheelVisualPositions)
+            {
+                assets.jeep.rearWheelVisualPosition = new Vector2(-1.12f, -.44f);
+                assets.jeep.frontWheelVisualPosition = new Vector2(1.24f, -.44f);
+                assets.jeep.rearWheelVisualDiameter = 0f;
+                assets.jeep.frontWheelVisualDiameter = 0f;
+            }
             assets.jeep.wheelVisualDiameter = .90f;
             if (!assets.jeep.preserveDriverPose || assets.jeep.driverPose == null)
                 assets.jeep.driverPose = CreateJeepDriverPose();
@@ -5084,10 +5097,14 @@ namespace AnimeHillRacing.Editor
             assets.formula.electricSkinOverlay = assets.formulaElectricitySkin;
             assets.formula.visualWidth = 5.60f;
             assets.formula.flipBodyX = false;
-            assets.formula.rearWheelVisualDiameter = 0f; assets.formula.frontWheelVisualDiameter = 0f;
             assets.formula.bodyVisualOffset = new Vector2(0f, .08f);
-            assets.formula.rearWheelVisualPosition = new Vector2(-1.75f, -.28f);
-            assets.formula.frontWheelVisualPosition = new Vector2(1.75f, -.28f);
+            if (!assets.formula.preserveWheelVisualPositions)
+            {
+                assets.formula.rearWheelVisualPosition = new Vector2(-1.75f, -.28f);
+                assets.formula.frontWheelVisualPosition = new Vector2(1.75f, -.28f);
+                assets.formula.rearWheelVisualDiameter = 0f;
+                assets.formula.frontWheelVisualDiameter = 0f;
+            }
             assets.formula.wheelVisualDiameter = 1.08f;
             if (!assets.formula.preserveDriverPose || assets.formula.driverPose == null)
                 assets.formula.driverPose = CreateFormulaDriverPose();
@@ -5166,10 +5183,14 @@ namespace AnimeHillRacing.Editor
             assets.rally.detachableRoofSprite = assets.rallyRoof;
             assets.rally.visualWidth = 4.65f;
             assets.rally.flipBodyX = false;
-            assets.rally.rearWheelVisualDiameter = 0f; assets.rally.frontWheelVisualDiameter = 0f;
             assets.rally.bodyVisualOffset = new Vector2(0f, .16f);
-            assets.rally.rearWheelVisualPosition = new Vector2(-1.37f, -.49f);
-            assets.rally.frontWheelVisualPosition = new Vector2(1.29f, -.49f);
+            if (!assets.rally.preserveWheelVisualPositions)
+            {
+                assets.rally.rearWheelVisualPosition = new Vector2(-1.37f, -.49f);
+                assets.rally.frontWheelVisualPosition = new Vector2(1.29f, -.49f);
+                assets.rally.rearWheelVisualDiameter = 0f;
+                assets.rally.frontWheelVisualDiameter = 0f;
+            }
             assets.rally.wheelVisualDiameter = 1.02f;
             if (!assets.rally.preserveDriverPose || assets.rally.driverPose == null)
                 assets.rally.driverPose = CreateRallyDriverPose();
@@ -5276,11 +5297,14 @@ namespace AnimeHillRacing.Editor
             // rightward direction of travel while physics, wheel mounts and drivetrain stay unchanged.
             assets.sportBike.flipBodyX = true;
             assets.sportBike.bodyVisualOffset = new Vector2(0f, .10f);
-            assets.sportBike.rearWheelVisualPosition = new Vector2(-1.40f, -.48f);
-            assets.sportBike.frontWheelVisualPosition = new Vector2(1.37f, -.49f);
+            if (!assets.sportBike.preserveWheelVisualPositions)
+            {
+                assets.sportBike.rearWheelVisualPosition = new Vector2(-1.40f, -.48f);
+                assets.sportBike.frontWheelVisualPosition = new Vector2(1.37f, -.49f);
+                assets.sportBike.rearWheelVisualDiameter = .96f;
+                assets.sportBike.frontWheelVisualDiameter = .90f;
+            }
             assets.sportBike.wheelVisualDiameter = .93f;
-            assets.sportBike.rearWheelVisualDiameter = .96f;
-            assets.sportBike.frontWheelVisualDiameter = .90f;
             if (!assets.sportBike.preserveDriverPose || assets.sportBike.driverPose == null)
                 assets.sportBike.driverPose = CreateSportBikeDriverPose();
             EditorUtility.SetDirty(assets.sportBike);
@@ -5378,8 +5402,11 @@ namespace AnimeHillRacing.Editor
             assets.hillAdventurer.visualWidth = 6.20f;
             assets.hillAdventurer.flipBodyX = false;
             assets.hillAdventurer.bodyVisualOffset = new Vector2(0f, .35f);
-            assets.hillAdventurer.rearWheelVisualPosition = new Vector2(-1.88f, -.65f);
-            assets.hillAdventurer.frontWheelVisualPosition = new Vector2(2.10f, -.65f);
+            if (!assets.hillAdventurer.preserveWheelVisualPositions)
+            {
+                assets.hillAdventurer.rearWheelVisualPosition = new Vector2(-1.88f, -.65f);
+                assets.hillAdventurer.frontWheelVisualPosition = new Vector2(2.10f, -.65f);
+            }
             assets.hillAdventurer.wheelVisualDiameter = 1.38f;
             if (!assets.hillAdventurer.preserveDriverPose || assets.hillAdventurer.driverPose == null)
                 assets.hillAdventurer.driverPose = CreateHillAdventurerDriverPose();

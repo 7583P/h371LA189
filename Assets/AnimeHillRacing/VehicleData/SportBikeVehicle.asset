@@ -95,6 +95,7 @@ MonoBehaviour:
     visualOffset: {x: 0, y: 0}
   electricSkinOverlay: {fileID: 0}
   preserveDriverPose: 1
+  preserveWheelVisualPositions: 1
   driverPose:
     rootPosition: {x: -0.36893252, y: 0.42}
     rootScale: 1
@@ -104,66 +105,77 @@ MonoBehaviour:
       scale: {x: 0.026, y: 0.026}
       visible: 1
       sortingOrder: 13
+      vehicleLayer: 0
     head:
       position: {x: 0.6115476, y: 0.630453}
       rotation: -24
       scale: {x: 0.032, y: 0.032}
       visible: 1
       sortingOrder: 17
+      vehicleLayer: 0
     leftUpperArm:
       position: {x: 0.66382706, y: 0.20277663}
       rotation: 7
       scale: {x: 0.047, y: 0.03}
       visible: 1
       sortingOrder: 16
+      vehicleLayer: 0
     leftForearm:
       position: {x: 0.62, y: 0.16}
       rotation: 0
       scale: {x: 0.021, y: 0.021}
       visible: 0
       sortingOrder: 16
+      vehicleLayer: 0
     rightUpperArm:
       position: {x: 0.3, y: 0.31}
       rotation: 0
       scale: {x: 0.022, y: 0.022}
       visible: 0
       sortingOrder: 15
+      vehicleLayer: 0
     rightForearm:
       position: {x: 0.58, y: 0.14}
       rotation: 0
       scale: {x: 0.021, y: 0.021}
       visible: 0
       sortingOrder: 15
+      vehicleLayer: 0
     leftThigh:
       position: {x: -0.013962288, y: -0.33231708}
       rotation: -55
       scale: {x: 0.032, y: 0.032}
       visible: 1
       sortingOrder: 14
+      vehicleLayer: 0
     leftLowerLeg:
       position: {x: 0.2, y: -0.21}
       rotation: 0
       scale: {x: 0.022, y: 0.022}
       visible: 0
       sortingOrder: 14
+      vehicleLayer: 0
     rightThigh:
-      position: {x: -0.09, y: 0}
-      rotation: 0
+      position: {x: 1.3575102, y: -1.6600814}
+      rotation: -39
       scale: {x: 0.024, y: 0.024}
       visible: 0
-      sortingOrder: 12
+      sortingOrder: 9
+      vehicleLayer: 0
     rightLowerLeg:
-      position: {x: 0.14, y: -0.23}
-      rotation: 0
-      scale: {x: 0.022, y: 0.022}
-      visible: 0
-      sortingOrder: 12
+      position: {x: -0.13330601, y: -0.31097907}
+      rotation: -39
+      scale: {x: 0.0322102, y: 0.0322102}
+      visible: 1
+      sortingOrder: 9
+      vehicleLayer: 2
     accessory:
       position: {x: 0.13, y: 0.53}
       rotation: -24
       scale: {x: 1, y: 1}
       visible: 1
       sortingOrder: 18
+      vehicleLayer: 0
     accessoryOverrides:
     - accessoryId: glasses
       pose:
@@ -172,6 +184,7 @@ MonoBehaviour:
         scale: {x: 1, y: 1}
         visible: 1
         sortingOrder: 18
+        vehicleLayer: 0
     - accessoryId: scarf
       pose:
         position: {x: 0.081831, y: 0.6784892}
@@ -179,6 +192,7 @@ MonoBehaviour:
         scale: {x: 1, y: 1}
         visible: 1
         sortingOrder: 18
+        vehicleLayer: 0
   visualWidth: 3.3
   flipBodyX: 1
   bodyVisualOffset: {x: 0, y: 0.1}

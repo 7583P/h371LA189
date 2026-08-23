@@ -157,16 +157,21 @@ namespace AnimeHillRacing.UI
             {
                 body.sprite = skinSprite;
                 body.flipX = vehicle.flipBodyX;
-                body.sortingOrder = 10;
+                body.sortingOrder = VehicleVisual2D.BodySortingOrder;
                 body.transform.localPosition = vehicle.BodyCustomizationOffset(skin);
                 body.transform.localScale = vehicle.BodyCustomizationScale(skin);
             }
             animateElectricSkin = FormulaElectricSkinEffect.Apply(body, vehicle, skin);
             HillAdventurerSkinEffect.Apply(body, vehicle, skin);
             animateHillAdventurerSkin = HillAdventurerSkinEffect.IsHillAdventurer(vehicle, skin);
-            int wheelSortingOrder = FormulaElectricSkinEffect.ResolveWheelSortingOrder(vehicle, skin);
-            if (driver != null) driver.Apply(driverDefinition, vehicle.driverPose,
-                driverDefinition?.FindAccessory(accessoryId), null, false);
+            int wheelSortingOrder = Mathf.Max(VehicleVisual2D.MinimumWheelSortingOrder,
+                FormulaElectricSkinEffect.ResolveWheelSortingOrder(vehicle, skin));
+            if (driver != null)
+            {
+                driver.Apply(driverDefinition, vehicle.driverPose,
+                    driverDefinition?.FindAccessory(accessoryId), null, false);
+                driver.EnforceRenderingRelativeToVehicle(body);
+            }
             ApplyWheel(rearWheel, wheelOption, vehicle.rearWheelVisualPosition, vehicle.RearWheelDiameter,
                 wheelSortingOrder);
             ApplyWheel(frontWheel, wheelOption, vehicle.frontWheelVisualPosition, vehicle.FrontWheelDiameter,
@@ -203,6 +208,7 @@ namespace AnimeHillRacing.UI
             if (renderer == null) return;
             renderer.sprite = option != null ? option.sprite : null;
             renderer.transform.localPosition = new Vector3(position.x, position.y, -.02f);
+            if (body != null) renderer.sortingLayerID = body.sortingLayerID;
             renderer.sortingOrder = sortingOrder;
             renderer.transform.localScale = Vector3.one *
                                             appliedVehicle.WheelCustomizationScale(option, diameter);

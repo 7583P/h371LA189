@@ -5,6 +5,9 @@ namespace AnimeHillRacing.Vehicle
 {
     public sealed class VehicleVisual2D : MonoBehaviour
     {
+        public const int BodySortingOrder = 10;
+        public const int MinimumWheelSortingOrder = 30;
+
         [SerializeField] private VehicleRuntimeBase vehicle;
         [SerializeField] private VehicleDefinition definition;
         [SerializeField] private Transform bodySprite;
@@ -36,17 +39,21 @@ namespace AnimeHillRacing.Vehicle
             {
                 bodyRenderer.sprite = skin.sprite;
                 bodyRenderer.flipX = definition.flipBodyX;
-                bodyRenderer.sortingOrder = 10;
+                bodyRenderer.sortingOrder = BodySortingOrder;
                 bodyRenderer.transform.localPosition = definition.BodyCustomizationOffset(skin);
                 bodyRenderer.transform.localScale = definition.BodyCustomizationScale(skin);
             }
             FormulaElectricSkinEffect.Apply(bodyRenderer, definition, skin);
             HillAdventurerSkinEffect.Apply(bodyRenderer, definition, skin);
-            int wheelSortingOrder = FormulaElectricSkinEffect.ResolveWheelSortingOrder(definition, skin);
+            int wheelSortingOrder = Mathf.Max(MinimumWheelSortingOrder,
+                FormulaElectricSkinEffect.ResolveWheelSortingOrder(definition, skin));
             ApplyWheel(frontWheelRenderer, wheel, definition.FrontWheelDiameter, wheelSortingOrder);
             ApplyWheel(rearWheelRenderer, wheel, definition.RearWheelDiameter, wheelSortingOrder);
-            if (articulatedDriver != null && fallbackDriver != null)
-                ApplyDriverPhysicsBody();
+            if (articulatedDriver != null)
+            {
+                if (fallbackDriver != null) ApplyDriverPhysicsBody();
+                else articulatedDriver.EnforceRenderingRelativeToVehicle(bodyRenderer);
+            }
         }
 
         public void ApplyCustomization(DriverDefinition driver)
@@ -66,17 +73,21 @@ namespace AnimeHillRacing.Vehicle
             {
                 bodyRenderer.sprite = skin.sprite;
                 bodyRenderer.flipX = definition.flipBodyX;
-                bodyRenderer.sortingOrder = 10;
+                bodyRenderer.sortingOrder = BodySortingOrder;
                 bodyRenderer.transform.localPosition = definition.BodyCustomizationOffset(skin);
                 bodyRenderer.transform.localScale = definition.BodyCustomizationScale(skin);
             }
             FormulaElectricSkinEffect.Apply(bodyRenderer, definition, skin);
             HillAdventurerSkinEffect.Apply(bodyRenderer, definition, skin);
-            int wheelSortingOrder = FormulaElectricSkinEffect.ResolveWheelSortingOrder(definition, skin);
+            int wheelSortingOrder = Mathf.Max(MinimumWheelSortingOrder,
+                FormulaElectricSkinEffect.ResolveWheelSortingOrder(definition, skin));
             ApplyWheel(frontWheelRenderer, wheel, definition.FrontWheelDiameter, wheelSortingOrder);
             ApplyWheel(rearWheelRenderer, wheel, definition.RearWheelDiameter, wheelSortingOrder);
-            if (articulatedDriver != null && fallbackDriver != null)
-                ApplyDriverPhysicsBody();
+            if (articulatedDriver != null)
+            {
+                if (fallbackDriver != null) ApplyDriverPhysicsBody();
+                else articulatedDriver.EnforceRenderingRelativeToVehicle(bodyRenderer);
+            }
         }
 
         public void Assign(VehicleRuntimeBase vehicleController, Transform bodyTransform,
@@ -122,6 +133,7 @@ namespace AnimeHillRacing.Vehicle
             Rigidbody body = vehicle != null ? vehicle.GetComponent<Rigidbody>() : GetComponentInParent<Rigidbody>();
             Rigidbody2D body2D = vehicle != null ? vehicle.GetComponent<Rigidbody2D>() : GetComponentInParent<Rigidbody2D>();
             articulatedDriver.Apply(fallbackDriver, definition.driverPose, body, body2D, true);
+            articulatedDriver.EnforceRenderingRelativeToVehicle(bodyRenderer);
         }
 
         private void ApplyWheel(SpriteRenderer renderer, VehicleDefinition.CustomizationOption option,
@@ -129,6 +141,7 @@ namespace AnimeHillRacing.Vehicle
         {
             if (renderer == null) return;
             renderer.sprite = option != null ? option.sprite : null;
+            if (bodyRenderer != null) renderer.sortingLayerID = bodyRenderer.sortingLayerID;
             renderer.sortingOrder = sortingOrder;
             renderer.transform.localScale = Vector3.one *
                                             definition.WheelCustomizationScale(option, diameter);

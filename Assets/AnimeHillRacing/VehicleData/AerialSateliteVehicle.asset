@@ -17,20 +17,30 @@ MonoBehaviour:
   archetype: 6
   gameplayPrefab2D: {fileID: 120621363552503576, guid: 392fcf56785d321488b9e65d2d7f2eec, type: 3}
   gameplayPrefab3D: {fileID: 1064005315848091350, guid: 4ce36ca9a61350d4da7ea1588c202332, type: 3}
-  previewSprite: {fileID: 21300000, guid: 97bc6916311957b42af7e66fbf453b2e, type: 3}
+  previewSprite: {fileID: 21300000, guid: 2e5f54bc8fea407bb6b7a816f4657b13, type: 3}
   unlockedByDefault: 1
   gemPrice: 0
   allowsBlueprintProgression: 1
   skins:
   - optionId: aerial-satelite-default
     displayName: WHITE & GOLD
-    sprite: {fileID: 21300000, guid: 97bc6916311957b42af7e66fbf453b2e, type: 3}
+    sprite: {fileID: 21300000, guid: 2e5f54bc8fea407bb6b7a816f4657b13, type: 3}
     unlockedByDefault: 1
     gemPrice: 0
     bundleType: 0
     allowsBlueprintProgression: 1
     visibleDiameter: 0
-    visibleSize: {x: 19.12, y: 5.68}
+    visibleSize: {x: 21.01, y: 6.61}
+    visualOffset: {x: 0, y: 0}
+  - optionId: aerial-satelite-red-black-gold
+    displayName: RED, BLACK & GOLD
+    sprite: {fileID: 21300000, guid: b2f326655362415f985b203aa0d6e0a4, type: 3}
+    unlockedByDefault: 1
+    gemPrice: 0
+    bundleType: 0
+    allowsBlueprintProgression: 1
+    visibleDiameter: 0
+    visibleSize: {x: 21.22, y: 6.7}
     visualOffset: {x: 0, y: 0}
   wheels:
   - optionId: aerial-satelite-wheel
@@ -45,6 +55,7 @@ MonoBehaviour:
     visualOffset: {x: 0, y: 0}
   electricSkinOverlay: {fileID: 0}
   preserveDriverPose: 1
+  preserveWheelVisualPositions: 1
   driverPose:
     rootPosition: {x: 0.28599754, y: 0.4532266}
     rootScale: 0.78
@@ -54,66 +65,77 @@ MonoBehaviour:
       scale: {x: 0.029, y: 0.03}
       visible: 1
       sortingOrder: 3
+      vehicleLayer: 0
     head:
       position: {x: -0.638448, y: 1.1089917}
       rotation: -3
       scale: {x: 0.032, y: 0.032}
       visible: 1
       sortingOrder: 5
+      vehicleLayer: 0
     leftUpperArm:
-      position: {x: -0.35505384, y: -1.079055}
+      position: {x: -0.93872815, y: -0.9293944}
       rotation: -6
-      scale: {x: 0.038, y: 0.029}
-      visible: 1
+      scale: {x: 0.017993523, y: 0.0137319}
+      visible: 0
       sortingOrder: 4
+      vehicleLayer: 1
     leftForearm:
       position: {x: -0.06889517, y: 0.39780274}
       rotation: 35
       scale: {x: 0.032, y: 0.032}
       visible: 1
       sortingOrder: 4
+      vehicleLayer: 0
     rightUpperArm:
-      position: {x: 0.09340857, y: -1.0390295}
+      position: {x: -0.924278, y: -0.9043346}
       rotation: 25
-      scale: {x: 0.038, y: 0.029}
-      visible: 1
+      scale: {x: 0.020194754, y: 0.015411787}
+      visible: 0
       sortingOrder: 2
+      vehicleLayer: 1
     rightForearm:
       position: {x: -0.037618726, y: 0.35997313}
       rotation: 25
       scale: {x: 0.032, y: 0.032}
       visible: 1
       sortingOrder: 2
+      vehicleLayer: 0
     leftThigh:
       position: {x: 0.03470149, y: -0.88972026}
       rotation: 12
       scale: {x: 0.038, y: 0.029}
-      visible: 1
+      visible: 0
       sortingOrder: 1
+      vehicleLayer: 0
     leftLowerLeg:
-      position: {x: -0.112211056, y: -1.0101408}
+      position: {x: -0.12717682, y: -1.0101408}
       rotation: -14
       scale: {x: 0.036, y: 0.029}
-      visible: 1
+      visible: 0
       sortingOrder: 1
+      vehicleLayer: 0
     rightThigh:
       position: {x: 0.27976102, y: -0.6936043}
       rotation: 33
       scale: {x: 0.032, y: 0.04}
       visible: 1
       sortingOrder: 0
+      vehicleLayer: 0
     rightLowerLeg:
       position: {x: -0.38157994, y: -0.87505317}
       rotation: -10
       scale: {x: 0.036, y: 0.029}
-      visible: 1
+      visible: 0
       sortingOrder: 0
+      vehicleLayer: 0
     accessory:
       position: {x: -0.03, y: 0.62}
       rotation: -3
       scale: {x: 1, y: 1}
       visible: 1
       sortingOrder: 6
+      vehicleLayer: 0
     accessoryOverrides:
     - accessoryId: fire-glasses
       pose:
@@ -122,6 +144,7 @@ MonoBehaviour:
         scale: {x: 1, y: 1}
         visible: 1
         sortingOrder: 6
+        vehicleLayer: 0
     - accessoryId: glasses
       pose:
         position: {x: -0.8531292, y: 1.0989118}
@@ -129,6 +152,7 @@ MonoBehaviour:
         scale: {x: 1, y: 1}
         visible: 1
         sortingOrder: 6
+        vehicleLayer: 0
     - accessoryId: scarf
       pose:
         position: {x: -1.1095226, y: 0.77362424}
@@ -136,14 +160,15 @@ MonoBehaviour:
         scale: {x: 1, y: 1}
         visible: 1
         sortingOrder: 6
+        vehicleLayer: 0
   visualWidth: 6.15
-  flipBodyX: 1
+  flipBodyX: 0
   bodyVisualOffset: {x: 0, y: 0.31}
-  rearWheelVisualPosition: {x: -2.28, y: -0.57}
-  frontWheelVisualPosition: {x: 2.28, y: -0.57}
+  rearWheelVisualPosition: {x: -2.0993402, y: -0.65338165}
+  frontWheelVisualPosition: {x: 2.7302637, y: -0.65338165}
   wheelVisualDiameter: 1.18
-  rearWheelVisualDiameter: 0
-  frontWheelVisualDiameter: 0
+  rearWheelVisualDiameter: 1.4278
+  frontWheelVisualDiameter: 1.4278
   underbodyAttachmentSprite: {fileID: 21300000, guid: e76ef9a167a3ec84d907086fc5e42ed5, type: 3}
   underbodyAttachmentPositions:
   - {x: -1.02, y: -0.38}

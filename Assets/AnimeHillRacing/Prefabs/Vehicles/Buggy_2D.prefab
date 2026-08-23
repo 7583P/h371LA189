@@ -187,7 +187,7 @@ Transform:
   m_GameObject: {fileID: 987919642369256706}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1.8, y: -0.53, z: 0}
+  m_LocalPosition: {x: -1.8202449, y: -0.22632717, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -759,7 +759,7 @@ WheelJoint2D:
   m_BreakTorque: Infinity
   m_BreakAction: 3
   m_AutoConfigureConnectedAnchor: 0
-  m_Anchor: {x: -1.8, y: -0.53}
+  m_Anchor: {x: -1.8202449, y: -0.22632717}
   m_ConnectedAnchor: {x: 0, y: 0}
   m_Suspension:
     m_DampingRatio: 0.75
@@ -784,7 +784,7 @@ WheelJoint2D:
   m_BreakTorque: Infinity
   m_BreakAction: 3
   m_AutoConfigureConnectedAnchor: 0
-  m_Anchor: {x: 1.8, y: -0.53}
+  m_Anchor: {x: 1.8911021, y: -0.24657175}
   m_ConnectedAnchor: {x: 0, y: 0}
   m_Suspension:
     m_DampingRatio: 0.75
@@ -1696,7 +1696,7 @@ Transform:
   m_GameObject: {fileID: 8855904568696727089}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1.8, y: -0.53, z: 0}
+  m_LocalPosition: {x: 1.8911021, y: -0.24657175, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

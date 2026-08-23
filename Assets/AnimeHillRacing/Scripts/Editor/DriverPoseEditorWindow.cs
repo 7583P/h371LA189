@@ -13,6 +13,8 @@ namespace AnimeHillRacing.Editor
         private enum PosePart
         {
             Root,
+            RearWheel,
+            FrontWheel,
             Torso,
             Head,
             LeftUpperArm,
@@ -35,7 +37,7 @@ namespace AnimeHillRacing.Editor
 
         private static readonly string[] PartNames =
         {
-            "Piloto completo", "Torso", "Cabeza", "Brazo izq. superior", "Antebrazo izq.",
+            "Piloto completo", "Llanta trasera", "Llanta delantera", "Torso", "Cabeza", "Brazo izq. superior", "Antebrazo izq.",
             "Brazo der. superior", "Antebrazo der.", "Muslo izq.", "Pierna izq.",
             "Muslo der.", "Pierna der.", "Accesorio"
         };
@@ -50,6 +52,14 @@ namespace AnimeHillRacing.Editor
         private PosePart selectedPart = PosePart.Root;
         private VehicleDefinition.DriverPose originalPose;
         private VehicleDefinition.DriverPose workingPose;
+        private Vector2 originalRearWheelPosition;
+        private Vector2 originalFrontWheelPosition;
+        private Vector2 workingRearWheelPosition;
+        private Vector2 workingFrontWheelPosition;
+        private float originalRearWheelDiameter;
+        private float originalFrontWheelDiameter;
+        private float workingRearWheelDiameter;
+        private float workingFrontWheelDiameter;
         private Vector2 inspectorScroll;
         private float previewZoom = 1f;
         private bool uniformPartScale;
@@ -74,7 +84,11 @@ namespace AnimeHillRacing.Editor
                 ? PreviewDriver.accessories[accessoryIndex] : null;
         private DriverDefinition CanonicalDriver => drivers.Length > 0 ? drivers[0] : null;
         private bool HasUnsavedChanges => Vehicle != null && workingPose != null &&
-            JsonUtility.ToJson(workingPose) != JsonUtility.ToJson(Vehicle.driverPose);
+            (JsonUtility.ToJson(workingPose) != JsonUtility.ToJson(Vehicle.driverPose) ||
+             workingRearWheelPosition != Vehicle.rearWheelVisualPosition ||
+             workingFrontWheelPosition != Vehicle.frontWheelVisualPosition ||
+             !Mathf.Approximately(workingRearWheelDiameter, Vehicle.rearWheelVisualDiameter) ||
+             !Mathf.Approximately(workingFrontWheelDiameter, Vehicle.frontWheelVisualDiameter));
 
         private void OnEnable()
         {
@@ -128,6 +142,14 @@ namespace AnimeHillRacing.Editor
             skinIndex = 0;
             originalPose = ClonePose(Vehicle != null ? Vehicle.driverPose : null);
             workingPose = ClonePose(originalPose);
+            originalRearWheelPosition = Vehicle != null ? Vehicle.rearWheelVisualPosition : Vector2.zero;
+            originalFrontWheelPosition = Vehicle != null ? Vehicle.frontWheelVisualPosition : Vector2.zero;
+            workingRearWheelPosition = originalRearWheelPosition;
+            workingFrontWheelPosition = originalFrontWheelPosition;
+            originalRearWheelDiameter = Vehicle != null ? Vehicle.rearWheelVisualDiameter : 0f;
+            originalFrontWheelDiameter = Vehicle != null ? Vehicle.frontWheelVisualDiameter : 0f;
+            workingRearWheelDiameter = originalRearWheelDiameter;
+            workingFrontWheelDiameter = originalFrontWheelDiameter;
             selectedPart = PosePart.Root;
             draggingHandle = false;
             SelectVisibleAccessory();
@@ -216,6 +238,8 @@ namespace AnimeHillRacing.Editor
             EditorGUI.BeginChangeCheck();
             if (selectedPart == PosePart.Root)
                 DrawRootFields();
+            else if (selectedPart == PosePart.RearWheel || selectedPart == PosePart.FrontWheel)
+                DrawWheelFields();
             else
                 DrawPartFields();
             if (EditorGUI.EndChangeCheck()) Repaint();
@@ -231,7 +255,8 @@ namespace AnimeHillRacing.Editor
             EditorGUILayout.Space(12f);
             EditorGUILayout.LabelField("Vista", EditorStyles.boldLabel);
             previewZoom = EditorGUILayout.Slider("Zoom", previewZoom, .65f, 2f);
-            EditorGUILayout.HelpBox("Arrastra el círculo amarillo en la vista. Selecciona otro círculo para editar esa parte.",
+            EditorGUILayout.HelpBox("Arrastra el círculo amarillo para el piloto o los círculos celestes para las llantas. " +
+                "Selecciona cualquier círculo para editar esa parte.",
                 MessageType.None);
             EditorGUILayout.EndScrollView();
         }
@@ -247,6 +272,36 @@ namespace AnimeHillRacing.Editor
             }
             EditorGUILayout.HelpBox("La escala de la pose ajusta la separación de las partes alrededor del asiento. " +
                 "El tamaño visual X/Y de cada parte permanece estable entre vehículos.", MessageType.None);
+        }
+
+        private void DrawWheelFields()
+        {
+            bool front = selectedPart == PosePart.FrontWheel;
+            Vector2 value = front ? workingFrontWheelPosition : workingRearWheelPosition;
+            value = EditorGUILayout.Vector2Field("Posición X/Y", value);
+            if (front) workingFrontWheelPosition = value;
+            else workingRearWheelPosition = value;
+
+            float customDiameter = front ? workingFrontWheelDiameter : workingRearWheelDiameter;
+            float effectiveDiameter = customDiameter > .001f
+                ? customDiameter : Mathf.Max(.05f, Vehicle.wheelVisualDiameter);
+            EditorGUI.BeginChangeCheck();
+            float editedDiameter = EditorGUILayout.FloatField(
+                customDiameter > .001f ? "Diámetro" : "Diámetro (general)", effectiveDiameter);
+            if (EditorGUI.EndChangeCheck()) customDiameter = Mathf.Max(.05f, editedDiameter);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("-10%")) customDiameter = Mathf.Max(.05f, effectiveDiameter * .9f);
+                if (GUILayout.Button("+10%")) customDiameter = effectiveDiameter * 1.1f;
+                using (new EditorGUI.DisabledScope(customDiameter <= .001f))
+                    if (GUILayout.Button("Usar tamaño general")) customDiameter = 0f;
+            }
+            if (front) workingFrontWheelDiameter = customDiameter;
+            else workingRearWheelDiameter = customDiameter;
+
+            EditorGUILayout.HelpBox("La posición controla la vista y el anclaje físico de la suspensión. " +
+                "El diámetro cambia el tamaño visual y físico de esta llanta. También puedes arrastrar " +
+                "su círculo celeste en la vista.", MessageType.Info);
         }
 
         private void DrawPartFields()
@@ -281,7 +336,19 @@ namespace AnimeHillRacing.Editor
                 if (GUILayout.Button("+10%")) pose.scale *= 1.1f;
             }
             pose.visible = EditorGUILayout.Toggle("Visible", pose.visible);
-            pose.sortingOrder = EditorGUILayout.IntField("Orden de dibujo", pose.sortingOrder);
+            bool inFront = IsDriverPartInFront(selectedPart, pose);
+            EditorGUI.BeginChangeCheck();
+            int depth = EditorGUILayout.Popup("Profundidad", inFront ? 1 : 0,
+                new[] { "Detrás del vehículo", "Delante del vehículo" });
+            if (EditorGUI.EndChangeCheck())
+                pose.vehicleLayer = depth == 1
+                    ? DriverVehicleLayer.InFrontOfVehicle : DriverVehicleLayer.BehindVehicle;
+            pose.sortingOrder = Mathf.Min(pose.sortingOrder, ArticulatedDriver2D.MaximumDriverSortingOrder);
+            using (new EditorGUI.DisabledScope(true))
+                EditorGUILayout.IntField("Orden interno del piloto", pose.sortingOrder);
+            EditorGUILayout.HelpBox("La profundidad se guarda por separado para cada parte. Por defecto, cabeza " +
+                "y brazos quedan delante; torso y piernas detrás. Las llantas siempre quedan encima.",
+                MessageType.None);
             bool partChanged = EditorGUI.EndChangeCheck();
             if (selectedPart != PosePart.Accessory || partChanged)
                 SetPart(workingPose, selectedPart, pose);
@@ -294,10 +361,20 @@ namespace AnimeHillRacing.Editor
             {
                 GUILayout.FlexibleSpace();
                 if (GUILayout.Button("Restaurar pose guardada", GUILayout.Width(165f)))
+                {
                     workingPose = ClonePose(Vehicle.driverPose);
+                    workingRearWheelPosition = Vehicle.rearWheelVisualPosition;
+                    workingFrontWheelPosition = Vehicle.frontWheelVisualPosition;
+                    workingRearWheelDiameter = Vehicle.rearWheelVisualDiameter;
+                    workingFrontWheelDiameter = Vehicle.frontWheelVisualDiameter;
+                }
                 if (GUILayout.Button("Cancelar y cerrar", GUILayout.Width(130f)))
                 {
                     workingPose = ClonePose(originalPose);
+                    workingRearWheelPosition = originalRearWheelPosition;
+                    workingFrontWheelPosition = originalFrontWheelPosition;
+                    workingRearWheelDiameter = originalRearWheelDiameter;
+                    workingFrontWheelDiameter = originalFrontWheelDiameter;
                     Close();
                 }
                 GUI.backgroundColor = new Color(.45f, 1f, .55f);
@@ -313,10 +390,23 @@ namespace AnimeHillRacing.Editor
             Undo.RecordObject(Vehicle, "Save Driver Pose");
             Vehicle.driverPose = ClonePose(workingPose);
             Vehicle.preserveDriverPose = true;
+            Vehicle.rearWheelVisualPosition = workingRearWheelPosition;
+            Vehicle.frontWheelVisualPosition = workingFrontWheelPosition;
+            Vehicle.rearWheelVisualDiameter = workingRearWheelDiameter;
+            Vehicle.frontWheelVisualDiameter = workingFrontWheelDiameter;
+            Vehicle.preserveWheelVisualPositions = true;
             EditorUtility.SetDirty(Vehicle);
             AssetDatabase.SaveAssets();
             originalPose = ClonePose(Vehicle.driverPose);
             workingPose = ClonePose(originalPose);
+            originalRearWheelPosition = Vehicle.rearWheelVisualPosition;
+            originalFrontWheelPosition = Vehicle.frontWheelVisualPosition;
+            workingRearWheelPosition = originalRearWheelPosition;
+            workingFrontWheelPosition = originalFrontWheelPosition;
+            originalRearWheelDiameter = Vehicle.rearWheelVisualDiameter;
+            originalFrontWheelDiameter = Vehicle.frontWheelVisualDiameter;
+            workingRearWheelDiameter = originalRearWheelDiameter;
+            workingFrontWheelDiameter = originalFrontWheelDiameter;
             ShowNotification(new GUIContent("Pose guardada permanentemente"));
         }
 
@@ -348,10 +438,10 @@ namespace AnimeHillRacing.Editor
                 (canvas.height - 50f) / 3.8f) * previewZoom;
             Vector2 origin = new Vector2(canvas.center.x, canvas.center.y + canvas.height * .13f);
 
-            DrawWheels(vehicle, origin, pixelsPerUnit);
-            DrawDriver(driver, origin, pixelsPerUnit, false);
+            DrawDriverLayer(driver, false, origin, pixelsPerUnit);
             DrawBody(vehicle, skin, origin, pixelsPerUnit);
-            DrawDriver(driver, origin, pixelsPerUnit, true);
+            DrawDriverLayer(driver, true, origin, pixelsPerUnit);
+            DrawWheels(vehicle, origin, pixelsPerUnit);
             DrawHandles(origin, pixelsPerUnit, canvas);
             HandleDragging(origin, pixelsPerUnit, canvas);
 
@@ -384,23 +474,29 @@ namespace AnimeHillRacing.Editor
             VehicleDefinition.CustomizationOption wheel = vehicle.wheels != null && vehicle.wheels.Length > 0
                 ? vehicle.wheels[0] : null;
             if (wheel == null || wheel.sprite == null) return;
-            float rearScale = vehicle.WheelCustomizationScale(wheel, vehicle.RearWheelDiameter);
-            float frontScale = vehicle.WheelCustomizationScale(wheel, vehicle.FrontWheelDiameter);
-            DrawSprite(wheel.sprite, vehicle.rearWheelVisualPosition, Vector2.one * rearScale, 0f, false,
+            float rearDiameter = workingRearWheelDiameter > .001f
+                ? workingRearWheelDiameter : vehicle.wheelVisualDiameter;
+            float frontDiameter = workingFrontWheelDiameter > .001f
+                ? workingFrontWheelDiameter : vehicle.wheelVisualDiameter;
+            float rearScale = vehicle.WheelCustomizationScale(wheel, rearDiameter);
+            float frontScale = vehicle.WheelCustomizationScale(wheel, frontDiameter);
+            DrawSprite(wheel.sprite, workingRearWheelPosition, Vector2.one * rearScale, 0f, false,
                 origin, pixelsPerUnit, new Color(1f, 1f, 1f, .9f));
-            DrawSprite(wheel.sprite, vehicle.frontWheelVisualPosition, Vector2.one * frontScale, 0f, false,
+            DrawSprite(wheel.sprite, workingFrontWheelPosition, Vector2.one * frontScale, 0f, false,
                 origin, pixelsPerUnit, new Color(1f, 1f, 1f, .9f));
         }
 
-        private void DrawDriver(DriverDefinition driver, Vector2 origin, float pixelsPerUnit, bool foreground)
+        private void DrawDriverLayer(DriverDefinition driver, bool foreground, Vector2 origin, float pixelsPerUnit)
         {
             DriverDefinition reference = driver.PoseReference;
-            PosePart[] ordered = EditableParts.OrderBy(part => GetPart(workingPose, part).sortingOrder).ToArray();
+            PosePart[] ordered = EditableParts
+                .Where(part => IsDriverPartInFront(part, GetPart(workingPose, part)) == foreground)
+                .OrderBy(part => GetPart(workingPose, part).sortingOrder)
+                .ToArray();
             for (int i = 0; i < ordered.Length; i++)
             {
                 PosePart part = ordered[i];
                 VehicleDefinition.DriverPartPose pose = GetPart(workingPose, part);
-                if ((pose.sortingOrder >= 10) != foreground) continue;
                 if (part == PosePart.Accessory)
                 {
                     DrawAccessory(pose, origin, pixelsPerUnit);
@@ -421,6 +517,15 @@ namespace AnimeHillRacing.Editor
                 Vector2 worldPosition = workingPose.rootPosition + pose.position * rootScale + pivotCorrection;
                 DrawSprite(sprite, worldPosition, scale, pose.rotation, false, origin, pixelsPerUnit, Color.white);
             }
+        }
+
+        private static bool IsDriverPartInFront(PosePart part, VehicleDefinition.DriverPartPose pose)
+        {
+            bool partDefault = part == PosePart.Head ||
+                               part == PosePart.LeftUpperArm || part == PosePart.LeftForearm ||
+                               part == PosePart.RightUpperArm || part == PosePart.RightForearm ||
+                               part == PosePart.Accessory;
+            return pose.RendersInFrontOfVehicle(partDefault);
         }
 
         private void DrawAccessory(VehicleDefinition.DriverPartPose pose, Vector2 origin, float pixelsPerUnit)
@@ -458,6 +563,19 @@ namespace AnimeHillRacing.Editor
             Handles.color = selectedPart == PosePart.Root ? new Color(1f, .75f, .05f) : new Color(1f, .75f, .05f, .55f);
             Handles.DrawWireDisc(rootScreen, Vector3.forward, 7f);
             Handles.EndGUI();
+
+            DrawWheelHandle(PosePart.RearWheel, workingRearWheelPosition, origin, pixelsPerUnit, canvas);
+            DrawWheelHandle(PosePart.FrontWheel, workingFrontWheelPosition, origin, pixelsPerUnit, canvas);
+        }
+
+        private void DrawWheelHandle(PosePart part, Vector2 position, Vector2 origin, float pixelsPerUnit, Rect canvas)
+        {
+            Vector2 screen = WorldToScreen(position, origin, pixelsPerUnit);
+            if (!canvas.Contains(screen)) return;
+            Handles.BeginGUI();
+            Handles.color = selectedPart == part ? Color.cyan : new Color(.25f, .85f, 1f, .65f);
+            Handles.DrawSolidDisc(screen, Vector3.forward, selectedPart == part ? 6f : 4f);
+            Handles.EndGUI();
         }
 
         private void HandleDragging(Vector2 origin, float pixelsPerUnit, Rect canvas)
@@ -479,6 +597,10 @@ namespace AnimeHillRacing.Editor
                 Vector2 worldDelta = new Vector2(evt.delta.x, -evt.delta.y) / Mathf.Max(1f, pixelsPerUnit);
                 if (selectedPart == PosePart.Root)
                     workingPose.rootPosition += worldDelta;
+                else if (selectedPart == PosePart.RearWheel)
+                    workingRearWheelPosition += worldDelta;
+                else if (selectedPart == PosePart.FrontWheel)
+                    workingFrontWheelPosition += worldDelta;
                 else
                 {
                     VehicleDefinition.DriverPartPose pose = GetPart(workingPose, selectedPart);
@@ -499,6 +621,10 @@ namespace AnimeHillRacing.Editor
         {
             PosePart nearest = PosePart.Root;
             distance = Vector2.Distance(mouse, WorldToScreen(workingPose.rootPosition, origin, pixelsPerUnit));
+            ConsiderHandle(PosePart.RearWheel, workingRearWheelPosition, mouse, origin, pixelsPerUnit,
+                ref nearest, ref distance);
+            ConsiderHandle(PosePart.FrontWheel, workingFrontWheelPosition, mouse, origin, pixelsPerUnit,
+                ref nearest, ref distance);
             for (int i = 0; i < EditableParts.Length; i++)
             {
                 PosePart part = EditableParts[i];
@@ -511,6 +637,15 @@ namespace AnimeHillRacing.Editor
                 nearest = part;
             }
             return nearest;
+        }
+
+        private static void ConsiderHandle(PosePart part, Vector2 worldPosition, Vector2 mouse, Vector2 origin,
+            float pixelsPerUnit, ref PosePart nearest, ref float distance)
+        {
+            float next = Vector2.Distance(mouse, WorldToScreen(worldPosition, origin, pixelsPerUnit));
+            if (next >= distance) return;
+            distance = next;
+            nearest = part;
         }
 
         private Vector2 PartAnchorWorld(PosePart part, VehicleDefinition.DriverPartPose pose)
@@ -636,8 +771,8 @@ namespace AnimeHillRacing.Editor
                     {
                         VehicleDefinition.DriverPartPose legacyScarfPose = pose.accessory;
                         legacyScarfPose.position = Vector2.Lerp(pose.torso.position, pose.head.position, .36f);
-                        legacyScarfPose.sortingOrder = Mathf.Max(pose.torso.sortingOrder,
-                            pose.head.sortingOrder) + 1;
+                        legacyScarfPose.sortingOrder = Mathf.Min(ArticulatedDriver2D.MaximumDriverSortingOrder,
+                            Mathf.Max(pose.torso.sortingOrder, pose.head.sortingOrder) + 1);
                         return legacyScarfPose;
                     }
                     return pose.accessory;
@@ -648,6 +783,7 @@ namespace AnimeHillRacing.Editor
         private void SetPart(VehicleDefinition.DriverPose pose, PosePart part,
             VehicleDefinition.DriverPartPose value)
         {
+            value.sortingOrder = Mathf.Min(value.sortingOrder, ArticulatedDriver2D.MaximumDriverSortingOrder);
             switch (part)
             {
                 case PosePart.Torso: pose.torso = value; break;

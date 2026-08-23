@@ -7,6 +7,8 @@ namespace AnimeHillRacing.Vehicle
     {
         // Scale only rendered pieces: seat anchors, articulated pose and head-impact collider stay unchanged.
         public const float CharacterVisualScaleMultiplier = 1.5f;
+        public const int MaximumDriverSortingOrder = 9;
+        public const int ForegroundDriverSortingBase = 20;
 
         [SerializeField] private SpriteRenderer torso;
         [SerializeField] private SpriteRenderer head;
@@ -119,16 +121,22 @@ namespace AnimeHillRacing.Vehicle
             // still contracts or expands the articulated pose around its seat anchor, but must not make
             // identical part scale values render at different sizes in different vehicles.
             float visualScaleCompensation = 1f / rootScale;
-            ApplyPart(torso, driver.torso, reference.torso, pose.torso, visualScaleCompensation);
-            ApplyPart(head, driver.head, reference.head, pose.head, visualScaleCompensation);
-            ApplyPart(leftUpperArm, driver.upperArm, reference.upperArm, pose.leftUpperArm, visualScaleCompensation);
-            ApplyPart(leftForearm, driver.forearm, reference.forearm, pose.leftForearm, visualScaleCompensation);
-            ApplyPart(rightUpperArm, driver.upperArm, reference.upperArm, pose.rightUpperArm, visualScaleCompensation);
-            ApplyPart(rightForearm, driver.forearm, reference.forearm, pose.rightForearm, visualScaleCompensation);
-            ApplyPart(leftThigh, driver.thigh, reference.thigh, pose.leftThigh, visualScaleCompensation);
-            ApplyPart(leftLowerLeg, driver.lowerLeg, reference.lowerLeg, pose.leftLowerLeg, visualScaleCompensation);
-            ApplyPart(rightThigh, driver.thigh, reference.thigh, pose.rightThigh, visualScaleCompensation);
-            ApplyPart(rightLowerLeg, driver.lowerLeg, reference.lowerLeg, pose.rightLowerLeg, visualScaleCompensation);
+            ApplyPart(torso, driver.torso, reference.torso, pose.torso, visualScaleCompensation, false);
+            ApplyPart(head, driver.head, reference.head, pose.head, visualScaleCompensation, true);
+            ApplyPart(leftUpperArm, driver.upperArm, reference.upperArm, pose.leftUpperArm,
+                visualScaleCompensation, true);
+            ApplyPart(leftForearm, driver.forearm, reference.forearm, pose.leftForearm,
+                visualScaleCompensation, true);
+            ApplyPart(rightUpperArm, driver.upperArm, reference.upperArm, pose.rightUpperArm,
+                visualScaleCompensation, true);
+            ApplyPart(rightForearm, driver.forearm, reference.forearm, pose.rightForearm,
+                visualScaleCompensation, true);
+            ApplyPart(leftThigh, driver.thigh, reference.thigh, pose.leftThigh, visualScaleCompensation, false);
+            ApplyPart(leftLowerLeg, driver.lowerLeg, reference.lowerLeg, pose.leftLowerLeg,
+                visualScaleCompensation, false);
+            ApplyPart(rightThigh, driver.thigh, reference.thigh, pose.rightThigh, visualScaleCompensation, false);
+            ApplyPart(rightLowerLeg, driver.lowerLeg, reference.lowerLeg, pose.rightLowerLeg,
+                visualScaleCompensation, false);
             headImpact?.ConfigureHeadCollider(head);
             EnsureAccessoryRenderer();
             VehicleDefinition.DriverPartPose accessoryPose = pose.accessory;
@@ -198,6 +206,7 @@ namespace AnimeHillRacing.Vehicle
 
             Transform part = accessory.transform;
             Vector2 sharedOffset = option != null ? option.anchorOffset : Vector2.zero;
+            int authoredSortingOrder;
             if (isScarf && !hasVehicleOverride && torso != null && head != null)
             {
                 // Preserve the legacy neck placement until this vehicle receives an authored scarf override.
@@ -205,14 +214,16 @@ namespace AnimeHillRacing.Vehicle
                     head.transform.localPosition, .36f);
                 part.localPosition = new Vector3(neckPosition.x + sharedOffset.x,
                     neckPosition.y + sharedOffset.y, part.localPosition.z);
-                accessory.sortingOrder = Mathf.Max(torso.sortingOrder, head.sortingOrder) + 1;
+                authoredSortingOrder = Mathf.Max(NormalizeAuthoredSortingOrder(torso.sortingOrder),
+                    NormalizeAuthoredSortingOrder(head.sortingOrder)) + 1;
             }
             else
             {
                 part.localPosition = new Vector3(pose.position.x + sharedOffset.x,
                     pose.position.y + sharedOffset.y, part.localPosition.z);
-                accessory.sortingOrder = pose.sortingOrder;
+                authoredSortingOrder = pose.sortingOrder;
             }
+            accessory.sortingOrder = EncodedSortingOrder(pose, true, authoredSortingOrder);
             part.localRotation = Quaternion.Euler(0f, 0f, pose.rotation);
 
             float sourceWidth = sprite != null ? Mathf.Max(.001f, sprite.bounds.size.x) : 1f;
@@ -237,12 +248,12 @@ namespace AnimeHillRacing.Vehicle
         }
 
         private static void ApplyPart(SpriteRenderer renderer, Sprite sprite, Sprite referenceSprite,
-            VehicleDefinition.DriverPartPose pose, float visualScaleCompensation)
+            VehicleDefinition.DriverPartPose pose, float visualScaleCompensation, bool inFrontByDefault)
         {
             if (renderer == null) return;
             renderer.sprite = sprite;
             renderer.enabled = pose.visible && sprite != null;
-            renderer.sortingOrder = pose.sortingOrder;
+            renderer.sortingOrder = EncodedSortingOrder(pose, inFrontByDefault, pose.sortingOrder);
             Transform part = renderer.transform;
             part.localRotation = Quaternion.Euler(0f, 0f, pose.rotation);
             float scaleX = Mathf.Abs(pose.scale.x) > .0001f ? Mathf.Abs(pose.scale.x) : 1f;
@@ -274,6 +285,42 @@ namespace AnimeHillRacing.Vehicle
         {
             if (sprite == null || referenceSprite == null || sprite == referenceSprite) return Vector2.zero;
             return (Vector2)referenceSprite.bounds.center - Vector2.Scale(sprite.bounds.center, normalization);
+        }
+
+        public void EnforceRenderingRelativeToVehicle(SpriteRenderer vehicleRenderer)
+        {
+            if (vehicleRenderer == null) return;
+            SpriteRenderer[] renderers =
+            {
+                torso, head, leftUpperArm, leftForearm, rightUpperArm, rightForearm,
+                leftThigh, leftLowerLeg, rightThigh, rightLowerLeg, accessory
+            };
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                SpriteRenderer renderer = renderers[i];
+                if (renderer == null) continue;
+                renderer.sortingLayerID = vehicleRenderer.sortingLayerID;
+                bool foreground = renderer.sortingOrder >= ForegroundDriverSortingBase;
+                int authoredOrder = NormalizeAuthoredSortingOrder(renderer.sortingOrder);
+                renderer.sortingOrder = foreground
+                    ? ForegroundDriverSortingBase + authoredOrder
+                    : Mathf.Min(authoredOrder, vehicleRenderer.sortingOrder - 1);
+            }
+        }
+
+        private static int EncodedSortingOrder(VehicleDefinition.DriverPartPose pose, bool inFrontByDefault,
+            int authoredOrder)
+        {
+            authoredOrder = Mathf.Clamp(authoredOrder, 0, MaximumDriverSortingOrder);
+            return pose.RendersInFrontOfVehicle(inFrontByDefault)
+                ? ForegroundDriverSortingBase + authoredOrder : authoredOrder;
+        }
+
+        private static int NormalizeAuthoredSortingOrder(int value)
+        {
+            if (value >= ForegroundDriverSortingBase)
+                value -= ForegroundDriverSortingBase;
+            return Mathf.Clamp(value, 0, MaximumDriverSortingOrder);
         }
     }
 

@@ -10,13 +10,14 @@ namespace AnimeHillRacing.Editor
 {
     public static class AerialSateliteInstaller
     {
-        private const string SessionKey = "AHR.AerialSateliteInstaller.v18";
+        private const string SessionKey = "AHR.AerialSateliteInstaller.v19";
         private const string Root = "Assets/AnimeHillRacing";
         private const string ArtRoot = "Assets/Art/Vehicles/AerialSatelite";
         private const string DefinitionPath = Root + "/VehicleData/AerialSateliteVehicle.asset";
         private const string Prefab2DPath = Root + "/Prefabs/Vehicles/AerialSatelite_2D.prefab";
         private const string Prefab3DPath = Root + "/Prefabs/Vehicles/AerialSatelite_3D.prefab";
-        private const string BodyPath = ArtRoot + "/AerialSatelite_Body.png";
+        private const string WhiteBodyPath = ArtRoot + "/AerialSatelite_Body_WhiteGold.png";
+        private const string RedBodyPath = ArtRoot + "/AerialSatelite_Body_RedBlackGold.png";
         private const string WheelPath = ArtRoot + "/AerialSatelite_Wheel.png";
         private const string ThrusterPath = ArtRoot + "/AerialSatelite_Thruster.png";
         private const string FlamePath = ArtRoot + "/AerialSatelite_Flame.png";
@@ -41,20 +42,22 @@ namespace AnimeHillRacing.Editor
         public static void Install()
         {
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
-            ConfigureSprite(BodyPath, 2048);
+            ConfigureSprite(WhiteBodyPath, 4096);
+            ConfigureSprite(RedBodyPath, 4096);
             ConfigureSprite(WheelPath, 1536);
             ConfigureSprite(ThrusterPath, 1536);
             ConfigureSprite(FlamePath, 1024);
 
-            Sprite body = AssetDatabase.LoadAssetAtPath<Sprite>(BodyPath);
+            Sprite whiteBody = AssetDatabase.LoadAssetAtPath<Sprite>(WhiteBodyPath);
+            Sprite redBody = AssetDatabase.LoadAssetAtPath<Sprite>(RedBodyPath);
             Sprite wheel = AssetDatabase.LoadAssetAtPath<Sprite>(WheelPath);
             Sprite thruster = AssetDatabase.LoadAssetAtPath<Sprite>(ThrusterPath);
             Sprite flame = AssetDatabase.LoadAssetAtPath<Sprite>(FlamePath);
-            if (body == null || wheel == null || thruster == null || flame == null)
+            if (whiteBody == null || redBody == null || wheel == null || thruster == null || flame == null)
                 throw new InvalidOperationException("Aerial Satelite sprites could not be imported.");
 
             VehicleDefinition definition = LoadOrCreate<VehicleDefinition>(DefinitionPath);
-            ConfigureDefinition(definition, body, wheel, thruster);
+            ConfigureDefinition(definition, whiteBody, redBody, wheel, thruster);
             BuildPrefabs(definition, thruster, flame);
             Register(definition);
             EditorUtility.SetDirty(definition);
@@ -65,7 +68,8 @@ namespace AnimeHillRacing.Editor
             Debug.Log("AERIAL_SATELITE_INSTALL_OK|vehicle=aerial-satelite-01|top=200kmh|zeroTo100=5s|fuel=60s|thrusterFuel=single2x-dual2.5x|groundDualPedal=true|oneWheelLock=true|maxUpgrade=120000");
         }
 
-        private static void ConfigureDefinition(VehicleDefinition v, Sprite body, Sprite wheel, Sprite thruster)
+        private static void ConfigureDefinition(VehicleDefinition v, Sprite whiteBody, Sprite redBody,
+            Sprite wheel, Sprite thruster)
         {
             v.vehicleId = "aerial-satelite-01";
             v.displayName = "AERIAL SATELITE";
@@ -172,14 +176,21 @@ namespace AnimeHillRacing.Editor
 
             v.visualWidth = 6.15f;
             v.bodyVisualOffset = new Vector2(0f, .31f);
-            v.rearWheelVisualPosition = new Vector2(-2.28f, -.57f);
-            v.frontWheelVisualPosition = new Vector2(2.28f, -.57f);
+            if (!v.preserveWheelVisualPositions)
+            {
+                v.rearWheelVisualPosition = new Vector2(-2.28f, -.57f);
+                v.frontWheelVisualPosition = new Vector2(2.28f, -.57f);
+                v.rearWheelVisualDiameter = 0f;
+                v.frontWheelVisualDiameter = 0f;
+            }
             v.wheelVisualDiameter = 1.18f;
-            v.rearWheelVisualDiameter = 0f;
-            v.frontWheelVisualDiameter = 0f;
-            v.flipBodyX = true;
-            v.previewSprite = body;
-            v.skins = new[] { Option("aerial-satelite-default", "WHITE & GOLD", body) };
+            v.flipBodyX = false;
+            v.previewSprite = whiteBody;
+            v.skins = new[]
+            {
+                Option("aerial-satelite-default", "WHITE & GOLD", whiteBody),
+                Option("aerial-satelite-red-black-gold", "RED, BLACK & GOLD", redBody)
+            };
             v.wheels = new[] { Option("aerial-satelite-wheel", "AERIAL GRIP", wheel) };
             v.underbodyAttachmentSprite = thruster;
             v.underbodyAttachmentPositions = new[]
@@ -393,7 +404,11 @@ namespace AnimeHillRacing.Editor
             Transform thrusterRig = prefab.transform.Find("Aerial Thruster Rig");
             Transform leftThruster = thrusterRig != null ? thrusterRig.Find("Left Thruster Point") : null;
             Transform rightThruster = thrusterRig != null ? thrusterRig.Find("Right Thruster Point") : null;
-            if (!definition.flipBodyX || leftThruster == null || rightThruster == null ||
+            if (definition.flipBodyX || definition.skins == null || definition.skins.Length != 2 ||
+                definition.previewSprite != definition.skins[0].sprite ||
+                definition.skins[0].optionId != "aerial-satelite-default" ||
+                definition.skins[1].optionId != "aerial-satelite-red-black-gold" ||
+                leftThruster == null || rightThruster == null ||
                 leftThruster.localPosition.x > -.95f || rightThruster.localPosition.x < .95f ||
                 Mathf.Abs(leftThruster.localPosition.y + .38f) > .01f ||
                 Mathf.Abs(rightThruster.localPosition.y + .38f) > .01f ||

@@ -41,30 +41,65 @@ namespace AnimeHillRacing.Road
             if (definition == null) return;
             VehicleDefinition.CustomizationOption skin = definition.FindSkin(SaveManager.GetSelectedSkinId(definition));
             VehicleDefinition.CustomizationOption wheel = definition.FindWheel(SaveManager.GetSelectedWheelId(definition));
-            int wheelSortingOrder = FormulaElectricSkinEffect.ResolveWheelSortingOrder(definition, skin);
             if (bodyRenderers != null && skin != null)
                 for (int i = 0; i < bodyRenderers.Length; i++) if (bodyRenderers[i] != null)
                 {
                     bodyRenderers[i].sprite = skin.sprite;
+                    bodyRenderers[i].sortingOrder = VehicleVisual2D.BodySortingOrder;
                     bodyRenderers[i].flipX = definition.flipBodyX ^ (i == 1);
                     bodyRenderers[i].transform.localPosition = definition.BodyCustomizationOffset(skin);
                     bodyRenderers[i].transform.localScale = definition.BodyCustomizationScale(skin);
                     FormulaElectricSkinEffect.Apply(bodyRenderers[i], definition, skin);
                     HillAdventurerSkinEffect.Apply(bodyRenderers[i], definition, skin);
                 }
+            ApplyAuthoredWheelPositions();
+            int wheelSortingOrder = Mathf.Max(VehicleVisual2D.MinimumWheelSortingOrder,
+                FormulaElectricSkinEffect.ResolveWheelSortingOrder(definition, skin));
             if (wheelRenderers != null && wheel != null)
                 for (int i = 0; i < wheelRenderers.Length; i++) if (wheelRenderers[i] != null)
                 {
                     SpriteRenderer renderer = wheelRenderers[i];
                     renderer.sprite = wheel.sprite;
                     renderer.sortingOrder = wheelSortingOrder;
+                    if (bodyRenderers != null && bodyRenderers.Length > 0 && bodyRenderers[0] != null)
+                        renderer.sortingLayerID = bodyRenderers[0].sortingLayerID;
                     bool front = frontWheels != null && i < frontWheels.Length && frontWheels[i];
                     float diameter = front ? definition.FrontWheelDiameter : definition.RearWheelDiameter;
                     renderer.transform.localScale = Vector3.one *
                         definition.WheelCustomizationScale(wheel, diameter);
                 }
-            if (articulatedDriver != null && fallbackDriver != null)
-                articulatedDriver.Apply(fallbackDriver, definition.driverPose, GetComponentInParent<Rigidbody>(), true);
+            if (articulatedDriver != null)
+            {
+                if (fallbackDriver != null)
+                    articulatedDriver.Apply(fallbackDriver, definition.driverPose,
+                        GetComponentInParent<Rigidbody>(), true);
+                SpriteRenderer bodyReference = bodyRenderers != null && bodyRenderers.Length > 0
+                    ? bodyRenderers[0] : null;
+                articulatedDriver.EnforceRenderingRelativeToVehicle(bodyReference);
+            }
+        }
+
+        private void ApplyAuthoredWheelPositions()
+        {
+            if (definition == null || wheels == null) return;
+            if (baseLocalPositions == null || baseLocalPositions.Length != wheels.Length)
+                baseLocalPositions = new Vector3[wheels.Length];
+            bool initializeRotations = baseRotations == null || baseRotations.Length != wheels.Length;
+            if (initializeRotations)
+                baseRotations = new Quaternion[wheels.Length];
+            for (int i = 0; i < wheels.Length; i++)
+            {
+                Transform wheel = wheels[i];
+                if (wheel == null) continue;
+                bool front = frontWheels != null && i < frontWheels.Length && frontWheels[i];
+                Vector2 authored = front ? definition.frontWheelVisualPosition : definition.rearWheelVisualPosition;
+                Vector3 localPosition = wheel.localPosition;
+                localPosition.y = authored.y;
+                localPosition.z = authored.x;
+                wheel.localPosition = localPosition;
+                baseLocalPositions[i] = localPosition;
+                if (initializeRotations) baseRotations[i] = wheel.localRotation;
+            }
         }
 
         private void LateUpdate()

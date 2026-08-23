@@ -417,10 +417,10 @@ MonoBehaviour:
   - {fileID: 8848110157982412781}
   visualRoot: {fileID: 4393621170593413794}
   detachedRoofMass: 8
-  separationImpulse: 2.4
+  separationImpulse: 1.35
   beltlineCutHeight: 0.72
-  requiredUpsideDownSeconds: 3
-  upsideDownDotThreshold: -0.45
+  requiredUpsideDownSeconds: 1.25
+  upsideDownDotThreshold: -0.35
   beltlineMaterial: {fileID: 0}
 --- !u!1 &1980817731718121019
 GameObject:

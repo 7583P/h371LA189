@@ -1031,10 +1031,10 @@ MonoBehaviour:
   - {fileID: 6757810707865482275}
   visualRoot: {fileID: 6657497803075097857}
   detachedRoofMass: 8
-  separationImpulse: 2.4
+  separationImpulse: 1.35
   beltlineCutHeight: 0.72
-  requiredUpsideDownSeconds: 3
-  upsideDownDotThreshold: -0.45
+  requiredUpsideDownSeconds: 1.25
+  upsideDownDotThreshold: -0.35
   beltlineMaterial: {fileID: 0}
 --- !u!1 &3976651019300757175
 GameObject:

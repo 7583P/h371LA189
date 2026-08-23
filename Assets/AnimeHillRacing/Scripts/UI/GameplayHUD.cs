@@ -176,7 +176,7 @@ namespace AnimeHillRacing.UI
 
             if (distanceText != null)
             {
-                int realMeters = Mathf.FloorToInt(gameManager.Distance);
+                int realMeters = Mathf.RoundToInt(gameManager.Distance);
                 if (realMeters != displayedDistance)
                 {
                     displayedDistance = realMeters;
@@ -253,7 +253,8 @@ namespace AnimeHillRacing.UI
         public void RefreshImmediate(GameManager gameManager)
         {
             nextRefresh = float.NegativeInfinity;
-            displayedDistance = Mathf.FloorToInt(gameManager.Distance);
+            // Force the distance label to be written instead of preloading the same cache value.
+            displayedDistance = int.MinValue;
             Refresh(gameManager);
         }
 
@@ -305,7 +306,7 @@ namespace AnimeHillRacing.UI
 
         public void AssignPickupPool(PickupPool pool) => pickupPool = pool;
 
-        public void ResetDisplayedDistance() => displayedDistance = 0;
+        public void ResetDisplayedDistance() => displayedDistance = int.MinValue;
 
         private static void AddTextOutline(Text text)
         {

@@ -1,3 +1,4 @@
+using AnimeHillRacing.Terrain;
 using UnityEngine;
 
 namespace AnimeHillRacing.Vehicle
@@ -10,13 +11,14 @@ namespace AnimeHillRacing.Vehicle
         [SerializeField] private SpriteRenderer[] bodyRenderers;
         [SerializeField] private Transform visualRoot;
         [SerializeField, Min(.1f)] private float detachedRoofMass = 8f;
-        [SerializeField, Min(0f)] private float separationImpulse = 2.4f;
+        [SerializeField, Min(0f), Tooltip("Small upward launch speed applied when the canopy separates")]
+        private float separationImpulse = 1.35f;
         [SerializeField, Tooltip("Local Y height in sprite space where the beltline cut occurs (removes windshield, roof, rear pillar, and rear metal structure)")]
         private float beltlineCutHeight = 0.72f;
         [SerializeField, Tooltip("Required continuous upside down time with ground contact to break roof")]
-        private float requiredUpsideDownSeconds = 3.0f;
-        [SerializeField, Tooltip("Dot product threshold for upside-down detection (< -0.45 means angle > 117 degrees inverted)")]
-        private float upsideDownDotThreshold = -0.45f;
+        private float requiredUpsideDownSeconds = 1.25f;
+        [SerializeField, Tooltip("Dot product threshold relative to the terrain normal (< -0.35 means angle > 110 degrees inverted)")]
+        private float upsideDownDotThreshold = -0.35f;
         [SerializeField] private Material beltlineMaterial;
 
         private MaterialPropertyBlock bodyPropertyBlock;
@@ -25,6 +27,8 @@ namespace AnimeHillRacing.Vehicle
         private float lastRoofGroundContactTime = -10f;
         private Collider roofTriggerCollider;
         private Collider2D roofTriggerCollider2D;
+        private readonly Collider[] overlapResults3D = new Collider[12];
+        private readonly Collider2D[] overlapResults2D = new Collider2D[12];
 
         public bool RoofDetached { get; private set; }
         public float UpsideDownContactTimer => upsideDownContactTimer;
@@ -156,8 +160,9 @@ namespace AnimeHillRacing.Vehicle
             if (RoofDetached || definition == null || definition.archetype != VehicleArchetype.Rally) return;
 
             Transform refTransform = vehicleBody != null ? vehicleBody.transform : (vehicleBody2D != null ? vehicleBody2D.transform : transform);
-            float upDot = Vector3.Dot(refTransform.up, Vector3.up);
+            float upDot = SurfaceRelativeUpDot(refTransform);
             bool isUpsideDown = upDot < upsideDownDotThreshold;
+            if (isUpsideDown) RefreshRoofGroundContact();
             bool isRoofGrounded = (Time.time - lastRoofGroundContactTime) <= (Time.fixedDeltaTime * 2.5f);
 
             // Timer increments ONLY when continuously upside down AND roof is physically touching terrain
@@ -174,6 +179,67 @@ namespace AnimeHillRacing.Vehicle
                 // Reset timer immediately if recovered or airborne
                 upsideDownContactTimer = 0f;
             }
+        }
+
+        private float SurfaceRelativeUpDot(Transform reference)
+        {
+            Vector3 surfaceUp = Vector3.up;
+            TerrainManager terrain = TerrainManager.Instance;
+            if (terrain != null && terrain.TrySampleAuthoritativeSurface(transform.position.x,
+                    out _, out float slopeDegrees))
+                surfaceUp = Quaternion.Euler(0f, 0f, slopeDegrees) * Vector3.up;
+            return Vector3.Dot(reference.up.normalized, surfaceUp.normalized);
+        }
+
+        private void RefreshRoofGroundContact()
+        {
+            Transform vehicleRoot = vehicleBody2D != null ? vehicleBody2D.transform
+                : vehicleBody != null ? vehicleBody.transform : transform.root;
+
+            if (roofTriggerCollider2D != null && roofTriggerCollider2D.enabled)
+            {
+                ContactFilter2D filter = new ContactFilter2D { useTriggers = false };
+                int count = roofTriggerCollider2D.Overlap(filter, overlapResults2D);
+                for (int i = 0; i < count; i++)
+                {
+                    if (!GroundContactFilter.IsGround2D(overlapResults2D[i], vehicleRoot)) continue;
+                    lastRoofGroundContactTime = Time.time;
+                    return;
+                }
+            }
+
+            if (roofTriggerCollider != null && roofTriggerCollider.enabled)
+            {
+                Bounds bounds = roofTriggerCollider.bounds;
+                Vector3 padding = Vector3.one * Mathf.Max(.025f, Physics.defaultContactOffset);
+                int count = Physics.OverlapBoxNonAlloc(bounds.center, bounds.extents + padding,
+                    overlapResults3D, Quaternion.identity, ~0, QueryTriggerInteraction.Ignore);
+                for (int i = 0; i < count; i++)
+                {
+                    if (!GroundContactFilter.IsGround(overlapResults3D[i], vehicleRoot)) continue;
+                    lastRoofGroundContactTime = Time.time;
+                    return;
+                }
+            }
+
+            // Fast rotations can move the thin roof trigger from one side of an EdgeCollider2D to
+            // the other between physics steps. Sampling the authoritative surface closes that gap.
+            TerrainManager terrain = TerrainManager.Instance;
+            if (terrain == null || !terrain.TrySampleAuthoritativeSurface(transform.position.x,
+                    out float surfaceY, out float slopeDegrees)) return;
+
+            Bounds roofBounds = roofTriggerCollider2D != null ? roofTriggerCollider2D.bounds
+                : roofTriggerCollider != null ? roofTriggerCollider.bounds
+                : new Bounds(transform.position, new Vector3(1.6f, .18f, .2f));
+            Vector2 surfaceNormal = Quaternion.Euler(0f, 0f, slopeDegrees) * Vector2.up;
+            Vector2 surfacePoint = new Vector2(roofBounds.center.x, surfaceY);
+            float centerDistance = Vector2.Dot((Vector2)roofBounds.center - surfacePoint, surfaceNormal);
+            float projectedExtent = Mathf.Abs(surfaceNormal.x) * roofBounds.extents.x +
+                                    Mathf.Abs(surfaceNormal.y) * roofBounds.extents.y;
+            float tolerance = Mathf.Max(.06f, Physics2D.defaultContactOffset * 3f);
+            if (centerDistance <= projectedExtent + tolerance &&
+                centerDistance >= -projectedExtent - tolerance * 2f)
+                lastRoofGroundContactTime = Time.time;
         }
 
         public void DetachRoof()
@@ -248,14 +314,15 @@ namespace AnimeHillRacing.Vehicle
                 detachedCollider2D.size = new Vector2(activeSprite.bounds.size.x * 0.65f,
                     Mathf.Max(0.12f, activeSprite.bounds.size.y * 0.45f));
                 detachedCollider2D.offset = new Vector2(0f, beltlineCutHeight * 0.5f + 0.35f);
+                IgnoreVehicleCollisions(detachedCollider2D);
 
                 Rigidbody2D roofBody2D = piece.AddComponent<Rigidbody2D>();
                 roofBody2D.mass = detachedRoofMass;
                 roofBody2D.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
                 roofBody2D.linearVelocity = vehicleBody2D.GetPointVelocity(transform.position) +
                                             Vector2.up * separationImpulse +
-                                            (Vector2)vehicleBody2D.transform.right * 1.5f;
-                roofBody2D.angularVelocity = vehicleBody2D.angularVelocity + 180f;
+                                            (Vector2)vehicleBody2D.transform.right * .35f;
+                roofBody2D.angularVelocity = vehicleBody2D.angularVelocity + 75f;
             }
             else
             {
@@ -263,6 +330,7 @@ namespace AnimeHillRacing.Vehicle
                 detachedCollider.size = new Vector3(activeSprite.bounds.size.x * 0.65f,
                     Mathf.Max(0.12f, activeSprite.bounds.size.y * 0.45f), 0.18f);
                 detachedCollider.center = new Vector3(0f, beltlineCutHeight * 0.5f + 0.35f, 0f);
+                IgnoreVehicleCollisions(detachedCollider);
 
                 Rigidbody roofBody = piece.AddComponent<Rigidbody>();
                 roofBody.mass = detachedRoofMass;
@@ -272,14 +340,38 @@ namespace AnimeHillRacing.Vehicle
                 {
                     roofBody.linearVelocity = vehicleBody.GetPointVelocity(transform.position) +
                                               Vector3.up * separationImpulse +
-                                              vehicleBody.transform.forward * 1.5f;
-                    roofBody.angularVelocity = vehicleBody.angularVelocity + new Vector3(0.5f, 0f, 3.2f);
+                                              vehicleBody.transform.right * .35f;
+                    roofBody.angularVelocity = vehicleBody.angularVelocity + new Vector3(.25f, 0f, 1.35f);
                 }
             }
 
             if (roofTriggerCollider != null) roofTriggerCollider.enabled = false;
             if (roofTriggerCollider2D != null) roofTriggerCollider2D.enabled = false;
             Destroy(piece, 8f);
+        }
+
+        private void IgnoreVehicleCollisions(Collider2D detachedCollider)
+        {
+            if (detachedCollider == null || vehicleBody2D == null) return;
+            Collider2D[] vehicleColliders = vehicleBody2D.transform.root.GetComponentsInChildren<Collider2D>(true);
+            for (int i = 0; i < vehicleColliders.Length; i++)
+            {
+                Collider2D vehicleCollider = vehicleColliders[i];
+                if (vehicleCollider != null && vehicleCollider != detachedCollider)
+                    Physics2D.IgnoreCollision(detachedCollider, vehicleCollider, true);
+            }
+        }
+
+        private void IgnoreVehicleCollisions(Collider detachedCollider)
+        {
+            if (detachedCollider == null || vehicleBody == null) return;
+            Collider[] vehicleColliders = vehicleBody.transform.root.GetComponentsInChildren<Collider>(true);
+            for (int i = 0; i < vehicleColliders.Length; i++)
+            {
+                Collider vehicleCollider = vehicleColliders[i];
+                if (vehicleCollider != null && vehicleCollider != detachedCollider)
+                    Physics.IgnoreCollision(detachedCollider, vehicleCollider, true);
+            }
         }
     }
 }

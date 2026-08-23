@@ -41,13 +41,14 @@ namespace AnimeHillRacing.UI
             resultsText.text = $"DISTANCE\n<size=34>{manager.Distance:N0} m</size>\n\n" +
                                $"BEST DISTANCE   {manager.BestDistance:N0} m\n" +
                                $"COINS EARNED   +{manager.RunCoins:N0}\n" +
-                               $"TOTAL COINS   {manager.SavedTotalCoins:N0}\n\n" +
+                               $"\n" +
                                $"FLIPS   {manager.RunFlips}\n" +
                                $"BACKFLIPS   {manager.RunBackflips}\n" +
                                $"STUNT BONUS   {manager.StuntBonus}\n\n" +
                                $"MAX SPEED   {manager.MaxSpeedKmh:0} km/h\n" +
                                $"{GameModeNames.DisplayName(manager.Mode)}   -   {manager.MapId.ToUpperInvariant()}";
-            SetPhotoMetadata($"DISTANCE   {manager.Distance:N0} m\nTRACK      {FormatMapName(manager.MapId)}");
+            SetPhotoMetadata($"DISTANCE   <size=44>{manager.Distance:N0} m</size>\n" +
+                             $"TRACK      <size=42>{FormatMapName(manager.MapId)}</size>");
         }
 
         public void ShowTimeTrial(TimeTrialManager manager)
@@ -159,15 +160,16 @@ namespace AnimeHillRacing.UI
             rect.anchorMax = Vector2.one;
             rect.pivot = Vector2.one;
             rect.anchoredPosition = new Vector2(-28f, -24f);
-            rect.sizeDelta = new Vector2(360f, 96f);
+            rect.sizeDelta = new Vector2(550f, 132f);
 
             label.font = resultsText != null && resultsText.font != null
                 ? resultsText.font : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            label.fontSize = 25;
+            label.fontSize = 36;
             label.fontStyle = FontStyle.Bold;
-            label.lineSpacing = 1.18f;
+            label.lineSpacing = 1.08f;
             label.alignment = TextAnchor.UpperRight;
             label.color = Color.white;
+            label.supportRichText = true;
             label.raycastTarget = false;
             label.horizontalOverflow = HorizontalWrapMode.Wrap;
             label.verticalOverflow = VerticalWrapMode.Truncate;

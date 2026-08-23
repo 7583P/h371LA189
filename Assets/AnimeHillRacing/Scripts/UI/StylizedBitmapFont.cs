@@ -49,6 +49,29 @@ namespace AnimeHillRacing.UI
             return false;
         }
 
+        public static bool SupportsAllVisibleGlyphs(string value, bool parseRichText)
+        {
+            if (string.IsNullOrEmpty(value)) return false;
+            bool foundVisibleGlyph = false;
+            for (int i = 0; i < value.Length; i++)
+            {
+                char character = value[i];
+                if (parseRichText && character == '<')
+                {
+                    int tagEnd = value.IndexOf('>', i + 1);
+                    if (tagEnd >= 0)
+                    {
+                        i = tagEnd;
+                        continue;
+                    }
+                }
+                if (char.IsWhiteSpace(character)) continue;
+                foundVisibleGlyph = true;
+                if (!GlyphUvs.ContainsKey(char.ToUpperInvariant(character))) return false;
+            }
+            return foundVisibleGlyph;
+        }
+
         public static bool TryGetUv(char character, out Rect uv) =>
             GlyphUvs.TryGetValue(char.ToUpperInvariant(character), out uv);
 
@@ -122,6 +145,26 @@ namespace AnimeHillRacing.UI
 
     internal sealed class StylizedBitmapTextGraphic : MaskableGraphic
     {
+        private sealed class GlyphLayout
+        {
+            public UIVertex[] quad;
+            public Rect uv;
+            public float sourceMinX;
+            public float sourceMaxX;
+            public float sourceMinY;
+            public float sourceMaxY;
+            public float targetWidth;
+        }
+
+        private sealed class LineLayout
+        {
+            public readonly List<GlyphLayout> glyphs = new List<GlyphLayout>(24);
+            public float sourceMinX = float.PositiveInfinity;
+            public float sourceMaxX = float.NegativeInfinity;
+            public float centerY;
+            public float referenceHeight;
+        }
+
         private Text source;
         private Color sourceVisibleColor = Color.white;
         private string lastValue;
@@ -163,7 +206,8 @@ namespace AnimeHillRacing.UI
         protected override void OnPopulateMesh(VertexHelper vertexHelper)
         {
             vertexHelper.Clear();
-            if (source == null || !source.enabled || !StylizedBitmapFont.ContainsSupportedGlyph(source.text) ||
+            if (source == null || !source.enabled ||
+                !StylizedBitmapFont.SupportsAllVisibleGlyphs(source.text, source.supportRichText) ||
                 StylizedBitmapFont.Material == null)
                 return;
 
@@ -179,6 +223,8 @@ namespace AnimeHillRacing.UI
             Vector2 roundingOffset = new Vector2(generatedVertices[0].position.x, generatedVertices[0].position.y) * unitsPerPixel;
             roundingOffset = source.PixelAdjustPoint(roundingOffset) - roundingOffset;
 
+            List<LineLayout> lines = new List<LineLayout>(4);
+            LineLayout currentLine = null;
             int quadIndex = 0;
             for (int characterIndex = 0; characterIndex < source.text.Length; characterIndex++)
             {
@@ -198,12 +244,34 @@ namespace AnimeHillRacing.UI
                     break;
                 if (!StylizedBitmapFont.TryGetUv(character, out Rect uv)) continue;
 
-                FitQuadToGlyphAspect(quad, StylizedBitmapFont.GetGlyphAspect(uv));
-                ApplyAtlasUv(quad, uv);
-                for (int i = 0; i < quad.Length; i++)
-                    quad[i].color = Multiply(quad[i].color, sourceVisibleColor);
-                vertexHelper.AddUIVertexQuad(quad);
+                GetQuadBounds(quad, out float minX, out float maxX, out float minY, out float maxY);
+                float height = Mathf.Max(.0001f, maxY - minY);
+                float centerY = (minY + maxY) * .5f;
+                if (currentLine == null || Mathf.Abs(currentLine.centerY - centerY) >
+                    Mathf.Max(currentLine.referenceHeight, height) * .45f)
+                {
+                    currentLine = new LineLayout { centerY = centerY, referenceHeight = height };
+                    lines.Add(currentLine);
+                }
+
+                GlyphLayout glyph = new GlyphLayout
+                {
+                    quad = quad,
+                    uv = uv,
+                    sourceMinX = minX,
+                    sourceMaxX = maxX,
+                    sourceMinY = minY,
+                    sourceMaxY = maxY,
+                    targetWidth = height * StylizedBitmapFont.GetGlyphAspect(uv)
+                };
+                currentLine.glyphs.Add(glyph);
+                currentLine.sourceMinX = Mathf.Min(currentLine.sourceMinX, minX);
+                currentLine.sourceMaxX = Mathf.Max(currentLine.sourceMaxX, maxX);
+                currentLine.referenceHeight = Mathf.Max(currentLine.referenceHeight, height);
             }
+
+            for (int i = 0; i < lines.Count; i++)
+                AddReflowedLine(vertexHelper, lines[i], extents.x);
         }
 
         private static Color32 Multiply(Color32 left, Color right)
@@ -276,12 +344,66 @@ namespace AnimeHillRacing.UI
             }
         }
 
-        private static void FitQuadToGlyphAspect(UIVertex[] quad, float glyphAspect)
+        private void AddReflowedLine(VertexHelper vertexHelper, LineLayout line, float availableWidth)
         {
-            float minX = float.PositiveInfinity;
-            float maxX = float.NegativeInfinity;
-            float minY = float.PositiveInfinity;
-            float maxY = float.NegativeInfinity;
+            if (line == null || line.glyphs.Count == 0) return;
+            float naturalWidth = 0f;
+            for (int i = 0; i < line.glyphs.Count; i++)
+            {
+                GlyphLayout glyph = line.glyphs[i];
+                naturalWidth += glyph.targetWidth;
+                if (i > 0)
+                {
+                    GlyphLayout previous = line.glyphs[i - 1];
+                    naturalWidth += Mathf.Max(line.referenceHeight * .025f,
+                        glyph.sourceMinX - previous.sourceMaxX);
+                }
+            }
+
+            float widthLimit = Mathf.Max(.0001f, availableWidth);
+            float uniformScale = naturalWidth > widthLimit ? widthLimit / naturalWidth : 1f;
+            float fittedWidth = naturalWidth * uniformScale;
+            float cursor;
+            TextAnchor alignment = source != null ? source.alignment : TextAnchor.MiddleCenter;
+            bool rightAligned = alignment == TextAnchor.UpperRight || alignment == TextAnchor.MiddleRight ||
+                                alignment == TextAnchor.LowerRight;
+            bool leftAligned = alignment == TextAnchor.UpperLeft || alignment == TextAnchor.MiddleLeft ||
+                               alignment == TextAnchor.LowerLeft;
+            if (rightAligned) cursor = line.sourceMaxX - fittedWidth;
+            else if (leftAligned) cursor = line.sourceMinX;
+            else cursor = (line.sourceMinX + line.sourceMaxX - fittedWidth) * .5f;
+
+            for (int i = 0; i < line.glyphs.Count; i++)
+            {
+                GlyphLayout glyph = line.glyphs[i];
+                if (i > 0)
+                {
+                    GlyphLayout previous = line.glyphs[i - 1];
+                    float gap = Mathf.Max(line.referenceHeight * .025f,
+                        glyph.sourceMinX - previous.sourceMaxX);
+                    cursor += gap * uniformScale;
+                }
+                float targetWidth = glyph.targetWidth * uniformScale;
+                float sourceHeight = glyph.sourceMaxY - glyph.sourceMinY;
+                float targetHeight = sourceHeight * uniformScale;
+                float centerY = (glyph.sourceMinY + glyph.sourceMaxY) * .5f;
+                FitQuadToBounds(glyph.quad, cursor, cursor + targetWidth,
+                    centerY - targetHeight * .5f, centerY + targetHeight * .5f);
+                ApplyAtlasUv(glyph.quad, glyph.uv);
+                for (int vertex = 0; vertex < glyph.quad.Length; vertex++)
+                    glyph.quad[vertex].color = Multiply(glyph.quad[vertex].color, sourceVisibleColor);
+                vertexHelper.AddUIVertexQuad(glyph.quad);
+                cursor += targetWidth;
+            }
+        }
+
+        private static void GetQuadBounds(UIVertex[] quad, out float minX, out float maxX,
+            out float minY, out float maxY)
+        {
+            minX = float.PositiveInfinity;
+            maxX = float.NegativeInfinity;
+            minY = float.PositiveInfinity;
+            maxY = float.NegativeInfinity;
             for (int i = 0; i < quad.Length; i++)
             {
                 Vector3 position = quad[i].position;
@@ -290,23 +412,17 @@ namespace AnimeHillRacing.UI
                 minY = Mathf.Min(minY, position.y);
                 maxY = Mathf.Max(maxY, position.y);
             }
+        }
 
-            float availableWidth = Mathf.Max(0.0001f, maxX - minX);
-            float availableHeight = Mathf.Max(0.0001f, maxY - minY);
-            float targetHeight = Mathf.Min(availableHeight, availableWidth / Mathf.Max(0.0001f, glyphAspect));
-            float targetWidth = targetHeight * glyphAspect;
-            float centerX = (minX + maxX) * 0.5f;
-            float centerY = (minY + maxY) * 0.5f;
-            float fittedMinX = centerX - targetWidth * 0.5f;
-            float fittedMaxX = centerX + targetWidth * 0.5f;
-            float fittedMinY = centerY - targetHeight * 0.5f;
-            float fittedMaxY = centerY + targetHeight * 0.5f;
-
+        private static void FitQuadToBounds(UIVertex[] quad, float targetMinX, float targetMaxX,
+            float targetMinY, float targetMaxY)
+        {
+            GetQuadBounds(quad, out float minX, out float maxX, out float minY, out float maxY);
             for (int i = 0; i < quad.Length; i++)
             {
                 Vector3 position = quad[i].position;
-                position.x = Mathf.Abs(position.x - minX) < Mathf.Abs(position.x - maxX) ? fittedMinX : fittedMaxX;
-                position.y = Mathf.Abs(position.y - minY) < Mathf.Abs(position.y - maxY) ? fittedMinY : fittedMaxY;
+                position.x = Mathf.Abs(position.x - minX) < Mathf.Abs(position.x - maxX) ? targetMinX : targetMaxX;
+                position.y = Mathf.Abs(position.y - minY) < Mathf.Abs(position.y - maxY) ? targetMinY : targetMaxY;
                 quad[i].position = position;
             }
         }
@@ -443,7 +559,7 @@ namespace AnimeHillRacing.UI
 
         private static bool CanProcess(Text text)
         {
-            return text != null && StylizedBitmapFont.ContainsSupportedGlyph(text.text);
+            return text != null && StylizedBitmapFont.SupportsAllVisibleGlyphs(text.text, text.supportRichText);
         }
 
         private static void SyncFallback(TextState state)

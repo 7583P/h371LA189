@@ -85,20 +85,28 @@ namespace AnimeHillRacing.Core
         private readonly StuntRotationTracker stuntRotation = new StuntRotationTracker();
         private Quaternion previousStuntRotation;
         private bool stuntRotationInitialized;
+        private bool resultSnapshotFinalized;
+        private float finalizedDistance;
+        private int finalizedRunCoins;
+        private int finalizedDisplayCoins;
+        private int finalizedSavedTotalCoins;
 
         public const float LogicalDistanceScale = 1f;
 
         public RunState State { get; private set; } = RunState.Ready;
         public RunEndReason EndReason { get; private set; }
-        public float Distance => Mathf.Max(0f, (maxProgress - startProgress) * LogicalDistanceScale);
+        private float LiveDistance => Mathf.Max(0f, (maxProgress - startProgress) * LogicalDistanceScale);
+        public float Distance => resultSnapshotFinalized ? finalizedDistance : LiveDistance;
         public float BestDistance { get; private set; }
         public float MaxSpeedKmh => maxSpeedKmh;
-        public int RunCoins => runCoins;
+        public int RunCoins => resultSnapshotFinalized ? finalizedRunCoins : runCoins;
         public int RunFlips => stuntRotation.Flips;
         public int RunBackflips => stuntRotation.Backflips;
         public int StuntBonus => stuntRotation.StuntBonus;
-        public int DisplayCoins => SaveManager.TotalCoins + runCoins;
-        public int SavedTotalCoins => SaveManager.TotalCoins;
+        public int DisplayCoins => resultSnapshotFinalized
+            ? finalizedDisplayCoins : SaturatingCurrencyAdd(SaveManager.TotalCoins, runCoins);
+        public int SavedTotalCoins => resultSnapshotFinalized
+            ? finalizedSavedTotalCoins : SaveManager.TotalCoins;
         public int TotalGems => SaveManager.TotalGems;
         public int CurrentDistanceBonusValue => SaveManager.CurrentDistanceBonusValue;
         public float NextDistanceBonusThreshold => SaveManager.NextDistanceBonusThreshold;
@@ -184,6 +192,7 @@ namespace AnimeHillRacing.Core
             }
             startProgress = vehicle.ProgressPosition;
             maxProgress = startProgress;
+            resultSnapshotFinalized = false;
             ResetRunStunts();
             State = RunState.Running;
             vehicle.SetDriveEnabled(true);
@@ -426,13 +435,37 @@ namespace AnimeHillRacing.Core
                 yield return null;
             }
             DisableDrivingAndControls();
+            FinalizeResultSnapshot();
+            State = RunState.Results;
+            hud?.RefreshImmediate(this);
             if (resultCapture != null)
                 yield return resultCapture.Capture(Mode == GameModeType.Adventure2_5D);
-            BestDistance = SaveManager.SaveRun(Distance, runCoins, Mode, MapId);
-            State = RunState.Results;
             resultsUI?.Show(this);
             Time.timeScale = 0f;
             gameOverRoutine = null;
+        }
+
+        private void FinalizeResultSnapshot()
+        {
+            if (resultSnapshotFinalized) return;
+
+            // Capture the vehicle's last position once, then use one rounded whole-metre value for
+            // the HUD, results photo, results statistics and persisted best distance.
+            if (vehicle != null) maxProgress = Mathf.Max(maxProgress, vehicle.ProgressPosition);
+            finalizedDistance = Mathf.RoundToInt(LiveDistance);
+            finalizedRunCoins = runCoins;
+            int displayCoinsBeforeSave = SaturatingCurrencyAdd(SaveManager.TotalCoins, finalizedRunCoins);
+            BestDistance = SaveManager.SaveRun(finalizedDistance, finalizedRunCoins, Mode, MapId);
+            finalizedSavedTotalCoins = SaveManager.TotalCoins;
+            finalizedDisplayCoins = SaveManager.TemporaryUnlimitedCurrencyEnabled
+                ? displayCoinsBeforeSave : finalizedSavedTotalCoins;
+            resultSnapshotFinalized = true;
+        }
+
+        private static int SaturatingCurrencyAdd(int balance, int award)
+        {
+            long total = (long)Mathf.Max(0, balance) + Mathf.Max(0, award);
+            return (int)System.Math.Min(int.MaxValue, total);
         }
 
         public void BeginRun(TransmissionMode mode)

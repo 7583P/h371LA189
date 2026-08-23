@@ -2,6 +2,8 @@ using UnityEngine;
 
 namespace AnimeHillRacing.CameraSystem
 {
+    // Runs after VehicleCamera so every parallax layer uses the current frame's camera position.
+    [DefaultExecutionOrder(200)]
     public sealed class MountainBackground : MonoBehaviour
     {
         [SerializeField] private Camera displayCamera;

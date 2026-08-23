@@ -83,6 +83,14 @@ MonoBehaviour:
   celestialRepeatSpan: 72
   starTwinkleSpeed: 2.15
   starTwinkleAmount: 0.26
+  useCinematicSpacePanorama: 0
+  cinematicSpacePanoramaShader: {fileID: 0}
+  spacePanoramaOverscan: 1.04
+  spacePanoramaScrollSpeed: 0.075
+  mirrorSpacePanoramaTiles: 1
+  spaceNebulaFlowStrength: 0.0018
+  spaceNebulaFlowSpeed: 0.075
+  spaceNebulaPulse: 0.055
   enableShootingStars: 0
   shootingStarIntervalRange: {x: 2.1, y: 4.8}
   shootingStarSpeedRange: {x: 15, y: 23}

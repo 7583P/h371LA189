@@ -30,7 +30,7 @@ MonoBehaviour:
     bundleType: 0
     allowsBlueprintProgression: 1
     visibleDiameter: 0
-    visibleSize: {x: 24.11, y: 8.67}
+    visibleSize: {x: 24.136269, y: 8.666418}
     visualOffset: {x: 0, y: 0.005}
   - optionId: rally-skin-hill-adventurer
     displayName: HILL ADVENTURER

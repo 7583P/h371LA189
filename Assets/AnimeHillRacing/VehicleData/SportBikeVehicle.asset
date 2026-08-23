@@ -30,7 +30,7 @@ MonoBehaviour:
     bundleType: 0
     allowsBlueprintProgression: 1
     visibleDiameter: 0
-    visibleSize: {x: 14.96, y: 7.86}
+    visibleSize: {x: 14.94, y: 7.86}
     visualOffset: {x: 0.015, y: 0.075}
   - optionId: sport-bike-retro
     displayName: BIKE RETRO

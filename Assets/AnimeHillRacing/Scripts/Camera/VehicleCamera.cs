@@ -4,6 +4,8 @@ using UnityEngine;
 
 namespace AnimeHillRacing.CameraSystem
 {
+    // Camera-space followers must read this transform only after its final position for the frame.
+    [DefaultExecutionOrder(100)]
     [RequireComponent(typeof(Camera))]
     public sealed class VehicleCamera : MonoBehaviour
     {

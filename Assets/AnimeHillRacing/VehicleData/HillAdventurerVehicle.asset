@@ -164,6 +164,7 @@ MonoBehaviour:
   underbodyAttachmentSprite: {fileID: 0}
   underbodyAttachmentPositions: []
   underbodyAttachmentVisualWidth: 0
+  preserveUnderbodyAttachmentPositions: 0
   engineMaxTunes: 20
   accelerationMaxTunes: 14
   suspensionMaxTunes: 14

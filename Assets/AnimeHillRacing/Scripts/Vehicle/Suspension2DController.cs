@@ -303,10 +303,6 @@ namespace AnimeHillRacing.Vehicle
                 }
             }
 
-            // Real gameplay grounded state: Box2D contact OR active overlap,
-            // with requirement that the wheel is on top of the terrain (not buried in the subsoil).
-            isGrounded = (hasBox2DContact || overlapGrounded) && currentSignedDistance >= -wheelRadius * 0.25f;
-
             // 3. Update Contact History and Alternation Tracking (Observation of contact oscillation)
             if (hasBox2DContact)
             {
@@ -332,7 +328,7 @@ namespace AnimeHillRacing.Vehicle
             Vector2 terrainNormal;
             float worldX = wheelBody.position.x;
 
-            if (validGroundContacts > 0)
+            if (validGroundContacts > 0 && terrainState != WheelTerrainState.BelowSurface)
             {
                 surfacePoint = lastContactPoint;
                 terrainNormal = lastContactNormal;
@@ -372,13 +368,18 @@ namespace AnimeHillRacing.Vehicle
             previousSignedDistance = currentSignedDistance;
             currentSignedDistance = Vector2.Dot(wheelBody.position - surfacePoint, terrainNormal);
 
+            // Grounded state uses this frame's sampled surface rather than the previous step's signed distance.
+            // This avoids a visual/drive-state delay when a wheel first meets very steep Mountains terrain.
+            isGrounded = (hasBox2DContact || overlapGrounded) &&
+                         currentSignedDistance >= -wheelRadius * .25f &&
+                         terrainState != WheelTerrainState.BelowSurface;
+
             // Compute relative normal velocity (positive = pushing into terrain)
             Vector2 relVel = wheelBody.linearVelocity;
             normalVelocity = -Vector2.Dot(relVel, terrainNormal);
             normalTravelPerStep = Mathf.Max(0f, normalVelocity) * dt;
 
             // 5. OBSERVE BOX2D PHYSICAL STATE (Pure Observation, no forced crossing!)
-            float floatStep = FloatStep;
 
             if (terrainState == WheelTerrainState.BelowSurface)
             {
@@ -398,11 +399,11 @@ namespace AnimeHillRacing.Vehicle
                 {
                     physicallyCrossed = true;
                 }
-                if (physicallyCrossed && floatStep > 0f)
+                if (physicallyCrossed)
                 {
                     terrainState = WheelTerrainState.BelowSurface;
                 }
-                else if (floatStep > 0f)
+                else
                 {
                     // B. Observe Contact Instability (contact -> miss -> contact):
                     if (contactAlternationCount >= 2 && Mathf.Abs(currentSignedDistance) < wheelRadius * 1.5f)
@@ -416,10 +417,13 @@ namespace AnimeHillRacing.Vehicle
                         contactAlternationCount = 0;
                     }
                 }
-                else
-                {
-                    terrainState = WheelTerrainState.Normal;
-                }
+            }
+
+            if (terrainState == WheelTerrainState.BelowSurface)
+            {
+                EnforceOneWayTerrainTrap(surfacePoint, terrainNormal);
+                currentSignedDistance = Vector2.Dot(wheelBody.position - surfacePoint, terrainNormal);
+                isGrounded = false;
             }
 
             // 6. Progressive Bump Stop with Damping.
@@ -573,6 +577,26 @@ namespace AnimeHillRacing.Vehicle
                 };
                 suspensionJoint.useMotor = true;
             }
+        }
+
+        private void EnforceOneWayTerrainTrap(Vector2 surfacePoint, Vector2 terrainNormal)
+        {
+            if (wheelBody == null) return;
+            Vector2 normal = terrainNormal.sqrMagnitude > .0001f
+                ? terrainNormal.normalized : Vector2.up;
+            if (normal.y < 0f) normal = -normal;
+
+            // The centre is never allowed to move back across the depth at which the tire was declared
+            // buried. Tangential forces remain untouched, so drivetrain and thrusters keep functioning,
+            // but no combination of them can extract the trapped tire through the terrain surface.
+            float maximumOutwardDistance = -wheelRadius * .85f;
+            float signedDistance = Vector2.Dot(wheelBody.position - surfacePoint, normal);
+            if (signedDistance > maximumOutwardDistance)
+                wheelBody.position += normal * (maximumOutwardDistance - signedDistance);
+
+            float outwardVelocity = Vector2.Dot(wheelBody.linearVelocity, normal);
+            if (outwardVelocity > 0f)
+                wheelBody.linearVelocity -= normal * outwardVelocity;
         }
 
         public void ApplyBrakeTorque(float brakeTorque)

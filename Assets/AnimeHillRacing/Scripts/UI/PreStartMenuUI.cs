@@ -838,6 +838,9 @@ namespace AnimeHillRacing.UI
                         return atMax ? $"THRUST  {currentThrust:0}%   MAX"
                             : $"THRUST  {currentThrust:0}%{arrow}{nextThrust:0}%";
                     }
+                    if (vehicle.archetype == VehicleArchetype.Buggy)
+                        return atMax ? $"MAX SLOPE  {currentStats.maximumClimbAngle:0}°   MAX"
+                            : $"MAX SLOPE  {currentStats.maximumClimbAngle:0}°{arrow}{nextStats.maximumClimbAngle:0}°";
                     return atMax ? $"0-100  {currentStats.zeroToHundredTargetSeconds:0.00} SEC   MAX"
                         : $"0-100  {currentStats.zeroToHundredTargetSeconds:0.00}{arrow}{nextStats.zeroToHundredTargetSeconds:0.00} SEC";
                 default:

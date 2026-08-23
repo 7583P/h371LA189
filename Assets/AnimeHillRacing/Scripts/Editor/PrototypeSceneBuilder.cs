@@ -130,6 +130,7 @@ namespace AnimeHillRacing.Editor
         private const string NorthPoleTerrainPath = NorthPoleRoot + "/Terrain.png";
         private const string NorthPoleGroundPath = NorthPoleRoot + "/Ground.png";
         private const string SpaceMapPath = Root + "/MapProfiles/Space.asset";
+        private const string SpaceGalaxyPath = "Assets/Art/Backgrounds/Space/Space_Galaxy_Blue_v2.png";
         private const string ArenaMapPath = Root + "/MapProfiles/Arena.asset";
         private const string CityRoot = "Assets/Art/Backgrounds/City";
         private const string CitySkyPath = CityRoot + "/Sky.png";
@@ -1685,13 +1686,14 @@ namespace AnimeHillRacing.Editor
 
             EnvironmentDefinition environment = profile.environment;
             if (!environment.overrideCameraBackground || environment.sky == null ||
-                environment.mountains == null || environment.sun == null || environment.earth == null ||
+                environment.mountains == null || environment.sun != null || environment.earth == null ||
                 !environment.useRelativeParallaxSpeeds || !environment.coverViewportVertically ||
                 !Mathf.Approximately(environment.earthRelativeParallax, 0f) ||
-                Mathf.Approximately(environment.sunRelativeParallax, environment.earthRelativeParallax) ||
-                environment.starTwinkleAmount <= 0f)
+                environment.starTwinkleAmount > .001f ||
+                AssetDatabase.GetAssetPath(environment.sky) != SpaceGalaxyPath ||
+                AssetDatabase.GetAssetPath(environment.mountains) != SpaceGalaxyPath)
                 throw new System.InvalidOperationException(
-                    "Space needs a twinkling starfield and stable non-blinking Sun/Earth layers.");
+                    "Space needs the blue galaxy backdrop, no Sun, a stable Earth layer and no global blinking.");
             float introMinimum = float.MaxValue;
             float introMaximum = float.MinValue;
             for (int distance = 0; distance <= 100; distance += 5)
@@ -1710,7 +1712,7 @@ namespace AnimeHillRacing.Editor
                 throw new System.InvalidOperationException(
                     "Space must recover its high difficulty after the protected 100m opening.");
             Debug.Log("SPACE_TRACK_PASS: spawn-safe 100m opening, hard lunar terrain, pooled 2000m void events, " +
-                      "integrated ramps, solid landings, 100m warnings and twinkling deep-space backdrop configured.");
+                      "integrated ramps, solid landings, 100m warnings and vivid blue galaxy backdrop configured.");
         }
 
         private static void ValidateArenaContract(BuiltAssets assets)

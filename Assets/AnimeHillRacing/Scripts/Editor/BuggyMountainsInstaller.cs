@@ -14,7 +14,7 @@ namespace AnimeHillRacing.Editor
 {
     public static class BuggyMountainsInstaller
     {
-        private const string SessionKey = "AHR.BuggyMountainsInstaller.v8";
+        private const string SessionKey = "AHR.BuggyMountainsInstaller.v9";
         private const string Root = "Assets/AnimeHillRacing";
         private const string BuggyBodyPath = "Assets/Art/Vehicles/Buggy/Buggy_Body.png";
         private const string BuggyWheelPath = "Assets/Art/Vehicles/Buggy/Buggy_Wheel.png";
@@ -101,7 +101,7 @@ namespace AnimeHillRacing.Editor
             v.fuelMaxTunes = 16;
             v.airControlMaxTunes = 0;
             v.downforceMaxTunes = 0;
-            v.turboMaxTunes = 0;
+            v.turboMaxTunes = 10;
             v.tuneTargets = new VehicleDefinition.TuneTargets
             {
                 engineTopSpeedKmh = Values(128f, 220f, v.engineMaxTunes, .88f),
@@ -134,9 +134,9 @@ namespace AnimeHillRacing.Editor
             v.centerOfMass = new Vector3(-.06f, -.43f, 0f);
             v.adaptiveAllWheelDrive = true;
             v.groundedWheelTorqueShare = .84f;
-            v.maxClimbAssist = 1.65f;
+            v.maxClimbAssist = 5.8f;
             v.climbAssistStartAngle = 58f;
-            v.climbAssistFullAngle = 75f;
+            v.climbAssistFullAngle = 80f;
             v.highSpeedDamping = .72f;
 
             v.engine.idleRpm = 1050f;
@@ -482,12 +482,13 @@ namespace AnimeHillRacing.Editor
             {
                 engineTune = buggy.engineMaxTunes, accelerationTune = buggy.accelerationMaxTunes,
                 suspensionTune = buggy.suspensionMaxTunes, gripTune = buggy.gripMaxTunes,
-                fuelTune = buggy.fuelMaxTunes
+                fuelTune = buggy.fuelMaxTunes, turboTune = buggy.turboMaxTunes
             };
             ResolvedVehicleStats stats = buggy.Resolve(max);
             if (Mathf.Abs(stats.topSpeedMps * 3.6f - 220f) > .1f ||
                 Mathf.Abs(stats.zeroToHundredTargetSeconds - 4f) > .01f ||
                 Mathf.Abs(stats.totalRunFuelDuration - 60f) > .01f || stats.suspensionTravel < .49f ||
+                Mathf.Abs(stats.maximumClimbAngle - 80f) > .01f || stats.climbAssistAcceleration < 5.79f ||
                 Mathf.Abs(buggy.visualWidth - 4.85f) > .001f ||
                 Mathf.Abs(buggy.wheelRadius - .53f) > .001f ||
                 Mathf.Abs(buggy.wheelVisualDiameter - 1.06f) > .001f)

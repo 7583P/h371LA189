@@ -131,7 +131,7 @@ MonoBehaviour:
   airControlMaxTunes: 0
   downforceMaxTunes: 0
   fuelMaxTunes: 16
-  turboMaxTunes: 0
+  turboMaxTunes: 10
   damagedBodySprite: {fileID: 0}
   detachableRoofSprite: {fileID: 0}
   mass: 760
@@ -157,9 +157,9 @@ MonoBehaviour:
   accelerationForceCalibration: 1
   adaptiveAllWheelDrive: 1
   groundedWheelTorqueShare: 0.84
-  maxClimbAssist: 1.65
+  maxClimbAssist: 5.8
   climbAssistStartAngle: 58
-  climbAssistFullAngle: 75
+  climbAssistFullAngle: 80
   highSpeedDamping: 0.72
   centerOfMass: {x: -0.06, y: -0.43, z: 0}
   engine:

@@ -25,7 +25,7 @@ namespace AnimeHillRacing.Editor
             ValidateEconomy(definition, catalog.upgradeEconomy);
             ValidateFuelAndFlight(definition);
             if (logResult)
-                Debug.Log("AERIAL_SATELITE_VERIFICATION_OK|fuelNormal=60s|fuelThrusters=30s|takeoff=pass|independentPedals=pass|thrust=50-100|noFuelForce=off|maxUpgrade=120000");
+                Debug.Log("AERIAL_SATELITE_VERIFICATION_OK|fuelNormal=60s|fuelSingleThruster=24s|fuelDualThrusters=20s|groundDualPedal=pass|oneWheelLock=pass|independentAirPedals=pass|thrust=50-100|noFuelForce=off|maxUpgrade=120000");
         }
 
         private static void ValidateEconomy(VehicleDefinition definition, UpgradeEconomyDefinition economy)
@@ -85,10 +85,7 @@ namespace AnimeHillRacing.Editor
 
                 aerial.Initialize(vehicle, null, fuel);
                 forceStart = ReadTotalForce(body).y;
-                aerial.StepPhysics(.02f, true, true, true);
-                if (aerial.State != AerialFlightState.Takeoff)
-                    throw new InvalidOperationException("Aerial dual-pedal Takeoff state did not engage.");
-                Step(aerial, true, true, 11);
+                Step(aerial, true, true, 12);
                 float boostForce = ReadTotalForce(body).y - forceStart;
                 if (aerial.State != AerialFlightState.Flying ||
                     boostForce <= gasForce * 1.1f || boostForce <= body.mass * Physics2D.gravity.magnitude)
@@ -97,8 +94,7 @@ namespace AnimeHillRacing.Editor
                 vehicle.UpgradeState.turboTune = definition.turboMaxTunes;
                 aerial.Initialize(vehicle, null, fuel);
                 forceStart = ReadTotalForce(body).y;
-                aerial.StepPhysics(.02f, true, true, true);
-                Step(aerial, true, true, 11);
+                Step(aerial, true, true, 12);
                 float maximumTuneForce = ReadTotalForce(body).y - forceStart;
                 if (maximumTuneForce < boostForce * 1.85f)
                     throw new InvalidOperationException(
@@ -111,16 +107,43 @@ namespace AnimeHillRacing.Editor
                 if ((forceAfter - forceBefore).sqrMagnitude > .001f)
                     throw new InvalidOperationException("Aerial continues producing lift without fuel.");
 
+                if (!AerialThrusterController.IsThrustPermitted(true, true, true,
+                        true, true, true, AerialFlightState.Grounded))
+                    throw new InvalidOperationException(
+                        "Aerial blocks dual-pedal thrust while both wheels touch ground.");
+                if (AerialThrusterController.IsThrustPermitted(true, true, false,
+                        true, true, true, AerialFlightState.Landing))
+                    throw new InvalidOperationException(
+                        "Aerial permits ground thrust while only one wheel touches ground.");
+                if (AerialThrusterController.IsThrustPermitted(true, true, true,
+                        true, false, true, AerialFlightState.Grounded) ||
+                    AerialThrusterController.IsThrustPermitted(true, true, true,
+                        false, true, true, AerialFlightState.Grounded))
+                    throw new InvalidOperationException(
+                        "Aerial permits ground thrust without both pedals pressed.");
+                if (!AerialThrusterController.IsThrustPermitted(true, false, false,
+                        true, false, true, AerialFlightState.Flying))
+                    throw new InvalidOperationException("Aerial blocks valid fully-airborne thrust.");
+                if (!Mathf.Approximately(AerialThrusterController.ResolveConsumptionMultiplier(1f, 0f), 2.5f) ||
+                    !Mathf.Approximately(AerialThrusterController.ResolveConsumptionMultiplier(0f, 1f), 2.5f) ||
+                    !Mathf.Approximately(AerialThrusterController.ResolveConsumptionMultiplier(1f, 1f), 3f))
+                    throw new InvalidOperationException("Aerial thruster fuel multipliers are incorrect.");
+
                 fuel.RefillFull();
                 fuel.SetConsumptionMultiplier(1f);
                 fuel.TickRun(60f, true);
                 if (fuel.FuelNormalized > .001f)
                     throw new InvalidOperationException("Aerial normal fuel duration is not 60 seconds.");
                 fuel.RefillFull();
-                fuel.SetConsumptionMultiplier(2f);
-                fuel.TickRun(30f, true);
+                fuel.SetConsumptionMultiplier(2.5f);
+                fuel.TickRun(24f, true);
                 if (fuel.FuelNormalized > .001f)
-                    throw new InvalidOperationException("Aerial thruster fuel duration is not 30 seconds.");
+                    throw new InvalidOperationException("Aerial single-thruster fuel duration is not 24 seconds.");
+                fuel.RefillFull();
+                fuel.SetConsumptionMultiplier(3f);
+                fuel.TickRun(20f, true);
+                if (fuel.FuelNormalized > .001f)
+                    throw new InvalidOperationException("Aerial dual-thruster fuel duration is not 20 seconds.");
             }
             finally
             {

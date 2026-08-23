@@ -185,7 +185,10 @@ namespace AnimeHillRacing.Terrain
                 ? profile.terrainEdgeMaterial : profile.terrainMaterial;
             edgeRenderer.startWidth = profile.terrainEdgeWidth;
             edgeRenderer.endWidth = profile.terrainEdgeWidth;
-            if (profile.supportsLiquidExposure || profile.useSeparateTerrainMaterials ||
+            bool mountainsNeedsPhysicalContactLip = profile.useMountainsTerrain &&
+                                                     !profile.fitAuthoredTerrainTexture;
+            if (profile.supportsLiquidExposure ||
+                profile.useSeparateTerrainMaterials && !mountainsNeedsPhysicalContactLip ||
                 profile.useSpaceTerrain || profile.useArenaTerrain)
             {
                 // Textured maps use the surface submesh as their edge. Tracks with real gaps must also omit

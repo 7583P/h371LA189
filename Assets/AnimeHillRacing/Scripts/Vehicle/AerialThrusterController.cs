@@ -37,14 +37,15 @@ namespace AnimeHillRacing.Vehicle
         private Rigidbody2D body;
         private FuelSystem fuel;
         private float airborneTimer;
-        private float bothGroundedTimer;
+        private float groundedTimer;
 
         public AerialFlightState State { get; private set; } = AerialFlightState.Grounded;
         public float CurrentLeftPower { get; private set; }
         public float CurrentRightPower { get; private set; }
         public float CurrentPower => Mathf.Max(CurrentLeftPower, CurrentRightPower);
         public bool ThrustersActive => CurrentPower > .01f && fuel != null && fuel.FuelNormalized > 0f;
-        public bool OverridesGroundDrive => State != AerialFlightState.Grounded;
+        public bool OverridesGroundDrive => State == AerialFlightState.Flying ||
+                                            State == AerialFlightState.Takeoff;
 
         public void Initialize(VehiclePhysics2DController owner, VehicleInputController inputController,
             FuelSystem fuelSystem)
@@ -54,7 +55,7 @@ namespace AnimeHillRacing.Vehicle
             body = owner != null ? owner.Body2D : GetComponent<Rigidbody2D>();
             fuel = fuelSystem != null ? fuelSystem : GetComponent<FuelSystem>();
             State = AerialFlightState.Grounded;
-            airborneTimer = bothGroundedTimer = CurrentLeftPower = CurrentRightPower = 0f;
+            airborneTimer = groundedTimer = CurrentLeftPower = CurrentRightPower = 0f;
             fuel?.SetConsumptionMultiplier(1f);
             thrusterVfx?.SetPower(0f, 0f, TuneProgress());
         }
@@ -71,48 +72,73 @@ namespace AnimeHillRacing.Vehicle
             if (vehicle == null || body == null || fuel == null) return false;
 
             bool anyGrounded = vehicle.AnyWheelGrounded || vehicle.ChassisGrounded;
-            bool bothGrounded = vehicle.BothWheelsGrounded;
+            bool bothWheelsGrounded = vehicle.BothWheelsGrounded;
             bool airborne = !anyGrounded;
             airborneTimer = airborne ? airborneTimer + dt : 0f;
-            bothGroundedTimer = bothGrounded ? bothGroundedTimer + dt : 0f;
-            bool dualPedals = gasPressed && brakePressed;
+            groundedTimer = anyGrounded ? groundedTimer + dt : 0f;
             bool hasFuel = fuel.FuelNormalized > 0f;
 
             switch (State)
             {
                 case AerialFlightState.Grounded:
-                    if (driveEnabled && dualPedals && hasFuel) State = AerialFlightState.Takeoff;
-                    else if (airborneTimer >= airborneConfirmationSeconds) State = AerialFlightState.Flying;
+                    if (airborneTimer >= airborneConfirmationSeconds) State = AerialFlightState.Flying;
                     break;
                 case AerialFlightState.Takeoff:
+                    // Keep the legacy state transition safe. Dual-pedal ground thrust is permission-based
+                    // and does not need to enter Takeoff before the vehicle becomes airborne.
                     if (airborneTimer >= airborneConfirmationSeconds) State = AerialFlightState.Flying;
-                    else if (!dualPedals && anyGrounded) State = AerialFlightState.Landing;
+                    else if (anyGrounded) State = AerialFlightState.Grounded;
                     break;
                 case AerialFlightState.Flying:
                     if (anyGrounded) State = AerialFlightState.Landing;
                     break;
                 case AerialFlightState.Landing:
                     if (airborneTimer >= airborneConfirmationSeconds) State = AerialFlightState.Flying;
-                    else if (driveEnabled && dualPedals && hasFuel) State = AerialFlightState.Takeoff;
-                    else if (bothGroundedTimer >= landingConfirmationSeconds) State = AerialFlightState.Grounded;
+                    else if (groundedTimer >= landingConfirmationSeconds) State = AerialFlightState.Grounded;
                     break;
             }
 
-            bool flightControlsEnabled = State == AerialFlightState.Takeoff ||
-                                         State == AerialFlightState.Flying ||
-                                         State == AerialFlightState.Landing;
-            float targetLeft = driveEnabled && hasFuel && flightControlsEnabled && brakePressed ? 1f : 0f;
-            float targetRight = driveEnabled && hasFuel && flightControlsEnabled && gasPressed ? 1f : 0f;
-            CurrentLeftPower = MovePower(CurrentLeftPower, targetLeft, dt);
-            CurrentRightPower = MovePower(CurrentRightPower, targetRight, dt);
+            bool thrustPermitted = IsThrustPermitted(driveEnabled, anyGrounded,
+                bothWheelsGrounded, gasPressed, brakePressed, hasFuel, State);
+            if (!thrustPermitted)
+            {
+                // Ground thrust is an intentional dual-pedal takeoff action and requires both tires to
+                // remain planted. Losing either contact cancels both thrusters immediately.
+                CurrentLeftPower = CurrentRightPower = 0f;
+            }
+            else
+            {
+                CurrentLeftPower = MovePower(CurrentLeftPower, brakePressed ? 1f : 0f, dt);
+                CurrentRightPower = MovePower(CurrentRightPower, gasPressed ? 1f : 0f, dt);
+            }
 
             float tune = TuneProgress();
-            fuel.SetConsumptionMultiplier(CurrentPower > .01f ? 2f : 1f);
+            fuel.SetConsumptionMultiplier(ResolveConsumptionMultiplier(CurrentLeftPower, CurrentRightPower));
             thrusterVfx?.SetPower(CurrentLeftPower, CurrentRightPower, tune);
-            if (CurrentPower > .001f && hasFuel)
+            if (thrustPermitted && CurrentPower > .001f)
                 ApplyIndependentThrust(tune);
 
             return OverridesGroundDrive;
+        }
+
+        public static bool IsThrustPermitted(bool driveEnabled, bool anyGroundContact,
+            bool bothWheelsGrounded, bool gasPressed, bool brakePressed, bool hasFuel,
+            AerialFlightState state)
+        {
+            if (!driveEnabled || !hasFuel) return false;
+
+            bool airborneFlight = !anyGroundContact && state == AerialFlightState.Flying;
+            bool groundedDualPedalTakeoff = anyGroundContact && bothWheelsGrounded &&
+                                             gasPressed && brakePressed;
+            return airborneFlight || groundedDualPedalTakeoff;
+        }
+
+        public static float ResolveConsumptionMultiplier(float leftPower, float rightPower)
+        {
+            bool leftActive = leftPower > .01f;
+            bool rightActive = rightPower > .01f;
+            if (leftActive && rightActive) return 3f;
+            return leftActive || rightActive ? 2.5f : 1f;
         }
 
         private float MovePower(float current, float target, float dt)

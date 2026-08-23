@@ -10,7 +10,7 @@ namespace AnimeHillRacing.Editor
 {
     public static class AerialSateliteInstaller
     {
-        private const string SessionKey = "AHR.AerialSateliteInstaller.v16";
+        private const string SessionKey = "AHR.AerialSateliteInstaller.v18";
         private const string Root = "Assets/AnimeHillRacing";
         private const string ArtRoot = "Assets/Art/Vehicles/AerialSatelite";
         private const string DefinitionPath = Root + "/VehicleData/AerialSateliteVehicle.asset";
@@ -62,7 +62,7 @@ namespace AnimeHillRacing.Editor
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
             Validate(definition);
             AerialSateliteVerifier.Run(true);
-            Debug.Log("AERIAL_SATELITE_INSTALL_OK|vehicle=aerial-satelite-01|top=200kmh|zeroTo100=5s|fuel=60s|thrusterFuel=2x|maxUpgrade=120000");
+            Debug.Log("AERIAL_SATELITE_INSTALL_OK|vehicle=aerial-satelite-01|top=200kmh|zeroTo100=5s|fuel=60s|thrusterFuel=single2x-dual2.5x|groundDualPedal=true|oneWheelLock=true|maxUpgrade=120000");
         }
 
         private static void ConfigureDefinition(VehicleDefinition v, Sprite body, Sprite wheel, Sprite thruster)

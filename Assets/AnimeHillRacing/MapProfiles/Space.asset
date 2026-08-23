@@ -106,7 +106,15 @@ MonoBehaviour:
     cycleLength: 6000
     challengesPerCycle: 8
     cycleStartSafetyMargin: 260
-    structuralRunUpPositions: [430, 1280, 2040, 2770, 3460, 4140, 4980, 5530]
+    structuralRunUpPositions:
+    - 430
+    - 1280
+    - 2040
+    - 2770
+    - 3460
+    - 4140
+    - 4980
+    - 5530
     runUpLength: 42
     rampTransitionLength: 6
     rampHorizontalLength: 12
@@ -154,14 +162,72 @@ MonoBehaviour:
     gapIncreasePerPhase: 5
     landingDrop: 0.35
     blackHoleSprite: {fileID: 21300000, guid: 5ace0000000000000000000000000004, type: 3}
-    baseDiameter: 5.5
-    diameterGrowthPerGapMetre: 0.14
-    maximumDiameter: 10
+    baseDiameter: 16
+    diameterGrowthPerGapMetre: 0.55
+    maximumDiameter: 80
     verticalOffset: -1.8
     hazardRadiusFactor: 0.31
     warningSprite: {fileID: 21300000, guid: 5ace0000000000000000000000000005, type: 3}
     warningWidth: 3.2
     rampMaterial: {fileID: 2100000, guid: 5ace0000000000000000000000000013, type: 2}
+  useArenaTerrain: 0
+  arena:
+    segmentLength: 104
+    recentSegmentHistory: 5
+    maximumTechnicalStreak: 3
+    recoveryInterval: 7
+    baseBumpHeight: 1.15
+    minimumBumpWavelength: 6.5
+    maximumBumpWavelength: 15
+    baseRampRise: 3.4
+    maximumRampRise: 5.8
+    minimumGapLength: 11
+    maximumGapLength: 24
+    landingSafetyLength: 22
+    tireSprite: {fileID: 0}
+    minimumTires: 2
+    maximumTires: 5
+    tireRadius: 1.05
+    tireMass: 17
+    tireFriction: 0.82
+    tireBounciness: 0.035
+    tireSurfaceClearance: 0.14
+    platformSprite: {fileID: 0}
+    easyPlatformWidth: 13
+    hardPlatformWidth: 8.5
+    maximumPlatformTilt: 25
+    platformMass: 34
+    platformAngularDamping: 3.2
+    platformWeightTorque: 2.2
+    platformCenteringTorque: 1.1
+    platformTakeoffDrop: 0.65
+    platformLandingClearance: 1.1
+    lavaSprite: {fileID: 0}
+    minimumLavaLength: 10
+    maximumLavaLength: 24
+    lavaVisualDepth: 2.8
+    lavaDragStrength: 7.5
+    lavaMaximumSpeed: 6.5
+    lavaEntrySeconds: 0.18
+    lavaRecoverySeconds: 0.85
+    lavaBankInset: 0.35
+    lavaTriggerHeightAboveSurface: 1.25
+    pickupObstacleClearance: 4
+  useMountainsTerrain: 0
+  mountains:
+    peakDifficultyDistance: 10000
+    miniBumpMinimumWavelength: 7
+    miniBumpMaximumWavelength: 18
+    initialMiniBumpHeight: 0.22
+    maximumMiniBumpHeight: 1.15
+    easySlopeRange: {x: 20, y: 45}
+    mediumSlopeRange: {x: 40, y: 60}
+    hardSlopeRange: {x: 55, y: 70}
+    extremeSlopeRange: {x: 65, y: 75}
+    exceptionalSlope: 79.5
+    exceptionalEveryCells: 7
+    crestWidthFraction: 0.035
+    recoveryWidthFraction: 0.07
   rainstorm:
     permanentRain: 0
     maximumParticles: 520

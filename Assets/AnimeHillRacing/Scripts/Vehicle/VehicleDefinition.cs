@@ -430,6 +430,7 @@ namespace AnimeHillRacing.Vehicle
             float fuelDuration = TargetValue(tuneTargets?.fuelRunDurationSeconds,
                 UpgradeProgress(upgrades.fuelTune, fuelMaxTunes), 45f);
             float accelerationAuthority = archetype == VehicleArchetype.Rally ? turboLevel : accelerationLevel;
+            float climbTune = archetype == VehicleArchetype.Buggy ? turboLevel : 1f;
             float torque = Mathf.Lerp(engine.minTorqueNm, engine.maxTorqueNm, accelerationAuthority) *
                            Mathf.Lerp(.92f, 1f, engineLevel);
 
@@ -467,6 +468,11 @@ namespace AnimeHillRacing.Vehicle
                 airControlTorque = archetype == VehicleArchetype.Rally
                     ? airControl * Mathf.Lerp(1f, 1.12f, turboLevel) : airControl,
                 airborneDownforceAcceleration = airborneDownforce,
+                climbAssistAcceleration = maxClimbAssist *
+                                           (archetype == VehicleArchetype.Buggy
+                                               ? Mathf.Lerp(.18f, 1f, climbTune) : 1f),
+                maximumClimbAngle = archetype == VehicleArchetype.Buggy
+                    ? Mathf.Lerp(70f, 80f, climbTune) : climbAssistFullAngle,
                 topSpeedMps = topSpeed
             };
         }
@@ -499,11 +505,13 @@ namespace AnimeHillRacing.Vehicle
             if (slot == 3) return VehicleUpgradeType.Grip;
             if (slot == 5 && archetype == VehicleArchetype.Formula) return VehicleUpgradeType.Downforce;
             if (slot == 5 && archetype == VehicleArchetype.AerialSatelite) return VehicleUpgradeType.Turbo;
+            if (slot == 5 && archetype == VehicleArchetype.Buggy) return VehicleUpgradeType.Turbo;
             return VehicleUpgradeType.Fuel;
         }
 
         public int GetTuneSlotCount() => archetype == VehicleArchetype.Formula ||
-                                         archetype == VehicleArchetype.AerialSatelite ? 6 : 5;
+                                         archetype == VehicleArchetype.AerialSatelite ||
+                                         archetype == VehicleArchetype.Buggy ? 6 : 5;
 
         public string GetTuneDisplayName(VehicleUpgradeType type)
         {
@@ -515,8 +523,9 @@ namespace AnimeHillRacing.Vehicle
                 case VehicleUpgradeType.Grip: return "GRIP";
                 case VehicleUpgradeType.AirControl: return "AIR CONTROL";
                 case VehicleUpgradeType.Downforce: return "DOWNFORCE";
-                case VehicleUpgradeType.Turbo: return archetype == VehicleArchetype.AerialSatelite
-                    ? "THRUSTERS" : "ACCELERATION";
+                case VehicleUpgradeType.Turbo:
+                    if (archetype == VehicleArchetype.AerialSatelite) return "THRUSTERS";
+                    return archetype == VehicleArchetype.Buggy ? "CLIMB" : "ACCELERATION";
                 default: return "FUEL";
             }
         }
@@ -683,6 +692,8 @@ namespace AnimeHillRacing.Vehicle
         public float totalRunFuelDuration;
         public float airControlTorque;
         public float airborneDownforceAcceleration;
+        public float climbAssistAcceleration;
+        public float maximumClimbAngle;
         public float topSpeedMps;
     }
 }

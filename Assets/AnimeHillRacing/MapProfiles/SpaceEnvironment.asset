@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: SpaceEnvironment
   m_EditorClassIdentifier: Assembly-CSharp::AnimeHillRacing.CameraSystem.EnvironmentDefinition
   environmentId: space
-  sky: {fileID: 21300000, guid: 5ace0000000000000000000000000001, type: 3}
-  mountains: {fileID: 21300000, guid: 5ace0000000000000000000000000001, type: 3}
+  sky: {fileID: 21300000, guid: 5ace0000000000000000000000000014, type: 3}
+  mountains: {fileID: 21300000, guid: 5ace0000000000000000000000000014, type: 3}
   overrideCameraBackground: 1
-  cameraBackgroundColor: {r: 0.002, g: 0.001, b: 0.008, a: 1}
+  cameraBackgroundColor: {r: 0.002, g: 0.012, b: 0.07, a: 1}
   clouds: []
   cloudParallaxX: 0.09
   cloudSpacing: 18
@@ -39,6 +39,15 @@ MonoBehaviour:
   pooledMountainSegments: 5
   seamOverlap: 0.008
   mirrorAlternatingMountainTiles: 1
+  farMountains: {fileID: 0}
+  farMountainParallaxX: 0.08
+  farMountainParallaxY: 0.025
+  lockFarMountainsVerticalToCamera: 1
+  farMountainVisualHeight: 18
+  farMountainBaseY: -1
+  pooledFarMountainSegments: 5
+  farMountainSeamOverlap: 0.01
+  mirrorAlternatingFarMountainTiles: 1
   nearMountains: {fileID: 0}
   nearMountainParallaxX: 0.11
   nearMountainParallaxY: 0
@@ -48,7 +57,7 @@ MonoBehaviour:
   pooledNearMountainSegments: 5
   nearMountainSeamOverlap: 0.01
   mirrorAlternatingNearMountainTiles: 1
-  sun: {fileID: 21300000, guid: 5ace0000000000000000000000000002, type: 3}
+  sun: {fileID: 0}
   earth: {fileID: 21300000, guid: 5ace0000000000000000000000000003, type: 3}
   sunCameraOffset: {x: -1, y: 3.6}
   earthCameraOffset: {x: 7.3, y: 2.15}
@@ -58,4 +67,4 @@ MonoBehaviour:
   earthVisualWidth: 5.1
   celestialRepeatSpan: 72
   starTwinkleSpeed: 2.15
-  starTwinkleAmount: 0.26
+  starTwinkleAmount: 0

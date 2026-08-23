@@ -140,8 +140,12 @@ namespace AnimeHillRacing.Terrain
             renderer.sprite = sprite;
             renderer.sortingOrder = sortingOrder;
             renderer.transform.localPosition = new Vector3(x, y, z);
-            float sourceDiameter = sprite != null ? Mathf.Max(sprite.bounds.size.x, sprite.bounds.size.y) : 1f;
-            renderer.transform.localScale = Vector3.one * (diameter / Mathf.Max(.001f, sourceDiameter));
+            float sourceWidth = sprite != null ? sprite.bounds.size.x : 1f;
+            float sourceHeight = sprite != null ? sprite.bounds.size.y : 1f;
+            float visualHeight = Mathf.Clamp(diameter * .62f, 9f, 18f);
+            renderer.transform.localScale = new Vector3(
+                diameter / Mathf.Max(.001f, sourceWidth),
+                visualHeight / Mathf.Max(.001f, sourceHeight), 1f);
         }
 
         private void BuildRamp(SpaceChallengeSettings settings, float trackWidth)

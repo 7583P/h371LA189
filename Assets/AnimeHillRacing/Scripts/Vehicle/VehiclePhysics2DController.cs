@@ -76,6 +76,7 @@ namespace AnimeHillRacing.Vehicle
 
         public bool FrontWheelBelowSurface => frontSuspension != null && frontSuspension.IsBelowSurface;
         public bool RearWheelBelowSurface => rearSuspension != null && rearSuspension.IsBelowSurface;
+        public bool HasWheelTerrainTrap => FrontWheelBelowSurface || RearWheelBelowSurface;
         public bool FrontWheelContactUnstable => frontSuspension != null && frontSuspension.IsContactUnstable;
         public bool RearWheelContactUnstable => rearSuspension != null && rearSuspension.IsContactUnstable;
 
@@ -247,15 +248,17 @@ namespace AnimeHillRacing.Vehicle
             // 2. Update grounded tracking
             bool rawGrounded = AnyWheelGrounded || chassisContactSinceLastStep;
             if (rawGrounded) lastGroundedTime = Time.fixedTime;
-            chassisContactSinceLastStep = false;
 
             // 3. Process Input & Drive
             bool physicalGas = input != null ? input.PhysicalGasPressed : inputState.Gas > .5f;
             bool physicalBrake = input != null ? input.PhysicalBrakePressed : inputState.BrakeRaw > .5f;
             bool flightOverride = aerialThrusters != null &&
                                   aerialThrusters.StepPhysics(dt, driveEnabled, physicalGas, physicalBrake);
-            float gas = driveEnabled && !flightOverride ? inputState.Gas : 0f;
-            float brake = driveEnabled && !flightOverride ? inputState.BrakeRaw : 0f;
+            // Aerial pedals keep commanding the wheel drivetrain while airborne. Normally this only spins
+            // free tires, but after a one-way terrain trap it preserves the requested traction while the same
+            // pedals independently command the thrusters. The flight override only replaces legacy air tilt.
+            float gas = driveEnabled ? inputState.Gas : 0f;
+            float brake = driveEnabled ? inputState.BrakeRaw : 0f;
             UpdateDriveDirection(gas, brake);
 
             bool hasFuel = fuel != null ? fuel.FuelNormalized > 0f : true;
@@ -268,6 +271,10 @@ namespace AnimeHillRacing.Vehicle
             ApplyDrag();
             ApplyAerodynamicDownforce();
             if (!flightOverride) ApplyAirControl(inputState, dt);
+
+            // Keep chassis contact evidence alive for every system in this physics step. In particular,
+            // Aerial thrusters must not mistake a chassis-only landing for fully airborne flight.
+            chassisContactSinceLastStep = false;
         }
 
         private void ApplyDrive(float gas, float brake, bool hasFuel, float dt)
@@ -319,18 +326,20 @@ namespace AnimeHillRacing.Vehicle
 
                     // Hill & slope gravitational compensation: preserves climbing ability on steep hills and obstacles
                     float pitchAngle = body != null ? body.rotation : 0f;
+                    float climbLimit = Mathf.Clamp(stats.maximumClimbAngle, 30f, 80f);
                     float slopeCompensation = body != null && AnyWheelGrounded
-                        ? body.mass * Physics2D.gravity.magnitude * Mathf.Sin(Mathf.Deg2Rad * Mathf.Clamp(pitchAngle, -65f, 65f)) : 0f;
+                        ? body.mass * Physics2D.gravity.magnitude * Mathf.Sin(Mathf.Deg2Rad *
+                            Mathf.Clamp(pitchAngle, -climbLimit, climbLimit)) : 0f;
 
                     // This bounded, contact-dependent assist only fills the small authority gap on specialist
                     // climbs. Tire friction still decides whether the vehicle hooks up or spins.
                     if (AnyWheelGrounded && pitchAngle > definition.climbAssistStartAngle &&
-                        definition.maxClimbAssist > 0f)
+                        pitchAngle <= climbLimit + 1f && stats.climbAssistAcceleration > 0f)
                     {
                         float climb01 = Mathf.InverseLerp(definition.climbAssistStartAngle,
-                            definition.climbAssistFullAngle, pitchAngle);
+                            climbLimit, pitchAngle);
                         float speedAuthority = 1f - .55f * Mathf.Clamp01(forwardSpeed / 18f);
-                        driveAcc += definition.maxClimbAssist * climb01 * speedAuthority;
+                        driveAcc += stats.climbAssistAcceleration * climb01 * speedAuthority;
                     }
 
                     float requiredForce = (body.mass * driveAcc + resistanceCompensation + Mathf.Max(0f, slopeCompensation)) * gas;

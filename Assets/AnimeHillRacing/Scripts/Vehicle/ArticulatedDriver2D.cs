@@ -112,19 +112,29 @@ namespace AnimeHillRacing.Vehicle
             physicalReaction = enablePhysicalReaction;
             DriverDefinition reference = driver.PoseReference;
             transform.localPosition = new Vector3(pose.rootPosition.x, pose.rootPosition.y, transform.localPosition.z);
-            transform.localScale = Vector3.one * Mathf.Max(.01f, pose.rootScale);
-            ApplyPart(torso, driver.torso, reference.torso, pose.torso);
-            ApplyPart(head, driver.head, reference.head, pose.head);
-            ApplyPart(leftUpperArm, driver.upperArm, reference.upperArm, pose.leftUpperArm);
-            ApplyPart(leftForearm, driver.forearm, reference.forearm, pose.leftForearm);
-            ApplyPart(rightUpperArm, driver.upperArm, reference.upperArm, pose.rightUpperArm);
-            ApplyPart(rightForearm, driver.forearm, reference.forearm, pose.rightForearm);
-            ApplyPart(leftThigh, driver.thigh, reference.thigh, pose.leftThigh);
-            ApplyPart(leftLowerLeg, driver.lowerLeg, reference.lowerLeg, pose.leftLowerLeg);
-            ApplyPart(rightThigh, driver.thigh, reference.thigh, pose.rightThigh);
-            ApplyPart(rightLowerLeg, driver.lowerLeg, reference.lowerLeg, pose.rightLowerLeg);
+            float rootScale = Mathf.Max(.01f, pose.rootScale);
+            transform.localScale = Vector3.one * rootScale;
+
+            // DriverPartPose.scale is an effective visual scale shared by every vehicle. The root scale
+            // still contracts or expands the articulated pose around its seat anchor, but must not make
+            // identical part scale values render at different sizes in different vehicles.
+            float visualScaleCompensation = 1f / rootScale;
+            ApplyPart(torso, driver.torso, reference.torso, pose.torso, visualScaleCompensation);
+            ApplyPart(head, driver.head, reference.head, pose.head, visualScaleCompensation);
+            ApplyPart(leftUpperArm, driver.upperArm, reference.upperArm, pose.leftUpperArm, visualScaleCompensation);
+            ApplyPart(leftForearm, driver.forearm, reference.forearm, pose.leftForearm, visualScaleCompensation);
+            ApplyPart(rightUpperArm, driver.upperArm, reference.upperArm, pose.rightUpperArm, visualScaleCompensation);
+            ApplyPart(rightForearm, driver.forearm, reference.forearm, pose.rightForearm, visualScaleCompensation);
+            ApplyPart(leftThigh, driver.thigh, reference.thigh, pose.leftThigh, visualScaleCompensation);
+            ApplyPart(leftLowerLeg, driver.lowerLeg, reference.lowerLeg, pose.leftLowerLeg, visualScaleCompensation);
+            ApplyPart(rightThigh, driver.thigh, reference.thigh, pose.rightThigh, visualScaleCompensation);
+            ApplyPart(rightLowerLeg, driver.lowerLeg, reference.lowerLeg, pose.rightLowerLeg, visualScaleCompensation);
+            headImpact?.ConfigureHeadCollider(head);
             EnsureAccessoryRenderer();
-            ApplyAccessory(selectedAccessory, pose.accessory);
+            VehicleDefinition.DriverPartPose accessoryPose = pose.accessory;
+            bool hasAccessoryOverride = selectedAccessory != null &&
+                pose.TryGetAccessoryPose(selectedAccessory.accessoryId, out accessoryPose);
+            ApplyAccessory(selectedAccessory, accessoryPose, visualScaleCompensation, hasAccessoryOverride);
             torsoTransform = torso != null ? torso.transform : null;
             headTransform = head != null ? head.transform : null;
             torsoBaseRotation = torsoTransform != null ? torsoTransform.localRotation : Quaternion.identity;
@@ -176,7 +186,7 @@ namespace AnimeHillRacing.Vehicle
         }
 
         private void ApplyAccessory(DriverDefinition.CharacterAccessoryOption option,
-            VehicleDefinition.DriverPartPose pose)
+            VehicleDefinition.DriverPartPose pose, float visualScaleCompensation, bool hasVehicleOverride)
         {
             if (accessory == null) return;
             Sprite sprite = option != null ? option.sprite : null;
@@ -188,29 +198,30 @@ namespace AnimeHillRacing.Vehicle
 
             Transform part = accessory.transform;
             Vector2 sharedOffset = option != null ? option.anchorOffset : Vector2.zero;
-
-            if (isScarf && torso != null && head != null)
+            if (isScarf && !hasVehicleOverride && torso != null && head != null)
             {
-                // Position at the neck base, sitting cleanly right above the upper torso
-                Vector3 neckPos = Vector3.Lerp(torso.transform.localPosition, head.transform.localPosition, 0.36f);
-                part.localPosition = new Vector3(neckPos.x + sharedOffset.x, neckPos.y + sharedOffset.y, part.localPosition.z);
-                part.localRotation = Quaternion.Euler(0f, 0f, pose.rotation);
+                // Preserve the legacy neck placement until this vehicle receives an authored scarf override.
+                Vector3 neckPosition = Vector3.Lerp(torso.transform.localPosition,
+                    head.transform.localPosition, .36f);
+                part.localPosition = new Vector3(neckPosition.x + sharedOffset.x,
+                    neckPosition.y + sharedOffset.y, part.localPosition.z);
                 accessory.sortingOrder = Mathf.Max(torso.sortingOrder, head.sortingOrder) + 1;
             }
             else
             {
-                accessory.sortingOrder = pose.sortingOrder;
                 part.localPosition = new Vector3(pose.position.x + sharedOffset.x,
                     pose.position.y + sharedOffset.y, part.localPosition.z);
-                part.localRotation = Quaternion.Euler(0f, 0f, pose.rotation);
+                accessory.sortingOrder = pose.sortingOrder;
             }
+            part.localRotation = Quaternion.Euler(0f, 0f, pose.rotation);
 
             float sourceWidth = sprite != null ? Mathf.Max(.001f, sprite.bounds.size.x) : 1f;
             float fittedScale = option != null ? option.visibleWidth / sourceWidth : 1f;
             float scaleX = Mathf.Abs(pose.scale.x) > .0001f ? Mathf.Abs(pose.scale.x) : 1f;
             float scaleY = Mathf.Abs(pose.scale.y) > .0001f ? Mathf.Abs(pose.scale.y) : scaleX;
-            part.localScale = new Vector3(fittedScale * scaleX * CharacterVisualScaleMultiplier,
-                fittedScale * scaleY * CharacterVisualScaleMultiplier, 1f);
+            part.localScale = new Vector3(
+                fittedScale * scaleX * CharacterVisualScaleMultiplier * visualScaleCompensation,
+                fittedScale * scaleY * CharacterVisualScaleMultiplier * visualScaleCompensation, 1f);
 
             var dynamics = accessory.GetComponent<CharacterScarfDynamics>();
             if (isScarf && accessory.enabled)
@@ -226,7 +237,7 @@ namespace AnimeHillRacing.Vehicle
         }
 
         private static void ApplyPart(SpriteRenderer renderer, Sprite sprite, Sprite referenceSprite,
-            VehicleDefinition.DriverPartPose pose)
+            VehicleDefinition.DriverPartPose pose, float visualScaleCompensation)
         {
             if (renderer == null) return;
             renderer.sprite = sprite;
@@ -237,12 +248,14 @@ namespace AnimeHillRacing.Vehicle
             float scaleX = Mathf.Abs(pose.scale.x) > .0001f ? Mathf.Abs(pose.scale.x) : 1f;
             float scaleY = Mathf.Abs(pose.scale.y) > .0001f ? Mathf.Abs(pose.scale.y) : scaleX;
             Vector2 normalization = ReferenceScale(sprite, referenceSprite);
-            part.localScale = new Vector3(scaleX * normalization.x * CharacterVisualScaleMultiplier,
-                scaleY * normalization.y * CharacterVisualScaleMultiplier, 1f);
+            part.localScale = new Vector3(
+                scaleX * normalization.x * CharacterVisualScaleMultiplier * visualScaleCompensation,
+                scaleY * normalization.y * CharacterVisualScaleMultiplier * visualScaleCompensation, 1f);
 
             Vector2 pivotCorrection = PivotCorrection(sprite, referenceSprite, normalization);
             pivotCorrection = Vector2.Scale(pivotCorrection,
-                new Vector2(scaleX, scaleY) * CharacterVisualScaleMultiplier);
+                new Vector2(scaleX, scaleY) *
+                (CharacterVisualScaleMultiplier * visualScaleCompensation));
             pivotCorrection = Quaternion.Euler(0f, 0f, pose.rotation) * pivotCorrection;
             part.localPosition = new Vector3(pose.position.x + pivotCorrection.x,
                 pose.position.y + pivotCorrection.y, part.localPosition.z);

@@ -49,6 +49,27 @@ namespace AnimeHillRacing.Vehicle
             EnsureReferences();
         }
 
+        public void ConfigureHeadCollider(SpriteRenderer headRenderer)
+        {
+            EnsureReferences();
+            Sprite sprite = headRenderer != null ? headRenderer.sprite : null;
+            if (sprite == null) return;
+
+            Bounds spriteBounds = sprite.bounds;
+            float radius = Mathf.Max(.1f, Mathf.Min(spriteBounds.extents.x, spriteBounds.extents.y) * .82f);
+            Vector2 center = spriteBounds.center;
+            if (headCollider2D is CircleCollider2D circle2D)
+            {
+                circle2D.offset = center;
+                circle2D.radius = radius;
+            }
+            if (headCollider is SphereCollider sphere)
+            {
+                sphere.center = new Vector3(center.x, center.y, spriteBounds.center.z);
+                sphere.radius = radius;
+            }
+        }
+
         private void OnTriggerEnter(Collider other) => ProcessImpact3D(other);
         private void OnTriggerStay(Collider other) => ProcessImpact3D(other);
         private void OnTriggerEnter2D(Collider2D other) => ProcessImpact2D(other);
@@ -73,6 +94,7 @@ namespace AnimeHillRacing.Vehicle
                     ProcessImpact2D(other);
                     break;
                 }
+                TryProcessSurfaceProximity();
                 return;
             }
 
@@ -90,6 +112,47 @@ namespace AnimeHillRacing.Vehicle
                     break;
                 }
             }
+
+            TryProcessSurfaceProximity();
+        }
+
+        private void TryProcessSurfaceProximity()
+        {
+            if (crashTriggered || SurfaceRelativeUpDot() > fatalSurfaceUpDot) return;
+            TerrainManager terrain = TerrainManager.Instance;
+            if (terrain == null) return;
+
+            Bounds bounds;
+            if (headCollider2D != null && headCollider2D.enabled)
+                bounds = headCollider2D.bounds;
+            else if (headCollider != null && headCollider.enabled)
+                bounds = headCollider.bounds;
+            else
+                return;
+
+            if (!terrain.TrySampleAuthoritativeSurface(bounds.center.x, out float surfaceY,
+                    out float slopeDegrees))
+                return;
+
+            Vector2 surfaceNormal = Quaternion.Euler(0f, 0f, slopeDegrees) * Vector2.up;
+            Vector2 surfacePoint = new Vector2(bounds.center.x, surfaceY);
+            float centerDistance = Vector2.Dot((Vector2)bounds.center - surfacePoint, surfaceNormal);
+            float projectedExtent = Mathf.Abs(surfaceNormal.x) * bounds.extents.x +
+                                    Mathf.Abs(surfaceNormal.y) * bounds.extents.y;
+            float tolerance = Mathf.Max(.04f, Physics2D.defaultContactOffset * 2f);
+            if (centerDistance > projectedExtent + tolerance) return;
+
+            nextAllowedImpact = Time.time + .10f;
+            float speed = vehicleBody2D != null
+                ? vehicleBody2D.GetPointVelocity(bounds.center).magnitude
+                : vehicleBody != null ? vehicleBody.GetPointVelocity(bounds.center).magnitude : 0f;
+            driver?.TriggerHeadImpact(speed);
+            if (rallyRoofDamage != null && !rallyRoofDamage.RoofDetached) return;
+
+            Debug.Log($"[DriverHeadImpact] Fatal authoritative-surface proximity | " +
+                      $"Distance: {centerDistance:0.000} | Radius: {projectedExtent:0.000} | " +
+                      $"Speed: {speed:0.0}m/s", this);
+            TriggerDriverDown();
         }
 
         private void ProcessImpact3D(Collider other)
@@ -157,8 +220,7 @@ namespace AnimeHillRacing.Vehicle
             if (crashDetector == null) crashDetector = FindFirstObjectByType<CrashDetector>();
 
             if (crashDetector == null) return;
-            crashTriggered = true;
-            crashDetector.NotifyDriverHeadGroundImpact();
+            crashTriggered = crashDetector.NotifyDriverHeadGroundImpact();
         }
     }
 

@@ -15,6 +15,7 @@ MonoBehaviour:
   driverId: stickman-black
   displayName: STICKMAN BLACK
   unlockedByDefault: 1
+  poseReference: {fileID: 0}
   previewSprite: {fileID: 21300000, guid: 5aed01c84f9665d459e700cd885496e5, type: 3}
   head: {fileID: 21300000, guid: 8dcf6c22a635c6e45b2e949295466094, type: 3}
   torso: {fileID: 21300000, guid: 4769f4c32892c764cb7eeedb3645fd03, type: 3}

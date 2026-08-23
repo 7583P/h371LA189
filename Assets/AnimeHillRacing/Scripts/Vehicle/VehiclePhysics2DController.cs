@@ -304,7 +304,9 @@ namespace AnimeHillRacing.Vehicle
                     break;
 
                 case DriveDirection.BrakingToForward:
-                    targetBrakeTorque = definition.brakeForce * definition.wheelRadius * gas;
+                    float requiredForwardBrake = Mathf.Max(definition.brakeForce,
+                        body.mass * Mathf.Max(14f, stats.targetAccelerationMps2 * 1.5f));
+                    targetBrakeTorque = requiredForwardBrake * definition.wheelRadius * gas;
                     break;
 
                 default: // Forward
@@ -347,10 +349,21 @@ namespace AnimeHillRacing.Vehicle
                     break;
             }
 
-            // Smooth torque ramp to eliminate instant wheelie shock on start from standstill
-            float baseTorqueCap = Mathf.Max(Mathf.Abs(targetTotalTorque), body.mass * stats.targetAccelerationMps2 * definition.wheelRadius);
-            float rampRate = Mathf.Max(100f, baseTorqueCap / Mathf.Max(0.05f, torqueRampSeconds));
-            currentDriveTorque = Mathf.MoveTowards(currentDriveTorque, targetTotalTorque, rampRate * dt);
+            bool changingDirection = driveDirection == DriveDirection.BrakingToReverse ||
+                                     driveDirection == DriveDirection.BrakingToForward;
+            if (changingDirection)
+            {
+                // Never fight the brakes with torque left over from the previous direction.
+                currentDriveTorque = 0f;
+            }
+            else
+            {
+                // Smooth torque ramp to eliminate instant wheelie shock on start from standstill.
+                float baseTorqueCap = Mathf.Max(Mathf.Abs(targetTotalTorque),
+                    body.mass * stats.targetAccelerationMps2 * definition.wheelRadius);
+                float rampRate = Mathf.Max(100f, baseTorqueCap / Mathf.Max(0.05f, torqueRampSeconds));
+                currentDriveTorque = Mathf.MoveTowards(currentDriveTorque, targetTotalTorque, rampRate * dt);
+            }
 
             // Dynamic Hill Adaptive AWD for Hill Adventurer
             bool isAdaptive4x4 = definition != null &&
@@ -393,15 +406,24 @@ namespace AnimeHillRacing.Vehicle
                 rearSuspension.ApplyBrakeTorque(perWheelBrake);
             }
 
-            // High-authority ground braking deceleration when actively braking forward motion
-            if (driveDirection == DriveDirection.BrakingToReverse && brake > 0.05f && AnyWheelGrounded)
+            // Direction changes use the tire brakes until the old momentum is almost gone. Applying the
+            // same bounded deceleration in both directions prevents locked, counter-spinning wheels from
+            // making the vehicle feel slippery while the chassis keeps travelling the old way.
+            float directionChangeInput = driveDirection == DriveDirection.BrakingToReverse ? brake :
+                                         driveDirection == DriveDirection.BrakingToForward ? gas : 0f;
+            if (directionChangeInput > 0.05f && AnyWheelGrounded)
             {
-                Vector2 fwd = (Vector2)transform.right;
+                Vector2 fwd = (Vector2)body.transform.right;
                 float fwdSpeed = Vector2.Dot(body.linearVelocity, fwd);
-                if (fwdSpeed > 0.1f)
+                bool cancellingForward = driveDirection == DriveDirection.BrakingToReverse && fwdSpeed > 0.1f;
+                bool cancellingReverse = driveDirection == DriveDirection.BrakingToForward && fwdSpeed < -0.1f;
+                if (cancellingForward || cancellingReverse)
                 {
-                    float decelForce = Mathf.Min(body.mass * fwdSpeed * 25f, body.mass * 16f * brake);
-                    body.AddForce(-fwd * decelForce, ForceMode2D.Force);
+                    float speedToCancel = Mathf.Abs(fwdSpeed);
+                    float decelForce = Mathf.Min(body.mass * speedToCancel * 25f,
+                        body.mass * 16f * directionChangeInput);
+                    float forceDirection = cancellingForward ? -1f : 1f;
+                    body.AddForce(fwd * (forceDirection * decelForce), ForceMode2D.Force);
                 }
             }
         }
@@ -414,8 +436,8 @@ namespace AnimeHillRacing.Vehicle
 
             if (gas > 0.05f)
             {
-                // When pressing gas, immediately engage forward unless moving backwards at high speed
-                driveDirection = speed < -threshold * 2.5f ? DriveDirection.BrakingToForward : DriveDirection.Forward;
+                // Do not apply forward motor torque while the chassis still has meaningful reverse momentum.
+                driveDirection = speed < -0.1f ? DriveDirection.BrakingToForward : DriveDirection.Forward;
             }
             else if (brake > 0.05f)
             {

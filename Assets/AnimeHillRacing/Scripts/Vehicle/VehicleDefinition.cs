@@ -64,6 +64,13 @@ namespace AnimeHillRacing.Vehicle
         [Serializable]
         public sealed class DriverPose
         {
+            [Serializable]
+            public sealed class AccessoryPoseOverride
+            {
+                public string accessoryId;
+                public DriverPartPose pose;
+            }
+
             public Vector2 rootPosition;
             public float rootScale = 1f;
             public DriverPartPose torso;
@@ -78,6 +85,48 @@ namespace AnimeHillRacing.Vehicle
             public DriverPartPose rightLowerLeg;
             [Tooltip("Vehicle-pose-relative placement of glasses and future head accessories.")]
             public DriverPartPose accessory;
+            [Tooltip("Optional per-accessory vehicle poses. Accessories without an override use the shared pose above.")]
+            public AccessoryPoseOverride[] accessoryOverrides = Array.Empty<AccessoryPoseOverride>();
+
+            public bool TryGetAccessoryPose(string accessoryId, out DriverPartPose result)
+            {
+                if (!string.IsNullOrEmpty(accessoryId) && accessoryOverrides != null)
+                    for (int i = 0; i < accessoryOverrides.Length; i++)
+                    {
+                        AccessoryPoseOverride item = accessoryOverrides[i];
+                        if (item != null && item.accessoryId == accessoryId)
+                        {
+                            result = item.pose;
+                            return true;
+                        }
+                    }
+                result = accessory;
+                return false;
+            }
+
+            public void SetAccessoryPose(string accessoryId, DriverPartPose value)
+            {
+                if (string.IsNullOrEmpty(accessoryId))
+                {
+                    accessory = value;
+                    return;
+                }
+                if (accessoryOverrides == null) accessoryOverrides = Array.Empty<AccessoryPoseOverride>();
+                for (int i = 0; i < accessoryOverrides.Length; i++)
+                    if (accessoryOverrides[i] != null && accessoryOverrides[i].accessoryId == accessoryId)
+                    {
+                        accessoryOverrides[i].pose = value;
+                        return;
+                    }
+
+                int oldLength = accessoryOverrides.Length;
+                Array.Resize(ref accessoryOverrides, oldLength + 1);
+                accessoryOverrides[oldLength] = new AccessoryPoseOverride
+                {
+                    accessoryId = accessoryId,
+                    pose = value
+                };
+            }
         }
 
         [Header("Identity")]

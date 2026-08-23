@@ -3239,8 +3239,16 @@ namespace AnimeHillRacing.Editor
                 throw new System.InvalidOperationException("Formula driver pose must show head/torso and hide both thighs.");
             float expectedFormulaHeadScale = Mathf.Abs(assets.formula.driverPose.head.scale.x) *
                                              ArticulatedDriver2D.CharacterVisualScaleMultiplier;
-            if (Mathf.Abs(formulaHead.transform.localScale.x - expectedFormulaHeadScale) > .0001f)
-                throw new System.InvalidOperationException("Character render pieces must remain at exactly 1.5x visual scale.");
+            if (Mathf.Abs(formulaHead.transform.lossyScale.x - expectedFormulaHeadScale) > .0001f)
+                throw new System.InvalidOperationException(
+                    "Character render pieces must keep the same effective scale across vehicle root poses.");
+            SphereCollider formulaHeadTrigger = formulaHead.GetComponentInChildren<SphereCollider>(true);
+            float expectedHeadTriggerRadius = Mathf.Min(formulaHead.sprite.bounds.extents.x,
+                formulaHead.sprite.bounds.extents.y) * .82f;
+            if (formulaHeadTrigger == null || !formulaHeadTrigger.isTrigger ||
+                Mathf.Abs(formulaHeadTrigger.radius - expectedHeadTriggerRadius) > .0001f)
+                throw new System.InvalidOperationException(
+                    "Driver head trigger must cover the visible head instead of retaining the tiny legacy radius.");
             preview.Apply(assets.formula, assets.formula.skins[1], assets.formula.wheels[2], assets.stickmanBlack);
             Transform electricInternal = body.transform.Find("Formula Electricity - Internal");
             Transform electricExternal = body.transform.Find("Formula Electricity - External Glow");

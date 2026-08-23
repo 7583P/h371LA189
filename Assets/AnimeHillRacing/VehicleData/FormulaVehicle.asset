@@ -154,6 +154,28 @@ MonoBehaviour:
       scale: {x: 1, y: 1}
       visible: 1
       sortingOrder: 16
+    accessoryOverrides:
+    - accessoryId: fire-glasses
+      pose:
+        position: {x: 0.12083047, y: 0.7908309}
+        rotation: -10
+        scale: {x: 1, y: 1}
+        visible: 1
+        sortingOrder: 16
+    - accessoryId: glasses
+      pose:
+        position: {x: 0.10830054, y: 0.7657719}
+        rotation: -10
+        scale: {x: 1, y: 1}
+        visible: 1
+        sortingOrder: 16
+    - accessoryId: scarf
+      pose:
+        position: {x: -0.1418981, y: 0.4989157}
+        rotation: 180
+        scale: {x: 1, y: 1}
+        visible: 1
+        sortingOrder: 16
   visualWidth: 5.6
   flipBodyX: 0
   bodyVisualOffset: {x: 0, y: 0.08}

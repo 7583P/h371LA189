@@ -26,11 +26,11 @@ namespace AnimeHillRacing.Editor
             Accessory
         }
 
-        private static readonly PosePart[] LimbParts =
+        private static readonly PosePart[] EditableParts =
         {
             PosePart.Torso, PosePart.Head, PosePart.LeftUpperArm, PosePart.LeftForearm,
             PosePart.RightUpperArm, PosePart.RightForearm, PosePart.LeftThigh, PosePart.LeftLowerLeg,
-            PosePart.RightThigh, PosePart.RightLowerLeg
+            PosePart.RightThigh, PosePart.RightLowerLeg, PosePart.Accessory
         };
 
         private static readonly string[] PartNames =
@@ -45,6 +45,7 @@ namespace AnimeHillRacing.Editor
         private int vehicleIndex;
         private int skinIndex;
         private int driverIndex;
+        private int accessoryIndex;
         private int copyVehicleIndex;
         private PosePart selectedPart = PosePart.Root;
         private VehicleDefinition.DriverPose originalPose;
@@ -67,6 +68,10 @@ namespace AnimeHillRacing.Editor
             ? vehicles[vehicleIndex] : null;
         private DriverDefinition PreviewDriver => driverIndex >= 0 && driverIndex < drivers.Length
             ? drivers[driverIndex] : null;
+        private DriverDefinition.CharacterAccessoryOption PreviewAccessory =>
+            PreviewDriver != null && PreviewDriver.accessories != null &&
+            accessoryIndex >= 0 && accessoryIndex < PreviewDriver.accessories.Length
+                ? PreviewDriver.accessories[accessoryIndex] : null;
         private DriverDefinition CanonicalDriver => drivers.Length > 0 ? drivers[0] : null;
         private bool HasUnsavedChanges => Vehicle != null && workingPose != null &&
             JsonUtility.ToJson(workingPose) != JsonUtility.ToJson(Vehicle.driverPose);
@@ -125,6 +130,7 @@ namespace AnimeHillRacing.Editor
             workingPose = ClonePose(originalPose);
             selectedPart = PosePart.Root;
             draggingHandle = false;
+            SelectVisibleAccessory();
         }
 
         private void OnGUI()
@@ -171,10 +177,26 @@ namespace AnimeHillRacing.Editor
                 string[] driverNames = drivers.Select((item, index) => index == 0
                     ? item.displayName + " (MODELO)" : item.displayName).ToArray();
                 if (driverNames.Length > 0)
-                    driverIndex = EditorGUILayout.Popup(Mathf.Clamp(driverIndex, 0, driverNames.Length - 1),
+                {
+                    int nextDriver = EditorGUILayout.Popup(Mathf.Clamp(driverIndex, 0, driverNames.Length - 1),
                         driverNames, EditorStyles.toolbarPopup, GUILayout.MinWidth(160f));
+                    if (nextDriver != driverIndex)
+                    {
+                        driverIndex = nextDriver;
+                        SelectVisibleAccessory();
+                    }
+                }
                 else
                     GUILayout.Label("Sin personajes", EditorStyles.toolbarButton, GUILayout.MinWidth(160f));
+
+                DriverDefinition previewDriver = PreviewDriver;
+                string[] accessoryNames = previewDriver != null && previewDriver.accessories != null
+                    ? previewDriver.accessories.Select(item => item != null ? item.displayName : "(vacío)").ToArray()
+                    : Array.Empty<string>();
+                if (accessoryNames.Length > 0)
+                    accessoryIndex = EditorGUILayout.Popup(
+                        Mathf.Clamp(accessoryIndex, 0, accessoryNames.Length - 1), accessoryNames,
+                        EditorStyles.toolbarPopup, GUILayout.MinWidth(145f));
 
                 GUILayout.FlexibleSpace();
                 GUILayout.Label(HasUnsavedChanges ? "CAMBIOS TEMPORALES" : "GUARDADO",
@@ -217,17 +239,26 @@ namespace AnimeHillRacing.Editor
         private void DrawRootFields()
         {
             workingPose.rootPosition = EditorGUILayout.Vector2Field("Posición X/Y", workingPose.rootPosition);
-            workingPose.rootScale = EditorGUILayout.Slider("Tamaño general", workingPose.rootScale, .25f, 2.5f);
+            workingPose.rootScale = EditorGUILayout.Slider("Escala de la pose", workingPose.rootScale, .25f, 2.5f);
             using (new EditorGUILayout.HorizontalScope())
             {
                 if (GUILayout.Button("-10%")) workingPose.rootScale = Mathf.Max(.05f, workingPose.rootScale * .9f);
                 if (GUILayout.Button("+10%")) workingPose.rootScale = Mathf.Min(4f, workingPose.rootScale * 1.1f);
             }
+            EditorGUILayout.HelpBox("La escala de la pose ajusta la separación de las partes alrededor del asiento. " +
+                "El tamaño visual X/Y de cada parte permanece estable entre vehículos.", MessageType.None);
         }
 
         private void DrawPartFields()
         {
             VehicleDefinition.DriverPartPose pose = GetPart(workingPose, selectedPart);
+            if (selectedPart == PosePart.Accessory)
+            {
+                string accessoryName = PreviewAccessory != null ? PreviewAccessory.displayName : "ninguno";
+                EditorGUILayout.HelpBox($"Editando el anclaje de: {accessoryName}. " +
+                    "Puedes arrastrar su punto en la vista.", MessageType.Info);
+            }
+            EditorGUI.BeginChangeCheck();
             pose.position = EditorGUILayout.Vector2Field("Posición X/Y", pose.position);
             pose.rotation = EditorGUILayout.Slider("Rotación", pose.rotation, -180f, 180f);
             uniformPartScale = EditorGUILayout.Toggle("Escala uniforme", uniformPartScale);
@@ -251,7 +282,9 @@ namespace AnimeHillRacing.Editor
             }
             pose.visible = EditorGUILayout.Toggle("Visible", pose.visible);
             pose.sortingOrder = EditorGUILayout.IntField("Orden de dibujo", pose.sortingOrder);
-            SetPart(workingPose, selectedPart, pose);
+            bool partChanged = EditorGUI.EndChangeCheck();
+            if (selectedPart != PosePart.Accessory || partChanged)
+                SetPart(workingPose, selectedPart, pose);
         }
 
         private void DrawActionBar()
@@ -323,7 +356,9 @@ namespace AnimeHillRacing.Editor
             HandleDragging(origin, pixelsPerUnit, canvas);
 
             GUI.Label(new Rect(canvas.x + 10f, canvas.y + 8f, canvas.width - 20f, 20f),
-                $"{vehicle.displayName} · {skin.displayName} · {driver.displayName}", EditorStyles.whiteMiniLabel);
+                $"{vehicle.displayName} · {skin.displayName} · {driver.displayName} · " +
+                $"{(PreviewAccessory != null ? PreviewAccessory.displayName : "SIN ACCESORIO")}",
+                EditorStyles.whiteMiniLabel);
         }
 
         private void DrawGrid(Rect canvas)
@@ -360,38 +395,58 @@ namespace AnimeHillRacing.Editor
         private void DrawDriver(DriverDefinition driver, Vector2 origin, float pixelsPerUnit, bool foreground)
         {
             DriverDefinition reference = driver.PoseReference;
-            PosePart[] ordered = LimbParts.OrderBy(part => GetPart(workingPose, part).sortingOrder).ToArray();
+            PosePart[] ordered = EditableParts.OrderBy(part => GetPart(workingPose, part).sortingOrder).ToArray();
             for (int i = 0; i < ordered.Length; i++)
             {
                 PosePart part = ordered[i];
                 VehicleDefinition.DriverPartPose pose = GetPart(workingPose, part);
                 if ((pose.sortingOrder >= 10) != foreground) continue;
+                if (part == PosePart.Accessory)
+                {
+                    DrawAccessory(pose, origin, pixelsPerUnit);
+                    continue;
+                }
                 Sprite sprite = PartSprite(driver, part);
                 Sprite referenceSprite = PartSprite(reference, part);
                 if (!pose.visible || sprite == null) continue;
                 Vector2 normalization = ReferenceScale(sprite, referenceSprite);
                 float rootScale = Mathf.Max(.01f, workingPose.rootScale);
                 Vector2 scale = Vector2.Scale(new Vector2(Mathf.Abs(pose.scale.x), Mathf.Abs(pose.scale.y)),
-                    normalization) * (ArticulatedDriver2D.CharacterVisualScaleMultiplier * rootScale);
+                    normalization) * ArticulatedDriver2D.CharacterVisualScaleMultiplier;
                 Vector2 pivotCorrection = PivotCorrection(sprite, referenceSprite, normalization);
                 pivotCorrection = Vector2.Scale(pivotCorrection,
                     new Vector2(Mathf.Abs(pose.scale.x), Mathf.Abs(pose.scale.y)) *
                     ArticulatedDriver2D.CharacterVisualScaleMultiplier);
-                pivotCorrection = Rotate(pivotCorrection, pose.rotation) * rootScale;
+                pivotCorrection = Rotate(pivotCorrection, pose.rotation);
                 Vector2 worldPosition = workingPose.rootPosition + pose.position * rootScale + pivotCorrection;
                 DrawSprite(sprite, worldPosition, scale, pose.rotation, false, origin, pixelsPerUnit, Color.white);
             }
         }
 
+        private void DrawAccessory(VehicleDefinition.DriverPartPose pose, Vector2 origin, float pixelsPerUnit)
+        {
+            DriverDefinition.CharacterAccessoryOption option = PreviewAccessory;
+            Sprite sprite = option != null ? option.sprite : null;
+            if (!pose.visible || sprite == null) return;
+            float sourceWidth = Mathf.Max(.001f, sprite.bounds.size.x);
+            float fittedScale = option.visibleWidth / sourceWidth;
+            Vector2 scale = new Vector2(Mathf.Abs(pose.scale.x), Mathf.Abs(pose.scale.y)) *
+                            (fittedScale * ArticulatedDriver2D.CharacterVisualScaleMultiplier);
+            float rootScale = Mathf.Max(.01f, workingPose.rootScale);
+            Vector2 localPosition = pose.position + option.anchorOffset;
+            Vector2 worldPosition = workingPose.rootPosition + localPosition * rootScale;
+            DrawSprite(sprite, worldPosition, scale, pose.rotation, false, origin, pixelsPerUnit, Color.white);
+        }
+
         private void DrawHandles(Vector2 origin, float pixelsPerUnit, Rect canvas)
         {
             if (Event.current.type != EventType.Repaint) return;
-            for (int i = 0; i < LimbParts.Length; i++)
+            for (int i = 0; i < EditableParts.Length; i++)
             {
-                PosePart part = LimbParts[i];
+                PosePart part = EditableParts[i];
                 VehicleDefinition.DriverPartPose pose = GetPart(workingPose, part);
                 if (!pose.visible) continue;
-                Vector2 screen = WorldToScreen(PartAnchorWorld(pose), origin, pixelsPerUnit);
+                Vector2 screen = WorldToScreen(PartAnchorWorld(part, pose), origin, pixelsPerUnit);
                 if (!canvas.Contains(screen)) continue;
                 Handles.BeginGUI();
                 Handles.color = selectedPart == part ? Color.yellow : new Color(1f, 1f, 1f, .55f);
@@ -444,20 +499,44 @@ namespace AnimeHillRacing.Editor
         {
             PosePart nearest = PosePart.Root;
             distance = Vector2.Distance(mouse, WorldToScreen(workingPose.rootPosition, origin, pixelsPerUnit));
-            for (int i = 0; i < LimbParts.Length; i++)
+            for (int i = 0; i < EditableParts.Length; i++)
             {
-                VehicleDefinition.DriverPartPose pose = GetPart(workingPose, LimbParts[i]);
+                PosePart part = EditableParts[i];
+                VehicleDefinition.DriverPartPose pose = GetPart(workingPose, part);
                 if (!pose.visible) continue;
-                float next = Vector2.Distance(mouse, WorldToScreen(PartAnchorWorld(pose), origin, pixelsPerUnit));
+                float next = Vector2.Distance(mouse,
+                    WorldToScreen(PartAnchorWorld(part, pose), origin, pixelsPerUnit));
                 if (next >= distance) continue;
                 distance = next;
-                nearest = LimbParts[i];
+                nearest = part;
             }
             return nearest;
         }
 
-        private Vector2 PartAnchorWorld(VehicleDefinition.DriverPartPose pose) =>
-            workingPose.rootPosition + pose.position * Mathf.Max(.01f, workingPose.rootScale);
+        private Vector2 PartAnchorWorld(PosePart part, VehicleDefinition.DriverPartPose pose)
+        {
+            Vector2 position = pose.position;
+            if (part == PosePart.Accessory && PreviewAccessory != null)
+                position += PreviewAccessory.anchorOffset;
+            return workingPose.rootPosition + position * Mathf.Max(.01f, workingPose.rootScale);
+        }
+
+        private void SelectVisibleAccessory()
+        {
+            DriverDefinition driver = PreviewDriver;
+            if (driver == null || driver.accessories == null || driver.accessories.Length == 0)
+            {
+                accessoryIndex = 0;
+                return;
+            }
+
+            string selectedId = SaveManager.GetSelectedCharacterAccessoryId(driver.DefaultAccessoryId);
+            int selected = Array.FindIndex(driver.accessories,
+                item => item != null && item.accessoryId == selectedId && item.sprite != null);
+            if (selected < 0)
+                selected = Array.FindIndex(driver.accessories, item => item != null && item.sprite != null);
+            accessoryIndex = Mathf.Max(0, selected);
+        }
 
         private VehicleDefinition.CustomizationOption SelectedSkin(VehicleDefinition vehicle)
         {
@@ -535,7 +614,7 @@ namespace AnimeHillRacing.Editor
             }
         }
 
-        private static VehicleDefinition.DriverPartPose GetPart(VehicleDefinition.DriverPose pose, PosePart part)
+        private VehicleDefinition.DriverPartPose GetPart(VehicleDefinition.DriverPose pose, PosePart part)
         {
             switch (part)
             {
@@ -549,12 +628,24 @@ namespace AnimeHillRacing.Editor
                 case PosePart.LeftLowerLeg: return pose.leftLowerLeg;
                 case PosePart.RightThigh: return pose.rightThigh;
                 case PosePart.RightLowerLeg: return pose.rightLowerLeg;
-                case PosePart.Accessory: return pose.accessory;
+                case PosePart.Accessory:
+                    if (PreviewAccessory != null &&
+                        pose.TryGetAccessoryPose(PreviewAccessory.accessoryId, out VehicleDefinition.DriverPartPose accessoryPose))
+                        return accessoryPose;
+                    if (IsScarf(PreviewAccessory))
+                    {
+                        VehicleDefinition.DriverPartPose legacyScarfPose = pose.accessory;
+                        legacyScarfPose.position = Vector2.Lerp(pose.torso.position, pose.head.position, .36f);
+                        legacyScarfPose.sortingOrder = Mathf.Max(pose.torso.sortingOrder,
+                            pose.head.sortingOrder) + 1;
+                        return legacyScarfPose;
+                    }
+                    return pose.accessory;
                 default: return default;
             }
         }
 
-        private static void SetPart(VehicleDefinition.DriverPose pose, PosePart part,
+        private void SetPart(VehicleDefinition.DriverPose pose, PosePart part,
             VehicleDefinition.DriverPartPose value)
         {
             switch (part)
@@ -569,9 +660,18 @@ namespace AnimeHillRacing.Editor
                 case PosePart.LeftLowerLeg: pose.leftLowerLeg = value; break;
                 case PosePart.RightThigh: pose.rightThigh = value; break;
                 case PosePart.RightLowerLeg: pose.rightLowerLeg = value; break;
-                case PosePart.Accessory: pose.accessory = value; break;
+                case PosePart.Accessory:
+                    if (PreviewAccessory != null)
+                        pose.SetAccessoryPose(PreviewAccessory.accessoryId, value);
+                    else
+                        pose.accessory = value;
+                    break;
             }
         }
+
+        private static bool IsScarf(DriverDefinition.CharacterAccessoryOption option) =>
+            option != null && (option.accessoryId == "scarf" ||
+                option.displayName.IndexOf("scarf", StringComparison.OrdinalIgnoreCase) >= 0);
 
         private static VehicleDefinition.DriverPose ClonePose(VehicleDefinition.DriverPose source) => source != null
             ? JsonUtility.FromJson<VehicleDefinition.DriverPose>(JsonUtility.ToJson(source))

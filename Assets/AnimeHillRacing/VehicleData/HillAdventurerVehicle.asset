@@ -114,6 +114,7 @@ MonoBehaviour:
       scale: {x: 1, y: 1}
       visible: 1
       sortingOrder: 6
+    accessoryOverrides: []
   visualWidth: 6.2
   flipBodyX: 0
   bodyVisualOffset: {x: 0, y: 0.35}

@@ -134,6 +134,21 @@ MonoBehaviour:
       scale: {x: 1, y: 1}
       visible: 1
       sortingOrder: 6
+    accessoryOverrides:
+    - accessoryId: glasses
+      pose:
+        position: {x: -0.52346945, y: 1.0881635}
+        rotation: -3
+        scale: {x: 1, y: 1}
+        visible: 1
+        sortingOrder: 6
+    - accessoryId: scarf
+      pose:
+        position: {x: -0.7300539, y: 0.8016849}
+        rotation: 180
+        scale: {x: 1, y: 1}
+        visible: 1
+        sortingOrder: 6
   visualWidth: 4.85
   flipBodyX: 0
   bodyVisualOffset: {x: 0, y: 0.2}

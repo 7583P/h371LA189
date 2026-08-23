@@ -61,9 +61,12 @@ namespace AnimeHillRacing.Vehicle
             terrainProfile = profile;
         }
 
-        public void NotifyDriverHeadGroundImpact()
+        public bool NotifyDriverHeadGroundImpact()
         {
-            gameManager?.RequestGameOver(RunEndReason.DriverDown);
+            if (gameManager == null) gameManager = FindFirstObjectByType<GameManager>();
+            if (gameManager == null) return false;
+            gameManager.RequestGameOver(RunEndReason.DriverDown);
+            return true;
         }
     }
 }

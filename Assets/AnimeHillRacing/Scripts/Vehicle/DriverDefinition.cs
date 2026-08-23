@@ -22,6 +22,9 @@ namespace AnimeHillRacing.Vehicle
         public string driverId = "stickman-black";
         public string displayName = "STICKMAN BLACK";
         public bool unlockedByDefault = true;
+        [Tooltip("Canonical character whose body-part dimensions and pivots this character follows. " +
+                 "The first driver in GameCatalog is assigned automatically to future characters.")]
+        public DriverDefinition poseReference;
         public Sprite previewSprite;
         public Sprite head;
         public Sprite torso;
@@ -30,6 +33,9 @@ namespace AnimeHillRacing.Vehicle
         public Sprite thigh;
         public Sprite lowerLeg;
         public CharacterAccessoryOption[] accessories;
+
+        public DriverDefinition PoseReference => poseReference != null && poseReference != this
+            ? poseReference : this;
 
         public CharacterAccessoryOption FindAccessory(string accessoryId)
         {

@@ -94,24 +94,25 @@ MonoBehaviour:
     visibleSize: {x: 14.4, y: 14.56}
     visualOffset: {x: 0, y: 0}
   electricSkinOverlay: {fileID: 0}
+  preserveDriverPose: 1
   driverPose:
-    rootPosition: {x: -0.33, y: 0.42}
+    rootPosition: {x: -0.36893252, y: 0.42}
     rootScale: 1
     torso:
-      position: {x: 0.14, y: 0.25}
-      rotation: -50
+      position: {x: 0.13182427, y: 0.19938773}
+      rotation: -57
       scale: {x: 0.026, y: 0.026}
       visible: 1
       sortingOrder: 13
     head:
-      position: {x: 0.42, y: 0.54}
+      position: {x: 0.6115476, y: 0.630453}
       rotation: -24
-      scale: {x: 0.031, y: 0.031}
+      scale: {x: 0.032, y: 0.032}
       visible: 1
       sortingOrder: 17
     leftUpperArm:
-      position: {x: 0.57, y: 0.27}
-      rotation: -6
+      position: {x: 0.66382706, y: 0.20277663}
+      rotation: 7
       scale: {x: 0.047, y: 0.03}
       visible: 1
       sortingOrder: 16
@@ -134,8 +135,8 @@ MonoBehaviour:
       visible: 0
       sortingOrder: 15
     leftThigh:
-      position: {x: 0.25, y: 0.05}
-      rotation: -5
+      position: {x: -0.013962288, y: -0.33231708}
+      rotation: -55
       scale: {x: 0.032, y: 0.032}
       visible: 1
       sortingOrder: 14

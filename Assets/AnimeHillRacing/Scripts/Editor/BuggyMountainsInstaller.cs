@@ -222,11 +222,14 @@ namespace AnimeHillRacing.Editor
 
             VehicleDefinition hill = AssetDatabase.LoadAssetAtPath<VehicleDefinition>(
                 Root + "/VehicleData/HillAdventurerVehicle.asset");
-            v.driverPose = hill != null && hill.driverPose != null
-                ? JsonUtility.FromJson<VehicleDefinition.DriverPose>(JsonUtility.ToJson(hill.driverPose))
-                : new VehicleDefinition.DriverPose();
-            v.driverPose.rootPosition = new Vector2(-.33f, .29f);
-            v.driverPose.rootScale = .80f;
+            if (!v.preserveDriverPose || v.driverPose == null)
+            {
+                v.driverPose = hill != null && hill.driverPose != null
+                    ? JsonUtility.FromJson<VehicleDefinition.DriverPose>(JsonUtility.ToJson(hill.driverPose))
+                    : new VehicleDefinition.DriverPose();
+                v.driverPose.rootPosition = new Vector2(-.33f, .29f);
+                v.driverPose.rootScale = .80f;
+            }
         }
 
         private static VehicleDefinition.CustomizationOption Option(string id, string name, Sprite sprite,

@@ -98,6 +98,8 @@ namespace AnimeHillRacing.Vehicle
         public CustomizationOption[] wheels;
         [Tooltip("Animated overlay used exclusively by Formula's Electricity skin in gameplay and previews.")]
         public Sprite electricSkinOverlay;
+        [Tooltip("Set by the Driver Pose Editor after an authored pose is saved. Content installers must preserve it.")]
+        [HideInInspector] public bool preserveDriverPose;
         public DriverPose driverPose = new DriverPose();
         [Min(.1f)] public float visualWidth = 3.2f;
         public bool flipBodyX;

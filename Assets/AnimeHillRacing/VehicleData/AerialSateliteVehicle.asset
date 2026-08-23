@@ -44,65 +44,66 @@ MonoBehaviour:
     visibleSize: {x: 11.78, y: 11.72}
     visualOffset: {x: 0, y: 0}
   electricSkinOverlay: {fileID: 0}
+  preserveDriverPose: 1
   driverPose:
-    rootPosition: {x: 0.3, y: 0.34}
+    rootPosition: {x: 0.28599754, y: 0.4532266}
     rootScale: 0.78
     torso:
-      position: {x: -0.01, y: 0.22}
-      rotation: -8
-      scale: {x: 0.029, y: 0.031}
+      position: {x: -0.79082805, y: 0.13225883}
+      rotation: -4
+      scale: {x: 0.04, y: 0.04}
       visible: 1
       sortingOrder: 3
     head:
-      position: {x: -0.03, y: 0.62}
+      position: {x: -0.638448, y: 1.1089917}
       rotation: -3
-      scale: {x: 0.031, y: 0.033}
+      scale: {x: 0.04, y: 0.04}
       visible: 1
       sortingOrder: 5
     leftUpperArm:
-      position: {x: 0.18, y: 0.34}
+      position: {x: -0.35505384, y: -1.079055}
       rotation: -6
       scale: {x: 0.038, y: 0.029}
       visible: 1
       sortingOrder: 4
     leftForearm:
-      position: {x: 0.36, y: 0.24}
-      rotation: 0
-      scale: {x: 0.036, y: 0.029}
+      position: {x: -0.17365658, y: 0.3678701}
+      rotation: 35
+      scale: {x: 0.04, y: 0.04}
       visible: 1
       sortingOrder: 4
     rightUpperArm:
-      position: {x: 0.1, y: 0.3}
-      rotation: 2
+      position: {x: 0.09340857, y: -1.0390295}
+      rotation: 25
       scale: {x: 0.038, y: 0.029}
       visible: 1
       sortingOrder: 2
     rightForearm:
-      position: {x: 0.28, y: 0.2}
-      rotation: 6
-      scale: {x: 0.036, y: 0.029}
+      position: {x: -0.08251792, y: 0.3749394}
+      rotation: 25
+      scale: {x: 0.04, y: 0.04}
       visible: 1
       sortingOrder: 2
     leftThigh:
-      position: {x: 0.12, y: -0.06}
+      position: {x: 0.03470149, y: -0.88972026}
       rotation: 12
       scale: {x: 0.038, y: 0.029}
       visible: 1
       sortingOrder: 1
     leftLowerLeg:
-      position: {x: 0.26, y: -0.32}
+      position: {x: -0.112211056, y: -1.0101408}
       rotation: -14
       scale: {x: 0.036, y: 0.029}
       visible: 1
       sortingOrder: 1
     rightThigh:
-      position: {x: 0.06, y: -0.08}
-      rotation: 16
-      scale: {x: 0.038, y: 0.029}
+      position: {x: 0.04030455, y: -0.58884287}
+      rotation: 33
+      scale: {x: 0.04, y: 0.04}
       visible: 1
       sortingOrder: 0
     rightLowerLeg:
-      position: {x: 0.2, y: -0.34}
+      position: {x: -0.38157994, y: -0.87505317}
       rotation: -10
       scale: {x: 0.036, y: 0.029}
       visible: 1

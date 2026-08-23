@@ -110,18 +110,19 @@ namespace AnimeHillRacing.Vehicle
             vehicleBody = body;
             vehicleBody2D = body2D;
             physicalReaction = enablePhysicalReaction;
+            DriverDefinition reference = driver.PoseReference;
             transform.localPosition = new Vector3(pose.rootPosition.x, pose.rootPosition.y, transform.localPosition.z);
             transform.localScale = Vector3.one * Mathf.Max(.01f, pose.rootScale);
-            ApplyPart(torso, driver.torso, pose.torso);
-            ApplyPart(head, driver.head, pose.head);
-            ApplyPart(leftUpperArm, driver.upperArm, pose.leftUpperArm);
-            ApplyPart(leftForearm, driver.forearm, pose.leftForearm);
-            ApplyPart(rightUpperArm, driver.upperArm, pose.rightUpperArm);
-            ApplyPart(rightForearm, driver.forearm, pose.rightForearm);
-            ApplyPart(leftThigh, driver.thigh, pose.leftThigh);
-            ApplyPart(leftLowerLeg, driver.lowerLeg, pose.leftLowerLeg);
-            ApplyPart(rightThigh, driver.thigh, pose.rightThigh);
-            ApplyPart(rightLowerLeg, driver.lowerLeg, pose.rightLowerLeg);
+            ApplyPart(torso, driver.torso, reference.torso, pose.torso);
+            ApplyPart(head, driver.head, reference.head, pose.head);
+            ApplyPart(leftUpperArm, driver.upperArm, reference.upperArm, pose.leftUpperArm);
+            ApplyPart(leftForearm, driver.forearm, reference.forearm, pose.leftForearm);
+            ApplyPart(rightUpperArm, driver.upperArm, reference.upperArm, pose.rightUpperArm);
+            ApplyPart(rightForearm, driver.forearm, reference.forearm, pose.rightForearm);
+            ApplyPart(leftThigh, driver.thigh, reference.thigh, pose.leftThigh);
+            ApplyPart(leftLowerLeg, driver.lowerLeg, reference.lowerLeg, pose.leftLowerLeg);
+            ApplyPart(rightThigh, driver.thigh, reference.thigh, pose.rightThigh);
+            ApplyPart(rightLowerLeg, driver.lowerLeg, reference.lowerLeg, pose.rightLowerLeg);
             EnsureAccessoryRenderer();
             ApplyAccessory(selectedAccessory, pose.accessory);
             torsoTransform = torso != null ? torso.transform : null;
@@ -224,7 +225,7 @@ namespace AnimeHillRacing.Vehicle
             }
         }
 
-        private static void ApplyPart(SpriteRenderer renderer, Sprite sprite,
+        private static void ApplyPart(SpriteRenderer renderer, Sprite sprite, Sprite referenceSprite,
             VehicleDefinition.DriverPartPose pose)
         {
             if (renderer == null) return;
@@ -232,12 +233,34 @@ namespace AnimeHillRacing.Vehicle
             renderer.enabled = pose.visible && sprite != null;
             renderer.sortingOrder = pose.sortingOrder;
             Transform part = renderer.transform;
-            part.localPosition = new Vector3(pose.position.x, pose.position.y, part.localPosition.z);
             part.localRotation = Quaternion.Euler(0f, 0f, pose.rotation);
             float scaleX = Mathf.Abs(pose.scale.x) > .0001f ? Mathf.Abs(pose.scale.x) : 1f;
             float scaleY = Mathf.Abs(pose.scale.y) > .0001f ? Mathf.Abs(pose.scale.y) : scaleX;
-            part.localScale = new Vector3(scaleX * CharacterVisualScaleMultiplier,
-                scaleY * CharacterVisualScaleMultiplier, 1f);
+            Vector2 normalization = ReferenceScale(sprite, referenceSprite);
+            part.localScale = new Vector3(scaleX * normalization.x * CharacterVisualScaleMultiplier,
+                scaleY * normalization.y * CharacterVisualScaleMultiplier, 1f);
+
+            Vector2 pivotCorrection = PivotCorrection(sprite, referenceSprite, normalization);
+            pivotCorrection = Vector2.Scale(pivotCorrection,
+                new Vector2(scaleX, scaleY) * CharacterVisualScaleMultiplier);
+            pivotCorrection = Quaternion.Euler(0f, 0f, pose.rotation) * pivotCorrection;
+            part.localPosition = new Vector3(pose.position.x + pivotCorrection.x,
+                pose.position.y + pivotCorrection.y, part.localPosition.z);
+        }
+
+        private static Vector2 ReferenceScale(Sprite sprite, Sprite referenceSprite)
+        {
+            if (sprite == null || referenceSprite == null || sprite == referenceSprite) return Vector2.one;
+            Vector2 source = sprite.bounds.size;
+            Vector2 reference = referenceSprite.bounds.size;
+            return new Vector2(reference.x / Mathf.Max(.001f, source.x),
+                reference.y / Mathf.Max(.001f, source.y));
+        }
+
+        private static Vector2 PivotCorrection(Sprite sprite, Sprite referenceSprite, Vector2 normalization)
+        {
+            if (sprite == null || referenceSprite == null || sprite == referenceSprite) return Vector2.zero;
+            return (Vector2)referenceSprite.bounds.center - Vector2.Scale(sprite.bounds.center, normalization);
         }
     }
 

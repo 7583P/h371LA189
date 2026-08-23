@@ -44,6 +44,7 @@ MonoBehaviour:
     visibleSize: {x: 7.45, y: 7.57}
     visualOffset: {x: 0, y: 0}
   electricSkinOverlay: {fileID: 0}
+  preserveDriverPose: 1
   driverPose:
     rootPosition: {x: -0.25, y: 0.32}
     rootScale: 0.92
@@ -54,9 +55,9 @@ MonoBehaviour:
       visible: 1
       sortingOrder: 3
     head:
-      position: {x: -0.03, y: 0.62}
+      position: {x: 0.944678, y: 0.57904685}
       rotation: -3
-      scale: {x: 0.031, y: 0.033}
+      scale: {x: 0.032, y: 0.032}
       visible: 1
       sortingOrder: 5
     leftUpperArm:

@@ -322,8 +322,9 @@ namespace AnimeHillRacing.Editor
                 }
             };
 
-            // Driver Pose in Pickup Cab
-            v.driverPose = new VehicleDefinition.DriverPose
+            // Driver Pose in Pickup Cab. A pose authored with Driver Pose Editor is permanent.
+            if (!v.preserveDriverPose || v.driverPose == null)
+                v.driverPose = new VehicleDefinition.DriverPose
             {
                 rootPosition = new Vector2(-0.25f, 0.32f),
                 rootScale = 0.92f,
@@ -351,7 +352,7 @@ namespace AnimeHillRacing.Editor
             v.frontWheelVisualDiameter = 0f;
 
             // Recalibrate driver pose
-            if (v.driverPose != null)
+            if (!v.preserveDriverPose && v.driverPose != null)
             {
                 v.driverPose.rootPosition = new Vector2(0.16f, 0.22f);
                 v.driverPose.rootScale = 0.95f;

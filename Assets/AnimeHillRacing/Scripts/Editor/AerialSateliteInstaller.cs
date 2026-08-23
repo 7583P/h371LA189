@@ -190,11 +190,14 @@ namespace AnimeHillRacing.Editor
 
             VehicleDefinition source = AssetDatabase.LoadAssetAtPath<VehicleDefinition>(
                 Root + "/VehicleData/HillAdventurerVehicle.asset");
-            v.driverPose = source != null && source.driverPose != null
-                ? JsonUtility.FromJson<VehicleDefinition.DriverPose>(JsonUtility.ToJson(source.driverPose))
-                : new VehicleDefinition.DriverPose();
-            v.driverPose.rootPosition = new Vector2(.30f, .34f);
-            v.driverPose.rootScale = .78f;
+            if (!v.preserveDriverPose || v.driverPose == null)
+            {
+                v.driverPose = source != null && source.driverPose != null
+                    ? JsonUtility.FromJson<VehicleDefinition.DriverPose>(JsonUtility.ToJson(source.driverPose))
+                    : new VehicleDefinition.DriverPose();
+                v.driverPose.rootPosition = new Vector2(.30f, .34f);
+                v.driverPose.rootScale = .78f;
+            }
         }
 
         private static void BuildPrefabs(VehicleDefinition definition, Sprite thruster, Sprite flame)

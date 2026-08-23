@@ -4999,7 +4999,8 @@ namespace AnimeHillRacing.Editor
             assets.jeep.rearWheelVisualPosition = new Vector2(-1.12f, -.44f);
             assets.jeep.frontWheelVisualPosition = new Vector2(1.24f, -.44f);
             assets.jeep.wheelVisualDiameter = .90f;
-            assets.jeep.driverPose = CreateJeepDriverPose();
+            if (!assets.jeep.preserveDriverPose || assets.jeep.driverPose == null)
+                assets.jeep.driverPose = CreateJeepDriverPose();
             EditorUtility.SetDirty(assets.jeep);
 
             assets.formula = LoadOrCreate<VehicleDefinition>(Root + "/VehicleData/FormulaVehicle.asset");
@@ -5080,7 +5081,8 @@ namespace AnimeHillRacing.Editor
             assets.formula.rearWheelVisualPosition = new Vector2(-1.75f, -.28f);
             assets.formula.frontWheelVisualPosition = new Vector2(1.75f, -.28f);
             assets.formula.wheelVisualDiameter = 1.08f;
-            assets.formula.driverPose = CreateFormulaDriverPose();
+            if (!assets.formula.preserveDriverPose || assets.formula.driverPose == null)
+                assets.formula.driverPose = CreateFormulaDriverPose();
             EditorUtility.SetDirty(assets.formula);
 
             assets.rally = LoadOrCreate<VehicleDefinition>(Root + "/VehicleData/RallyVehicle.asset");
@@ -5161,7 +5163,8 @@ namespace AnimeHillRacing.Editor
             assets.rally.rearWheelVisualPosition = new Vector2(-1.37f, -.49f);
             assets.rally.frontWheelVisualPosition = new Vector2(1.29f, -.49f);
             assets.rally.wheelVisualDiameter = 1.02f;
-            assets.rally.driverPose = CreateRallyDriverPose();
+            if (!assets.rally.preserveDriverPose || assets.rally.driverPose == null)
+                assets.rally.driverPose = CreateRallyDriverPose();
             EditorUtility.SetDirty(assets.rally);
 
             assets.sportBike = LoadOrCreate<VehicleDefinition>(Root + "/VehicleData/SportBikeVehicle.asset");
@@ -5270,7 +5273,8 @@ namespace AnimeHillRacing.Editor
             assets.sportBike.wheelVisualDiameter = .93f;
             assets.sportBike.rearWheelVisualDiameter = .96f;
             assets.sportBike.frontWheelVisualDiameter = .90f;
-            assets.sportBike.driverPose = CreateSportBikeDriverPose();
+            if (!assets.sportBike.preserveDriverPose || assets.sportBike.driverPose == null)
+                assets.sportBike.driverPose = CreateSportBikeDriverPose();
             EditorUtility.SetDirty(assets.sportBike);
 
             assets.hillAdventurer = LoadOrCreate<VehicleDefinition>(Root + "/VehicleData/HillAdventurerVehicle.asset");
@@ -5369,7 +5373,8 @@ namespace AnimeHillRacing.Editor
             assets.hillAdventurer.rearWheelVisualPosition = new Vector2(-1.88f, -.65f);
             assets.hillAdventurer.frontWheelVisualPosition = new Vector2(2.10f, -.65f);
             assets.hillAdventurer.wheelVisualDiameter = 1.38f;
-            assets.hillAdventurer.driverPose = CreateHillAdventurerDriverPose();
+            if (!assets.hillAdventurer.preserveDriverPose || assets.hillAdventurer.driverPose == null)
+                assets.hillAdventurer.driverPose = CreateHillAdventurerDriverPose();
             EditorUtility.SetDirty(assets.hillAdventurer);
 
             assets.stickmanBlack = LoadOrCreate<DriverDefinition>(Root + "/VehicleData/StickmanBlack.asset");

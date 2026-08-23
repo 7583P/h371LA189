@@ -10,7 +10,7 @@ namespace AnimeHillRacing.Editor
 {
     public static class AerialSateliteInstaller
     {
-        private const string SessionKey = "AHR.AerialSateliteInstaller.v19";
+        private const string SessionKey = "AHR.AerialSateliteInstaller.v23";
         private const string Root = "Assets/AnimeHillRacing";
         private const string ArtRoot = "Assets/Art/Vehicles/AerialSatelite";
         private const string DefinitionPath = Root + "/VehicleData/AerialSateliteVehicle.asset";
@@ -174,7 +174,7 @@ namespace AnimeHillRacing.Editor
             v.fuel.maximumRunDurationSeconds = 60f;
             v.fuel.referenceRunDurationSeconds = 60f;
 
-            v.visualWidth = 6.15f;
+            v.visualWidth = 5.40f;
             v.bodyVisualOffset = new Vector2(0f, .31f);
             if (!v.preserveWheelVisualPositions)
             {
@@ -193,11 +193,17 @@ namespace AnimeHillRacing.Editor
             };
             v.wheels = new[] { Option("aerial-satelite-wheel", "AERIAL GRIP", wheel) };
             v.underbodyAttachmentSprite = thruster;
-            v.underbodyAttachmentPositions = new[]
+            if (!v.preserveUnderbodyAttachmentPositions || v.underbodyAttachmentPositions == null ||
+                v.underbodyAttachmentPositions.Length != 2)
             {
-                new Vector2(-1.02f, -.38f), new Vector2(1.02f, -.38f)
-            };
-            v.underbodyAttachmentVisualWidth = .70f;
+                v.underbodyAttachmentPositions = new[]
+                {
+                    new Vector2(-1.02f, -.38f), new Vector2(1.02f, -.38f)
+                };
+                v.underbodyAttachmentVisualWidth = .70f;
+            }
+            else if (v.underbodyAttachmentVisualWidth <= .001f)
+                v.underbodyAttachmentVisualWidth = .70f;
 
             VehicleDefinition source = AssetDatabase.LoadAssetAtPath<VehicleDefinition>(
                 Root + "/VehicleData/HillAdventurerVehicle.asset");
@@ -279,11 +285,16 @@ namespace AnimeHillRacing.Editor
                 cabin.offset = new Vector2(.65f, .59f);
                 cabin.size = new Vector2(.92f, 1.34f);
 
-                Transform left = CreateThruster("Left Thruster Point", rig, new Vector2(-1.02f, -.38f),
-                    thruster, flame,
+                Vector2[] thrusterPositions = definition.underbodyAttachmentPositions;
+                Vector2 leftPosition = thrusterPositions != null && thrusterPositions.Length >= 2
+                    ? thrusterPositions[0] : new Vector2(-1.02f, -.38f);
+                Vector2 rightPosition = thrusterPositions != null && thrusterPositions.Length >= 2
+                    ? thrusterPositions[1] : new Vector2(1.02f, -.38f);
+                Transform left = CreateThruster("Left Thruster Point", rig, leftPosition,
+                    thruster, flame, definition.underbodyAttachmentVisualWidth,
                     out SpriteRenderer leftFlame);
-                Transform right = CreateThruster("Right Thruster Point", rig, new Vector2(1.02f, -.38f),
-                    thruster, flame,
+                Transform right = CreateThruster("Right Thruster Point", rig, rightPosition,
+                    thruster, flame, definition.underbodyAttachmentVisualWidth,
                     out SpriteRenderer rightFlame);
                 AerialThrusterVfx vfx = rig.gameObject.AddComponent<AerialThrusterVfx>();
                 vfx.Assign(leftFlame, rightFlame);
@@ -301,7 +312,7 @@ namespace AnimeHillRacing.Editor
         }
 
         private static Transform CreateThruster(string name, Transform parent, Vector2 position,
-            Sprite thruster, Sprite flame, out SpriteRenderer flameRenderer)
+            Sprite thruster, Sprite flame, float visualWidth, out SpriteRenderer flameRenderer)
         {
             Transform point = new GameObject(name).transform;
             point.SetParent(parent, false);
@@ -312,7 +323,7 @@ namespace AnimeHillRacing.Editor
             SpriteRenderer hardwareRenderer = hardwareTransform.gameObject.AddComponent<SpriteRenderer>();
             hardwareRenderer.sprite = thruster;
             hardwareRenderer.sortingOrder = 12;
-            float hardwareScale = VehicleDefinition.SpriteWidthScale(thruster, .70f);
+            float hardwareScale = VehicleDefinition.SpriteWidthScale(thruster, Mathf.Max(.05f, visualWidth));
             hardwareTransform.localScale = Vector3.one * hardwareScale;
 
             Transform flameTransform = new GameObject("White-Cyan Flame").transform;
@@ -409,15 +420,16 @@ namespace AnimeHillRacing.Editor
                 definition.skins[0].optionId != "aerial-satelite-default" ||
                 definition.skins[1].optionId != "aerial-satelite-red-black-gold" ||
                 leftThruster == null || rightThruster == null ||
-                leftThruster.localPosition.x > -.95f || rightThruster.localPosition.x < .95f ||
-                Mathf.Abs(leftThruster.localPosition.y + .38f) > .01f ||
-                Mathf.Abs(rightThruster.localPosition.y + .38f) > .01f ||
                 definition.underbodyAttachmentSprite == null ||
                 definition.underbodyAttachmentPositions == null ||
                 definition.underbodyAttachmentPositions.Length != 2 ||
-                definition.underbodyAttachmentVisualWidth < .68f)
+                Vector2.Distance(leftThruster.localPosition,
+                    definition.underbodyAttachmentPositions[0]) > .001f ||
+                Vector2.Distance(rightThruster.localPosition,
+                    definition.underbodyAttachmentPositions[1]) > .001f ||
+                definition.underbodyAttachmentVisualWidth <= .01f)
                 throw new InvalidOperationException(
-                    "Aerial Satelite must face right with two medium, separated thrusters between its wheels.");
+                    "Aerial Satelite must face right and keep its two authored thruster positions.");
             GameCatalog catalog = AssetDatabase.LoadAssetAtPath<GameCatalog>(Root + "/VehicleData/GameCatalog.asset");
             if (catalog?.upgradeEconomy == null ||
                 catalog.upgradeEconomy.FinalCost(VehicleArchetype.AerialSatelite) != 120000)

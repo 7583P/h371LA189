@@ -9,6 +9,7 @@ namespace AnimeHillRacing.Vehicle
         public const float CharacterVisualScaleMultiplier = 1.5f;
         public const int MaximumDriverSortingOrder = 9;
         public const int ForegroundDriverSortingBase = 20;
+        public const int AccessorySortingOrder = 40;
 
         [SerializeField] private SpriteRenderer torso;
         [SerializeField] private SpriteRenderer head;
@@ -34,6 +35,7 @@ namespace AnimeHillRacing.Vehicle
         private float previousAngularVelocity;
         private Quaternion torsoBaseRotation;
         private Quaternion headBaseRotation;
+        private int resolvedAccessorySortingOrder = AccessorySortingOrder;
         private readonly Transform[] reactiveLimbs = new Transform[4];
         private readonly Quaternion[] reactiveLimbBaseRotations = new Quaternion[4];
         private Vector3 previousVelocity;
@@ -206,7 +208,6 @@ namespace AnimeHillRacing.Vehicle
 
             Transform part = accessory.transform;
             Vector2 sharedOffset = option != null ? option.anchorOffset : Vector2.zero;
-            int authoredSortingOrder;
             if (isScarf && !hasVehicleOverride && torso != null && head != null)
             {
                 // Preserve the legacy neck placement until this vehicle receives an authored scarf override.
@@ -214,16 +215,14 @@ namespace AnimeHillRacing.Vehicle
                     head.transform.localPosition, .36f);
                 part.localPosition = new Vector3(neckPosition.x + sharedOffset.x,
                     neckPosition.y + sharedOffset.y, part.localPosition.z);
-                authoredSortingOrder = Mathf.Max(NormalizeAuthoredSortingOrder(torso.sortingOrder),
-                    NormalizeAuthoredSortingOrder(head.sortingOrder)) + 1;
             }
             else
             {
                 part.localPosition = new Vector3(pose.position.x + sharedOffset.x,
                     pose.position.y + sharedOffset.y, part.localPosition.z);
-                authoredSortingOrder = pose.sortingOrder;
             }
-            accessory.sortingOrder = EncodedSortingOrder(pose, true, authoredSortingOrder);
+            resolvedAccessorySortingOrder = ResolveAccessorySortingOrder(pose);
+            accessory.sortingOrder = resolvedAccessorySortingOrder;
             part.localRotation = Quaternion.Euler(0f, 0f, pose.rotation);
 
             float sourceWidth = sprite != null ? Mathf.Max(.001f, sprite.bounds.size.x) : 1f;
@@ -300,6 +299,12 @@ namespace AnimeHillRacing.Vehicle
                 SpriteRenderer renderer = renderers[i];
                 if (renderer == null) continue;
                 renderer.sortingLayerID = vehicleRenderer.sortingLayerID;
+                if (renderer == accessory)
+                {
+                    renderer.sortingOrder = resolvedAccessorySortingOrder;
+                    if (resolvedAccessorySortingOrder >= AccessorySortingOrder)
+                        continue;
+                }
                 bool foreground = renderer.sortingOrder >= ForegroundDriverSortingBase;
                 int authoredOrder = NormalizeAuthoredSortingOrder(renderer.sortingOrder);
                 renderer.sortingOrder = foreground
@@ -314,6 +319,17 @@ namespace AnimeHillRacing.Vehicle
             authoredOrder = Mathf.Clamp(authoredOrder, 0, MaximumDriverSortingOrder);
             return pose.RendersInFrontOfVehicle(inFrontByDefault)
                 ? ForegroundDriverSortingBase + authoredOrder : authoredOrder;
+        }
+
+        public static int ResolveAccessorySortingOrder(VehicleDefinition.DriverPartPose pose)
+        {
+            int authoredOrder = Mathf.Clamp(pose.sortingOrder, 0, MaximumDriverSortingOrder);
+            if (pose.vehicleLayer == DriverVehicleLayer.BehindVehicle)
+                return authoredOrder;
+            if (pose.vehicleLayer == DriverVehicleLayer.InFrontOfVehicle)
+                return ForegroundDriverSortingBase + authoredOrder;
+            // Preserve the previous global behavior for old poses using UsePartDefault.
+            return AccessorySortingOrder;
         }
 
         private static int NormalizeAuthoredSortingOrder(int value)

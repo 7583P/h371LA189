@@ -19,7 +19,8 @@ namespace AnimeHillRacing.Vehicle
     {
         UsePartDefault,
         BehindVehicle,
-        InFrontOfVehicle
+        InFrontOfVehicle,
+        InFrontOfEverything
     }
 
     [CreateAssetMenu(menuName = "Anime Hill Racing/Vehicle Definition", fileName = "MainVehicle")]
@@ -61,7 +62,8 @@ namespace AnimeHillRacing.Vehicle
 
             public bool RendersInFrontOfVehicle(bool partDefault)
             {
-                if (vehicleLayer == DriverVehicleLayer.InFrontOfVehicle) return true;
+                if (vehicleLayer == DriverVehicleLayer.InFrontOfVehicle ||
+                    vehicleLayer == DriverVehicleLayer.InFrontOfEverything) return true;
                 if (vehicleLayer == DriverVehicleLayer.BehindVehicle) return false;
                 return partDefault;
             }
@@ -182,6 +184,7 @@ namespace AnimeHillRacing.Vehicle
         public Sprite underbodyAttachmentSprite;
         public Vector2[] underbodyAttachmentPositions = Array.Empty<Vector2>();
         [Min(0f)] public float underbodyAttachmentVisualWidth;
+        [HideInInspector] public bool preserveUnderbodyAttachmentPositions;
 
         [Header("Per-Vehicle Tune Limits")]
         [Min(0)] public int engineMaxTunes = 14;

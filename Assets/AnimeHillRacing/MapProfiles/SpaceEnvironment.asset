@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: SpaceEnvironment
   m_EditorClassIdentifier: Assembly-CSharp::AnimeHillRacing.CameraSystem.EnvironmentDefinition
   environmentId: space
-  sky: {fileID: 21300000, guid: b3a71d2c4e9f48689d7a41c2e6f503ab, type: 3}
-  mountains: {fileID: 21300000, guid: b3a71d2c4e9f48689d7a41c2e6f503ab, type: 3}
+  sky: {fileID: 21300000, guid: 5ace0000000000000000000000000001, type: 3}
+  mountains: {fileID: 21300000, guid: 9ec4a6bf5e2447b5aee1d23b9f8c6204, type: 3}
   overrideCameraBackground: 1
   cameraBackgroundColor: {r: 0.001, g: 0.002, b: 0.012, a: 1}
   clouds: []
@@ -36,9 +36,9 @@ MonoBehaviour:
   coverViewportVerticalOffset: 0
   mountainVisualHeight: 24
   mountainBaseY: 0
-  pooledMountainSegments: 5
+  pooledMountainSegments: 1
   seamOverlap: 0.008
-  mirrorAlternatingMountainTiles: 1
+  mirrorAlternatingMountainTiles: 0
   farMountains: {fileID: 0}
   farMountainParallaxX: 0.08
   farMountainParallaxY: 0.025
@@ -58,7 +58,7 @@ MonoBehaviour:
   nearMountainSeamOverlap: 0.01
   mirrorAlternatingNearMountainTiles: 1
   sun: {fileID: 0}
-  earth: {fileID: 21300000, guid: 5ace0000000000000000000000000003, type: 3}
+  earth: {fileID: 0}
   sunCameraOffset: {x: -1, y: 3.6}
   earthCameraOffset: {x: 7.3, y: 2.15}
   sunRelativeParallax: 0.0025
@@ -66,10 +66,19 @@ MonoBehaviour:
   sunVisualWidth: 9.5
   earthVisualWidth: 5.1
   celestialRepeatSpan: 72
-  starTwinkleSpeed: 2.15
-  starTwinkleAmount: 0.38
+  starTwinkleSpeed: 1.65
+  starTwinkleAmount: 0.34
+  useCinematicSpacePanorama: 1
+  cinematicSpacePanoramaShader: {fileID: 4800000, guid: 7b84cb860f2a4ef59e8d43ca54bb1801, type: 3}
+  spacePanoramaOverscan: 1.04
+  spacePanoramaDriftAmplitude: {x: 0.34, y: 0}
+  spacePanoramaDriftPeriod: 86
+  spacePanoramaBreathing: 0
+  spaceNebulaFlowStrength: 0.0018
+  spaceNebulaFlowSpeed: 0.075
+  spaceNebulaPulse: 0.055
   enableShootingStars: 1
-  shootingStarIntervalRange: {x: 2.1, y: 4.8}
-  shootingStarSpeedRange: {x: 15, y: 23}
-  shootingStarTrailSeconds: 0.58
-  shootingStarPoolSize: 3
+  shootingStarIntervalRange: {x: 3.4, y: 7.6}
+  shootingStarSpeedRange: {x: 20, y: 34}
+  shootingStarTrailSeconds: 0.72
+  shootingStarPoolSize: 4

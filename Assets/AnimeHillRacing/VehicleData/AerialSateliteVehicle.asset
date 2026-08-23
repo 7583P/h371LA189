@@ -57,17 +57,17 @@ MonoBehaviour:
   preserveDriverPose: 1
   preserveWheelVisualPositions: 1
   driverPose:
-    rootPosition: {x: 0.28599754, y: 0.4532266}
-    rootScale: 0.78
+    rootPosition: {x: 0.35261002, y: 0.46432883}
+    rootScale: 0.7722
     torso:
-      position: {x: -0.62620187, y: 0.11729286}
-      rotation: -4
-      scale: {x: 0.029, y: 0.03}
+      position: {x: -0.68062437, y: -0.21007419}
+      rotation: -12
+      scale: {x: 0.032, y: 0.032}
       visible: 1
       sortingOrder: 3
       vehicleLayer: 0
     head:
-      position: {x: -0.638448, y: 1.1089917}
+      position: {x: -0.5513736, y: 0.7899974}
       rotation: -3
       scale: {x: 0.032, y: 0.032}
       visible: 1
@@ -81,8 +81,8 @@ MonoBehaviour:
       sortingOrder: 4
       vehicleLayer: 1
     leftForearm:
-      position: {x: -0.06889517, y: 0.39780274}
-      rotation: 35
+      position: {x: 0.02069184, y: 0.04280558}
+      rotation: 22
       scale: {x: 0.032, y: 0.032}
       visible: 1
       sortingOrder: 4
@@ -95,7 +95,7 @@ MonoBehaviour:
       sortingOrder: 2
       vehicleLayer: 1
     rightForearm:
-      position: {x: -0.037618726, y: 0.35997313}
+      position: {x: 0.06285219, y: 0.10879635}
       rotation: 25
       scale: {x: 0.032, y: 0.032}
       visible: 1
@@ -116,7 +116,7 @@ MonoBehaviour:
       sortingOrder: 1
       vehicleLayer: 0
     rightThigh:
-      position: {x: 0.27976102, y: -0.6936043}
+      position: {x: -0.047606777, y: -0.86440504}
       rotation: 33
       scale: {x: 0.032, y: 0.04}
       visible: 1
@@ -139,7 +139,7 @@ MonoBehaviour:
     accessoryOverrides:
     - accessoryId: fire-glasses
       pose:
-        position: {x: -0.8680958, y: 1.0989113}
+        position: {x: -0.71320343, y: 0.8075453}
         rotation: -3
         scale: {x: 1, y: 1}
         visible: 1
@@ -161,19 +161,20 @@ MonoBehaviour:
         visible: 1
         sortingOrder: 6
         vehicleLayer: 0
-  visualWidth: 6.15
+  visualWidth: 5.4
   flipBodyX: 0
   bodyVisualOffset: {x: 0, y: 0.31}
-  rearWheelVisualPosition: {x: -2.0993402, y: -0.65338165}
-  frontWheelVisualPosition: {x: 2.7302637, y: -0.65338165}
+  rearWheelVisualPosition: {x: -1.7545239, y: -0.6220348}
+  frontWheelVisualPosition: {x: 2.2600582, y: -0.6220348}
   wheelVisualDiameter: 1.18
-  rearWheelVisualDiameter: 1.4278
-  frontWheelVisualDiameter: 1.4278
+  rearWheelVisualDiameter: 1.413522
+  frontWheelVisualDiameter: 1.413522
   underbodyAttachmentSprite: {fileID: 21300000, guid: e76ef9a167a3ec84d907086fc5e42ed5, type: 3}
   underbodyAttachmentPositions:
-  - {x: -1.02, y: -0.38}
-  - {x: 1.02, y: -0.38}
-  underbodyAttachmentVisualWidth: 0.7
+  - {x: -0.17363349, y: -0.54718435}
+  - {x: 0.9155102, y: -0.5471843}
+  underbodyAttachmentVisualWidth: 0.6724172
+  preserveUnderbodyAttachmentPositions: 1
   engineMaxTunes: 16
   accelerationMaxTunes: 14
   suspensionMaxTunes: 14

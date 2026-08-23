@@ -54,6 +54,7 @@ namespace AnimeHillRacing.Vehicle
             input = inputController;
             body = owner != null ? owner.Body2D : GetComponent<Rigidbody2D>();
             fuel = fuelSystem != null ? fuelSystem : GetComponent<FuelSystem>();
+            ApplyAuthoredThrusterPositions();
             State = AerialFlightState.Grounded;
             airborneTimer = groundedTimer = CurrentLeftPower = CurrentRightPower = 0f;
             fuel?.SetConsumptionMultiplier(1f);
@@ -65,6 +66,31 @@ namespace AnimeHillRacing.Vehicle
             leftThrusterPoint = leftPoint;
             rightThrusterPoint = rightPoint;
             thrusterVfx = vfx;
+        }
+
+        private void ApplyAuthoredThrusterPositions()
+        {
+            VehicleDefinition definition = vehicle != null ? vehicle.Definition : null;
+            if (definition == null) return;
+            Vector2[] positions = definition.underbodyAttachmentPositions;
+            if (positions != null && positions.Length >= 2)
+            {
+                if (leftThrusterPoint != null) leftThrusterPoint.localPosition = positions[0];
+                if (rightThrusterPoint != null) rightThrusterPoint.localPosition = positions[1];
+            }
+
+            float visualWidth = Mathf.Max(.05f, definition.underbodyAttachmentVisualWidth);
+            ApplyVisualWidth(leftThrusterPoint, visualWidth);
+            ApplyVisualWidth(rightThrusterPoint, visualWidth);
+        }
+
+        private static void ApplyVisualWidth(Transform point, float visualWidth)
+        {
+            Transform hardware = point != null ? point.Find("Compact Thruster Hardware") : null;
+            SpriteRenderer renderer = hardware != null ? hardware.GetComponent<SpriteRenderer>() : null;
+            if (renderer == null || renderer.sprite == null) return;
+            float scale = VehicleDefinition.SpriteWidthScale(renderer.sprite, visualWidth);
+            hardware.localScale = Vector3.one * scale;
         }
 
         public bool StepPhysics(float dt, bool driveEnabled, bool gasPressed, bool brakePressed)

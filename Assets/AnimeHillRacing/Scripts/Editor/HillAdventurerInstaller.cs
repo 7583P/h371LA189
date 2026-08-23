@@ -14,6 +14,7 @@ namespace AnimeHillRacing.Editor
         private const string PrefabsRoot = Root + "/Prefabs/Vehicles";
         private const string VehicleDataRoot = Root + "/VehicleData";
         private const string HillSkinPath = "Assets/Art/Vehicles/Hill Adventurer 4x4/Skins/Default.png";
+        private const string HillPurpleSkinPath = "Assets/Art/Vehicles/Hill Adventurer 4x4/Skins/Purple_4x4.png";
         private const string HillWheelPath = "Assets/Art/Vehicles/Hill Adventurer 4x4/Wheels/Default.png";
         private const string HillVehicleAssetPath = VehicleDataRoot + "/HillAdventurerVehicle.asset";
         private const string FormulaVehicleAssetPath = VehicleDataRoot + "/FormulaVehicle.asset";
@@ -34,6 +35,7 @@ namespace AnimeHillRacing.Editor
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
 
             ConfigureSprite(HillSkinPath);
+            ConfigureSprite(HillPurpleSkinPath);
             ConfigureSprite(HillWheelPath);
 
             PhysicsMaterial chassisMaterial = AssetDatabase.LoadAssetAtPath<PhysicsMaterial>(ChassisPhysicMaterialPath);
@@ -41,11 +43,15 @@ namespace AnimeHillRacing.Editor
             DriverDefinition defaultDriver = AssetDatabase.LoadAssetAtPath<DriverDefinition>(StickmanDriverPath);
 
             Sprite hillSkinSprite = AssetDatabase.LoadAssetAtPath<Sprite>(HillSkinPath);
+            Sprite hillPurpleSkinSprite = AssetDatabase.LoadAssetAtPath<Sprite>(HillPurpleSkinPath);
             Sprite hillWheelSprite = AssetDatabase.LoadAssetAtPath<Sprite>(HillWheelPath);
+
+            if (hillSkinSprite == null || hillPurpleSkinSprite == null || hillWheelSprite == null)
+                throw new System.InvalidOperationException("Hill Adventurer customization sprites are missing.");
 
             // 1. Setup Hill Adventurer 4x4 VehicleDefinition
             VehicleDefinition hillVehicle = LoadOrCreate<VehicleDefinition>(HillVehicleAssetPath);
-            ConfigureHillAdventurerDefinition(hillVehicle, hillSkinSprite, hillWheelSprite);
+            ConfigureHillAdventurerDefinition(hillVehicle, hillSkinSprite, hillPurpleSkinSprite, hillWheelSprite);
             EditorUtility.SetDirty(hillVehicle);
 
             // 2. Create Hill Adventurer 2D & 3D Prefabs
@@ -135,7 +141,8 @@ namespace AnimeHillRacing.Editor
             }
         }
 
-        private static void ConfigureHillAdventurerDefinition(VehicleDefinition v, Sprite bodySprite, Sprite wheelSprite)
+        private static void ConfigureHillAdventurerDefinition(VehicleDefinition v, Sprite bodySprite,
+            Sprite purpleBodySprite, Sprite wheelSprite)
         {
             v.vehicleId = "hill-adventurer-01";
             v.displayName = "HILL ADVENTURER 4x4";
@@ -308,6 +315,17 @@ namespace AnimeHillRacing.Editor
                     allowsBlueprintProgression = true,
                     visibleSize = new Vector2(21.72f, 6.91f),
                     visualOffset = Vector2.zero
+                },
+                new VehicleDefinition.CustomizationOption
+                {
+                    optionId = "hill-adventurer-skin-purple-4x4",
+                    displayName = "PURPLE 4x4",
+                    sprite = purpleBodySprite,
+                    unlockedByDefault = false,
+                    gemPrice = 1000,
+                    allowsBlueprintProgression = true,
+                    visibleSize = new Vector2(21.34f, 6.44f),
+                    visualOffset = new Vector2(0f, .355f)
                 }
             };
             v.wheels = new[]

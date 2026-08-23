@@ -32,6 +32,16 @@ MonoBehaviour:
     visibleDiameter: 0
     visibleSize: {x: 21.72, y: 6.91}
     visualOffset: {x: 0, y: 0}
+  - optionId: hill-adventurer-skin-purple-4x4
+    displayName: PURPLE 4x4
+    sprite: {fileID: 21300000, guid: 2273173754b642aab616a97e69b13c7a, type: 3}
+    unlockedByDefault: 0
+    gemPrice: 1000
+    bundleType: 0
+    allowsBlueprintProgression: 1
+    visibleDiameter: 0
+    visibleSize: {x: 21.34, y: 6.44}
+    visualOffset: {x: 0, y: 0.355}
   wheels:
   - optionId: hill-adventurer-wheel-default
     displayName: DEFAULT WHEEL
@@ -135,6 +145,14 @@ MonoBehaviour:
         visible: 1
         sortingOrder: 6
         vehicleLayer: 1
+    - accessoryId: fire-glasses
+      pose:
+        position: {x: 0.48109132, y: 0.58166826}
+        rotation: -3
+        scale: {x: 1, y: 1}
+        visible: 0
+        sortingOrder: 6
+        vehicleLayer: 0
   visualWidth: 6.2
   flipBodyX: 0
   bodyVisualOffset: {x: 0, y: 0.35}

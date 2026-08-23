@@ -52,6 +52,16 @@ MonoBehaviour:
     visibleDiameter: 0
     visibleSize: {x: 21.72, y: 5.9708786}
     visualOffset: {x: 0, y: 0}
+  - optionId: formula-skin-hill-adventurer-gold
+    displayName: HILL ADVENTURER GOLD
+    sprite: {fileID: 21300000, guid: fee74c575422423bb2fb2a79f3f25eae, type: 3}
+    unlockedByDefault: 0
+    gemPrice: 1000
+    bundleType: 0
+    allowsBlueprintProgression: 1
+    visibleDiameter: 0
+    visibleSize: {x: 21.07, y: 4.93}
+    visualOffset: {x: 0.11, y: 0.125}
   wheels:
   - optionId: formula-wheel-02
     displayName: FORMULA WHEEL 02
@@ -202,6 +212,7 @@ MonoBehaviour:
   underbodyAttachmentSprite: {fileID: 0}
   underbodyAttachmentPositions: []
   underbodyAttachmentVisualWidth: 0
+  preserveUnderbodyAttachmentPositions: 0
   engineMaxTunes: 20
   accelerationMaxTunes: 20
   suspensionMaxTunes: 20

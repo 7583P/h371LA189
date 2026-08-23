@@ -44,10 +44,14 @@ namespace AnimeHillRacing.Editor
         private const string FormulaBodyPath = "Assets/Art/Vehicles/Formula/Skins/Formula_skin_Default.png";
         private const string FormulaNeonSkinPath = "Assets/Art/Vehicles/Formula/Skins/Neon_Skin.png";
         private const string FormulaElectricitySkinPath = "Assets/Art/Vehicles/Formula/Skins/Electricity.png";
+        private const string FormulaHillAdventurerSkinPath =
+            "Assets/Art/Vehicles/Formula/Skins/HillAdventurer_WhiteGold.png";
         private const string FormulaWheel01Path = "Assets/Art/Vehicles/Formula/Wheels/Formula_Wheel_01.png";
         private const string FormulaWheel02Path = "Assets/Art/Vehicles/Formula/Wheels/Formula_Wheel_02.png";
         private const string FormulaLuxuryWheelPath = "Assets/Art/Vehicles/Formula/Wheels/Luxury.png";
         private const string FormulaReferencePath = "Assets/Art/Vehicles/Formula/Formula_Reference.png";
+        private const string HillAdventurerPurpleSkinPath =
+            "Assets/Art/Vehicles/Hill Adventurer 4x4/Skins/Purple_4x4.png";
         private const string RallyBodyPath = "Assets/Art/Vehicles/Rally/Vehicle/Rally_Skin_Default.png";
         private const string RallyHillAdventurerPath = "Assets/Art/Vehicles/Rally/Vehicle/Hill Adventurer.png";
         private const string RallyNeoPath = "Assets/Art/Vehicles/Rally/Vehicle/Neo_Rally.png";
@@ -130,7 +134,8 @@ namespace AnimeHillRacing.Editor
         private const string NorthPoleTerrainPath = NorthPoleRoot + "/Terrain.png";
         private const string NorthPoleGroundPath = NorthPoleRoot + "/Ground.png";
         private const string SpaceMapPath = Root + "/MapProfiles/Space.asset";
-        private const string SpaceGalaxyPath = "Assets/Art/Backgrounds/Space/Space_Universe_Dark_v3.png";
+        private const string SpaceGalaxyPath = "Assets/Art/Backgrounds/Space/Space_Cosmic_Panorama_v4.png";
+        private const string SpaceStarfieldPath = "Assets/Art/Backgrounds/Space/Space_Stars.png";
         private const string ArenaMapPath = Root + "/MapProfiles/Arena.asset";
         private const string CityRoot = "Assets/Art/Backgrounds/City";
         private const string CitySkyPath = CityRoot + "/Sky.png";
@@ -147,10 +152,12 @@ namespace AnimeHillRacing.Editor
             public VehicleDefinition sportBike;
             public VehicleDefinition hillAdventurer;
             public Sprite hillAdventurerSkin;
+            public Sprite hillAdventurerPurpleSkin;
             public Sprite hillAdventurerWheel;
             public Sprite formulaBody;
             public Sprite formulaNeonSkin;
             public Sprite formulaElectricitySkin;
+            public Sprite formulaHillAdventurerSkin;
             public Sprite formulaWheel01;
             public Sprite formulaWheel02;
             public Sprite luxuryWheel;
@@ -1491,7 +1498,9 @@ namespace AnimeHillRacing.Editor
             if (assets.catalog == null || assets.catalog.vehicles == null || assets.catalog.vehicles.Length < 4)
                 throw new System.InvalidOperationException("Garage requires Jeep, Formula, Rally and Sport Bike.");
             if (assets.jeepRetroSkin == null || assets.jeepStarryWheel == null ||
-                assets.formulaNeonSkin == null || assets.formulaElectricitySkin == null || assets.luxuryWheel == null ||
+                assets.formulaNeonSkin == null || assets.formulaElectricitySkin == null ||
+                assets.formulaHillAdventurerSkin == null || assets.hillAdventurerPurpleSkin == null ||
+                assets.luxuryWheel == null ||
                 assets.rallyGhostyWheel == null || assets.rallySkyBlueWheel == null ||
                 assets.sportBikeGhostyWheel == null)
                 throw new System.InvalidOperationException("One or more premium garage sprites are missing.");
@@ -1503,12 +1512,15 @@ namespace AnimeHillRacing.Editor
                 assets.jeep.wheels[2].gemPrice != 500)
                 throw new System.InvalidOperationException(
                     "Jeep requires Default/Retro skins and Wheel 01/Wheel 02/Starry Garage options.");
-            if (assets.formula.skins == null || assets.formula.skins.Length != 3 || assets.formula.wheels == null ||
+            if (assets.formula.skins == null || assets.formula.skins.Length != 4 || assets.formula.wheels == null ||
                 assets.formula.wheels.Length != 3 || assets.formula.skins[1].sprite != assets.formulaNeonSkin ||
                 assets.formula.skins[1].unlockedByDefault || assets.formula.skins[1].gemPrice != 1000 ||
                 assets.formula.skins[2].optionId != FormulaElectricSkinEffect.ElectricSkinId ||
                 assets.formula.skins[2].sprite != assets.formulaElectricitySkin ||
                 assets.formula.skins[2].unlockedByDefault || assets.formula.skins[2].gemPrice != 1000 ||
+                assets.formula.skins[3].optionId != "formula-skin-hill-adventurer-gold" ||
+                assets.formula.skins[3].sprite != assets.formulaHillAdventurerSkin ||
+                assets.formula.skins[3].unlockedByDefault || assets.formula.skins[3].gemPrice != 1000 ||
                 assets.formula.wheels[0].sprite != assets.formulaWheel02 ||
                 assets.formula.wheels[1].sprite != assets.formulaWheel01 ||
                 assets.formula.wheels[1].unlockedByDefault || assets.formula.wheels[1].gemPrice != 500 ||
@@ -1517,7 +1529,14 @@ namespace AnimeHillRacing.Editor
                 assets.formula.electricSkinOverlay != assets.formulaElectricitySkin ||
                 assets.formula.wheels[2].unlockedByDefault || assets.formula.wheels[2].gemPrice != 500)
                 throw new System.InvalidOperationException(
-                    "Formula Default/Neon/Electricity or Ghosty/Luxury Garage contract is invalid.");
+                    "Formula Default/Neon/Electricity/Hill Adventurer or Ghosty/Luxury Garage contract is invalid.");
+            if (assets.hillAdventurer.skins == null || assets.hillAdventurer.skins.Length != 2 ||
+                assets.hillAdventurer.skins[1].optionId != "hill-adventurer-skin-purple-4x4" ||
+                assets.hillAdventurer.skins[1].sprite != assets.hillAdventurerPurpleSkin ||
+                assets.hillAdventurer.skins[1].unlockedByDefault ||
+                assets.hillAdventurer.skins[1].gemPrice != 1000)
+                throw new System.InvalidOperationException(
+                    "Hill Adventurer requires the Default and Purple 4x4 Garage skins.");
             if (assets.rally.skins == null || assets.rally.skins.Length < 1 || assets.rally.wheels == null ||
                 assets.rally.wheels.Length != 4 || assets.rally.skins[0].sprite != assets.rallyBody ||
                 assets.rally.wheels[1].sprite != assets.rallyGhostyWheel ||
@@ -1688,14 +1707,14 @@ namespace AnimeHillRacing.Editor
 
             EnvironmentDefinition environment = profile.environment;
             if (!environment.overrideCameraBackground || environment.sky == null ||
-                environment.mountains == null || environment.sun != null || environment.earth == null ||
+                environment.mountains == null || environment.sun != null || environment.earth != null ||
                 !environment.useRelativeParallaxSpeeds || !environment.coverViewportVertically ||
-                !Mathf.Approximately(environment.earthRelativeParallax, 0f) ||
+                !environment.useCinematicSpacePanorama || environment.cinematicSpacePanoramaShader == null ||
                 environment.starTwinkleAmount < .25f || !environment.enableShootingStars ||
-                AssetDatabase.GetAssetPath(environment.sky) != SpaceGalaxyPath ||
+                AssetDatabase.GetAssetPath(environment.sky) != SpaceStarfieldPath ||
                 AssetDatabase.GetAssetPath(environment.mountains) != SpaceGalaxyPath)
                 throw new System.InvalidOperationException(
-                    "Space needs the dark universe backdrop, independent twinkling and shooting stars, no Sun and a stable Earth layer.");
+                    "Space needs its cinematic panorama, independent twinkling and shooting stars, with no Sun or Earth layer.");
             float introMinimum = float.MaxValue;
             float introMaximum = float.MinValue;
             for (int distance = 0; distance <= 100; distance += 5)
@@ -3359,7 +3378,8 @@ namespace AnimeHillRacing.Editor
                     bool expectedVisible = option.sprite != null;
                     if (preview.Driver.AccessoryRenderer == null ||
                         preview.Driver.AccessoryRenderer.enabled != expectedVisible ||
-                        preview.Driver.AccessoryRenderer.sprite != option.sprite)
+                        preview.Driver.AccessoryRenderer.sprite != option.sprite ||
+                        preview.Driver.AccessoryRenderer.sortingOrder != ArticulatedDriver2D.AccessorySortingOrder)
                         throw new System.InvalidOperationException(
                             $"{vehicle.displayName}: accessory preview transition failed for {option.accessoryId}.");
                 }
@@ -4790,9 +4810,11 @@ namespace AnimeHillRacing.Editor
             var assets = new BuiltAssets();
             string[] spritePaths = { JeepBodyPath, JeepRetroSkinPath, JeepWheel01Path, JeepWheel02Path,
                 JeepStarryWheelPath, FormulaBodyPath,
-                FormulaNeonSkinPath, FormulaElectricitySkinPath, FormulaWheel01Path, FormulaWheel02Path,
+                FormulaNeonSkinPath, FormulaElectricitySkinPath, FormulaHillAdventurerSkinPath,
+                FormulaWheel01Path, FormulaWheel02Path,
                 FormulaLuxuryWheelPath,
-                FormulaReferencePath, RallyBodyPath, RallyHillAdventurerPath, RallyNeoPath, RallyNoRoofPath, RallyRoofPath, RallyWheelPath,
+                FormulaReferencePath, HillAdventurerPurpleSkinPath,
+                RallyBodyPath, RallyHillAdventurerPath, RallyNeoPath, RallyNoRoofPath, RallyRoofPath, RallyWheelPath,
                 RallyGhostyWheelPath, RallySkyBlueWheelPath, SportBikeBodyPath,
                 SportBikeRetroPath, SportBikeSunRayPath, SportBikeWheel01Path, SportBikeWheel02Path, SportBikeGoldWheelPath,
                 SportBikeGhostyWheelPath, NeonSkyPath, NeonBackgroundPath, NeonTerrainPath, NeonGroundPath,
@@ -4817,7 +4839,9 @@ namespace AnimeHillRacing.Editor
                     spritePaths[i].StartsWith(NeonRoot) ||
                     spritePaths[i].StartsWith(CityRoot) ||
                     spritePaths[i].StartsWith(ButtonRoot) ||
-                    spritePaths[i].StartsWith(GameUiRoot) ? 4096 :
+                    spritePaths[i].StartsWith(GameUiRoot) ||
+                    spritePaths[i] == FormulaHillAdventurerSkinPath ||
+                    spritePaths[i] == HillAdventurerPurpleSkinPath ? 4096 :
                     spritePaths[i] == FuelCanPath || spritePaths[i] == Coin01Path || spritePaths[i] == Coin05Path ? 512 :
                     spritePaths[i].StartsWith(ChestRoot) ? 2048 : 2048);
             for (int i = 1; i <= 15; i++)
@@ -4830,6 +4854,7 @@ namespace AnimeHillRacing.Editor
             assets.formulaBody = AssetDatabase.LoadAssetAtPath<Sprite>(FormulaBodyPath);
             assets.formulaNeonSkin = AssetDatabase.LoadAssetAtPath<Sprite>(FormulaNeonSkinPath);
             assets.formulaElectricitySkin = AssetDatabase.LoadAssetAtPath<Sprite>(FormulaElectricitySkinPath);
+            assets.formulaHillAdventurerSkin = AssetDatabase.LoadAssetAtPath<Sprite>(FormulaHillAdventurerSkinPath);
             assets.formulaWheel01 = AssetDatabase.LoadAssetAtPath<Sprite>(FormulaWheel01Path);
             assets.formulaWheel02 = AssetDatabase.LoadAssetAtPath<Sprite>(FormulaWheel02Path);
             assets.luxuryWheel = AssetDatabase.LoadAssetAtPath<Sprite>(FormulaLuxuryWheelPath);
@@ -4849,6 +4874,7 @@ namespace AnimeHillRacing.Editor
             assets.sportBikeGoldWheel = AssetDatabase.LoadAssetAtPath<Sprite>(SportBikeGoldWheelPath);
             assets.sportBikeGhostyWheel = AssetDatabase.LoadAssetAtPath<Sprite>(SportBikeGhostyWheelPath);
             assets.hillAdventurerSkin = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Vehicles/Hill Adventurer 4x4/Skins/Default.png");
+            assets.hillAdventurerPurpleSkin = AssetDatabase.LoadAssetAtPath<Sprite>(HillAdventurerPurpleSkinPath);
             assets.hillAdventurerWheel = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Vehicles/Hill Adventurer 4x4/Wheels/Default.png");
             assets.driverGlasses = AssetDatabase.LoadAssetAtPath<Sprite>(DriverGlassesPath);
             assets.driverFireGlasses = AssetDatabase.LoadAssetAtPath<Sprite>(DriverFireGlassesPath);
@@ -5086,7 +5112,10 @@ namespace AnimeHillRacing.Editor
                 Customization("formula-skin-default", "FORMULA DEFAULT", assets.formulaBody),
                 Customization("formula-skin-neon", "NEON SKIN", assets.formulaNeonSkin, false, 1000),
                 Customization(FormulaElectricSkinEffect.ElectricSkinId, "ELECTRICITY",
-                    assets.formulaElectricitySkin, false, 1000)
+                    assets.formulaElectricitySkin, false, 1000),
+                Customization("formula-skin-hill-adventurer-gold", "HILL ADVENTURER GOLD",
+                    assets.formulaHillAdventurerSkin, false, 1000, 0f,
+                    new Vector2(21.07f, 4.93f), new Vector2(.11f, .125f))
             };
             assets.formula.wheels = new[]
             {
@@ -5393,7 +5422,10 @@ namespace AnimeHillRacing.Editor
             assets.hillAdventurer.fuel.referenceRunDurationSeconds = 55f;
             assets.hillAdventurer.skins = new[]
             {
-                Customization("hill-adventurer-skin-default", "DEFAULT", assets.hillAdventurerSkin != null ? assets.hillAdventurerSkin : AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Vehicles/Hill Adventurer 4x4/Skins/Default.png"), true, 0, 0f, new Vector2(21.72f, 6.91f), Vector2.zero)
+                Customization("hill-adventurer-skin-default", "DEFAULT", assets.hillAdventurerSkin != null ? assets.hillAdventurerSkin : AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Vehicles/Hill Adventurer 4x4/Skins/Default.png"), true, 0, 0f, new Vector2(21.72f, 6.91f), Vector2.zero),
+                Customization("hill-adventurer-skin-purple-4x4", "PURPLE 4x4",
+                    assets.hillAdventurerPurpleSkin, false, 1000, 0f,
+                    new Vector2(21.34f, 6.44f), new Vector2(0f, .355f))
             };
             assets.hillAdventurer.wheels = new[]
             {

@@ -15,14 +15,20 @@ namespace AnimeHillRacing.CameraSystem
         [SerializeField] private SpriteRenderer earthRenderer;
 
         private TrailRenderer[] shootingStars;
+        private SpriteRenderer[] shootingStarHeads;
         private Vector3[] shootingStarVelocities;
+        private Vector3[] shootingStarAccelerations;
+        private float[] shootingStarStartTimes;
         private float[] shootingStarStopTimes;
         private float[] shootingStarDisableTimes;
+        private float[] shootingStarHeadScales;
+        private Color[] shootingStarHeadColors;
         private Material shootingStarMaterial;
+        private Material spacePanoramaMaterial;
         private float nextShootingStarAt;
         private int shootingStarSequence;
 
-        private const int TwinklingStarCount = 28;
+        private const int TwinklingStarCount = 56;
         private SpriteRenderer[] twinklingStars;
         private Vector2[] twinklingStarViewportPositions;
         private float[] twinklingStarPhases;
@@ -33,6 +39,9 @@ namespace AnimeHillRacing.CameraSystem
         private Sprite twinklingStarSprite;
 
         private float tileWidth;
+        private float spacePanoramaBaseScale;
+        private float spacePanoramaWidth;
+        private float spacePanoramaHeight;
         private float farTileWidth;
         private float nearTileWidth;
         private float initialCameraY;
@@ -66,6 +75,7 @@ namespace AnimeHillRacing.CameraSystem
             EnsureCelestials();
             EnsureTwinklingStarPool();
             EnsureShootingStarPool();
+            EnsureCinematicSpaceMaterial();
             if (environment.overrideCameraBackground)
             {
                 displayCamera.clearFlags = CameraClearFlags.SolidColor;
@@ -74,6 +84,7 @@ namespace AnimeHillRacing.CameraSystem
             lastScreenWidth = Screen.width; lastScreenHeight = Screen.height;
             if (skyRenderer != null)
             {
+                skyRenderer.gameObject.SetActive(environment.sky != null);
                 skyRenderer.sprite = environment.sky;
                 skyRenderer.color = Color.white;
                 float sourceWidth = environment.sky != null ? environment.sky.bounds.size.x : 1f;
@@ -85,11 +96,27 @@ namespace AnimeHillRacing.CameraSystem
                 skyRenderer.transform.localScale = Vector3.one * scale;
             }
             float mountainSourceHeight = environment.mountains != null ? environment.mountains.bounds.size.y : 1f;
-            float targetMountainHeight = environment.coverViewportVertically
-                ? Mathf.Max(environment.mountainVisualHeight, displayCamera.orthographicSize * 2.12f)
-                : environment.mountainVisualHeight;
-            float scaleMountain = targetMountainHeight / Mathf.Max(.001f, mountainSourceHeight);
             float sourceWidthMountain = environment.mountains != null ? environment.mountains.bounds.size.x : 1f;
+            float viewHeightMountain = displayCamera.orthographicSize * 2f;
+            float viewWidthMountain = viewHeightMountain * displayCamera.aspect;
+            float scaleMountain;
+            if (UsesCinematicSpacePanorama)
+            {
+                float coverScale = Mathf.Max(viewWidthMountain / Mathf.Max(.001f, sourceWidthMountain),
+                    viewHeightMountain / Mathf.Max(.001f, mountainSourceHeight));
+                scaleMountain = coverScale * Mathf.Clamp(environment.spacePanoramaOverscan, 1f, 1.12f);
+                spacePanoramaBaseScale = scaleMountain;
+                spacePanoramaWidth = sourceWidthMountain * scaleMountain;
+                spacePanoramaHeight = mountainSourceHeight * scaleMountain;
+            }
+            else
+            {
+                float targetMountainHeight = environment.coverViewportVertically
+                    ? Mathf.Max(environment.mountainVisualHeight, displayCamera.orthographicSize * 2.12f)
+                    : environment.mountainVisualHeight;
+                scaleMountain = targetMountainHeight / Mathf.Max(.001f, mountainSourceHeight);
+                spacePanoramaBaseScale = spacePanoramaWidth = spacePanoramaHeight = 0f;
+            }
             tileWidth = sourceWidthMountain * scaleMountain * (1f - environment.seamOverlap);
             if (mountainSegments == null) return;
             for (int i = 0; i < mountainSegments.Length; i++)
@@ -98,6 +125,10 @@ namespace AnimeHillRacing.CameraSystem
                 mountainSegments[i].sprite = environment.mountains;
                 mountainSegments[i].color = Color.white;
                 mountainSegments[i].transform.localScale = Vector3.one * scaleMountain;
+                if (UsesCinematicSpacePanorama && spacePanoramaMaterial != null)
+                    mountainSegments[i].sharedMaterial = spacePanoramaMaterial;
+                else if (mountainSegments[i].sharedMaterial == spacePanoramaMaterial)
+                    mountainSegments[i].sharedMaterial = null;
             }
 
             float farSourceHeight = environment.farMountains != null
@@ -131,6 +162,42 @@ namespace AnimeHillRacing.CameraSystem
                 nearMountainSegments[i].sprite = environment.nearMountains;
                 nearMountainSegments[i].transform.localScale = Vector3.one * nearScale;
             }
+        }
+
+        private bool UsesCinematicSpacePanorama => environment != null &&
+            environment.environmentId == "space" && environment.useCinematicSpacePanorama;
+
+        private void EnsureCinematicSpaceMaterial()
+        {
+            if (!UsesCinematicSpacePanorama)
+            {
+                if (spacePanoramaMaterial != null)
+                {
+                    if (mountainSegments != null)
+                    {
+                        for (int i = 0; i < mountainSegments.Length; i++)
+                            if (mountainSegments[i] != null &&
+                                mountainSegments[i].sharedMaterial == spacePanoramaMaterial)
+                                mountainSegments[i].sharedMaterial = null;
+                    }
+                    DestroyRuntimeObject(spacePanoramaMaterial);
+                }
+                spacePanoramaMaterial = null;
+                return;
+            }
+
+            if (spacePanoramaMaterial == null)
+            {
+                Shader shader = environment.cinematicSpacePanoramaShader != null
+                    ? environment.cinematicSpacePanoramaShader
+                    : Shader.Find("AnimeHillRacing/Cinematic Space Panorama");
+                if (shader != null)
+                    spacePanoramaMaterial = new Material(shader) { name = "Runtime Cinematic Space Panorama" };
+            }
+            if (spacePanoramaMaterial == null) return;
+            spacePanoramaMaterial.SetFloat("_FlowStrength", environment.spaceNebulaFlowStrength);
+            spacePanoramaMaterial.SetFloat("_FlowSpeed", environment.spaceNebulaFlowSpeed);
+            spacePanoramaMaterial.SetFloat("_PulseAmount", environment.spaceNebulaPulse);
         }
 
         private void EnsureCelestials()
@@ -168,32 +235,42 @@ namespace AnimeHillRacing.CameraSystem
 
             if (shootingStarMaterial == null)
             {
-                Shader shader = Shader.Find("Sprites/Default");
+                Shader shader = Shader.Find("Particles/Additive");
+                if (shader == null) shader = Shader.Find("Sprites/Default");
                 if (shader != null)
                     shootingStarMaterial = new Material(shader) { name = "Runtime Shooting Star Trail" };
             }
             if (shootingStars != null) return;
 
             shootingStars = new TrailRenderer[required];
+            shootingStarHeads = new SpriteRenderer[required];
             shootingStarVelocities = new Vector3[required];
+            shootingStarAccelerations = new Vector3[required];
+            shootingStarStartTimes = new float[required];
             shootingStarStopTimes = new float[required];
             shootingStarDisableTimes = new float[required];
+            shootingStarHeadScales = new float[required];
+            shootingStarHeadColors = new Color[required];
             Gradient trailGradient = new Gradient();
             trailGradient.SetKeys(
                 new[]
                 {
-                    new GradientColorKey(new Color(.32f, .68f, 1f), 0f),
-                    new GradientColorKey(new Color(.78f, .94f, 1f), .72f),
+                    new GradientColorKey(new Color(.12f, .32f, .72f), 0f),
+                    new GradientColorKey(new Color(.48f, .78f, 1f), .58f),
                     new GradientColorKey(Color.white, 1f)
                 },
                 new[]
                 {
                     new GradientAlphaKey(0f, 0f),
-                    new GradientAlphaKey(.42f, .58f),
+                    new GradientAlphaKey(.16f, .28f),
+                    new GradientAlphaKey(.58f, .76f),
                     new GradientAlphaKey(1f, 1f)
                 });
             AnimationCurve widthCurve = new AnimationCurve(
-                new Keyframe(0f, 0f), new Keyframe(.22f, .28f), new Keyframe(1f, 1f));
+                new Keyframe(0f, 0f), new Keyframe(.18f, .12f), new Keyframe(.72f, .38f),
+                new Keyframe(1f, 1f));
+
+            CreateTwinklingStarSprite();
 
             for (int i = 0; i < required; i++)
             {
@@ -205,13 +282,23 @@ namespace AnimeHillRacing.CameraSystem
                 trail.sortingOrder = -47;
                 trail.alignment = LineAlignment.View;
                 trail.textureMode = LineTextureMode.Stretch;
-                trail.numCornerVertices = 2;
-                trail.numCapVertices = 2;
+                trail.numCornerVertices = 5;
+                trail.numCapVertices = 6;
                 trail.time = Mathf.Clamp(environment.shootingStarTrailSeconds, .2f, 1.2f);
-                trail.widthMultiplier = .115f;
+                trail.widthMultiplier = .075f;
                 trail.widthCurve = widthCurve;
                 trail.colorGradient = trailGradient;
+                trail.minVertexDistance = .035f;
                 trail.emitting = false;
+
+                GameObject headObject = new GameObject("Atmospheric Comet Head");
+                headObject.transform.SetParent(star.transform, false);
+                SpriteRenderer head = headObject.AddComponent<SpriteRenderer>();
+                head.sprite = twinklingStarSprite;
+                head.sortingLayerID = trail.sortingLayerID;
+                head.sortingOrder = -46;
+                head.color = Color.clear;
+                shootingStarHeads[i] = head;
                 star.SetActive(false);
                 shootingStars[i] = trail;
             }
@@ -267,7 +354,7 @@ namespace AnimeHillRacing.CameraSystem
                     Mathf.Lerp(.08f, .96f, Hash01(i * 419 + 73)));
                 twinklingStarPhases[i] = Hash01(i * 613 + 109) * Mathf.PI * 2f;
                 twinklingStarSpeeds[i] = Mathf.Lerp(.72f, 2.45f, Hash01(i * 181 + 151));
-                twinklingStarBaseScales[i] = Mathf.Lerp(.045f, .13f, Hash01(i * 331 + 197));
+                twinklingStarBaseScales[i] = Mathf.Lerp(.018f, .068f, Hash01(i * 331 + 197));
                 twinklingStarColors[i] = palette[PositiveModulo(i * 5 + 1, palette.Length)];
             }
         }
@@ -364,7 +451,8 @@ namespace AnimeHillRacing.CameraSystem
         private void EnsureMountainPool()
         {
             int required = environment.mountains != null
-                ? Mathf.Clamp(environment.pooledMountainSegments, 3, 7) : 0;
+                ? UsesCinematicSpacePanorama ? 1 : Mathf.Clamp(environment.pooledMountainSegments, 3, 7)
+                : 0;
             if (mountainSegments == null) mountainSegments = new SpriteRenderer[0];
             if (mountainSegments.Length < required)
             {
@@ -448,9 +536,12 @@ namespace AnimeHillRacing.CameraSystem
             float y = environment.coverViewportVertically
                 ? cameraPosition.y + environment.coverViewportVerticalOffset
                 : CalculateVerticalPosition(environment, cameraPosition.y, initialCameraY);
-            UpdatePanoramaPositions(mountainSegments, cameraPosition.x,
-                WorldFollowFactor(environment.mountainParallaxX, environment.useRelativeParallaxSpeeds),
-                tileWidth, y, 10f, environment.mirrorAlternatingMountainTiles);
+            if (UsesCinematicSpacePanorama)
+                UpdateCinematicSpacePanorama(cameraPosition, y);
+            else
+                UpdatePanoramaPositions(mountainSegments, cameraPosition.x,
+                    WorldFollowFactor(environment.mountainParallaxX, environment.useRelativeParallaxSpeeds),
+                    tileWidth, y, 10f, environment.mirrorAlternatingMountainTiles);
 
             float farY = CalculateLayerVerticalPosition(environment.farMountainBaseY, cameraPosition.y,
                 initialCameraY, environment.farMountainParallaxY,
@@ -474,19 +565,40 @@ namespace AnimeHillRacing.CameraSystem
             UpdateTwinklingStarPositions(cameraPosition);
         }
 
+        private void UpdateCinematicSpacePanorama(Vector3 cameraPosition, float baseY)
+        {
+            if (mountainSegments == null || mountainSegments.Length == 0 || mountainSegments[0] == null) return;
+            SpriteRenderer panorama = mountainSegments[0];
+            float viewHeight = displayCamera.orthographicSize * 2f;
+            float viewWidth = viewHeight * displayCamera.aspect;
+            float availableX = Mathf.Max(0f, (spacePanoramaWidth - viewWidth) * .5f - .04f);
+            float period = Mathf.Max(20f, environment.spacePanoramaDriftPeriod);
+            float phase = Time.unscaledTime * TwoPi / period;
+            float driftX = Mathf.Sin(phase) * Mathf.Min(availableX,
+                Mathf.Abs(environment.spacePanoramaDriftAmplitude.x));
+            panorama.transform.position = new Vector3(cameraPosition.x + driftX, baseY, 10f);
+            panorama.transform.localScale = Vector3.one * spacePanoramaBaseScale;
+            panorama.flipX = false;
+        }
+
         private void UpdateTwinklingStarPositions(Vector3 cameraPosition)
         {
             if (twinklingStars == null || displayCamera == null) return;
             float viewHeight = displayCamera.orthographicSize * 2f;
             float viewWidth = viewHeight * displayCamera.aspect;
+            float time = Time.unscaledTime;
             for (int i = 0; i < twinklingStars.Length; i++)
             {
                 SpriteRenderer renderer = twinklingStars[i];
                 if (renderer == null) continue;
                 Vector2 viewport = twinklingStarViewportPositions[i];
+                float driftPhase = time * Mathf.Lerp(.018f, .045f, Hash01(i * 571 + 43)) +
+                                   twinklingStarPhases[i];
+                float driftX = Mathf.Sin(driftPhase) * viewWidth * .0018f;
+                float driftY = Mathf.Cos(driftPhase * .73f) * viewHeight * .0014f;
                 renderer.transform.position = new Vector3(
-                    cameraPosition.x + (viewport.x - .5f) * viewWidth,
-                    cameraPosition.y + (viewport.y - .5f) * viewHeight,
+                    cameraPosition.x + (viewport.x - .5f) * viewWidth + driftX,
+                    cameraPosition.y + (viewport.y - .5f) * viewHeight + driftY,
                     12f);
             }
         }
@@ -552,9 +664,27 @@ namespace AnimeHillRacing.CameraSystem
                 TrailRenderer trail = shootingStars[i];
                 if (trail == null || !trail.gameObject.activeSelf) continue;
                 if (time < shootingStarStopTimes[i])
+                {
+                    shootingStarVelocities[i] += shootingStarAccelerations[i] * deltaTime;
                     trail.transform.position += shootingStarVelocities[i] * deltaTime;
+                }
                 else
                     trail.emitting = false;
+
+                SpriteRenderer head = shootingStarHeads != null ? shootingStarHeads[i] : null;
+                if (head != null)
+                {
+                    float flight = Mathf.InverseLerp(shootingStarStartTimes[i], shootingStarStopTimes[i], time);
+                    float fade = time <= shootingStarStopTimes[i]
+                        ? Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(flight * 8f))
+                        : 1f - Mathf.InverseLerp(shootingStarStopTimes[i], shootingStarDisableTimes[i], time);
+                    float atmosphericFlicker = .90f + .10f * Mathf.Sin(time * 38f + i * 2.31f);
+                    Color color = shootingStarHeadColors[i];
+                    color.a *= Mathf.Clamp01(fade) * atmosphericFlicker;
+                    head.color = color;
+                    float pulse = 1f + Mathf.Sin(time * 31f + i) * .07f;
+                    head.transform.localScale = Vector3.one * (shootingStarHeadScales[i] * pulse);
+                }
 
                 if (time < shootingStarDisableTimes[i]) continue;
                 trail.Clear();
@@ -595,10 +725,18 @@ namespace AnimeHillRacing.CameraSystem
                 11.8f);
             shootingStarVelocities[slot] = new Vector3(direction * speed,
                 -speed * Mathf.Lerp(.16f, .28f, Hash01(sequence * 419 + 101)), 0f);
+            shootingStarAccelerations[slot] = new Vector3(-direction * speed * .018f,
+                -Mathf.Lerp(.38f, .86f, Hash01(sequence * 601 + 137)), 0f);
             float flightSeconds = viewWidth * 1.18f / Mathf.Max(1f, speed);
+            shootingStarStartTimes[slot] = time;
             shootingStarStopTimes[slot] = time + flightSeconds;
-            trail.time = Mathf.Clamp(environment.shootingStarTrailSeconds, .2f, 1.2f);
+            trail.time = Mathf.Clamp(environment.shootingStarTrailSeconds *
+                                     Mathf.Lerp(.72f, 1.18f, Hash01(sequence * 467 + 59)), .2f, 1.2f);
+            trail.widthMultiplier = Mathf.Lerp(.045f, .095f, Hash01(sequence * 389 + 41));
             shootingStarDisableTimes[slot] = shootingStarStopTimes[slot] + trail.time;
+            shootingStarHeadScales[slot] = Mathf.Lerp(.085f, .16f, Hash01(sequence * 719 + 107));
+            shootingStarHeadColors[slot] = Color.Lerp(new Color(.60f, .84f, 1f, .96f),
+                new Color(1f, .86f, .65f, .98f), Hash01(sequence * 829 + 13));
             trail.gameObject.SetActive(true);
             trail.Clear();
             trail.emitting = true;
@@ -735,6 +873,7 @@ namespace AnimeHillRacing.CameraSystem
         private void OnDestroy()
         {
             if (shootingStarMaterial != null) DestroyRuntimeObject(shootingStarMaterial);
+            if (spacePanoramaMaterial != null) DestroyRuntimeObject(spacePanoramaMaterial);
             DestroyTwinklingStarAssets();
         }
 

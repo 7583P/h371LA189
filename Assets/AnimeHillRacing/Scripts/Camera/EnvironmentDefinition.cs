@@ -36,7 +36,7 @@ namespace AnimeHillRacing.CameraSystem
         public float coverViewportVerticalOffset;
         [Min(1f)] public float mountainVisualHeight = 17f;
         public float mountainBaseY = -4f;
-        [Range(3, 7)] public int pooledMountainSegments = 5;
+        [Range(1, 7)] public int pooledMountainSegments = 5;
         [Range(0f, .05f)] public float seamOverlap = .012f;
         [Tooltip("Mirrors alternating panorama cells so consecutive edges match without an obvious copy seam.")]
         public bool mirrorAlternatingMountainTiles;
@@ -79,6 +79,19 @@ namespace AnimeHillRacing.CameraSystem
         [Header("Optional Space Star Animation")]
         [Range(.25f, 6f)] public float starTwinkleSpeed = 2.15f;
         [Range(0f, .5f)] public float starTwinkleAmount = .26f;
+
+        [Header("Optional Cinematic Space Panorama")]
+        [Tooltip("Uses one camera-locked panorama with bounded ping-pong drift instead of repeating tiles.")]
+        public bool useCinematicSpacePanorama;
+        public Shader cinematicSpacePanoramaShader;
+        [Tooltip("Adds a small safe overscan after covering the camera, leaving room for bounded horizontal drift.")]
+        [Range(1f, 1.12f)] public float spacePanoramaOverscan = 1.04f;
+        public Vector2 spacePanoramaDriftAmplitude = new Vector2(.72f, .18f);
+        [Min(20f)] public float spacePanoramaDriftPeriod = 82f;
+        [Range(0f, .01f)] public float spacePanoramaBreathing = .0025f;
+        [Range(0f, .01f)] public float spaceNebulaFlowStrength = .0018f;
+        [Range(.01f, .5f)] public float spaceNebulaFlowSpeed = .075f;
+        [Range(0f, .2f)] public float spaceNebulaPulse = .055f;
 
         [Header("Optional Space Shooting Stars")]
         public bool enableShootingStars;

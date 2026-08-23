@@ -30,7 +30,7 @@ MonoBehaviour:
     bundleType: 0
     allowsBlueprintProgression: 1
     visibleDiameter: 0
-    visibleSize: {x: 24.136269, y: 8.666418}
+    visibleSize: {x: 24.11, y: 8.67}
     visualOffset: {x: 0, y: 0.005}
   - optionId: rally-skin-hill-adventurer
     displayName: HILL ADVENTURER
@@ -182,7 +182,7 @@ MonoBehaviour:
         position: {x: -0.1459554, y: 0.46399036}
         rotation: -3
         scale: {x: 1, y: 1}
-        visible: 1
+        visible: 0
         sortingOrder: 9
         vehicleLayer: 0
     - accessoryId: scarf
@@ -204,6 +204,7 @@ MonoBehaviour:
   underbodyAttachmentSprite: {fileID: 0}
   underbodyAttachmentPositions: []
   underbodyAttachmentVisualWidth: 0
+  preserveUnderbodyAttachmentPositions: 0
   engineMaxTunes: 20
   accelerationMaxTunes: 0
   suspensionMaxTunes: 14

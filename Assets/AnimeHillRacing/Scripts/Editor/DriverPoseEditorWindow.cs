@@ -15,6 +15,8 @@ namespace AnimeHillRacing.Editor
             Root,
             RearWheel,
             FrontWheel,
+            LeftThruster,
+            RightThruster,
             Torso,
             Head,
             LeftUpperArm,
@@ -37,7 +39,8 @@ namespace AnimeHillRacing.Editor
 
         private static readonly string[] PartNames =
         {
-            "Piloto completo", "Llanta trasera", "Llanta delantera", "Torso", "Cabeza", "Brazo izq. superior", "Antebrazo izq.",
+            "Piloto completo", "Llanta trasera", "Llanta delantera", "Thruster izquierdo", "Thruster derecho",
+            "Torso", "Cabeza", "Brazo izq. superior", "Antebrazo izq.",
             "Brazo der. superior", "Antebrazo der.", "Muslo izq.", "Pierna izq.",
             "Muslo der.", "Pierna der.", "Accesorio"
         };
@@ -60,6 +63,12 @@ namespace AnimeHillRacing.Editor
         private float originalFrontWheelDiameter;
         private float workingRearWheelDiameter;
         private float workingFrontWheelDiameter;
+        private Vector2 originalLeftThrusterPosition;
+        private Vector2 originalRightThrusterPosition;
+        private Vector2 workingLeftThrusterPosition;
+        private Vector2 workingRightThrusterPosition;
+        private float originalThrusterVisualWidth;
+        private float workingThrusterVisualWidth;
         private Vector2 inspectorScroll;
         private float previewZoom = 1f;
         private bool uniformPartScale;
@@ -83,12 +92,18 @@ namespace AnimeHillRacing.Editor
             accessoryIndex >= 0 && accessoryIndex < PreviewDriver.accessories.Length
                 ? PreviewDriver.accessories[accessoryIndex] : null;
         private DriverDefinition CanonicalDriver => drivers.Length > 0 ? drivers[0] : null;
+        private bool HasEditableThrusters => Vehicle != null && Vehicle.underbodyAttachmentSprite != null;
         private bool HasUnsavedChanges => Vehicle != null && workingPose != null &&
             (JsonUtility.ToJson(workingPose) != JsonUtility.ToJson(Vehicle.driverPose) ||
              workingRearWheelPosition != Vehicle.rearWheelVisualPosition ||
              workingFrontWheelPosition != Vehicle.frontWheelVisualPosition ||
              !Mathf.Approximately(workingRearWheelDiameter, Vehicle.rearWheelVisualDiameter) ||
-             !Mathf.Approximately(workingFrontWheelDiameter, Vehicle.frontWheelVisualDiameter));
+             !Mathf.Approximately(workingFrontWheelDiameter, Vehicle.frontWheelVisualDiameter) ||
+             HasEditableThrusters &&
+             (workingLeftThrusterPosition != SavedThrusterPosition(0, new Vector2(-1.02f, -.38f)) ||
+              workingRightThrusterPosition != SavedThrusterPosition(1, new Vector2(1.02f, -.38f)) ||
+              !Mathf.Approximately(workingThrusterVisualWidth,
+                  Mathf.Max(.05f, Vehicle.underbodyAttachmentVisualWidth))));
 
         private void OnEnable()
         {
@@ -150,6 +165,13 @@ namespace AnimeHillRacing.Editor
             originalFrontWheelDiameter = Vehicle != null ? Vehicle.frontWheelVisualDiameter : 0f;
             workingRearWheelDiameter = originalRearWheelDiameter;
             workingFrontWheelDiameter = originalFrontWheelDiameter;
+            originalLeftThrusterPosition = SavedThrusterPosition(0, new Vector2(-1.02f, -.38f));
+            originalRightThrusterPosition = SavedThrusterPosition(1, new Vector2(1.02f, -.38f));
+            workingLeftThrusterPosition = originalLeftThrusterPosition;
+            workingRightThrusterPosition = originalRightThrusterPosition;
+            originalThrusterVisualWidth = Vehicle != null
+                ? Mathf.Max(.05f, Vehicle.underbodyAttachmentVisualWidth) : .70f;
+            workingThrusterVisualWidth = originalThrusterVisualWidth;
             selectedPart = PosePart.Root;
             draggingHandle = false;
             SelectVisibleAccessory();
@@ -233,13 +255,26 @@ namespace AnimeHillRacing.Editor
             EditorGUILayout.HelpBox("La pose pertenece al vehículo. Las skins de personaje usan como modelo a " +
                 (CanonicalDriver != null ? CanonicalDriver.displayName : "la skin default") + ".", MessageType.Info);
 
-            selectedPart = (PosePart)EditorGUILayout.Popup("Parte", (int)selectedPart, PartNames);
+            PosePart[] selectableParts = Enum.GetValues(typeof(PosePart)).Cast<PosePart>()
+                .Where(part => HasEditableThrusters ||
+                               part != PosePart.LeftThruster && part != PosePart.RightThruster)
+                .ToArray();
+            int selectedIndex = Array.IndexOf(selectableParts, selectedPart);
+            if (selectedIndex < 0)
+            {
+                selectedPart = PosePart.Root;
+                selectedIndex = 0;
+            }
+            string[] selectableNames = selectableParts.Select(part => PartNames[(int)part]).ToArray();
+            selectedPart = selectableParts[EditorGUILayout.Popup("Parte", selectedIndex, selectableNames)];
             EditorGUILayout.Space(5f);
             EditorGUI.BeginChangeCheck();
             if (selectedPart == PosePart.Root)
                 DrawRootFields();
             else if (selectedPart == PosePart.RearWheel || selectedPart == PosePart.FrontWheel)
                 DrawWheelFields();
+            else if (selectedPart == PosePart.LeftThruster || selectedPart == PosePart.RightThruster)
+                DrawThrusterFields();
             else
                 DrawPartFields();
             if (EditorGUI.EndChangeCheck()) Repaint();
@@ -255,8 +290,8 @@ namespace AnimeHillRacing.Editor
             EditorGUILayout.Space(12f);
             EditorGUILayout.LabelField("Vista", EditorStyles.boldLabel);
             previewZoom = EditorGUILayout.Slider("Zoom", previewZoom, .65f, 2f);
-            EditorGUILayout.HelpBox("Arrastra el círculo amarillo para el piloto o los círculos celestes para las llantas. " +
-                "Selecciona cualquier círculo para editar esa parte.",
+            EditorGUILayout.HelpBox("Arrastra el círculo amarillo para el piloto, los círculos celestes para las llantas " +
+                "o los círculos magenta para los thrusters. Selecciona cualquier círculo para editar esa parte.",
                 MessageType.None);
             EditorGUILayout.EndScrollView();
         }
@@ -304,6 +339,29 @@ namespace AnimeHillRacing.Editor
                 "su círculo celeste en la vista.", MessageType.Info);
         }
 
+        private void DrawThrusterFields()
+        {
+            bool left = selectedPart == PosePart.LeftThruster;
+            Vector2 value = left ? workingLeftThrusterPosition : workingRightThrusterPosition;
+            value = EditorGUILayout.Vector2Field("Posición X/Y", value);
+            if (left) workingLeftThrusterPosition = value;
+            else workingRightThrusterPosition = value;
+
+            workingThrusterVisualWidth = Mathf.Max(.05f,
+                EditorGUILayout.FloatField("Tamaño (ancho)", workingThrusterVisualWidth));
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("-10%"))
+                    workingThrusterVisualWidth = Mathf.Max(.05f, workingThrusterVisualWidth * .9f);
+                if (GUILayout.Button("+10%"))
+                    workingThrusterVisualWidth = Mathf.Min(2f, workingThrusterVisualWidth * 1.1f);
+            }
+
+            EditorGUILayout.HelpBox("Esta posición mueve el thruster visible y el punto físico desde el que " +
+                "aplica su fuerza. El tamaño se aplica a ambos thrusters. También puedes arrastrar su " +
+                "círculo magenta en la vista.", MessageType.Info);
+        }
+
         private void DrawPartFields()
         {
             VehicleDefinition.DriverPartPose pose = GetPart(workingPose, selectedPart);
@@ -336,18 +394,32 @@ namespace AnimeHillRacing.Editor
                 if (GUILayout.Button("+10%")) pose.scale *= 1.1f;
             }
             pose.visible = EditorGUILayout.Toggle("Visible", pose.visible);
-            bool inFront = IsDriverPartInFront(selectedPart, pose);
-            EditorGUI.BeginChangeCheck();
-            int depth = EditorGUILayout.Popup("Profundidad", inFront ? 1 : 0,
-                new[] { "Detrás del vehículo", "Delante del vehículo" });
-            if (EditorGUI.EndChangeCheck())
-                pose.vehicleLayer = depth == 1
-                    ? DriverVehicleLayer.InFrontOfVehicle : DriverVehicleLayer.BehindVehicle;
+            if (selectedPart == PosePart.Accessory)
+            {
+                EditorGUI.BeginChangeCheck();
+                int depth = EditorGUILayout.Popup("Profundidad", AccessoryDepthIndex(pose),
+                    new[] { "Detrás del vehículo", "Delante del vehículo", "Delante de todo" });
+                if (EditorGUI.EndChangeCheck())
+                    pose.vehicleLayer = depth == 0 ? DriverVehicleLayer.BehindVehicle :
+                        depth == 1 ? DriverVehicleLayer.InFrontOfVehicle :
+                        DriverVehicleLayer.InFrontOfEverything;
+            }
+            else
+            {
+                bool inFront = IsDriverPartInFront(selectedPart, pose);
+                EditorGUI.BeginChangeCheck();
+                int depth = EditorGUILayout.Popup("Profundidad", inFront ? 1 : 0,
+                    new[] { "Detrás del vehículo", "Delante del vehículo" });
+                if (EditorGUI.EndChangeCheck())
+                    pose.vehicleLayer = depth == 1
+                        ? DriverVehicleLayer.InFrontOfVehicle : DriverVehicleLayer.BehindVehicle;
+            }
             pose.sortingOrder = Mathf.Min(pose.sortingOrder, ArticulatedDriver2D.MaximumDriverSortingOrder);
             using (new EditorGUI.DisabledScope(true))
                 EditorGUILayout.IntField("Orden interno del piloto", pose.sortingOrder);
             EditorGUILayout.HelpBox("La profundidad se guarda por separado para cada parte. Por defecto, cabeza " +
-                "y brazos quedan delante; torso y piernas detrás. Las llantas siempre quedan encima.",
+                "y brazos quedan delante; torso y piernas detrás. Los accesorios pueden ir detrás, delante " +
+                "del vehículo o delante de todo.",
                 MessageType.None);
             bool partChanged = EditorGUI.EndChangeCheck();
             if (selectedPart != PosePart.Accessory || partChanged)
@@ -367,6 +439,9 @@ namespace AnimeHillRacing.Editor
                     workingFrontWheelPosition = Vehicle.frontWheelVisualPosition;
                     workingRearWheelDiameter = Vehicle.rearWheelVisualDiameter;
                     workingFrontWheelDiameter = Vehicle.frontWheelVisualDiameter;
+                    workingLeftThrusterPosition = SavedThrusterPosition(0, new Vector2(-1.02f, -.38f));
+                    workingRightThrusterPosition = SavedThrusterPosition(1, new Vector2(1.02f, -.38f));
+                    workingThrusterVisualWidth = Mathf.Max(.05f, Vehicle.underbodyAttachmentVisualWidth);
                 }
                 if (GUILayout.Button("Cancelar y cerrar", GUILayout.Width(130f)))
                 {
@@ -375,6 +450,9 @@ namespace AnimeHillRacing.Editor
                     workingFrontWheelPosition = originalFrontWheelPosition;
                     workingRearWheelDiameter = originalRearWheelDiameter;
                     workingFrontWheelDiameter = originalFrontWheelDiameter;
+                    workingLeftThrusterPosition = originalLeftThrusterPosition;
+                    workingRightThrusterPosition = originalRightThrusterPosition;
+                    workingThrusterVisualWidth = originalThrusterVisualWidth;
                     Close();
                 }
                 GUI.backgroundColor = new Color(.45f, 1f, .55f);
@@ -395,6 +473,15 @@ namespace AnimeHillRacing.Editor
             Vehicle.rearWheelVisualDiameter = workingRearWheelDiameter;
             Vehicle.frontWheelVisualDiameter = workingFrontWheelDiameter;
             Vehicle.preserveWheelVisualPositions = true;
+            if (HasEditableThrusters)
+            {
+                Vehicle.underbodyAttachmentPositions = new[]
+                {
+                    workingLeftThrusterPosition, workingRightThrusterPosition
+                };
+                Vehicle.underbodyAttachmentVisualWidth = workingThrusterVisualWidth;
+                Vehicle.preserveUnderbodyAttachmentPositions = true;
+            }
             EditorUtility.SetDirty(Vehicle);
             AssetDatabase.SaveAssets();
             originalPose = ClonePose(Vehicle.driverPose);
@@ -407,6 +494,12 @@ namespace AnimeHillRacing.Editor
             originalFrontWheelDiameter = Vehicle.frontWheelVisualDiameter;
             workingRearWheelDiameter = originalRearWheelDiameter;
             workingFrontWheelDiameter = originalFrontWheelDiameter;
+            originalLeftThrusterPosition = SavedThrusterPosition(0, new Vector2(-1.02f, -.38f));
+            originalRightThrusterPosition = SavedThrusterPosition(1, new Vector2(1.02f, -.38f));
+            workingLeftThrusterPosition = originalLeftThrusterPosition;
+            workingRightThrusterPosition = originalRightThrusterPosition;
+            originalThrusterVisualWidth = Mathf.Max(.05f, Vehicle.underbodyAttachmentVisualWidth);
+            workingThrusterVisualWidth = originalThrusterVisualWidth;
             ShowNotification(new GUIContent("Pose guardada permanentemente"));
         }
 
@@ -438,10 +531,16 @@ namespace AnimeHillRacing.Editor
                 (canvas.height - 50f) / 3.8f) * previewZoom;
             Vector2 origin = new Vector2(canvas.center.x, canvas.center.y + canvas.height * .13f);
 
+            VehicleDefinition.DriverPartPose accessoryPose = GetPart(workingPose, PosePart.Accessory);
+            int accessoryDepth = AccessoryDepthIndex(accessoryPose);
             DrawDriverLayer(driver, false, origin, pixelsPerUnit);
+            if (accessoryDepth == 0) DrawAccessory(accessoryPose, origin, pixelsPerUnit);
             DrawBody(vehicle, skin, origin, pixelsPerUnit);
+            DrawThrusters(vehicle, origin, pixelsPerUnit);
             DrawDriverLayer(driver, true, origin, pixelsPerUnit);
+            if (accessoryDepth == 1) DrawAccessory(accessoryPose, origin, pixelsPerUnit);
             DrawWheels(vehicle, origin, pixelsPerUnit);
+            if (accessoryDepth == 2) DrawAccessory(accessoryPose, origin, pixelsPerUnit);
             DrawHandles(origin, pixelsPerUnit, canvas);
             HandleDragging(origin, pixelsPerUnit, canvas);
 
@@ -486,10 +585,23 @@ namespace AnimeHillRacing.Editor
                 origin, pixelsPerUnit, new Color(1f, 1f, 1f, .9f));
         }
 
+        private void DrawThrusters(VehicleDefinition vehicle, Vector2 origin, float pixelsPerUnit)
+        {
+            Sprite sprite = vehicle.underbodyAttachmentSprite;
+            if (!HasEditableThrusters || sprite == null) return;
+            float scale = VehicleDefinition.SpriteWidthScale(sprite,
+                Mathf.Max(.05f, workingThrusterVisualWidth));
+            DrawSprite(sprite, workingLeftThrusterPosition, Vector2.one * scale, 0f, false,
+                origin, pixelsPerUnit, Color.white);
+            DrawSprite(sprite, workingRightThrusterPosition, Vector2.one * scale, 0f, false,
+                origin, pixelsPerUnit, Color.white);
+        }
+
         private void DrawDriverLayer(DriverDefinition driver, bool foreground, Vector2 origin, float pixelsPerUnit)
         {
             DriverDefinition reference = driver.PoseReference;
             PosePart[] ordered = EditableParts
+                .Where(part => part != PosePart.Accessory)
                 .Where(part => IsDriverPartInFront(part, GetPart(workingPose, part)) == foreground)
                 .OrderBy(part => GetPart(workingPose, part).sortingOrder)
                 .ToArray();
@@ -497,11 +609,6 @@ namespace AnimeHillRacing.Editor
             {
                 PosePart part = ordered[i];
                 VehicleDefinition.DriverPartPose pose = GetPart(workingPose, part);
-                if (part == PosePart.Accessory)
-                {
-                    DrawAccessory(pose, origin, pixelsPerUnit);
-                    continue;
-                }
                 Sprite sprite = PartSprite(driver, part);
                 Sprite referenceSprite = PartSprite(reference, part);
                 if (!pose.visible || sprite == null) continue;
@@ -521,11 +628,18 @@ namespace AnimeHillRacing.Editor
 
         private static bool IsDriverPartInFront(PosePart part, VehicleDefinition.DriverPartPose pose)
         {
+            if (part == PosePart.Accessory) return AccessoryDepthIndex(pose) > 0;
             bool partDefault = part == PosePart.Head ||
                                part == PosePart.LeftUpperArm || part == PosePart.LeftForearm ||
-                               part == PosePart.RightUpperArm || part == PosePart.RightForearm ||
-                               part == PosePart.Accessory;
+                               part == PosePart.RightUpperArm || part == PosePart.RightForearm;
             return pose.RendersInFrontOfVehicle(partDefault);
+        }
+
+        private static int AccessoryDepthIndex(VehicleDefinition.DriverPartPose pose)
+        {
+            if (pose.vehicleLayer == DriverVehicleLayer.BehindVehicle) return 0;
+            if (pose.vehicleLayer == DriverVehicleLayer.InFrontOfVehicle) return 1;
+            return 2;
         }
 
         private void DrawAccessory(VehicleDefinition.DriverPartPose pose, Vector2 origin, float pixelsPerUnit)
@@ -566,6 +680,13 @@ namespace AnimeHillRacing.Editor
 
             DrawWheelHandle(PosePart.RearWheel, workingRearWheelPosition, origin, pixelsPerUnit, canvas);
             DrawWheelHandle(PosePart.FrontWheel, workingFrontWheelPosition, origin, pixelsPerUnit, canvas);
+            if (HasEditableThrusters)
+            {
+                DrawThrusterHandle(PosePart.LeftThruster, workingLeftThrusterPosition,
+                    origin, pixelsPerUnit, canvas);
+                DrawThrusterHandle(PosePart.RightThruster, workingRightThrusterPosition,
+                    origin, pixelsPerUnit, canvas);
+            }
         }
 
         private void DrawWheelHandle(PosePart part, Vector2 position, Vector2 origin, float pixelsPerUnit, Rect canvas)
@@ -574,6 +695,17 @@ namespace AnimeHillRacing.Editor
             if (!canvas.Contains(screen)) return;
             Handles.BeginGUI();
             Handles.color = selectedPart == part ? Color.cyan : new Color(.25f, .85f, 1f, .65f);
+            Handles.DrawSolidDisc(screen, Vector3.forward, selectedPart == part ? 6f : 4f);
+            Handles.EndGUI();
+        }
+
+        private void DrawThrusterHandle(PosePart part, Vector2 position, Vector2 origin,
+            float pixelsPerUnit, Rect canvas)
+        {
+            Vector2 screen = WorldToScreen(position, origin, pixelsPerUnit);
+            if (!canvas.Contains(screen)) return;
+            Handles.BeginGUI();
+            Handles.color = selectedPart == part ? Color.magenta : new Color(1f, .25f, .9f, .7f);
             Handles.DrawSolidDisc(screen, Vector3.forward, selectedPart == part ? 6f : 4f);
             Handles.EndGUI();
         }
@@ -601,6 +733,10 @@ namespace AnimeHillRacing.Editor
                     workingRearWheelPosition += worldDelta;
                 else if (selectedPart == PosePart.FrontWheel)
                     workingFrontWheelPosition += worldDelta;
+                else if (selectedPart == PosePart.LeftThruster)
+                    workingLeftThrusterPosition += worldDelta;
+                else if (selectedPart == PosePart.RightThruster)
+                    workingRightThrusterPosition += worldDelta;
                 else
                 {
                     VehicleDefinition.DriverPartPose pose = GetPart(workingPose, selectedPart);
@@ -625,6 +761,13 @@ namespace AnimeHillRacing.Editor
                 ref nearest, ref distance);
             ConsiderHandle(PosePart.FrontWheel, workingFrontWheelPosition, mouse, origin, pixelsPerUnit,
                 ref nearest, ref distance);
+            if (HasEditableThrusters)
+            {
+                ConsiderHandle(PosePart.LeftThruster, workingLeftThrusterPosition, mouse, origin, pixelsPerUnit,
+                    ref nearest, ref distance);
+                ConsiderHandle(PosePart.RightThruster, workingRightThrusterPosition, mouse, origin, pixelsPerUnit,
+                    ref nearest, ref distance);
+            }
             for (int i = 0; i < EditableParts.Length; i++)
             {
                 PosePart part = EditableParts[i];
@@ -677,6 +820,12 @@ namespace AnimeHillRacing.Editor
         {
             if (vehicle == null || vehicle.skins == null || vehicle.skins.Length == 0) return null;
             return vehicle.skins[Mathf.Clamp(skinIndex, 0, vehicle.skins.Length - 1)];
+        }
+
+        private Vector2 SavedThrusterPosition(int index, Vector2 fallback)
+        {
+            Vector2[] positions = Vehicle != null ? Vehicle.underbodyAttachmentPositions : null;
+            return positions != null && index >= 0 && index < positions.Length ? positions[index] : fallback;
         }
 
         private static void DrawSprite(Sprite sprite, Vector2 pivotWorld, Vector2 scale, float rotation,

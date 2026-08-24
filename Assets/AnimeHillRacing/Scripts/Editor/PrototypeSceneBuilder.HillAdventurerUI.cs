@@ -429,6 +429,9 @@ namespace AnimeHillRacing.Editor
             Sprite animeGarage = RequireHillSprite(HillAnimeGaragePath);
             garageBackground.sprite = defaultGarage;
             garageBackground.color = Color.white;
+            Image garageOverlay = FindHillComponent<Image>(scene, "Garage Overlay");
+            if (garageOverlay != null)
+                garageOverlay.color = new Color(.005f, .015f, .04f, .10f);
             AspectRatioFitter backgroundFitter = garageBackground.GetComponent<AspectRatioFitter>();
             if (backgroundFitter != null)
                 backgroundFitter.aspectRatio = defaultGarage.rect.width / defaultGarage.rect.height;
@@ -465,27 +468,43 @@ namespace AnimeHillRacing.Editor
                 new Vector2(-840f, -120f), new Vector2(76f, 100f));
             MoveHillRect(scene, "Next Vehicle", new Vector2(.5f, .5f),
                 new Vector2(130f, -120f), new Vector2(76f, 100f));
-
+            Button previousVehicle = FindHillComponent<Button>(scene, "Previous Vehicle");
+            Button nextVehicle = FindHillComponent<Button>(scene, "Next Vehicle");
+            if (previousVehicle == null || nextVehicle == null)
+                throw new InvalidOperationException("Garage vehicle navigation arrows are missing.");
             Button paintButton = CreateSpriteButton("Paint and Skins", safe,
-                RequireHillSprite(HillSkinsIconPath), new Vector2(.55f, .47f),
-                new Vector2(-65f, 0f), new Vector2(148f, 112f));
+                RequireHillSprite(HillSkinsIconPath), new Vector2(.88f, .30f),
+                Vector2.zero, new Vector2(132f, 98f));
             CreateHillNavigationMarker(paintButton.transform, "PAINT / SKINS")
                 .SetActive(false);
             Bind(paintButton, menu.ShowSkins);
 
             GameObject vehiclePanel = FindHillObject(scene, "Vehicle Panel");
             if (vehiclePanel == null) throw new InvalidOperationException("Garage Vehicle Panel is missing.");
+            RectTransform vehiclePanelRect = vehiclePanel.GetComponent<RectTransform>();
+            vehiclePanelRect.anchorMin = new Vector2(.30f, .02f);
+            vehiclePanelRect.anchorMax = new Vector2(.70f, .11f);
+            vehiclePanelRect.anchoredPosition = Vector2.zero;
+            vehiclePanelRect.sizeDelta = Vector2.zero;
+            Image vehiclePanelImage = vehiclePanel.GetComponent<Image>();
+            if (vehiclePanelImage != null) vehiclePanelImage.color = new Color(.025f, .06f, .12f, .72f);
+            Text vehiclePanelTitle = FindHillChildComponent<Text>(vehiclePanel.transform, "Title");
+            if (vehiclePanelTitle != null)
+            {
+                vehiclePanelTitle.fontSize = 18;
+                vehiclePanelTitle.alignment = TextAnchor.MiddleCenter;
+                vehiclePanelTitle.rectTransform.anchorMin = new Vector2(.02f, .48f);
+                vehiclePanelTitle.rectTransform.anchorMax = new Vector2(.98f, .96f);
+            }
             Text vehicleDescription = FindHillChildComponent<Text>(vehiclePanel.transform, "Description");
             if (vehicleDescription != null)
             {
-                vehicleDescription.text =
-                    "SELECT A VEHICLE WITH THE ARROWS. YOUR SAVED SKIN, WHEELS AND REAL TUNES ARE USED IN GAMEPLAY.";
+                vehicleDescription.text = "USE THE ARROWS TO SELECT A VEHICLE";
+                vehicleDescription.fontSize = 14;
                 RectTransform descriptionRect = vehicleDescription.rectTransform;
-                descriptionRect.anchorMin = new Vector2(.08f, .58f);
-                descriptionRect.anchorMax = new Vector2(.92f, .76f);
+                descriptionRect.anchorMin = new Vector2(.02f, .04f);
+                descriptionRect.anchorMax = new Vector2(.98f, .50f);
             }
-            Button[] backgroundButtons = CreateHillGarageBackgroundSelector(vehiclePanel.transform,
-                menu, defaultGarage, neonGarage, animeGarage);
 
             Button start = CreateButton("Adventure Start", safe, "START",
                 new Vector2(-205f, 64f), new Vector2(330f, 82f), new Vector2(1f, 0f));
@@ -590,22 +609,24 @@ namespace AnimeHillRacing.Editor
             {
                 oldSettings.name = "Settings Title";
                 oldSettings.text = "SETTINGS";
-                oldSettings.rectTransform.anchorMin = new Vector2(.10f, .76f);
-                oldSettings.rectTransform.anchorMax = new Vector2(.90f, .94f);
+                oldSettings.rectTransform.anchorMin = new Vector2(.10f, .80f);
+                oldSettings.rectTransform.anchorMax = new Vector2(.90f, .95f);
             }
             CreateText("Audio Label", settingsPanel.transform, "MASTER AUDIO", 28,
-                TextAnchor.MiddleLeft, new Vector2(.12f, .50f), new Vector2(.54f, .66f),
+                TextAnchor.MiddleLeft, new Vector2(.12f, .62f), new Vector2(.54f, .75f),
                 Vector2.zero, Vector2.zero).fontStyle = FontStyle.Bold;
             Toggle audioToggle = CreateHillToggle("Master Audio Toggle", settingsPanel.transform,
-                new Vector2(.72f, .58f));
+                new Vector2(.72f, .685f));
             UnityEventTools.AddPersistentListener(audioToggle.onValueChanged,
                 menu.SetMasterAudioEnabled);
             Text audioStatus = CreateText("Master Audio Status", settingsPanel.transform, "ON", 23,
-                TextAnchor.MiddleCenter, new Vector2(.62f, .42f), new Vector2(.84f, .50f),
+                TextAnchor.MiddleCenter, new Vector2(.62f, .54f), new Vector2(.84f, .61f),
                 Vector2.zero, Vector2.zero);
+            Button[] backgroundButtons = CreateHillGarageBackgroundSelector(settingsPanel.transform,
+                menu, defaultGarage, neonGarage, animeGarage);
             CreateText("Settings Note", settingsPanel.transform,
-                "AUDIO SETTING IS SAVED ON THIS DEVICE.", 18, TextAnchor.MiddleCenter,
-                new Vector2(.12f, .20f), new Vector2(.88f, .34f),
+                "AUDIO AND GARAGE BACKGROUND ARE SAVED ON THIS DEVICE.", 16, TextAnchor.MiddleCenter,
+                new Vector2(.08f, .04f), new Vector2(.92f, .12f),
                 Vector2.zero, Vector2.zero).color = new Color(.62f, .78f, .88f);
 
             GameObject modal = FindHillObject(scene, "Purchase Confirmation");
@@ -662,6 +683,8 @@ namespace AnimeHillRacing.Editor
                 neonGarageBackground = neonGarage,
                 animeGarageBackground = animeGarage,
                 backgroundButtons = backgroundButtons,
+                previousVehicleButton = previousVehicle,
+                nextVehicleButton = nextVehicle,
                 masterAudioToggle = audioToggle,
                 masterAudioStatus = audioStatus,
                 tuneIcons = tuneIcons,
@@ -714,7 +737,7 @@ namespace AnimeHillRacing.Editor
             Sprite defaultGarage, Sprite neonGarage, Sprite animeGarage)
         {
             CreateText("Garage Background Title", parent, "GARAGE BACKGROUND", 22,
-                TextAnchor.MiddleCenter, new Vector2(.10f, .42f), new Vector2(.90f, .54f),
+                TextAnchor.MiddleCenter, new Vector2(.10f, .42f), new Vector2(.90f, .52f),
                 Vector2.zero, Vector2.zero).fontStyle = FontStyle.Bold;
             Sprite[] sprites = { defaultGarage, neonGarage, animeGarage };
             string[] labels = { "DEFAULT", "NEON", "ANIME" };
@@ -728,8 +751,14 @@ namespace AnimeHillRacing.Editor
             for (int i = 0; i < buttons.Length; i++)
             {
                 buttons[i] = CreateSpriteButton("Garage Background " + labels[i], parent,
-                    sprites[i], new Vector2(.5f, .24f),
-                    new Vector2(-180f + i * 180f, 0f), new Vector2(158f, 112f));
+                    sprites[i], new Vector2(.5f, .28f),
+                    new Vector2(-180f + i * 180f, 0f), new Vector2(158f, 108f));
+                buttons[i].image.color = Color.white;
+                Outline outline = buttons[i].gameObject.AddComponent<Outline>();
+                outline.effectColor = new Color(.14f, .90f, 1f, 1f);
+                outline.effectDistance = new Vector2(4f, -4f);
+                outline.useGraphicAlpha = false;
+                outline.enabled = false;
                 GameObject labelBack = CreateImage("Label Background", buttons[i].transform,
                     new Color(.005f, .012f, .03f, .88f), new Vector2(0f, 0f),
                     new Vector2(1f, .25f), Vector2.zero, Vector2.zero);
@@ -738,6 +767,15 @@ namespace AnimeHillRacing.Editor
                     TextAnchor.MiddleCenter, Vector2.zero, Vector2.one,
                     Vector2.zero, Vector2.zero);
                 label.fontStyle = FontStyle.Bold;
+                GameObject selectedMarker = CreateImage("Selected Marker", buttons[i].transform,
+                    new Color(.14f, .90f, 1f, .98f), new Vector2(.17f, .73f),
+                    new Vector2(.83f, .98f), Vector2.zero, Vector2.zero);
+                selectedMarker.GetComponent<Image>().raycastTarget = false;
+                Text selectedLabel = CreateText("Label", selectedMarker.transform, "SELECTED", 12,
+                    TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+                selectedLabel.color = new Color(.01f, .04f, .08f, 1f);
+                selectedLabel.fontStyle = FontStyle.Bold;
+                selectedMarker.SetActive(false);
                 Bind(buttons[i], actions[i]);
             }
             return buttons;
@@ -927,6 +965,7 @@ namespace AnimeHillRacing.Editor
                 {
                     "startButton", "pendingTrackLabel", "topNavigation", "garageBackground",
                     "defaultGarageBackground", "neonGarageBackground", "animeGarageBackground",
+                    "previousVehicleButton", "nextVehicleButton",
                     "masterAudioToggle", "masterAudioStatus", "confirmationIcon",
                     "confirmationCoinIcon", "confirmationPanel", "confirmationDescription"
                 };
@@ -944,6 +983,63 @@ namespace AnimeHillRacing.Editor
                     SerializedProperty property = serialized.FindProperty(arrays[i]);
                     if (property != null && property.isArray && property.arraySize == expected[i]) continue;
                     Debug.LogError($"Garage: {arrays[i]} must contain {expected[i]} assigned elements.");
+                    valid = false;
+                }
+                GameObject settingsPanel = FindHillObject(scene, "Settings Panel");
+                GameObject vehiclePanel = FindHillObject(scene, "Vehicle Panel");
+                GameObject backgroundTitle = FindHillObject(scene, "Garage Background Title");
+                if (settingsPanel == null || vehiclePanel == null || backgroundTitle == null ||
+                    !backgroundTitle.transform.IsChildOf(settingsPanel.transform) ||
+                    backgroundTitle.transform.IsChildOf(vehiclePanel.transform))
+                {
+                    Debug.LogError("Garage: GARAGE BACKGROUND must exist only inside Settings.");
+                    valid = false;
+                }
+                SerializedProperty backgroundOptions = serialized.FindProperty("backgroundButtons");
+                int selectedMarkers = 0;
+                if (backgroundOptions != null && backgroundOptions.isArray)
+                {
+                    for (int i = 0; i < backgroundOptions.arraySize; i++)
+                    {
+                        Button button = backgroundOptions.GetArrayElementAtIndex(i).objectReferenceValue as Button;
+                        if (button == null || settingsPanel == null ||
+                            !button.transform.IsChildOf(settingsPanel.transform))
+                        {
+                            Debug.LogError("Garage: background option " + i + " is outside Settings.");
+                            valid = false;
+                            continue;
+                        }
+                        if (button.image != null && button.image.color != Color.white)
+                        {
+                            Debug.LogError("Garage: background option " + i + " darkens its original artwork.");
+                            valid = false;
+                        }
+                        Transform marker = button.transform.Find("Selected Marker");
+                        if (marker == null)
+                        {
+                            Debug.LogError("Garage: background option " + i + " has no selected marker.");
+                            valid = false;
+                        }
+                        else if (marker.gameObject.activeSelf) selectedMarkers++;
+                    }
+                }
+                if (selectedMarkers != 1)
+                {
+                    Debug.LogError("Garage: exactly one background option must be visibly selected.");
+                    valid = false;
+                }
+                RectTransform centeredPreview = FindHillComponent<RectTransform>(scene, "Live Composed Preview");
+                if (centeredPreview == null ||
+                    Mathf.Abs((centeredPreview.anchorMin.x + centeredPreview.anchorMax.x) * .5f - .5f) > .01f ||
+                    centeredPreview.anchorMax.x - centeredPreview.anchorMin.x < .60f)
+                {
+                    Debug.LogError("Garage: Vehicle Selection preview is not centered over the stand.");
+                    valid = false;
+                }
+                Image garageOverlay = FindHillComponent<Image>(scene, "Garage Overlay");
+                if (garageOverlay == null || garageOverlay.color.a > .16f)
+                {
+                    Debug.LogError("Garage: overlay darkens the selected background excessively.");
                     valid = false;
                 }
                 ScrollRect[] shopScrolls = SceneComponents<ScrollRect>(scene);

@@ -447,6 +447,70 @@ namespace AnimeHillRacing.Editor
             RequireArray(serializedGarage, "backgroundButtons", 3, true, scope, errors);
             ValidateButtonArrayListeners(serializedGarage, "backgroundButtons", garage,
                 "SelectGarageBackground", 3, scope, errors);
+            Button previousVehicle = RequireObjectReference<Button>(serializedGarage,
+                "previousVehicleButton", scope, errors);
+            Button nextVehicle = RequireObjectReference<Button>(serializedGarage,
+                "nextVehicleButton", scope, errors);
+            if (previousVehicle != null)
+                RequirePersistentListener(previousVehicle.onClick, garage, "PreviousVehicle", scope, errors);
+            if (nextVehicle != null)
+                RequirePersistentListener(nextVehicle.onClick, garage, "NextVehicle", scope, errors);
+
+            GameObject settingsPanel = FindGameObject(scene, "Settings Panel");
+            GameObject vehiclePanel = FindGameObject(scene, "Vehicle Panel");
+            GameObject backgroundTitle = FindGameObject(scene, "Garage Background Title");
+            if (settingsPanel == null || vehiclePanel == null || backgroundTitle == null)
+                Error(errors, scope, "Garage background Settings hierarchy is incomplete.");
+            else if (!backgroundTitle.transform.IsChildOf(settingsPanel.transform) ||
+                     backgroundTitle.transform.IsChildOf(vehiclePanel.transform))
+                Error(errors, scope,
+                    "GARAGE BACKGROUND must live inside Settings and never inside Vehicle Selection.");
+
+            SerializedProperty backgroundButtons = serializedGarage.FindProperty("backgroundButtons");
+            int selectedBackgroundMarkers = 0;
+            if (backgroundButtons != null && backgroundButtons.isArray)
+            {
+                for (int i = 0; i < backgroundButtons.arraySize; i++)
+                {
+                    Button button = backgroundButtons.GetArrayElementAtIndex(i).objectReferenceValue as Button;
+                    if (button == null) continue;
+                    if (settingsPanel == null || !button.transform.IsChildOf(settingsPanel.transform))
+                        Error(errors, scope, "Garage background option " + i +
+                            " is not contained by Settings.");
+                    if (button.image != null && button.image.color != Color.white)
+                        Error(errors, scope, "Garage background option " + i +
+                            " darkens its authored thumbnail color.");
+                    Transform selectedMarker = button.transform.Find("Selected Marker");
+                    if (selectedMarker == null)
+                        Error(errors, scope, "Garage background option " + i +
+                            " has no selected-state marker.");
+                    else if (selectedMarker.gameObject.activeSelf)
+                        selectedBackgroundMarkers++;
+                }
+            }
+            if (selectedBackgroundMarkers != 1)
+                Error(errors, scope, "Exactly one Garage background must be visibly selected.");
+
+            RectTransform vehiclePreview = FindRectTransform(scene, "Live Composed Preview");
+            if (vehiclePreview == null ||
+                Mathf.Abs((vehiclePreview.anchorMin.x + vehiclePreview.anchorMax.x) * .5f - .5f) > .01f ||
+                vehiclePreview.anchorMax.x - vehiclePreview.anchorMin.x < .60f)
+                Error(errors, scope,
+                    "Vehicle Selection preview is not centered in the main Garage presentation area.");
+            GameObject garageOverlayObject = FindGameObject(scene, "Garage Overlay");
+            Image garageOverlay = garageOverlayObject != null ? garageOverlayObject.GetComponent<Image>() : null;
+            if (garageOverlay == null || garageOverlay.color.a > .16f)
+                Error(errors, scope, "Garage overlay darkens the selected background excessively.");
+
+            GameObject shopBackground = FindGameObject(scene, "Shop Neon Background");
+            Image shopBackgroundImage = shopBackground != null ? shopBackground.GetComponent<Image>() : null;
+            GameObject storePanel = FindGameObject(scene, "Store Panel");
+            if (shopBackgroundImage == null || storePanel == null ||
+                !shopBackground.transform.IsChildOf(storePanel.transform))
+                Error(errors, scope, "Shop general background is missing from the Shop panel.");
+            else
+                RequireAssetPath(shopBackgroundImage.sprite, MainNeonBackgroundPath, scope,
+                    "Shop general background shared with Adventure", errors);
 
             RequireArray(serializedGarage, "tuningNames", 6, true, scope, errors);
             RequireArray(serializedGarage, "tuningLevels", 6, true, scope, errors);

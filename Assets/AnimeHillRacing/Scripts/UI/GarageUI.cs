@@ -19,6 +19,8 @@ namespace AnimeHillRacing.UI
         public Sprite neonGarageBackground;
         public Sprite animeGarageBackground;
         public Button[] backgroundButtons;
+        public Button previousVehicleButton;
+        public Button nextVehicleButton;
 
         public Toggle masterAudioToggle;
         public Text masterAudioStatus;
@@ -101,6 +103,8 @@ namespace AnimeHillRacing.UI
         [SerializeField] private Sprite neonGarageBackground;
         [SerializeField] private Sprite animeGarageBackground;
         [SerializeField] private Button[] backgroundButtons;
+        [SerializeField] private Button previousVehicleButton;
+        [SerializeField] private Button nextVehicleButton;
         [SerializeField] private Toggle masterAudioToggle;
         [SerializeField] private Text masterAudioStatus;
         [SerializeField] private Image[] tuningIcons;
@@ -769,6 +773,7 @@ namespace AnimeHillRacing.UI
             if (upgradePanel != null) upgradePanel.SetActive(section == GarageSection.Upgrade);
             if (storePanel != null) storePanel.SetActive(section == GarageSection.Store);
             if (settingsPanel != null) settingsPanel.SetActive(section == GarageSection.Settings);
+            RefreshVehiclePresentationLayout();
             if (section == GarageSection.Store) RefreshBlueprintShop();
             int count = section == GarageSection.Skins ? OptionCount() : 0;
             string selected = section == GarageSection.Skins ? SelectedOptionId() : string.Empty;
@@ -881,11 +886,61 @@ namespace AnimeHillRacing.UI
                 if (button == null) continue;
                 button.gameObject.SetActive(true);
                 string buttonId = i == 1 ? NeonBackgroundId : i == 2 ? AnimeBackgroundId : DefaultBackgroundId;
-                if (button.image != null)
-                    button.image.color = buttonId == selectedId
-                        ? new Color(.14f, .72f, .92f, 1f)
-                        : new Color(.22f, .24f, .28f, .96f);
+                bool isSelected = buttonId == selectedId;
+                // Keep the authored thumbnail colors intact. Selection is communicated by a
+                // dedicated badge and outline instead of multiplying the image by a dark tint.
+                if (button.image != null) button.image.color = Color.white;
+                Outline outline = button.GetComponent<Outline>();
+                if (outline != null) outline.enabled = isSelected;
+                Transform marker = button.transform.Find("Selected Marker");
+                if (marker != null) marker.gameObject.SetActive(isSelected);
             }
+        }
+
+        private void RefreshVehiclePresentationLayout()
+        {
+            bool centered = section == GarageSection.Vehicle;
+            RectTransform previewRect = preview != null && preview.TargetImage != null
+                ? preview.TargetImage.rectTransform : null;
+            SetStretchRect(previewRect,
+                centered ? new Vector2(.16f, .26f) : new Vector2(.08f, .08f),
+                centered ? new Vector2(.84f, .70f) : new Vector2(.55f, .42f));
+            SetStretchRect(vehicleName != null ? vehicleName.rectTransform : null,
+                centered ? new Vector2(.22f, .70f) : new Vector2(.08f, .43f),
+                centered ? new Vector2(.78f, .78f) : new Vector2(.55f, .49f));
+
+            Text[] summaries = { skinSummary, wheelSummary, driverSummary, characterSummary };
+            for (int i = 0; i < summaries.Length; i++)
+            {
+                float minimumX = centered ? .18f + i * .16f : .04f + i * .11f;
+                SetStretchRect(summaries[i] != null ? summaries[i].rectTransform : null,
+                    new Vector2(minimumX, centered ? .13f : .12f),
+                    new Vector2(minimumX + (centered ? .16f : .105f), .23f));
+            }
+
+            SetAnchoredButton(previousVehicleButton,
+                centered ? new Vector2(-690f, -80f) : new Vector2(-840f, -120f));
+            SetAnchoredButton(nextVehicleButton,
+                centered ? new Vector2(690f, -80f) : new Vector2(130f, -120f));
+        }
+
+        private static void SetStretchRect(RectTransform rect, Vector2 anchorMin, Vector2 anchorMax)
+        {
+            if (rect == null) return;
+            rect.anchorMin = anchorMin;
+            rect.anchorMax = anchorMax;
+            rect.anchoredPosition = Vector2.zero;
+            rect.sizeDelta = Vector2.zero;
+        }
+
+        private static void SetAnchoredButton(Button button, Vector2 position)
+        {
+            if (button == null) return;
+            RectTransform rect = button.transform as RectTransform;
+            if (rect == null) return;
+            rect.anchorMin = rect.anchorMax = new Vector2(.5f, .5f);
+            rect.anchoredPosition = position;
+            rect.sizeDelta = new Vector2(76f, 100f);
         }
 
         private void RefreshAudioSetting()
@@ -1461,6 +1516,8 @@ namespace AnimeHillRacing.UI
             neonGarageBackground = bindings.neonGarageBackground;
             animeGarageBackground = bindings.animeGarageBackground;
             backgroundButtons = bindings.backgroundButtons;
+            previousVehicleButton = bindings.previousVehicleButton;
+            nextVehicleButton = bindings.nextVehicleButton;
             masterAudioToggle = bindings.masterAudioToggle;
             masterAudioStatus = bindings.masterAudioStatus;
             tuningIcons = bindings.tuneIcons;

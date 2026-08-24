@@ -34,6 +34,15 @@ namespace AnimeHillRacing.UI
         public Camera PreviewCamera => previewCamera;
         public Transform PreviewRoot => previewRoot;
         public RawImage TargetImage => targetImage;
+        public float HorizontalCenterError
+        {
+            get
+            {
+                return previewCamera != null && TryGetVisibleBounds(out Bounds bounds)
+                    ? Mathf.Abs(bounds.center.x - previewCamera.transform.position.x)
+                    : 0f;
+            }
+        }
 
         private int warmUpFrames = 4;
 
@@ -179,8 +188,45 @@ namespace AnimeHillRacing.UI
             ApplyWheel(frontWheel, wheelOption, vehicle.frontWheelVisualPosition, vehicle.FrontWheelDiameter,
                 wheelSortingOrder);
             ApplyUnderbodyAttachments(vehicle);
+            CenterCompositeHorizontally();
             warmUpFrames = 3;
             RenderNow();
+        }
+
+        private void CenterCompositeHorizontally()
+        {
+            if (previewRoot == null || previewCamera == null) return;
+
+            // Reset before measuring so switching between asymmetrical vehicles cannot accumulate
+            // offsets. Only the reusable preview hierarchy moves; gameplay prefabs remain untouched.
+            Vector3 rootPosition = previewRoot.position;
+            rootPosition.x = previewCamera.transform.position.x;
+            previewRoot.position = rootPosition;
+            if (!TryGetVisibleBounds(out Bounds bounds)) return;
+            rootPosition = previewRoot.position;
+            rootPosition.x += previewCamera.transform.position.x - bounds.center.x;
+            previewRoot.position = rootPosition;
+        }
+
+        private bool TryGetVisibleBounds(out Bounds bounds)
+        {
+            bounds = default;
+            if (previewRoot == null) return false;
+            SpriteRenderer[] renderers = previewRoot.GetComponentsInChildren<SpriteRenderer>(true);
+            bool found = false;
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                SpriteRenderer renderer = renderers[i];
+                if (renderer == null || renderer.sprite == null || !renderer.enabled ||
+                    !renderer.gameObject.activeInHierarchy) continue;
+                if (!found)
+                {
+                    bounds = renderer.bounds;
+                    found = true;
+                }
+                else bounds.Encapsulate(renderer.bounds);
+            }
+            return found;
         }
 
         public void Assign(Camera camera, RawImage image, Transform root, SpriteRenderer bodyRenderer,

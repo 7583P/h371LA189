@@ -3352,9 +3352,24 @@ namespace AnimeHillRacing.Editor
             if (!formulaLeftThigh.enabled || formulaRightThigh.enabled)
                 throw new System.InvalidOperationException(
                     "Jeep driver pose must restore one clean side-view leg without duplicated limb sprites.");
+            VehicleDefinition[] catalogVehicles = assets.catalog?.vehicles ?? System.Array.Empty<VehicleDefinition>();
+            for (int vehicleIndex = 0; vehicleIndex < catalogVehicles.Length; vehicleIndex++)
+            {
+                VehicleDefinition vehicle = catalogVehicles[vehicleIndex];
+                if (vehicle == null) continue;
+                VehicleDefinition.CustomizationOption skin = vehicle.skins != null && vehicle.skins.Length > 0
+                    ? vehicle.skins[0] : null;
+                VehicleDefinition.CustomizationOption wheel = vehicle.wheels != null && vehicle.wheels.Length > 0
+                    ? vehicle.wheels[0] : null;
+                preview.Apply(vehicle, skin, wheel, assets.stickmanBlack);
+                if (preview.HorizontalCenterError > .001f)
+                    throw new System.InvalidOperationException(
+                        $"{vehicle.displayName}: Garage composition is not centered over the presentation stand.");
+            }
             Debug.Log($"Garage live composition validation: Formula Wheel 02 correct; Sport Bike front " +
                       $"{assets.sportBike.FrontWheelDiameter:0.00}m ({frontPercent:P1}), rear " +
-                      $"{assets.sportBike.RearWheelDiameter:0.00}m ({rearPercent:P1}), all three wheel skins normalized.");
+                      $"{assets.sportBike.RearWheelDiameter:0.00}m ({rearPercent:P1}), all three wheel skins " +
+                      $"normalized; {catalogVehicles.Length} catalog vehicles centered.");
         }
 
         private static void ValidateCharacterAccessoryAndShopContract(BuiltAssets assets)

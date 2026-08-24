@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using AnimeHillRacing.Core;
 using AnimeHillRacing.Terrain;
 using AnimeHillRacing.Vehicle;
@@ -42,11 +43,26 @@ namespace AnimeHillRacing.UI
         [SerializeField] private Button[] tuningButtons;
         [SerializeField] private Text tuningCoinsText;
 
+        [Header("Adventure Track Selection")]
+        [SerializeField] private bool trackSelectionLayout;
+        [SerializeField] private GameObject trackSelectionRoot;
+        [SerializeField] private ScrollRect trackScroll;
+        [SerializeField] private RectTransform trackContent;
+        [SerializeField] private GridLayoutGroup trackGrid;
+        [SerializeField] private TrackSelectionCardUI trackCardTemplate;
+        [SerializeField] private TrackSelectionCardUI[] trackCards;
+        [SerializeField] private Text trackSelectionTitleText;
+        [SerializeField] private Text trackSelectionEmptyText;
+        [SerializeField, Min(.5f)] private float trackCardAspectRatio = 1.62f;
+
         private Step step;
         private GameModeType mode = GameModeType.Adventure2_5D;
         private int mapIndex;
         private int vehicleIndex;
         private bool outlinesConfigured;
+        private readonly List<TrackSelectionCardUI> generatedTrackCards = new List<TrackSelectionCardUI>();
+        private float lastTrackViewportWidth = -1f;
+        private int displayedTrackCoins = int.MinValue;
 
         private VehicleDefinition CurrentVehicle => catalog != null && catalog.vehicles != null && catalog.vehicles.Length > 0
             ? catalog.vehicles[Mathf.Clamp(vehicleIndex, 0, catalog.vehicles.Length - 1)] : null;
@@ -54,11 +70,17 @@ namespace AnimeHillRacing.UI
 
         private void Awake()
         {
-            EnsureModernLayout();
+            if (!trackSelectionLayout) EnsureModernLayout();
         }
 
         private void Start()
         {
+            if (trackSelectionLayout)
+            {
+                InitializeTrackSelection();
+                return;
+            }
+
             EnsureModernLayout();
             ResolveMapPreviewImages();
             mode = GameModeType.Adventure2_5D;
@@ -67,6 +89,13 @@ namespace AnimeHillRacing.UI
             GameSession.OpenTuningOnPreStart = false;
             GameSession.SelectedTransmission = TransmissionMode.Auto;
             ShowStep(Step.Mode);
+        }
+
+        private void Update()
+        {
+            if (!trackSelectionLayout) return;
+            ConfigureTwoColumnGrid();
+            if (displayedTrackCoins != SaveManager.TotalCoins) RefreshTrackSelectionCurrency();
         }
 
         private void EnsureModernLayout()
@@ -417,6 +446,132 @@ namespace AnimeHillRacing.UI
             }
         }
 
+        private void InitializeTrackSelection()
+        {
+            mode = GameModeType.Adventure2_5D;
+            GameSession.BeginAdventureTrackSelection();
+            if (trackSelectionRoot != null) trackSelectionRoot.SetActive(true);
+            if (stepPanels != null)
+                for (int i = 0; i < stepPanels.Length; i++)
+                    if (stepPanels[i] != null && stepPanels[i] != trackSelectionRoot)
+                        stepPanels[i].SetActive(false);
+
+            ConfigureTwoColumnGrid(true);
+            RebuildTrackCards();
+            RefreshTrackSelectionCurrency();
+            if (trackSelectionTitleText != null) trackSelectionTitleText.text = "SELECT A TRACK";
+            if (trackScroll != null) trackScroll.verticalNormalizedPosition = 1f;
+        }
+
+        private void RebuildTrackCards()
+        {
+            int mapCount = catalog != null ? catalog.CountMaps(GameModeType.Adventure2_5D) : 0;
+            bool useTemplate = trackCardTemplate != null && trackContent != null;
+            if (useTemplate)
+            {
+                for (int i = 0; i < generatedTrackCards.Count; i++)
+                    if (generatedTrackCards[i] != null)
+                    {
+                        generatedTrackCards[i].gameObject.SetActive(false);
+                        Destroy(generatedTrackCards[i].gameObject);
+                    }
+                generatedTrackCards.Clear();
+                trackCardTemplate.gameObject.SetActive(false);
+                for (int i = 0; i < mapCount; i++)
+                {
+                    TrackSelectionCardUI card = Instantiate(trackCardTemplate, trackContent);
+                    card.name = $"Track Card {i + 1}";
+                    card.gameObject.SetActive(true);
+                    card.Bind(catalog.GetCompatibleMap(GameModeType.Adventure2_5D, i), i, SelectAdventureTrack);
+                    generatedTrackCards.Add(card);
+                }
+            }
+            else
+            {
+                int cardCount = trackCards != null ? trackCards.Length : 0;
+                for (int i = 0; i < cardCount; i++)
+                {
+                    if (trackCards[i] == null) continue;
+                    bool visible = i < mapCount;
+                    trackCards[i].gameObject.SetActive(visible);
+                    if (visible)
+                        trackCards[i].Bind(catalog.GetCompatibleMap(GameModeType.Adventure2_5D, i), i,
+                            SelectAdventureTrack);
+                }
+                if (mapCount > cardCount)
+                    Debug.LogError($"Track Selection needs {mapCount} cards but only {cardCount} were assigned.", this);
+            }
+
+            if (trackSelectionEmptyText != null)
+            {
+                trackSelectionEmptyText.gameObject.SetActive(mapCount == 0);
+                trackSelectionEmptyText.text = mapCount == 0 ? "NO ADVENTURE TRACKS AVAILABLE" : string.Empty;
+            }
+        }
+
+        private void ConfigureTwoColumnGrid(bool force = false)
+        {
+            if (trackGrid == null) return;
+            trackGrid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+            trackGrid.constraintCount = 2;
+            trackGrid.startAxis = GridLayoutGroup.Axis.Horizontal;
+
+            RectTransform viewport = trackScroll != null && trackScroll.viewport != null
+                ? trackScroll.viewport : trackGrid.GetComponent<RectTransform>();
+            float width = viewport != null ? viewport.rect.width : 0f;
+            if (width <= 1f || (!force && Mathf.Abs(width - lastTrackViewportWidth) < .5f)) return;
+            lastTrackViewportWidth = width;
+
+            float available = width - trackGrid.padding.left - trackGrid.padding.right - trackGrid.spacing.x;
+            float cardWidth = Mathf.Max(1f, available * .5f);
+            float cardHeight = cardWidth / Mathf.Max(.5f, trackCardAspectRatio);
+            trackGrid.cellSize = new Vector2(cardWidth, cardHeight);
+            if (trackContent != null) LayoutRebuilder.MarkLayoutForRebuild(trackContent);
+        }
+
+        private void RefreshTrackSelectionCurrency()
+        {
+            displayedTrackCoins = SaveManager.TotalCoins;
+            if (coinsText != null) coinsText.text = $"COINS  {displayedTrackCoins:N0}";
+        }
+
+        public void SelectAdventureTrack(int compatibleMapIndex)
+        {
+            MapDefinition map = catalog?.GetCompatibleMap(GameModeType.Adventure2_5D, compatibleMapIndex);
+            if (!GameSession.PrepareAdventureGarage(map)) return;
+            SceneManager.LoadScene("Garage");
+        }
+
+        public void Adventure()
+        {
+            GameSession.BeginAdventureTrackSelection();
+            if (trackSelectionLayout)
+            {
+                RebuildTrackCards();
+                if (trackScroll != null) trackScroll.verticalNormalizedPosition = 1f;
+                return;
+            }
+            SceneManager.LoadScene("PreStart");
+        }
+
+        public void Garage()
+        {
+            GameSession.RequestDirectGarage(GarageSection.Vehicle);
+            SceneManager.LoadScene("Garage");
+        }
+
+        public void Shop()
+        {
+            GameSession.RequestDirectGarage(GarageSection.Store);
+            SceneManager.LoadScene("Garage");
+        }
+
+        public void Settings()
+        {
+            GameSession.RequestDirectGarage(GarageSection.Settings);
+            SceneManager.LoadScene("Garage");
+        }
+
         public void SelectAdventure2_5D() => SelectMode(GameModeType.Adventure2_5D);
         public void SelectAdventure3D() => SelectMode(GameModeType.Adventure3D);
         public void SelectTimeTrial3D() => SelectMode(GameModeType.TimeTrial3D);
@@ -434,12 +589,19 @@ namespace AnimeHillRacing.UI
 
         public void ContinueStep()
         {
+            if (trackSelectionLayout) return;
             if (step == Step.Vehicle) { StartGame(); return; }
             ShowStep(Step.Vehicle);
         }
 
         public void BackStep()
         {
+            if (trackSelectionLayout)
+            {
+                GameSession.ClearGarageContext();
+                SceneManager.LoadScene("MainMenu");
+                return;
+            }
             if (step == Step.Mode) { SceneManager.LoadScene("MainMenu"); return; }
             ShowStep(Step.Mode);
         }
@@ -458,7 +620,7 @@ namespace AnimeHillRacing.UI
 
         public void OpenTuning()
         {
-            GameSession.RequestedGarageSection = GarageSection.Tuning;
+            GameSession.RequestDirectGarage(GarageSection.Tuning);
             SceneManager.LoadScene("Garage");
         }
 
@@ -478,6 +640,11 @@ namespace AnimeHillRacing.UI
 
         public void StartGame()
         {
+            if (trackSelectionLayout)
+            {
+                SelectAdventureTrack(mapIndex);
+                return;
+            }
             MapDefinition map = CurrentMap;
             VehicleDefinition vehicle = CurrentVehicle;
             if (map == null || vehicle == null) return;
@@ -882,6 +1049,46 @@ namespace AnimeHillRacing.UI
 
         private static string FormatTime(float seconds) => seconds <= 0f ? "--:--.---" :
             $"{Mathf.FloorToInt(seconds / 60f):00}:{seconds % 60f:00.000}";
+
+        public void AssignTrackSelection(GameCatalog gameCatalog, ScrollRect scroll, GridLayoutGroup grid,
+            TrackSelectionCardUI[] cards, Text coins = null, Text title = null, Text emptyState = null,
+            GameObject selectionRoot = null, float cardAspectRatio = 1.62f)
+        {
+            catalog = gameCatalog;
+            trackSelectionLayout = true;
+            trackSelectionRoot = selectionRoot;
+            trackScroll = scroll;
+            trackGrid = grid;
+            trackContent = grid != null ? grid.GetComponent<RectTransform>() : scroll?.content;
+            trackCards = cards;
+            trackCardTemplate = null;
+            coinsText = coins;
+            trackSelectionTitleText = title;
+            trackSelectionEmptyText = emptyState;
+            trackCardAspectRatio = Mathf.Max(.5f, cardAspectRatio);
+            ConfigureTwoColumnGrid(true);
+        }
+
+        public void AssignTrackSelectionTemplate(GameCatalog gameCatalog, ScrollRect scroll,
+            GridLayoutGroup grid, RectTransform content, TrackSelectionCardUI cardTemplate,
+            Text coins = null, Text title = null, Text emptyState = null,
+            GameObject selectionRoot = null, float cardAspectRatio = 1.62f)
+        {
+            catalog = gameCatalog;
+            trackSelectionLayout = true;
+            trackSelectionRoot = selectionRoot;
+            trackScroll = scroll;
+            trackGrid = grid;
+            trackContent = content != null ? content : grid != null ? grid.GetComponent<RectTransform>() :
+                scroll?.content;
+            trackCards = null;
+            trackCardTemplate = cardTemplate;
+            coinsText = coins;
+            trackSelectionTitleText = title;
+            trackSelectionEmptyText = emptyState;
+            trackCardAspectRatio = Mathf.Max(.5f, cardAspectRatio);
+            ConfigureTwoColumnGrid(true);
+        }
 
         public void Assign(GameCatalog gameCatalog, Text coins, Text progress, GameObject[] panels,
             Image[] cards, RectTransform[] cardRects, Text[] cardStatuses, Text modeLabel, Text mapLabel,

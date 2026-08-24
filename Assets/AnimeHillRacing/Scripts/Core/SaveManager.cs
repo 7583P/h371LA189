@@ -21,9 +21,10 @@ namespace AnimeHillRacing.Core
 
     public static class SaveManager
     {
-        // Temporary development switch. Set this to false to restore the player's real balances.
-        public static bool TemporaryUnlimitedCurrencyEnabled => true;
+        // Keep the switch visible to the existing economy code, but ship against real balances.
+        public static bool TemporaryUnlimitedCurrencyEnabled => false;
         public const int UnlimitedCurrencyDisplayAmount = 999_999_999;
+        public const string DefaultGarageBackgroundId = "default";
 
         public const int DistanceBonusMinimum = 200;
         public const int DistanceBonusMaximum = 2500;
@@ -38,6 +39,8 @@ namespace AnimeHillRacing.Core
         private const string SelectedTransmissionKey = "AHR.SelectedTransmission";
         private const string SelectedDriverKey = "AHR.Customize.Driver";
         private const string SelectedCharacterAccessoryKey = "AHR.Customize.CharacterAccessory";
+        private const string SelectedGarageBackgroundKey = "AHR.Garage.Background";
+        private const string MasterAudioEnabledKey = "AHR.Settings.MasterAudioEnabled";
         private const string DistanceBonusValueKey = "AHR.DistanceBonus.CurrentValue";
         private const string DistanceBonusThresholdKey = "AHR.DistanceBonus.NextThreshold";
         private const string DistanceBonusX10MigrationKey = "AHR.Migration.DistanceBonusX10.V1";
@@ -96,6 +99,39 @@ namespace AnimeHillRacing.Core
         {
             get => PlayerPrefs.GetString(SelectedVehicleKey, "car-01");
             set { PlayerPrefs.SetString(SelectedVehicleKey, value ?? string.Empty); PlayerPrefs.Save(); }
+        }
+
+        public static string SelectedGarageBackgroundId
+        {
+            get
+            {
+                string backgroundId = PlayerPrefs.GetString(SelectedGarageBackgroundKey,
+                    DefaultGarageBackgroundId);
+                return string.IsNullOrEmpty(backgroundId) ? DefaultGarageBackgroundId : backgroundId;
+            }
+            set
+            {
+                PlayerPrefs.SetString(SelectedGarageBackgroundKey,
+                    string.IsNullOrEmpty(value) ? DefaultGarageBackgroundId : value);
+                PlayerPrefs.Save();
+            }
+        }
+
+        public static bool MasterAudioEnabled
+        {
+            get => PlayerPrefs.GetInt(MasterAudioEnabledKey, 1) != 0;
+            set
+            {
+                PlayerPrefs.SetInt(MasterAudioEnabledKey, value ? 1 : 0);
+                AudioListener.volume = value ? 1f : 0f;
+                PlayerPrefs.Save();
+            }
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void ApplyPersistedAudioSetting()
+        {
+            AudioListener.volume = MasterAudioEnabled ? 1f : 0f;
         }
 
         public static TransmissionMode SelectedTransmission

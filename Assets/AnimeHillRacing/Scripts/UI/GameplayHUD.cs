@@ -20,6 +20,8 @@ namespace AnimeHillRacing.UI
         [SerializeField] private Text fuelText;
         [SerializeField] private Image fuelIcon;
         [SerializeField] private Image fuelFill;
+        [SerializeField] private Image lowFuelWarning;
+        [SerializeField, Min(0f)] private float lowFuelWarningSeconds = 5f;
         [SerializeField] private GameObject liquidExposurePanel;
         [SerializeField] private Text liquidExposureText;
         [SerializeField] private Image liquidExposureFill;
@@ -74,10 +76,15 @@ namespace AnimeHillRacing.UI
                 fuelEmptyOffsetMax.x = fuelFillRect.offsetMin.x;
             }
             debugPanel?.SetActive(false);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             teleportModal = TeleportModalUI.Create(transform);
             EnsureTeleportButton();
+#endif
+            EnsureLowFuelWarning();
+            SetLowFuelWarningVisible(false);
         }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         private TeleportModalUI teleportModal;
 
         private void EnsureTeleportButton()
@@ -138,11 +145,14 @@ namespace AnimeHillRacing.UI
 
             buttonObj.AddComponent<ButtonPressFeedback>();
         }
+#endif
 
         public void OnTeleportClicked()
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (teleportModal != null)
                 teleportModal.Toggle();
+#endif
         }
 
         private static void RemoveDecorativeCardBackground(Text content, string expectedCardName)
@@ -197,6 +207,9 @@ namespace AnimeHillRacing.UI
             }
             FuelSystem runtimeFuel = vehicle.Fuel;
             float normalizedFuel = runtimeFuel != null ? runtimeFuel.NormalizedFuel : 0f;
+            SetLowFuelWarningVisible(runtimeFuel != null && ShouldDisplayLowFuel(
+                runtimeFuel.CurrentFuel, runtimeFuel.CurrentConsumptionPerSecond,
+                lowFuelWarningSeconds));
             if (fuelText != null) fuelText.text = $"{normalizedFuel * 100f:0}%";
             if (fuelFill != null)
             {
@@ -297,6 +310,28 @@ namespace AnimeHillRacing.UI
             liquidExposureFill = fill;
         }
 
+        public void AssignLowFuelWarning(Image warning)
+        {
+            if (warning == lowFuelWarning) return;
+            if (lowFuelWarning != null) lowFuelWarning.gameObject.SetActive(false);
+            lowFuelWarning = warning;
+            SetLowFuelWarningVisible(false);
+        }
+
+        public static bool ShouldDisplayLowFuel(float currentFuel,
+            float currentConsumptionPerSecond, float warningSeconds = 5f)
+        {
+            if (currentFuel <= 0f || currentConsumptionPerSecond <= 0f || warningSeconds < 0f ||
+                float.IsNaN(currentFuel) || float.IsInfinity(currentFuel) ||
+                float.IsNaN(currentConsumptionPerSecond) ||
+                float.IsInfinity(currentConsumptionPerSecond) ||
+                float.IsNaN(warningSeconds) || float.IsInfinity(warningSeconds))
+                return false;
+
+            float remainingSeconds = currentFuel / currentConsumptionPerSecond;
+            return remainingSeconds <= warningSeconds;
+        }
+
         private static void SetNeedle(RectTransform needle, float normalized, float zeroAngle, float fullAngle)
         {
             if (needle == null) return;
@@ -307,6 +342,57 @@ namespace AnimeHillRacing.UI
         public void AssignPickupPool(PickupPool pool) => pickupPool = pool;
 
         public void ResetDisplayedDistance() => displayedDistance = int.MinValue;
+
+        private void EnsureLowFuelWarning()
+        {
+            if (lowFuelWarning != null) return;
+
+            Transform existing = transform.Find("Low Fuel Warning");
+            if (existing != null)
+                lowFuelWarning = existing.GetComponent<Image>();
+            if (lowFuelWarning != null) return;
+
+            GameObject warningObject = new GameObject("Low Fuel Warning",
+                typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            warningObject.transform.SetParent(transform, false);
+            RectTransform warningRect = warningObject.GetComponent<RectTransform>();
+            warningRect.anchorMin = new Vector2(0.5f, 1f);
+            warningRect.anchorMax = new Vector2(0.5f, 1f);
+            warningRect.pivot = new Vector2(0.5f, 1f);
+            warningRect.anchoredPosition = new Vector2(0f, -110f);
+            warningRect.sizeDelta = new Vector2(280f, 84f);
+
+            lowFuelWarning = warningObject.GetComponent<Image>();
+            lowFuelWarning.color = new Color(0.78f, 0.025f, 0.015f, 0.92f);
+            lowFuelWarning.raycastTarget = false;
+
+            GameObject labelObject = new GameObject("Label",
+                typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
+            labelObject.transform.SetParent(warningObject.transform, false);
+            RectTransform labelRect = labelObject.GetComponent<RectTransform>();
+            labelRect.anchorMin = Vector2.zero;
+            labelRect.anchorMax = Vector2.one;
+            labelRect.offsetMin = Vector2.zero;
+            labelRect.offsetMax = Vector2.zero;
+
+            Text label = labelObject.GetComponent<Text>();
+            label.font = distanceText != null && distanceText.font != null
+                ? distanceText.font
+                : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            label.fontSize = 28;
+            label.fontStyle = FontStyle.Bold;
+            label.alignment = TextAnchor.MiddleCenter;
+            label.color = Color.white;
+            label.text = "LOW FUEL";
+            label.raycastTarget = false;
+            AddTextOutline(label);
+        }
+
+        private void SetLowFuelWarningVisible(bool visible)
+        {
+            if (lowFuelWarning != null && lowFuelWarning.gameObject.activeSelf != visible)
+                lowFuelWarning.gameObject.SetActive(visible);
+        }
 
         private static void AddTextOutline(Text text)
         {

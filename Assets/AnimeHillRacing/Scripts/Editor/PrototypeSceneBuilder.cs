@@ -25,7 +25,7 @@ using UnityEngine.UI;
 
 namespace AnimeHillRacing.Editor
 {
-    public static class PrototypeSceneBuilder
+    public static partial class PrototypeSceneBuilder
     {
         private const string Root = "Assets/AnimeHillRacing";
         private const string Scenes = Root + "/Scenes";
@@ -312,6 +312,9 @@ namespace AnimeHillRacing.Editor
             BuildMainMenu(assets);
             BuildPreStartModern(assets);
             BuildAdventure2_5D(assets);
+            BuildGarageHillAdventurer(assets);
+            BuildMainMenuHillAdventurer(assets);
+            BuildTrackSelectionHillAdventurer(assets);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             EditorSceneManager.OpenScene(MainMenuPath, OpenSceneMode.Single);
@@ -330,6 +333,7 @@ namespace AnimeHillRacing.Editor
             ValidateVehiclePhysicsContract(assets);
             ValidateSuspensionContract(assets);
             BuildGarageModern(assets);
+            BuildGarageHillAdventurer(assets);
             ValidateCharacterAccessoryAndShopContract(assets);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -453,6 +457,9 @@ namespace AnimeHillRacing.Editor
             BuildAdventure2_5D(assets);
             BuildAdventure3D(assets);
             BuildTimeTrial3D(assets);
+            BuildGarageHillAdventurer(assets);
+            BuildMainMenuHillAdventurer(assets);
+            BuildTrackSelectionHillAdventurer(assets);
             EditorBuildSettings.scenes = new[]
             {
                 new EditorBuildSettingsScene(MainMenuPath, true),
@@ -745,12 +752,15 @@ namespace AnimeHillRacing.Editor
                     continue;
                 }
                 Scene scene = EditorSceneManager.OpenScene(paths[i], OpenSceneMode.Single);
-                valid &= ValidateScene(scene);
+                bool rebuiltMenu = scene.name == "MainMenu" || scene.name == "Garage" ||
+                                   scene.name == "PreStart";
+                valid &= rebuiltMenu ? ValidateHillAdventurerMenuScene(scene) : ValidateScene(scene);
             }
             if (valid)
                 Debug.Log("Anime Hill Racing validation: all six scenes and runtime references are connected.");
             else
-                Debug.LogError("Anime Hill Racing validation failed. Review the errors above.");
+                throw new System.InvalidOperationException(
+                    "Anime Hill Racing validation failed. Review the errors above.");
         }
 
         [MenuItem("Anime Hill Racing/Validate Gameplay Scenes")]
@@ -880,6 +890,7 @@ namespace AnimeHillRacing.Editor
                     {
                         valid &= RequireReference(scene, timeTrialHuds[0], "speedNeedle");
                         valid &= RequireReference(scene, timeTrialHuds[0], "rpmNeedle");
+                        valid &= RequireReference(scene, timeTrialHuds[0], "lowFuelWarning");
                         valid &= ValidateVehicleGauge(scene, timeTrialHuds[0], "rpmNeedle", "RPM Gauge",
                             new Vector2(-150f, 118f), new Vector2(.499694f, .357008f),
                             new Vector2(.136906f, .202061f), 104f, 159f, -49f);
@@ -932,7 +943,7 @@ namespace AnimeHillRacing.Editor
                 if (huds.Length == 1)
                 {
                     string[] fields = { "distanceText", "bestText", "coinsText", "coinIcon", "nextFuelText",
-                        "nextFuelIcon", "fuelText", "fuelIcon", "fuelFill",
+                        "nextFuelIcon", "fuelText", "fuelIcon", "fuelFill", "lowFuelWarning",
                         "speedNeedle", "rpmNeedle", "debugPanel", "debugText" };
                     for (int i = 0; i < fields.Length; i++) valid &= RequireReference(scene, huds[0], fields[i]);
                     Image fuelFill = new SerializedObject(huds[0]).FindProperty("fuelFill")?.objectReferenceValue as Image;
@@ -4511,6 +4522,8 @@ namespace AnimeHillRacing.Editor
             BuiltAssets assets = CreateAssets();
             BuildGarageModern(assets);
             BuildMainMenu(assets);
+            BuildGarageHillAdventurer(assets);
+            BuildMainMenuHillAdventurer(assets);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             ChestDebugTools.ValidateSystem();
@@ -4527,6 +4540,7 @@ namespace AnimeHillRacing.Editor
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
             BuiltAssets assets = CreateAssets();
             BuildMainMenu(assets);
+            BuildMainMenuHillAdventurer(assets);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             ChestDebugTools.ValidateSystem();
@@ -6408,18 +6422,21 @@ namespace AnimeHillRacing.Editor
 
             GameObject accessorySection = CreateImage("Character Accessories", content.transform,
                 new Color(.035f, .085f, .13f, .98f), new Vector2(.5f, .5f), new Vector2(.5f, .5f),
-                Vector2.zero, new Vector2(900f, 410f));
-            accessorySection.AddComponent<LayoutElement>().preferredHeight = 410f;
+                Vector2.zero, new Vector2(900f, 650f));
+            accessorySection.AddComponent<LayoutElement>().preferredHeight = 650f;
             CreateText("Character Accessories Title", accessorySection.transform, "CHARACTER ACCESSORIES", 27,
                 TextAnchor.MiddleLeft, new Vector2(.04f, .78f), new Vector2(.96f, .96f), Vector2.zero, Vector2.zero).fontStyle = FontStyle.Bold;
-            var shopAccessoryButtons = new Button[3]; var shopAccessoryImages = new Image[3];
-            var shopAccessoryLabels = new Text[3];
+            var shopAccessoryButtons = new Button[4]; var shopAccessoryImages = new Image[4];
+            var shopAccessoryLabels = new Text[4];
             UnityAction[] accessoryActions = { menu.SelectShopAccessory0, menu.SelectShopAccessory1,
-                menu.SelectShopAccessory2 };
+                menu.SelectShopAccessory2, menu.SelectShopAccessory3 };
             for (int i = 0; i < shopAccessoryButtons.Length; i++)
             {
+                int column = i % 2;
+                int accessoryRow = i / 2;
                 shopAccessoryButtons[i] = CreateButton("Accessory " + (i + 1), accessorySection.transform, "",
-                    new Vector2(-285f + i * 285f, -55f), new Vector2(255f, 255f));
+                    new Vector2(-215f + column * 430f, 85f - accessoryRow * 260f),
+                    new Vector2(390f, 235f));
                 shopAccessoryImages[i] = CreateImage("Thumbnail", shopAccessoryButtons[i].transform, Color.white,
                     new Vector2(.08f, .30f), new Vector2(.92f, .93f), Vector2.zero, Vector2.zero).GetComponent<Image>();
                 shopAccessoryImages[i].raycastTarget = false; shopAccessoryImages[i].preserveAspect = true;
@@ -6444,8 +6461,8 @@ namespace AnimeHillRacing.Editor
             Text modalStatus = CreateText("Status", modal.transform, "", 22, TextAnchor.MiddleCenter,
                 new Vector2(.08f, .15f), new Vector2(.92f, .26f), Vector2.zero, Vector2.zero);
             modalStatus.color = new Color(1f, .30f, .28f);
-            Button yes = CreateButton("Yes", modal.transform, "YES", new Vector2(-170f, -175f), new Vector2(260f, 72f));
-            Button no = CreateButton("No", modal.transform, "NO", new Vector2(170f, -175f), new Vector2(260f, 72f));
+            Button yes = CreateButton("Yes", modal.transform, "UPGRADE", new Vector2(-170f, -175f), new Vector2(260f, 72f));
+            Button no = CreateButton("No", modal.transform, "CANCEL", new Vector2(170f, -175f), new Vector2(260f, 72f));
             yes.image.color = new Color(.16f, .72f, .26f, 1f); no.image.color = new Color(.82f, .16f, .14f, 1f);
             Bind(yes, menu.ConfirmPurchase); Bind(no, menu.CancelPurchase); modal.SetActive(false);
 
@@ -7202,6 +7219,10 @@ namespace AnimeHillRacing.Editor
                 new Vector2(.499704f, .316062f), new Vector2(.138627f, .166769f), 116f, 172f);
             Text status = CreateText("Status", root.transform, "", 34, TextAnchor.MiddleCenter,
                 new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 120f), new Vector2(500f, 60f));
+            Image lowFuelWarning = CreateSpriteImage("Low Fuel Warning", root.transform,
+                AssetDatabase.LoadAssetAtPath<Sprite>(HillLowFuelPath), new Vector2(.5f, 1f),
+                new Vector2(0f, -278f), new Vector2(300f, 200f));
+            lowFuelWarning.gameObject.SetActive(false);
             GameObject debugPanel = CreateImage("Debug Panel", root.transform, new Color(0f, 0f, 0f, 0.75f),
                 new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-25f, 80f), new Vector2(540f, 570f));
             Text debug = CreateText("Debug Text", debugPanel.transform, "", 20, TextAnchor.UpperLeft,
@@ -7211,6 +7232,7 @@ namespace AnimeHillRacing.Editor
                 speedNeedle, rpmNeedle, status,
                 debugPanel, debug, input, nextFuelCard);
             hud.AssignLiquidExposure(liquidCard, liquidText, liquidFill);
+            hud.AssignLowFuelWarning(lowFuelWarning);
             debugPanel.SetActive(false);
             return hud;
         }
@@ -7336,12 +7358,18 @@ namespace AnimeHillRacing.Editor
             RectTransform speedNeedle = CreateVehicleGauge("KMH Gauge", root.transform, speedGauge, speedArrow,
                 new Vector2(150f, 118f), 200f, new Vector2(.499704f, .316062f),
                 new Vector2(.138627f, .166769f), 116f, 172f);
+            Image lowFuelWarning = CreateSpriteImage("Low Fuel Warning", root.transform,
+                AssetDatabase.LoadAssetAtPath<Sprite>(HillLowFuelPath), new Vector2(.5f, 1f),
+                new Vector2(0f, -150f), new Vector2(280f, 90f));
+            lowFuelWarning.raycastTarget = false;
+            lowFuelWarning.gameObject.SetActive(false);
             GameObject debugPanel = CreateImage("Debug Panel", root.transform, new Color(0f, 0f, 0f, 0.75f),
                 new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-25f, 80f), new Vector2(500f, 340f));
             Text debug = CreateText("Debug Text", debugPanel.transform, "", 20, TextAnchor.UpperLeft,
                 Vector2.zero, Vector2.one, new Vector2(15f, -15f), new Vector2(-30f, -30f));
             TimeTrialHUD hud = root.AddComponent<TimeTrialHUD>();
             hud.Assign(timer, lap, best, speedNeedle, rpmNeedle, debugPanel, debug, input);
+            hud.AssignLowFuelWarning(lowFuelWarning);
             debugPanel.SetActive(false); return hud;
         }
 

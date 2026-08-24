@@ -7,6 +7,41 @@ using UnityEngine.UI;
 
 namespace AnimeHillRacing.UI
 {
+    [System.Serializable]
+    public sealed class HillAdventurerGarageBindings
+    {
+        public Button startButton;
+        public Text pendingTrackLabel;
+        public TopNavigationUI topNavigation;
+
+        public Image garageBackground;
+        public Sprite defaultGarageBackground;
+        public Sprite neonGarageBackground;
+        public Sprite animeGarageBackground;
+        public Button[] backgroundButtons;
+
+        public Toggle masterAudioToggle;
+        public Text masterAudioStatus;
+
+        public Image[] tuneIcons;
+        public Image[] tuneCoinIcons;
+        public Sprite engineTuneIcon;
+        public Sprite accelerationTuneIcon;
+        public Sprite suspensionTuneIcon;
+        public Sprite gripTuneIcon;
+        public Sprite fuelTuneIcon;
+        public Sprite downforceTuneIcon;
+        public Sprite thrustersTuneIcon;
+        public Sprite buggyInclinationTuneIcon;
+        public Sprite tuneAffordableBackground;
+        public Sprite tuneUnaffordableBackground;
+
+        public Image confirmationIcon;
+        public Image confirmationCoinIcon;
+        public Image confirmationPanel;
+        public Text confirmationDescription;
+    }
+
     [ExecuteAlways]
     public sealed class GarageUI : MonoBehaviour
     {
@@ -58,6 +93,32 @@ namespace AnimeHillRacing.UI
         [SerializeField] private Button[] shopAccessoryButtons;
         [SerializeField] private Image[] shopAccessoryImages;
         [SerializeField] private Text[] shopAccessoryLabels;
+        [SerializeField] private Button startButton;
+        [SerializeField] private Text pendingTrackLabel;
+        [SerializeField] private TopNavigationUI topNavigation;
+        [SerializeField] private Image garageBackground;
+        [SerializeField] private Sprite defaultGarageBackground;
+        [SerializeField] private Sprite neonGarageBackground;
+        [SerializeField] private Sprite animeGarageBackground;
+        [SerializeField] private Button[] backgroundButtons;
+        [SerializeField] private Toggle masterAudioToggle;
+        [SerializeField] private Text masterAudioStatus;
+        [SerializeField] private Image[] tuningIcons;
+        [SerializeField] private Image[] tuningCoinIcons;
+        [SerializeField] private Sprite engineTuneIcon;
+        [SerializeField] private Sprite accelerationTuneIcon;
+        [SerializeField] private Sprite suspensionTuneIcon;
+        [SerializeField] private Sprite gripTuneIcon;
+        [SerializeField] private Sprite fuelTuneIcon;
+        [SerializeField] private Sprite downforceTuneIcon;
+        [SerializeField] private Sprite thrustersTuneIcon;
+        [SerializeField] private Sprite buggyInclinationTuneIcon;
+        [SerializeField] private Sprite tuneAffordableBackground;
+        [SerializeField] private Sprite tuneUnaffordableBackground;
+        [SerializeField] private Image confirmationIcon;
+        [SerializeField] private Image confirmationCoinIcon;
+        [SerializeField] private Image confirmationPanel;
+        [SerializeField] private Text confirmationDescription;
 
         private int vehicleIndex;
         private Category category;
@@ -72,6 +133,22 @@ namespace AnimeHillRacing.UI
         private BlueprintPackTier selectedBlueprintTier = BlueprintPackTier.Hundred;
         private BlueprintPackTier pendingBlueprintTier = BlueprintPackTier.Hundred;
         private bool purchaseInFlight;
+        private bool startInFlight;
+        private bool updatingAudioToggle;
+        private int lastPurchaseAttemptFrame = -1;
+        private int lastTuneCardFrame = -1;
+        private int lastTuneCardSlot = -1;
+        private int lastObservedCoins = int.MinValue;
+        private int lastObservedGems = int.MinValue;
+        private float nextEconomyCheck;
+        private string pendingVehicleId = string.Empty;
+        private int pendingPurchasedTune;
+        private int pendingTuneMaximum;
+        private int pendingTuneCost = -1;
+
+        private const string DefaultBackgroundId = "default";
+        private const string NeonBackgroundId = "neon";
+        private const string AnimeBackgroundId = "anime";
 
         private VehicleDefinition CurrentVehicle => catalog != null && catalog.vehicles != null && catalog.vehicles.Length > 0
             ? catalog.vehicles[Mathf.Clamp(vehicleIndex, 0, catalog.vehicles.Length - 1)] : null;
@@ -79,6 +156,12 @@ namespace AnimeHillRacing.UI
         private void OnEnable()
         {
             if (catalog == null) return;
+            startInFlight = false;
+            purchaseInFlight = false;
+            lastPurchaseAttemptFrame = -1;
+            lastTuneCardFrame = -1;
+            lastTuneCardSlot = -1;
+            nextEconomyCheck = 0f;
             EnsureRuntimeTuningRows();
             EnsureTuneAdjustmentButtons();
             FindSavedVehicle();
@@ -93,12 +176,36 @@ namespace AnimeHillRacing.UI
         public void ShowWheels() { category = Category.Wheels; Refresh(); }
         public void ShowDrivers() { category = Category.Driver; Refresh(); }
         public void ShowCharacters() { category = Category.Characters; Refresh(); }
-        public void ShowTuning() { section = GarageSection.Tuning; Refresh(); }
-        public void ShowVehicle() { section = GarageSection.Vehicle; Refresh(); }
-        public void ShowUpgrade() { section = GarageSection.Upgrade; Refresh(); }
-        public void ShowStore() { section = GarageSection.Store; Refresh(); }
-        public void ShowSettings() { section = GarageSection.Settings; Refresh(); }
-        public void ShowSkins() { section = GarageSection.Skins; category = Category.Skin; Refresh(); }
+        public void ShowTuning() => SetSection(GarageSection.Tuning);
+        public void ShowVehicle() => SetSection(GarageSection.Vehicle);
+        public void ShowUpgrade() => SetSection(GarageSection.Upgrade);
+        public void ShowStore() => SetSection(GarageSection.Store);
+        public void ShowSettings() => SetSection(GarageSection.Settings);
+        public void ShowSkins() { category = Category.Skin; SetSection(GarageSection.Skins); }
+        public void StartAdventure()
+        {
+            if (!Application.isPlaying || startInFlight || catalog == null) return;
+            startInFlight = true;
+            RefreshAdventureContext();
+            if (!GameSession.TryCommitPendingAdventureRun(catalog, out string gameplayScene) ||
+                string.IsNullOrEmpty(gameplayScene))
+            {
+                startInFlight = false;
+                RefreshAdventureContext();
+                return;
+            }
+            SceneManager.LoadScene(gameplayScene);
+        }
+        public void SelectGarageBackground0() => SelectGarageBackground(DefaultBackgroundId);
+        public void SelectGarageBackground1() => SelectGarageBackground(NeonBackgroundId);
+        public void SelectGarageBackground2() => SelectGarageBackground(AnimeBackgroundId);
+        public void ToggleMasterAudio() => SetMasterAudioEnabled(!SaveManager.MasterAudioEnabled);
+        public void SetMasterAudioEnabled(bool enabled)
+        {
+            if (!Application.isPlaying || updatingAudioToggle) return;
+            SaveManager.MasterAudioEnabled = enabled;
+            RefreshAudioSetting();
+        }
         public void SelectOption0() => SelectOption(0);
         public void SelectOption1() => SelectOption(1);
         public void SelectOption2() => SelectOption(2);
@@ -130,6 +237,7 @@ namespace AnimeHillRacing.UI
         public void SelectShopAccessory0() => SelectShopAccessory(0);
         public void SelectShopAccessory1() => SelectShopAccessory(1);
         public void SelectShopAccessory2() => SelectShopAccessory(2);
+        public void SelectShopAccessory3() => SelectShopAccessory(3);
         public void PreviousBlueprintPage() { blueprintPage = Mathf.Max(0, blueprintPage - 1); RefreshBlueprintShop(); }
         public void NextBlueprintPage()
         {
@@ -138,12 +246,49 @@ namespace AnimeHillRacing.UI
             RefreshBlueprintShop();
         }
 
+        private void Update()
+        {
+            if (!Application.isPlaying || catalog == null) return;
+            if (Time.unscaledTime < nextEconomyCheck) return;
+            nextEconomyCheck = Time.unscaledTime + .20f;
+            int coins = SaveManager.TotalCoins;
+            int gems = SaveManager.TotalGems;
+            bool coinsChanged = coins != lastObservedCoins;
+            bool gemsChanged = gems != lastObservedGems;
+            if (!coinsChanged && !gemsChanged) return;
+
+            lastObservedCoins = coins;
+            lastObservedGems = gems;
+            RefreshEconomyOnly(coinsChanged, gemsChanged);
+        }
+
+        private void SetSection(GarageSection targetSection)
+        {
+            section = targetSection;
+            GameSession.RequestedGarageSection = targetSection;
+            Refresh();
+        }
+
         private void CycleVehicle(int direction)
         {
             int count = catalog != null && catalog.vehicles != null ? catalog.vehicles.Length : 0;
             if (count == 0) return;
-            vehicleIndex = (vehicleIndex + direction + count) % count;
-            SaveManager.SelectedVehicleId = CurrentVehicle.vehicleId;
+            int stepDirection = direction < 0 ? -1 : 1;
+            int candidateIndex = vehicleIndex;
+            for (int step = 0; step < count; step++)
+            {
+                candidateIndex = (candidateIndex + stepDirection + count) % count;
+                VehicleDefinition candidate = catalog.vehicles[candidateIndex];
+                if (candidate == null) continue;
+                vehicleIndex = candidateIndex;
+                if (IsVehicleUnlocked(candidate))
+                    SaveManager.SelectedVehicleId = candidate.vehicleId;
+                Refresh();
+                return;
+            }
+
+            // A malformed/future catalog with every vehicle locked remains inspectable without
+            // persisting or launching a locked selection.
             Refresh();
         }
 
@@ -165,17 +310,29 @@ namespace AnimeHillRacing.UI
             if (confirmationValues != null)
                 confirmationValues.text = $"{bundle.DisplayName.ToUpperInvariant()}\n" +
                     $"{SaveManager.GetBlueprintCount(bundle.BundleId)} / {bundle.BlueprintRequirement} BLUEPRINTS";
-            if (confirmationCost != null) confirmationCost.text = $"COST  {price:N0} COINS";
-            if (confirmationStatus != null) confirmationStatus.text = string.Empty;
-            if (confirmationYes != null) confirmationYes.interactable = true;
+            bool affordable = SaveManager.TotalCoins >= price;
+            ConfigureNonTuneConfirmation(true, affordable);
+            if (confirmationCost != null)
+                confirmationCost.text = confirmationCoinIcon != null ? price.ToString("N0") :
+                    $"COST  {price:N0} COINS";
+            if (confirmationStatus != null)
+                confirmationStatus.text = affordable ? string.Empty : "NOT ENOUGH COINS";
+            if (confirmationYes != null) confirmationYes.interactable = affordable;
+            SetConfirmationActionLabel("BUY");
             if (confirmationModal != null) confirmationModal.SetActive(true);
         }
 
         private void PurchaseTune(int slot)
         {
             if (!Application.isPlaying) return;
+            int frame = Time.frameCount;
+            if (lastTuneCardFrame == frame && lastTuneCardSlot == slot) return;
+            lastTuneCardFrame = frame;
+            lastTuneCardSlot = slot;
+
             VehicleDefinition vehicle = CurrentVehicle;
-            if (vehicle == null || slot < 0 || slot >= vehicle.GetTuneSlotCount() || catalog?.upgradeEconomy == null) return;
+            if (vehicle == null || !IsVehicleUnlocked(vehicle) || slot < 0 ||
+                slot >= vehicle.GetTuneSlotCount() || catalog?.upgradeEconomy == null) return;
             pendingType = vehicle.GetTuneTypeForSlot(slot);
             VehicleUpgradeState equippedState = SaveManager.LoadUpgrades(vehicle.vehicleId, vehicle);
             VehicleUpgradeState purchasedState = SaveManager.LoadPurchasedUpgrades(vehicle.vehicleId, vehicle);
@@ -188,23 +345,41 @@ namespace AnimeHillRacing.UI
                 Refresh();
                 return;
             }
+
             pendingPurchaseKind = PurchaseKind.Tune;
+            pendingVehicleId = vehicle.vehicleId;
             VehicleUpgradeState state = equippedState;
             int current = purchased;
             int maximum = vehicle.GetMaxTunes(pendingType);
-            if (current >= maximum) return;
-            int cost = catalog.upgradeEconomy.GetCostForNextTune(vehicle, pendingType, current);
+            int cost = current >= maximum ? -1 :
+                catalog.upgradeEconomy.GetCostForNextTune(vehicle, pendingType, current);
+            pendingPurchasedTune = current;
+            pendingTuneMaximum = maximum;
+            pendingTuneCost = cost;
             var next = new VehicleUpgradeState();
             next.CopyFrom(state);
-            next.SetTune(pendingType, current + 1);
+            next.SetTune(pendingType, current < maximum ? current + 1 : current);
             next.ClampTo(vehicle);
             if (confirmationTitle != null)
-                confirmationTitle.text = $"UPGRADE {vehicle.GetTuneDisplayName(pendingType)}?";
+                confirmationTitle.text = vehicle.GetTuneDisplayName(pendingType).ToUpperInvariant();
             if (confirmationValues != null)
-                confirmationValues.text = $"CURRENT  {TuneValue(vehicle, state, pendingType)}\nNEXT  {TuneValue(vehicle, next, pendingType)}";
-            if (confirmationCost != null) confirmationCost.text = $"COST  {cost:N0} COINS";
-            if (confirmationStatus != null) confirmationStatus.text = string.Empty;
-            if (confirmationYes != null) confirmationYes.interactable = true;
+                confirmationValues.text = current >= maximum
+                    ? $"LEVEL {current} / {maximum}\n{TuneValue(vehicle, state, pendingType)}"
+                    : $"LEVEL {current} / {maximum}\nCURRENT  {TuneValue(vehicle, state, pendingType)}\n" +
+                      $"NEXT  {TuneValue(vehicle, next, pendingType)}";
+            if (confirmationDescription != null)
+            {
+                confirmationDescription.enabled = true;
+                confirmationDescription.text = TuneDescription(vehicle, pendingType);
+            }
+            if (confirmationIcon != null)
+            {
+                confirmationIcon.sprite = ResolveTuneIcon(vehicle, pendingType);
+                confirmationIcon.enabled = confirmationIcon.sprite != null;
+                confirmationIcon.preserveAspect = true;
+            }
+            RefreshPendingTuneModalState();
+            SetConfirmationActionLabel("UPGRADE");
             if (confirmationModal != null) confirmationModal.SetActive(true);
         }
 
@@ -212,14 +387,17 @@ namespace AnimeHillRacing.UI
         {
             if (!Application.isPlaying) return;
             VehicleDefinition vehicle = CurrentVehicle;
-            if (vehicle == null || slot < 0 || slot >= vehicle.GetTuneSlotCount()) return;
+            if (vehicle == null || !IsVehicleUnlocked(vehicle) || slot < 0 ||
+                slot >= vehicle.GetTuneSlotCount()) return;
             SaveManager.TryDecreaseEquippedTune(vehicle, vehicle.GetTuneTypeForSlot(slot), out _);
             Refresh();
         }
 
         public void ConfirmPurchase()
         {
-            if (purchaseInFlight || CurrentVehicle == null || pendingPurchaseKind == PurchaseKind.None) return;
+            if (!Application.isPlaying || purchaseInFlight || CurrentVehicle == null ||
+                pendingPurchaseKind == PurchaseKind.None || lastPurchaseAttemptFrame == Time.frameCount) return;
+            lastPurchaseAttemptFrame = Time.frameCount;
             purchaseInFlight = true;
             if (confirmationYes != null) confirmationYes.interactable = false;
             if (pendingPurchaseKind == PurchaseKind.Blueprints)
@@ -229,8 +407,7 @@ namespace AnimeHillRacing.UI
                 purchaseInFlight = false;
                 if (blueprintPurchased || blueprintResult == BlueprintPurchaseResult.AlreadyUnlocked)
                 {
-                    pendingPurchaseKind = PurchaseKind.None;
-                    pendingBundleId = string.Empty;
+                    ClearPendingPurchase();
                     if (confirmationModal != null) confirmationModal.SetActive(false);
                     Refresh();
                     return;
@@ -238,12 +415,23 @@ namespace AnimeHillRacing.UI
                 if (confirmationStatus != null)
                     confirmationStatus.text = blueprintResult == BlueprintPurchaseResult.NotEnoughCoins
                         ? "NOT ENOUGH COINS" : "UNAVAILABLE";
-                if (confirmationYes != null) confirmationYes.interactable = true;
+                if (blueprintResult == BlueprintPurchaseResult.NotEnoughCoins)
+                    RefreshOpenPurchaseAffordability();
+                else if (confirmationYes != null)
+                    confirmationYes.interactable = false;
                 RefreshBlueprintShop();
                 return;
             }
             if (pendingPurchaseKind == PurchaseKind.Customization)
             {
+                if (pendingCategory != Category.Characters &&
+                    CurrentVehicle.vehicleId != pendingVehicleId)
+                {
+                    purchaseInFlight = false;
+                    if (confirmationStatus != null) confirmationStatus.text = "CUSTOMIZATION STATE CHANGED";
+                    if (confirmationYes != null) confirmationYes.interactable = false;
+                    return;
+                }
                 string purchaseScope = pendingCategory == Category.Characters ? "global" : CurrentVehicle.vehicleId;
                 string purchaseCategory = pendingCategory == Category.Characters
                     ? "CharacterAccessory" : pendingCategory.ToString();
@@ -254,7 +442,7 @@ namespace AnimeHillRacing.UI
                 if (cosmeticPurchased || cosmeticResult == CustomizationPurchaseResult.AlreadyUnlocked)
                 {
                     SetSelectedOption(CurrentVehicle, pendingCategory, pendingOptionId);
-                    pendingPurchaseKind = PurchaseKind.None;
+                    ClearPendingPurchase();
                     if (confirmationModal != null) confirmationModal.SetActive(false);
                     Refresh();
                     return;
@@ -262,7 +450,10 @@ namespace AnimeHillRacing.UI
                 if (confirmationStatus != null)
                     confirmationStatus.text = cosmeticResult == CustomizationPurchaseResult.NotEnoughGems
                         ? "NOT ENOUGH GEMS" : "UNAVAILABLE";
-                if (confirmationYes != null) confirmationYes.interactable = true;
+                if (cosmeticResult == CustomizationPurchaseResult.NotEnoughGems)
+                    RefreshOpenPurchaseAffordability();
+                else if (confirmationYes != null)
+                    confirmationYes.interactable = false;
                 Refresh();
                 return;
             }
@@ -271,12 +462,22 @@ namespace AnimeHillRacing.UI
                 purchaseInFlight = false;
                 return;
             }
+            if (!PendingTuneStateIsCurrent(out TunePurchaseResult validationResult))
+            {
+                purchaseInFlight = false;
+                if (confirmationStatus != null)
+                    confirmationStatus.text = validationResult == TunePurchaseResult.NotEnoughCoins
+                        ? "NOT ENOUGH COINS"
+                        : validationResult == TunePurchaseResult.MaximumLevel ? "MAX" : "TUNE STATE CHANGED";
+                RefreshPendingTuneModalState();
+                return;
+            }
             bool purchased = SaveManager.TryPurchaseTune(CurrentVehicle, pendingType, catalog.upgradeEconomy,
                 out _, out TunePurchaseResult result);
             purchaseInFlight = false;
             if (purchased)
             {
-                pendingPurchaseKind = PurchaseKind.None;
+                ClearPendingPurchase();
                 if (confirmationModal != null) confirmationModal.SetActive(false);
                 Refresh();
                 return;
@@ -284,8 +485,7 @@ namespace AnimeHillRacing.UI
             if (confirmationStatus != null)
                 confirmationStatus.text = result == TunePurchaseResult.NotEnoughCoins
                     ? "NOT ENOUGH COINS" : result == TunePurchaseResult.MaximumLevel ? "MAX" : "UNAVAILABLE";
-            if (confirmationYes != null)
-                confirmationYes.interactable = result != TunePurchaseResult.MaximumLevel;
+            RefreshPendingTuneModalState();
             RefreshTuning(CurrentVehicle);
         }
 
@@ -293,25 +493,138 @@ namespace AnimeHillRacing.UI
         {
             if (purchaseInFlight) return;
             if (confirmationModal != null) confirmationModal.SetActive(false);
+            ClearPendingPurchase();
+        }
+
+        private void ClearPendingPurchase()
+        {
+            pendingPurchaseKind = PurchaseKind.None;
+            pendingOptionId = string.Empty;
+            pendingBundleId = string.Empty;
+            pendingVehicleId = string.Empty;
+            pendingPurchasedTune = 0;
+            pendingTuneMaximum = 0;
+            pendingTuneCost = -1;
+        }
+
+        private bool PendingTuneStateIsCurrent(out TunePurchaseResult result)
+        {
+            VehicleDefinition vehicle = CurrentVehicle;
+            if (pendingPurchaseKind != PurchaseKind.Tune || vehicle == null ||
+                catalog?.upgradeEconomy == null || vehicle.vehicleId != pendingVehicleId)
+            {
+                result = TunePurchaseResult.InvalidConfiguration;
+                return false;
+            }
+
+            int maximum = vehicle.GetMaxTunes(pendingType);
+            int purchased = SaveManager.LoadPurchasedUpgrades(vehicle.vehicleId, vehicle).GetTune(pendingType);
+            if (maximum <= 0 || purchased >= maximum)
+            {
+                result = TunePurchaseResult.MaximumLevel;
+                return false;
+            }
+
+            int cost = catalog.upgradeEconomy.GetCostForNextTune(vehicle, pendingType, purchased);
+            if (purchased != pendingPurchasedTune || maximum != pendingTuneMaximum ||
+                cost < 0 || cost != pendingTuneCost)
+            {
+                result = TunePurchaseResult.InvalidConfiguration;
+                return false;
+            }
+            if (SaveManager.TotalCoins < cost)
+            {
+                result = TunePurchaseResult.NotEnoughCoins;
+                return false;
+            }
+
+            result = TunePurchaseResult.Success;
+            return true;
+        }
+
+        private void RefreshPendingTuneModalState()
+        {
+            if (pendingPurchaseKind != PurchaseKind.Tune) return;
+            VehicleDefinition vehicle = CurrentVehicle;
+            bool correctVehicle = vehicle != null && vehicle.vehicleId == pendingVehicleId;
+            int maximum = correctVehicle ? vehicle.GetMaxTunes(pendingType) : 0;
+            int purchased = correctVehicle
+                ? SaveManager.LoadPurchasedUpgrades(vehicle.vehicleId, vehicle).GetTune(pendingType)
+                : 0;
+            bool maximumReached = !correctVehicle || maximum <= 0 || purchased >= maximum;
+            int cost = !maximumReached && catalog?.upgradeEconomy != null
+                ? catalog.upgradeEconomy.GetCostForNextTune(vehicle, pendingType, purchased)
+                : -1;
+            bool stateMatches = correctVehicle && purchased == pendingPurchasedTune &&
+                maximum == pendingTuneMaximum && cost == pendingTuneCost;
+            bool affordable = cost >= 0 && SaveManager.TotalCoins >= cost;
+
+            if (confirmationCost != null)
+            {
+                confirmationCost.text = maximumReached ? "MAX" : confirmationCoinIcon != null
+                    ? cost.ToString("N0") : $"COST  {cost:N0} COINS";
+                confirmationCost.color = maximumReached || affordable
+                    ? Color.white : new Color(1f, .22f, .18f, 1f);
+            }
+            if (confirmationCoinIcon != null)
+            {
+                confirmationCoinIcon.enabled = !maximumReached && cost >= 0;
+                confirmationCoinIcon.color = affordable
+                    ? Color.white : new Color(1f, .22f, .18f, 1f);
+            }
+            if (confirmationStatus != null)
+                confirmationStatus.text = maximumReached ? "MAX LEVEL" : !stateMatches
+                    ? "TUNE STATE CHANGED" : affordable ? string.Empty : "NOT ENOUGH COINS";
+            if (confirmationYes != null)
+                confirmationYes.interactable = !purchaseInFlight && !maximumReached &&
+                    stateMatches && affordable;
+        }
+
+        private void ConfigureNonTuneConfirmation(bool usesCoins, bool affordable)
+        {
+            if (confirmationIcon != null)
+            {
+                confirmationIcon.sprite = null;
+                confirmationIcon.enabled = false;
+            }
+            if (confirmationDescription != null)
+            {
+                confirmationDescription.text = string.Empty;
+                confirmationDescription.enabled = false;
+            }
+            if (confirmationCoinIcon != null)
+            {
+                confirmationCoinIcon.enabled = usesCoins;
+                confirmationCoinIcon.color = affordable
+                    ? Color.white : new Color(1f, .20f, .16f, 1f);
+            }
+            if (confirmationCost != null)
+                confirmationCost.color = affordable
+                    ? Color.white : new Color(1f, .20f, .16f, 1f);
         }
 
         private void SelectOption(int index)
         {
             VehicleDefinition vehicle = CurrentVehicle;
-            if (category == Category.Tuning || vehicle == null ||
+            if (category == Category.Tuning || vehicle == null || !IsVehicleUnlocked(vehicle) ||
                 !TryGetOption(index, out string id, out _, out bool unlocked, out int gemPrice)) return;
             if (!unlocked)
             {
                 if (gemPrice <= 0 || category == Category.Driver) return;
                 pendingPurchaseKind = PurchaseKind.Customization;
                 pendingCategory = category;
+                pendingVehicleId = vehicle.vehicleId;
                 pendingOptionId = id;
                 pendingGemPrice = gemPrice;
                 if (confirmationTitle != null) confirmationTitle.text = $"BUY {OptionName(index).ToUpperInvariant()}?";
                 if (confirmationValues != null) confirmationValues.text = "PERMANENT COSMETIC UNLOCK";
                 if (confirmationCost != null) confirmationCost.text = $"COST  {gemPrice:N0} GEMS";
-                if (confirmationStatus != null) confirmationStatus.text = string.Empty;
-                if (confirmationYes != null) confirmationYes.interactable = true;
+                bool affordable = SaveManager.TotalGems >= gemPrice;
+                ConfigureNonTuneConfirmation(false, affordable);
+                if (confirmationStatus != null)
+                    confirmationStatus.text = affordable ? string.Empty : "NOT ENOUGH GEMS";
+                if (confirmationYes != null) confirmationYes.interactable = affordable;
+                SetConfirmationActionLabel("BUY");
                 if (confirmationModal != null) confirmationModal.SetActive(true);
                 return;
             }
@@ -353,7 +666,8 @@ namespace AnimeHillRacing.UI
             tuningValues[5] = value;
             tuningCosts[5] = cost;
             tuningButtons[5] = button;
-            for (int i = 0; i < requiredRows; i++)
+            bool hillLayout = tuningIcons != null && tuningIcons.Length > 0;
+            for (int i = 0; i < requiredRows && !hillLayout; i++)
             {
                 RectTransform rect = tuningButtons[i] != null
                     ? tuningButtons[i].transform.parent as RectTransform : null;
@@ -366,6 +680,7 @@ namespace AnimeHillRacing.UI
         private void EnsureTuneAdjustmentButtons()
         {
             if (!Application.isPlaying || tuningButtons == null) return;
+            bool hillLayout = tuningIcons != null && tuningIcons.Length > 0;
             if (tuningDownButtons == null || tuningDownButtons.Length != tuningButtons.Length)
                 System.Array.Resize(ref tuningDownButtons, tuningButtons.Length);
             for (int i = 0; i < tuningButtons.Length; i++)
@@ -373,7 +688,7 @@ namespace AnimeHillRacing.UI
                 Button up = tuningButtons[i];
                 if (up == null || up.transform.parent == null) continue;
                 RectTransform upRect = up.transform as RectTransform;
-                if (upRect != null)
+                if (upRect != null && !hillLayout)
                 {
                     upRect.anchoredPosition = new Vector2(350f, 0f);
                     upRect.sizeDelta = new Vector2(150f, 60f);
@@ -424,10 +739,21 @@ namespace AnimeHillRacing.UI
         {
             VehicleDefinition vehicle = CurrentVehicle;
             if (vehicle == null) return;
-            if (tuningCoins != null) tuningCoins.text = $"COINS  {SaveManager.TotalCoins:N0}";
-            if (gemsBalance != null) gemsBalance.text = $"GEMS  {SaveManager.TotalGems:N0}";
-            if (vehicleName != null) vehicleName.text = vehicle.displayName.ToUpperInvariant();
+            int coins = SaveManager.TotalCoins;
+            int gems = SaveManager.TotalGems;
+            bool vehicleUnlocked = IsVehicleUnlocked(vehicle);
+            lastObservedCoins = coins;
+            lastObservedGems = gems;
+            if (tuningCoins != null) tuningCoins.text = $"COINS  {coins:N0}";
+            if (gemsBalance != null) gemsBalance.text = $"GEMS  {gems:N0}";
+            if (vehicleName != null)
+            {
+                vehicleName.text = vehicle.displayName.ToUpperInvariant() +
+                    (vehicleUnlocked ? string.Empty : "  —  LOCKED");
+                vehicleName.color = vehicleUnlocked ? Color.white : new Color(1f, .28f, .22f, 1f);
+            }
             if (sectionTitle != null) sectionTitle.text = section.ToString().ToUpperInvariant();
+            topNavigation?.SetGarageSection(section);
             if (categoryName != null) categoryName.text = category == Category.Skin ? "VEHICLE SKIN" :
                 category == Category.Wheels ? "WHEELS" : category == Category.Driver ? "DRIVER" :
                 category == Category.Characters ? "CHARACTERS / ACCESSORIES" : "TUNING";
@@ -453,7 +779,7 @@ namespace AnimeHillRacing.UI
                 if (!visible) continue;
                 TryGetOption(i, out string id, out Sprite icon, out bool unlocked, out int gemPrice);
                 bool isSelected = id == selected;
-                optionButtons[i].interactable = unlocked || gemPrice > 0;
+                optionButtons[i].interactable = vehicleUnlocked && (unlocked || gemPrice > 0);
                 optionButtons[i].image.color = isSelected ? new Color(.18f, .60f, .82f, 1f) :
                     unlocked ? new Color(.10f, .20f, .32f, 1f) : new Color(.12f, .12f, .14f, .78f);
                 if (optionImages != null && i < optionImages.Length && optionImages[i] != null)
@@ -489,6 +815,148 @@ namespace AnimeHillRacing.UI
                     $"SUSPENSION  {stats.suspensionTravel:0.00} M\n" +
                     $"GRIP  {stats.gripRating} / {VehicleDefinition.GlobalGripMaximum}\n" +
                     $"FUEL  {stats.totalRunFuelDuration:0} SEC";
+            }
+            RefreshAdventureContext();
+            RefreshGarageBackground();
+            RefreshAudioSetting();
+        }
+
+        private void RefreshAdventureContext()
+        {
+            bool hasTrack = GameSession.TryResolvePendingAdventureTrack(catalog, out var pendingMap);
+            VehicleDefinition vehicle = CurrentVehicle;
+            bool vehicleUnlocked = vehicle != null && SaveManager.IsVehicleUnlocked(vehicle.vehicleId,
+                vehicle.unlockedByDefault);
+            bool showStart = hasTrack && vehicleUnlocked;
+            if (startButton != null)
+            {
+                startButton.gameObject.SetActive(showStart);
+                startButton.interactable = showStart && !startInFlight;
+            }
+            if (pendingTrackLabel != null)
+            {
+                pendingTrackLabel.gameObject.SetActive(hasTrack);
+                if (hasTrack)
+                    pendingTrackLabel.text = vehicleUnlocked
+                        ? $"ADVENTURE TRACK  {pendingMap.displayName.ToUpperInvariant()}"
+                        : "SELECT AN UNLOCKED VEHICLE";
+            }
+        }
+
+        private void SelectGarageBackground(string backgroundId)
+        {
+            if (!Application.isPlaying) return;
+            if (backgroundId != DefaultBackgroundId && backgroundId != NeonBackgroundId &&
+                backgroundId != AnimeBackgroundId) backgroundId = DefaultBackgroundId;
+            SaveManager.SelectedGarageBackgroundId = backgroundId;
+            RefreshGarageBackground();
+        }
+
+        private void RefreshGarageBackground()
+        {
+            string storedId = SaveManager.SelectedGarageBackgroundId;
+            string selectedId = storedId == NeonBackgroundId || storedId == AnimeBackgroundId ||
+                storedId == DefaultBackgroundId ? storedId : DefaultBackgroundId;
+            Sprite selectedSprite = selectedId == NeonBackgroundId ? neonGarageBackground :
+                selectedId == AnimeBackgroundId ? animeGarageBackground : defaultGarageBackground;
+            if (selectedSprite == null)
+            {
+                selectedId = DefaultBackgroundId;
+                selectedSprite = defaultGarageBackground ?? neonGarageBackground ?? animeGarageBackground;
+            }
+            if (Application.isPlaying && selectedId != storedId)
+                SaveManager.SelectedGarageBackgroundId = selectedId;
+            if (garageBackground != null)
+            {
+                garageBackground.sprite = selectedSprite;
+                garageBackground.enabled = selectedSprite != null;
+                AspectRatioFitter fitter = garageBackground.GetComponent<AspectRatioFitter>();
+                if (fitter != null && selectedSprite != null && selectedSprite.rect.height > 0f)
+                    fitter.aspectRatio = selectedSprite.rect.width / selectedSprite.rect.height;
+            }
+
+            for (int i = 0; i < (backgroundButtons?.Length ?? 0); i++)
+            {
+                Button button = backgroundButtons[i];
+                if (button == null) continue;
+                button.gameObject.SetActive(true);
+                string buttonId = i == 1 ? NeonBackgroundId : i == 2 ? AnimeBackgroundId : DefaultBackgroundId;
+                if (button.image != null)
+                    button.image.color = buttonId == selectedId
+                        ? new Color(.14f, .72f, .92f, 1f)
+                        : new Color(.22f, .24f, .28f, .96f);
+            }
+        }
+
+        private void RefreshAudioSetting()
+        {
+            bool enabled = SaveManager.MasterAudioEnabled;
+            if (masterAudioToggle != null && masterAudioToggle.isOn != enabled)
+            {
+                updatingAudioToggle = true;
+                masterAudioToggle.SetIsOnWithoutNotify(enabled);
+                updatingAudioToggle = false;
+            }
+            if (masterAudioStatus != null)
+            {
+                masterAudioStatus.text = enabled ? "AUDIO ON" : "AUDIO OFF";
+                masterAudioStatus.color = enabled
+                    ? new Color(.30f, 1f, .58f, 1f) : new Color(1f, .30f, .24f, 1f);
+            }
+        }
+
+        private void RefreshEconomyOnly(bool coinsChanged, bool gemsChanged)
+        {
+            if (coinsChanged && tuningCoins != null)
+                tuningCoins.text = $"COINS  {lastObservedCoins:N0}";
+            if (gemsChanged && gemsBalance != null)
+                gemsBalance.text = $"GEMS  {lastObservedGems:N0}";
+
+            VehicleDefinition vehicle = CurrentVehicle;
+            if (coinsChanged && section == GarageSection.Tuning && vehicle != null)
+                RefreshTuning(vehicle);
+            if ((coinsChanged || gemsChanged) && section == GarageSection.Store)
+                RefreshBlueprintShop();
+            if (confirmationModal != null && confirmationModal.activeInHierarchy)
+            {
+                if (coinsChanged && pendingPurchaseKind == PurchaseKind.Tune)
+                    RefreshPendingTuneModalState();
+                else if ((coinsChanged && pendingPurchaseKind == PurchaseKind.Blueprints) ||
+                         (gemsChanged && pendingPurchaseKind == PurchaseKind.Customization))
+                    RefreshOpenPurchaseAffordability();
+            }
+        }
+
+        private void RefreshOpenPurchaseAffordability()
+        {
+            if (pendingPurchaseKind == PurchaseKind.Blueprints)
+            {
+                int price = BlueprintPackCatalog.GetCoinPrice(pendingBlueprintTier);
+                BundleDefinition bundle = PremiumBundleCatalog.Find(catalog, pendingBundleId);
+                bool available = bundle != null && !SaveManager.IsBundleUnlocked(bundle) && price >= 0;
+                bool affordable = available && SaveManager.TotalCoins >= price;
+                ConfigureNonTuneConfirmation(true, affordable);
+                if (confirmationCost != null)
+                    confirmationCost.text = confirmationCoinIcon != null ? price.ToString("N0") :
+                        $"COST  {price:N0} COINS";
+                if (confirmationStatus != null)
+                    confirmationStatus.text = !available ? "UNAVAILABLE" :
+                        affordable ? string.Empty : "NOT ENOUGH COINS";
+                if (confirmationYes != null) confirmationYes.interactable = !purchaseInFlight && affordable;
+                return;
+            }
+
+            if (pendingPurchaseKind == PurchaseKind.Customization)
+            {
+                bool stateMatches = pendingCategory == Category.Characters ||
+                    (CurrentVehicle != null && CurrentVehicle.vehicleId == pendingVehicleId);
+                bool affordable = stateMatches && pendingGemPrice >= 0 &&
+                    SaveManager.TotalGems >= pendingGemPrice;
+                ConfigureNonTuneConfirmation(false, affordable);
+                if (confirmationStatus != null)
+                    confirmationStatus.text = !stateMatches ? "CUSTOMIZATION STATE CHANGED" :
+                        affordable ? string.Empty : "NOT ENOUGH GEMS";
+                if (confirmationYes != null) confirmationYes.interactable = !purchaseInFlight && affordable;
             }
         }
 
@@ -578,9 +1046,33 @@ namespace AnimeHillRacing.UI
             DriverDefinition driver = SelectedDriver();
             if (driver?.accessories == null || index < 0 || index >= driver.accessories.Length) return;
             DriverDefinition.CharacterAccessoryOption option = driver.accessories[index];
-            if (option == null || !IsAccessoryUnlocked(option)) return;
-            SaveManager.SetSelectedCharacterAccessoryId(option.accessoryId);
-            Refresh();
+            if (option == null) return;
+            if (IsAccessoryUnlocked(option))
+            {
+                SaveManager.SetSelectedCharacterAccessoryId(option.accessoryId);
+                Refresh();
+                return;
+            }
+
+            if (option.gemPrice <= 0) return;
+            pendingPurchaseKind = PurchaseKind.Customization;
+            pendingCategory = Category.Characters;
+            pendingVehicleId = CurrentVehicle != null ? CurrentVehicle.vehicleId : string.Empty;
+            pendingOptionId = option.accessoryId;
+            pendingGemPrice = option.gemPrice;
+            if (confirmationTitle != null)
+                confirmationTitle.text = $"BUY {option.displayName.ToUpperInvariant()}?";
+            if (confirmationValues != null)
+                confirmationValues.text = "PERMANENT CHARACTER ACCESSORY UNLOCK";
+            if (confirmationCost != null)
+                confirmationCost.text = $"COST  {option.gemPrice:N0} GEMS";
+            bool affordable = SaveManager.TotalGems >= option.gemPrice;
+            ConfigureNonTuneConfirmation(false, affordable);
+            if (confirmationStatus != null)
+                confirmationStatus.text = affordable ? string.Empty : "NOT ENOUGH GEMS";
+            if (confirmationYes != null) confirmationYes.interactable = affordable;
+            SetConfirmationActionLabel("BUY");
+            if (confirmationModal != null) confirmationModal.SetActive(true);
         }
 
         private void SelectBlueprintPack(BlueprintPackTier tier)
@@ -633,7 +1125,9 @@ namespace AnimeHillRacing.UI
         {
             VehicleUpgradeState state = SaveManager.LoadUpgrades(vehicle.vehicleId, vehicle);
             VehicleUpgradeState purchasedState = SaveManager.LoadPurchasedUpgrades(vehicle.vehicleId, vehicle);
-            if (tuningCoins != null) tuningCoins.text = $"COINS  {SaveManager.TotalCoins:N0}";
+            int coins = SaveManager.TotalCoins;
+            bool vehicleUnlocked = IsVehicleUnlocked(vehicle);
+            if (tuningCoins != null) tuningCoins.text = $"COINS  {coins:N0}";
             int count = vehicle.GetTuneSlotCount();
             for (int i = 0; i < (tuningButtons != null ? tuningButtons.Length : 0); i++)
             {
@@ -650,9 +1144,11 @@ namespace AnimeHillRacing.UI
                 bool canEquipUp = current < purchased;
                 int cost = purchasedMax || catalog?.upgradeEconomy == null ? -1 :
                     catalog.upgradeEconomy.GetCostForNextTune(vehicle, type, purchased);
+                bool insufficient = !canEquipUp && !purchasedMax && cost >= 0 && coins < cost;
+                bool blocked = !vehicleUnlocked || insufficient;
                 if (tuningNames != null && i < tuningNames.Length) tuningNames[i].text = vehicle.GetTuneDisplayName(type);
                 if (tuningLevels != null && i < tuningLevels.Length)
-                    tuningLevels[i].text = $"EQUIPPED {current} / {maximum}   BOUGHT {purchased}";
+                    tuningLevels[i].text = $"{current} / {maximum}\nLEVEL {current}";
                 var next = new VehicleUpgradeState();
                 next.CopyFrom(state);
                 next.SetTune(type, current + (current < maximum ? 1 : 0));
@@ -662,12 +1158,61 @@ namespace AnimeHillRacing.UI
                         ? $"CURRENT  {TuneValue(vehicle, state, type)}\nNEXT  MAX"
                         : $"CURRENT  {TuneValue(vehicle, state, type)}\nNEXT  {TuneValue(vehicle, next, type)}";
                 if (tuningCosts != null && i < tuningCosts.Length)
-                    tuningCosts[i].text = canEquipUp ? "↑  EQUIP" : purchasedMax ? "↑  MAX" :
-                        cost < 0 ? "UNAVAILABLE" : $"↑  {cost:N0}";
-                tuningButtons[i].interactable = current < maximum && (canEquipUp || cost >= 0);
+                {
+                    tuningCosts[i].text = !vehicleUnlocked ? "LOCKED" :
+                        canEquipUp ? "EQUIP" : purchasedMax ? "MAX" :
+                        cost < 0 ? "UNAVAILABLE" : cost.ToString("N0");
+                    tuningCosts[i].color = insufficient ? new Color(1f, .20f, .16f, 1f) :
+                        vehicleUnlocked ? Color.white : new Color(.70f, .72f, .76f, 1f);
+                }
+                if (tuningIcons != null && i < tuningIcons.Length && tuningIcons[i] != null)
+                {
+                    tuningIcons[i].sprite = ResolveTuneIcon(vehicle, type);
+                    tuningIcons[i].enabled = tuningIcons[i].sprite != null;
+                    tuningIcons[i].preserveAspect = true;
+                }
+                if (tuningCoinIcons != null && i < tuningCoinIcons.Length && tuningCoinIcons[i] != null)
+                {
+                    tuningCoinIcons[i].enabled = vehicleUnlocked && !canEquipUp && !purchasedMax && cost >= 0;
+                    tuningCoinIcons[i].color = insufficient
+                        ? new Color(1f, .20f, .16f, 1f) : Color.white;
+                }
+                Image cardImage = row != null ? row.GetComponent<Image>() : null;
+                if (cardImage != null)
+                {
+                    Sprite stateSprite = blocked ? tuneUnaffordableBackground : tuneAffordableBackground;
+                    if (stateSprite != null)
+                    {
+                        cardImage.sprite = stateSprite;
+                        cardImage.type = Image.Type.Simple;
+                        cardImage.preserveAspect = false;
+                    }
+                    cardImage.color = blocked && stateSprite == null
+                        ? new Color(.72f, .08f, .06f, 1f) : Color.white;
+                    cardImage.raycastTarget = false;
+                }
+                Image priceHitTarget = tuningButtons[i].image;
+                if (priceHitTarget != null)
+                {
+                    // The supplied state sprite is a complete portrait card, including its price
+                    // strip. Keep the actual button transparent over that strip as the hit target.
+                    priceHitTarget.sprite = null;
+                    priceHitTarget.color = Color.clear;
+                }
+                tuningButtons[i].interactable = vehicleUnlocked && maximum > 0 &&
+                    (canEquipUp || (!purchasedMax && cost >= 0 && !insufficient));
                 if (tuningDownButtons != null && i < tuningDownButtons.Length && tuningDownButtons[i] != null)
-                    tuningDownButtons[i].interactable = current > 1;
+                    tuningDownButtons[i].interactable = vehicleUnlocked && current > 1;
             }
+        }
+
+        private static bool IsVehicleUnlocked(VehicleDefinition vehicle) => vehicle != null &&
+            SaveManager.IsVehicleUnlocked(vehicle.vehicleId, vehicle.unlockedByDefault);
+
+        private void SetConfirmationActionLabel(string value)
+        {
+            Text label = confirmationYes != null ? confirmationYes.GetComponentInChildren<Text>(true) : null;
+            if (label != null) label.text = value;
         }
 
         private static string TuneValue(VehicleDefinition vehicle, VehicleUpgradeState state, VehicleUpgradeType type)
@@ -687,6 +1232,57 @@ namespace AnimeHillRacing.UI
                         ? $"MAX SLOPE  {stats.maximumClimbAngle:0}°"
                         : $"0-100  {stats.zeroToHundredTargetSeconds:0.00}s";
                 default: return $"RUN TIME  {stats.totalRunFuelDuration:0.0}s";
+            }
+        }
+
+        private Sprite ResolveTuneIcon(VehicleDefinition vehicle, VehicleUpgradeType type)
+        {
+            switch (type)
+            {
+                case VehicleUpgradeType.Engine: return engineTuneIcon;
+                case VehicleUpgradeType.Acceleration: return accelerationTuneIcon;
+                case VehicleUpgradeType.Suspension: return suspensionTuneIcon;
+                case VehicleUpgradeType.Grip: return gripTuneIcon;
+                case VehicleUpgradeType.Fuel: return fuelTuneIcon;
+                case VehicleUpgradeType.Downforce: return downforceTuneIcon;
+                case VehicleUpgradeType.Turbo:
+                    if (vehicle != null && vehicle.archetype == VehicleArchetype.AerialSatelite)
+                        return thrustersTuneIcon != null ? thrustersTuneIcon : accelerationTuneIcon;
+                    if (vehicle != null && vehicle.archetype == VehicleArchetype.Buggy)
+                        return buggyInclinationTuneIcon != null
+                            ? buggyInclinationTuneIcon : accelerationTuneIcon;
+                    return accelerationTuneIcon;
+                case VehicleUpgradeType.AirControl: return accelerationTuneIcon;
+                default: return fuelTuneIcon;
+            }
+        }
+
+        private static string TuneDescription(VehicleDefinition vehicle, VehicleUpgradeType type)
+        {
+            switch (type)
+            {
+                case VehicleUpgradeType.Engine:
+                    return "Increases tuned top speed and engine power.";
+                case VehicleUpgradeType.Acceleration:
+                    return "Improves how quickly the vehicle gains speed and reaches its acceleration target.";
+                case VehicleUpgradeType.Suspension:
+                    return "Increases suspension travel and improves damping for landings and rough terrain.";
+                case VehicleUpgradeType.Grip:
+                    return "Improves traction and recovery from sliding.";
+                case VehicleUpgradeType.Fuel:
+                    return "Increases total driving time available from a full fuel tank.";
+                case VehicleUpgradeType.Downforce:
+                    return "Adds airborne downforce to improve stability while the vehicle is off the ground.";
+                case VehicleUpgradeType.Turbo:
+                    if (vehicle != null && vehicle.archetype == VehicleArchetype.AerialSatelite)
+                        return "Increases thruster force. Active thrusters consume fuel faster.";
+                    if (vehicle != null && vehicle.archetype == VehicleArchetype.Buggy)
+                        return "Improves steep-slope climb assistance and the maximum supported climb angle.";
+                    return "Improves acceleration and recovery when applying power.";
+                case VehicleUpgradeType.AirControl:
+                    return "Improves airborne rotation control.";
+                default:
+                    return "Improves this vehicle's authored performance.";
             }
         }
 
@@ -786,9 +1382,28 @@ namespace AnimeHillRacing.UI
         {
             vehicleIndex = 0;
             if (catalog?.vehicles == null) return;
+            int firstValid = -1;
+            int firstUnlocked = -1;
             for (int i = 0; i < catalog.vehicles.Length; i++)
-                if (catalog.vehicles[i] != null && catalog.vehicles[i].vehicleId == SaveManager.SelectedVehicleId)
+            {
+                VehicleDefinition candidate = catalog.vehicles[i];
+                if (candidate == null) continue;
+                if (firstValid < 0) firstValid = i;
+                bool unlocked = SaveManager.IsVehicleUnlocked(candidate.vehicleId,
+                    candidate.unlockedByDefault);
+                if (unlocked && firstUnlocked < 0) firstUnlocked = i;
+                if (unlocked && candidate.vehicleId == SaveManager.SelectedVehicleId)
+                {
                     vehicleIndex = i;
+                    return;
+                }
+            }
+
+            // Prefer a real unlocked fallback. If the catalog is entirely locked, show its first
+            // valid preview without writing that locked id into persistent selection.
+            vehicleIndex = firstUnlocked >= 0 ? firstUnlocked : Mathf.Max(0, firstValid);
+            if (Application.isPlaying && firstUnlocked >= 0)
+                SaveManager.SelectedVehicleId = catalog.vehicles[firstUnlocked].vehicleId;
         }
 
         public void Assign(GameCatalog gameCatalog, GaragePreviewRenderer previewRenderer, Text vehicleLabel,
@@ -832,6 +1447,40 @@ namespace AnimeHillRacing.UI
             shopAccessoryImages = targetShopAccessoryImages;
             shopAccessoryLabels = targetShopAccessoryLabels;
             FindSavedVehicle();
+            Refresh();
+        }
+
+        public void AssignHillAdventurer(HillAdventurerGarageBindings bindings)
+        {
+            if (bindings == null) return;
+            startButton = bindings.startButton;
+            pendingTrackLabel = bindings.pendingTrackLabel;
+            topNavigation = bindings.topNavigation;
+            garageBackground = bindings.garageBackground;
+            defaultGarageBackground = bindings.defaultGarageBackground;
+            neonGarageBackground = bindings.neonGarageBackground;
+            animeGarageBackground = bindings.animeGarageBackground;
+            backgroundButtons = bindings.backgroundButtons;
+            masterAudioToggle = bindings.masterAudioToggle;
+            masterAudioStatus = bindings.masterAudioStatus;
+            tuningIcons = bindings.tuneIcons;
+            tuningCoinIcons = bindings.tuneCoinIcons;
+            engineTuneIcon = bindings.engineTuneIcon;
+            accelerationTuneIcon = bindings.accelerationTuneIcon;
+            suspensionTuneIcon = bindings.suspensionTuneIcon;
+            gripTuneIcon = bindings.gripTuneIcon;
+            fuelTuneIcon = bindings.fuelTuneIcon;
+            downforceTuneIcon = bindings.downforceTuneIcon;
+            thrustersTuneIcon = bindings.thrustersTuneIcon;
+            buggyInclinationTuneIcon = bindings.buggyInclinationTuneIcon;
+            tuneAffordableBackground = bindings.tuneAffordableBackground;
+            tuneUnaffordableBackground = bindings.tuneUnaffordableBackground;
+            confirmationIcon = bindings.confirmationIcon;
+            confirmationCoinIcon = bindings.confirmationCoinIcon;
+            confirmationPanel = bindings.confirmationPanel;
+            confirmationDescription = bindings.confirmationDescription;
+            if (confirmationPanel != null)
+                confirmationPanel.color = new Color(.22f, .23f, .26f, .98f);
             Refresh();
         }
     }

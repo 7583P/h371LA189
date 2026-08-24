@@ -32,6 +32,8 @@ namespace AnimeHillRacing.UI
         public SpriteRenderer FrontWheelRenderer => frontWheel;
         public ArticulatedDriver2D Driver => driver;
         public Camera PreviewCamera => previewCamera;
+        public Transform PreviewRoot => previewRoot;
+        public RawImage TargetImage => targetImage;
 
         private int warmUpFrames = 4;
 
@@ -190,6 +192,29 @@ namespace AnimeHillRacing.UI
                 body.sharedMaterial = HillAdventurerSkinEffect.GetDefaultSpriteMaterial();
             warmUpFrames = 3;
             EnsureTexture();
+        }
+
+        public void SetTarget(RawImage image)
+        {
+            if (targetImage == image)
+            {
+                EnsureTexture();
+                RenderNow();
+                return;
+            }
+
+            if (targetImage != null && targetImage.texture == texture)
+                targetImage.texture = null;
+            targetImage = image;
+            lastTargetSize = Vector2.zero;
+            warmUpFrames = 3;
+            if (targetImage == null)
+            {
+                ReleaseTexture();
+                return;
+            }
+            EnsureTexture();
+            RenderNow();
         }
 
         private void RenderNow()

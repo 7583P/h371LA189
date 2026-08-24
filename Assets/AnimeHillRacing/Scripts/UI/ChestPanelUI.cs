@@ -8,6 +8,8 @@ namespace AnimeHillRacing.UI
 {
     public sealed class ChestPanelUI : MonoBehaviour
     {
+        public const int SlotsPerPage = 4;
+
         [SerializeField] private GameCatalog catalog;
         [SerializeField] private Button[] slotButtons;
         [SerializeField] private Image[] slotImages;
@@ -18,9 +20,15 @@ namespace AnimeHillRacing.UI
         [SerializeField] private Text feedbackText;
         [SerializeField] private Image feedbackBundleImage;
         [SerializeField] private ChestRewardModalUI rewardModal;
+        [SerializeField] private Button previousPageButton;
+        [SerializeField] private Button nextPageButton;
         private static readonly Color GreenProgressColor = new Color(0.16f, 0.86f, 0.32f, 1f);
         private float nextRefresh;
         private bool outlineConfigured;
+        private int currentPage;
+
+        public int CurrentPage => currentPage;
+        public int PageCount => Mathf.Max(1, Mathf.CeilToInt(ChestSystem.Inventory.Count / (float)SlotsPerPage));
 
         private void Awake()
         {
@@ -62,10 +70,21 @@ namespace AnimeHillRacing.UI
         public void SelectSlot0() => SelectSlot(0);
         public void SelectSlot1() => SelectSlot(1);
         public void SelectSlot2() => SelectSlot(2);
+        public void SelectSlot3() => SelectSlot(3);
+
+        public void PreviousPage() => SetPage(currentPage - 1);
+        public void NextPage() => SetPage(currentPage + 1);
+
+        public void SetPage(int page)
+        {
+            currentPage = Mathf.Clamp(page, 0, PageCount - 1);
+            Refresh();
+        }
 
         private void SelectSlot(int visibleIndex)
         {
-            int index = visibleIndex;
+            if (visibleIndex < 0 || visibleIndex >= SlotsPerPage) return;
+            int index = currentPage * SlotsPerPage + visibleIndex;
             if (index < 0 || index >= ChestSystem.Inventory.Count || catalog == null) return;
             ChestRecord chest = ChestSystem.Inventory[index];
             if (chest.state == ChestState.Pending)
@@ -125,6 +144,7 @@ namespace AnimeHillRacing.UI
         private void Refresh()
         {
             ChestSystem.RefreshOpeningStates(DateTime.UtcNow);
+            currentPage = Mathf.Clamp(currentPage, 0, PageCount - 1);
             float progress = ChestSystem.GameplayProgress;
             if (progressFill != null)
                 progressFill.fillAmount = Mathf.Clamp01(progress / ChestCatalog.GameplayIntervalSeconds);
@@ -135,13 +155,34 @@ namespace AnimeHillRacing.UI
                                     $"({Mathf.FloorToInt(progress) / 60:00}:{Mathf.FloorToInt(progress) % 60:00} / 30:00)";
             }
 
-            if (pageText != null) pageText.text = $"INVENTORY  {ChestSystem.Inventory.Count}";
+            if (pageText != null)
+                pageText.text = $"CHESTS  {ChestSystem.Inventory.Count}   {currentPage + 1} / {PageCount}";
+            if (previousPageButton != null) previousPageButton.interactable = currentPage > 0;
+            if (nextPageButton != null) nextPageButton.interactable = currentPage + 1 < PageCount;
             for (int i = 0; i < (slotButtons?.Length ?? 0); i++)
             {
-                int index = i;
+                if (slotButtons[i] == null) continue;
+                if (i >= SlotsPerPage)
+                {
+                    slotButtons[i].gameObject.SetActive(false);
+                    continue;
+                }
+
+                int index = currentPage * SlotsPerPage + i;
                 bool visible = index < ChestSystem.Inventory.Count;
-                slotButtons[i].gameObject.SetActive(visible);
-                if (!visible) continue;
+                slotButtons[i].gameObject.SetActive(true);
+                slotButtons[i].interactable = visible;
+                if (!visible)
+                {
+                    if (slotImages != null && i < slotImages.Length && slotImages[i] != null)
+                    {
+                        slotImages[i].sprite = null;
+                        slotImages[i].enabled = false;
+                    }
+                    if (slotLabels != null && i < slotLabels.Length && slotLabels[i] != null)
+                        slotLabels[i].text = "EMPTY";
+                    continue;
+                }
                 ChestRecord chest = ChestSystem.Inventory[index];
                 ChestDefinition definition = catalog?.chestCatalog?.Find(chest.type);
                 bool openVisual = chest.state == ChestState.ReadyToClaim;
@@ -168,6 +209,7 @@ namespace AnimeHillRacing.UI
             {
                 ChestRecord chest = ChestSystem.Inventory[i];
                 if (chest.seen) continue;
+                currentPage = i / SlotsPerPage;
                 SetFeedback($"NEW CHEST!\n{chest.type.ToString().ToUpperInvariant()} CHEST", null);
                 ChestSystem.MarkSeen(chest.chestId);
                 break;
@@ -186,7 +228,8 @@ namespace AnimeHillRacing.UI
         }
 
         public void Assign(GameCatalog gameCatalog, Button[] buttons, Image[] images, Text[] labels,
-            Image fill, Text progress, Text pageLabel, Text feedback, Image bundleImage)
+            Image fill, Text progress, Text pageLabel, Text feedback, Image bundleImage,
+            Button previousPage = null, Button nextPage = null)
         {
             catalog = gameCatalog;
             slotButtons = buttons;
@@ -197,6 +240,8 @@ namespace AnimeHillRacing.UI
             pageText = pageLabel;
             feedbackText = feedback;
             feedbackBundleImage = bundleImage;
+            previousPageButton = previousPage;
+            nextPageButton = nextPage;
             if (Application.isPlaying) Refresh();
         }
     }

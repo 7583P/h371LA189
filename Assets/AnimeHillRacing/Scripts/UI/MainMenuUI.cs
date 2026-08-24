@@ -19,12 +19,13 @@ namespace AnimeHillRacing.UI
         private int displayedGems = int.MinValue;
 
         private VehicleDefinition CurrentVehicle => catalog != null && catalog.vehicles != null &&
-            catalog.vehicles.Length > 0
-                ? catalog.vehicles[Mathf.Clamp(vehicleIndex, 0, catalog.vehicles.Length - 1)]
+            vehicleIndex >= 0 && vehicleIndex < catalog.vehicles.Length
+                ? catalog.vehicles[vehicleIndex]
                 : null;
 
         private void OnEnable()
         {
+            GameSession.ClearGarageContext();
             FindSavedVehicle();
             Refresh();
         }
@@ -40,12 +41,13 @@ namespace AnimeHillRacing.UI
 
         public void Race()
         {
+            GameSession.BeginAdventureTrackSelection();
             GameSession.OpenTuningOnPreStart = false;
-            GameSession.SelectedTransmission = TransmissionMode.Auto;
             SceneManager.LoadScene("PreStart");
         }
 
         public void Play() => Race();
+        public void Adventure() => Race();
 
         public void ThreeD()
         {
@@ -60,10 +62,12 @@ namespace AnimeHillRacing.UI
         public void Upgrade() => OpenGarage(GarageSection.Upgrade);
         public void Skins() => OpenGarage(GarageSection.Skins);
         public void Store() => OpenGarage(GarageSection.Store);
+        public void Shop() => OpenGarage(GarageSection.Store);
         public void Settings() => OpenGarage(GarageSection.Settings);
 
         public void TimeTrial()
         {
+            GameSession.ClearGarageContext();
             GameSession.SelectedGameMode = GameModeType.TimeTrial3D;
             GameSession.SelectedCircuitId = "procedural-test-circuit";
             SceneManager.LoadScene("TimeTrial3D");
@@ -71,7 +75,7 @@ namespace AnimeHillRacing.UI
 
         private void OpenGarage(GarageSection section)
         {
-            GameSession.RequestedGarageSection = section;
+            GameSession.RequestDirectGarage(section);
             SceneManager.LoadScene("Garage");
         }
 
@@ -79,8 +83,22 @@ namespace AnimeHillRacing.UI
         {
             int count = catalog != null && catalog.vehicles != null ? catalog.vehicles.Length : 0;
             if (count <= 0) return;
-            vehicleIndex = (vehicleIndex + direction + count) % count;
-            if (CurrentVehicle != null) SaveManager.SelectedVehicleId = CurrentVehicle.vehicleId;
+
+            int index = vehicleIndex >= 0 ? vehicleIndex : (direction >= 0 ? count - 1 : 0);
+            for (int inspected = 0; inspected < count; inspected++)
+            {
+                index = (index + direction + count) % count;
+                VehicleDefinition candidate = catalog.vehicles[index];
+                if (candidate == null) continue;
+
+                vehicleIndex = index;
+                if (SaveManager.IsVehicleUnlocked(candidate.vehicleId, candidate.unlockedByDefault))
+                    SaveManager.SelectedVehicleId = candidate.vehicleId;
+                Refresh();
+                return;
+            }
+
+            vehicleIndex = -1;
             Refresh();
         }
 
@@ -88,8 +106,14 @@ namespace AnimeHillRacing.UI
         {
             RefreshCoins();
             VehicleDefinition vehicle = CurrentVehicle;
+            bool unlocked = vehicle != null && SaveManager.IsVehicleUnlocked(vehicle.vehicleId,
+                vehicle.unlockedByDefault);
             if (vehicleNameText != null)
-                vehicleNameText.text = vehicle != null ? vehicle.displayName.ToUpperInvariant() : "NO VEHICLE";
+            {
+                vehicleNameText.text = vehicle != null ? vehicle.displayName.ToUpperInvariant() +
+                    (unlocked ? string.Empty : "  —  LOCKED") : "NO VEHICLE";
+                vehicleNameText.color = unlocked ? Color.white : new Color(1f, .28f, .22f, 1f);
+            }
             if (vehicle == null || preview == null) return;
             VehicleDefinition.CustomizationOption skin = vehicle.FindSkin(SaveManager.GetSelectedSkinId(vehicle));
             VehicleDefinition.CustomizationOption wheel = vehicle.FindWheel(SaveManager.GetSelectedWheelId(vehicle));
@@ -109,11 +133,29 @@ namespace AnimeHillRacing.UI
 
         private void FindSavedVehicle()
         {
-            vehicleIndex = 0;
+            vehicleIndex = -1;
             if (catalog?.vehicles == null) return;
+
             for (int i = 0; i < catalog.vehicles.Length; i++)
-                if (catalog.vehicles[i] != null && catalog.vehicles[i].vehicleId == SaveManager.SelectedVehicleId)
+            {
+                VehicleDefinition candidate = catalog.vehicles[i];
+                if (candidate != null && candidate.vehicleId == SaveManager.SelectedVehicleId &&
+                    SaveManager.IsVehicleUnlocked(candidate.vehicleId, candidate.unlockedByDefault))
+                {
                     vehicleIndex = i;
+                    return;
+                }
+            }
+
+            for (int i = 0; i < catalog.vehicles.Length; i++)
+            {
+                VehicleDefinition candidate = catalog.vehicles[i];
+                if (candidate == null || !SaveManager.IsVehicleUnlocked(candidate.vehicleId,
+                        candidate.unlockedByDefault)) continue;
+                vehicleIndex = i;
+                SaveManager.SelectedVehicleId = candidate.vehicleId;
+                return;
+            }
         }
 
         public void Assign(GameCatalog gameCatalog, GaragePreviewRenderer previewRenderer, Text totalCoins,

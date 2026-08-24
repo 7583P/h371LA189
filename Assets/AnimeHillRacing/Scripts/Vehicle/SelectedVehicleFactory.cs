@@ -46,8 +46,9 @@ namespace AnimeHillRacing.Vehicle
         {
             string vehicleId = !string.IsNullOrEmpty(GameSession.SelectedVehicleId)
                 ? GameSession.SelectedVehicleId : SaveManager.SelectedVehicleId;
-            ActiveDefinition = catalog != null ? (catalog.FindVehicle(vehicleId) ?? (catalog.vehicles != null && catalog.vehicles.Length > 0 ? catalog.vehicles[0] : null)) : null;
+            ActiveDefinition = ResolveUnlockedVehicle(vehicleId);
             if (ActiveDefinition == null) { enabled = false; return; }
+            GameSession.SelectedVehicleId = ActiveDefinition.vehicleId;
             if (mode == GameModeType.Adventure2_5D)
             {
                 MapProfile selectedProfile = catalog?.FindMap(GameSession.SelectedMapId,
@@ -135,6 +136,29 @@ namespace AnimeHillRacing.Vehicle
             if (timeTrialManager != null)
                 timeTrialManager.Assign(circuit, SpawnedVehicle, input, circuitGenerator, timeTrialHud,
                     results, capture, controls);
+        }
+
+        private VehicleDefinition ResolveUnlockedVehicle(string requestedVehicleId)
+        {
+            if (catalog?.vehicles == null) return null;
+
+            for (int i = 0; i < catalog.vehicles.Length; i++)
+            {
+                VehicleDefinition candidate = catalog.vehicles[i];
+                if (candidate == null || candidate.vehicleId != requestedVehicleId) continue;
+                if (SaveManager.IsVehicleUnlocked(candidate.vehicleId, candidate.unlockedByDefault))
+                    return candidate;
+                break;
+            }
+
+            for (int i = 0; i < catalog.vehicles.Length; i++)
+            {
+                VehicleDefinition candidate = catalog.vehicles[i];
+                if (candidate != null && SaveManager.IsVehicleUnlocked(candidate.vehicleId,
+                        candidate.unlockedByDefault)) return candidate;
+            }
+
+            return null;
         }
 
         public void ConfigureAdventure2D(GameCatalog gameCatalog, VehicleInputController targetInput,

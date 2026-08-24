@@ -30,7 +30,7 @@ MonoBehaviour:
     bundleType: 0
     allowsBlueprintProgression: 1
     visibleDiameter: 0
-    visibleSize: {x: 21.72, y: 6.91}
+    visibleSize: {x: 21.72, y: 6.522363}
     visualOffset: {x: 0, y: 0}
   - optionId: hill-adventurer-skin-purple-4x4
     displayName: PURPLE 4x4
@@ -51,7 +51,7 @@ MonoBehaviour:
     bundleType: 0
     allowsBlueprintProgression: 1
     visibleDiameter: 0
-    visibleSize: {x: 7.45, y: 7.57}
+    visibleSize: {x: 7.39, y: 7.29}
     visualOffset: {x: 0, y: 0}
   electricSkinOverlay: {fileID: 0}
   preserveDriverPose: 1

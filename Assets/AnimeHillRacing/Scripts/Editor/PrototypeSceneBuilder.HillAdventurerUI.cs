@@ -218,9 +218,11 @@ namespace AnimeHillRacing.Editor
             Scene scene = NewScene();
             CreateMenuCamera(new Color(.006f, .009f, .025f));
             Canvas canvas = CreateCanvas(Color.clear, false);
+            Sprite defaultMenuBackground = RequireHillSprite(HillDefaultBackgroundPath);
+            Sprite neonMenuBackground = RequireHillSprite(HillNeonBackgroundPath);
             Image background = CreateAspectCoverBackground(canvas.transform,
-                RequireHillSprite(HillNeonBackgroundPath));
-            background.name = "Track Selection Neon Background";
+                defaultMenuBackground);
+            background.name = "Adventure Shared Background";
             CreateImage("Track Selection Overlay", canvas.transform,
                 new Color(.002f, .006f, .022f, .48f), Vector2.zero, Vector2.one,
                 Vector2.zero, Vector2.zero).GetComponent<Image>().raycastTarget = false;
@@ -243,7 +245,7 @@ namespace AnimeHillRacing.Editor
 
             GameObject chestRoot = UIObject("Adventure Chest Slots", safe,
                 new Vector2(.5f, 1f), new Vector2(.5f, 1f),
-                new Vector2(0f, -346f), new Vector2(1650f, 300f));
+                new Vector2(0f, -326f), new Vector2(1650f, 300f));
             Sprite chestSlotFrame = RequireHillSubSprite(HillChestSlotsPath, "ChestSlotFrame");
             ChestPanelUI chestPanel = chestRoot.AddComponent<ChestPanelUI>();
             Button[] chestButtons = new Button[ChestPanelUI.SlotsPerPage];
@@ -258,21 +260,21 @@ namespace AnimeHillRacing.Editor
             };
             Vector2[] slotPositions =
             {
-                new Vector2(-525f, 0f),
-                new Vector2(-255f, 0f),
-                new Vector2(15f, 0f),
-                new Vector2(285f, 0f)
+                new Vector2(-570f, 0f),
+                new Vector2(-260f, 0f),
+                new Vector2(50f, 0f),
+                new Vector2(360f, 0f)
             };
             for (int i = 0; i < chestButtons.Length; i++)
             {
                 chestButtons[i] = CreateButton("Chest Slot " + (i + 1), chestRoot.transform,
-                    string.Empty, slotPositions[i], new Vector2(250f, 104f));
+                    string.Empty, slotPositions[i], new Vector2(292f, 110f));
                 chestButtons[i].image.sprite = chestSlotFrame;
                 chestButtons[i].image.type = Image.Type.Simple;
-                chestButtons[i].image.preserveAspect = false;
+                chestButtons[i].image.preserveAspect = true;
                 chestButtons[i].image.color = Color.white;
                 chestImages[i] = CreateImage("Chest", chestButtons[i].transform, Color.white,
-                    new Vector2(.30f, .24f), new Vector2(.70f, .92f),
+                    new Vector2(.27f, .19f), new Vector2(.73f, .94f),
                     Vector2.zero, Vector2.zero).GetComponent<Image>();
                 chestImages[i].raycastTarget = false;
                 chestImages[i].preserveAspect = true;
@@ -282,15 +284,15 @@ namespace AnimeHillRacing.Editor
                 Bind(chestButtons[i], slotActions[i]);
             }
             Button previousChestPage = CreateGrayNavButton("Previous Chest Page", chestRoot.transform,
-                "<", new Vector2(-720f, 0f), new Vector2(64f, 88f));
+                "<", new Vector2(-790f, 0f), new Vector2(64f, 92f));
             Button nextChestPage = CreateGrayNavButton("Next Chest Page", chestRoot.transform,
-                ">", new Vector2(480f, 0f), new Vector2(64f, 88f));
+                ">", new Vector2(540f, -30f), new Vector2(64f, 92f));
             Bind(previousChestPage, chestPanel.PreviousPage);
             Bind(nextChestPage, chestPanel.NextPage);
 
             GameObject progressBack = CreateImage("Next Chest Progress", chestRoot.transform,
                 new Color(.015f, .035f, .075f, .95f), new Vector2(.5f, .5f),
-                new Vector2(.5f, .5f), new Vector2(650f, 83f), new Vector2(260f, 24f));
+                new Vector2(.5f, .5f), new Vector2(685f, 83f), new Vector2(260f, 24f));
             Image progressFill = CreateImage("Fill", progressBack.transform,
                 new Color(.16f, .86f, .32f), Vector2.zero, Vector2.one,
                 new Vector2(3f, 3f), new Vector2(-6f, -6f)).GetComponent<Image>();
@@ -300,28 +302,28 @@ namespace AnimeHillRacing.Editor
             Text progressText = CreateText("Next Chest Timer", chestRoot.transform,
                 "NEXT CHEST  30:00", 16, TextAnchor.MiddleCenter,
                 new Vector2(.5f, .5f), new Vector2(.5f, .5f),
-                new Vector2(650f, 112f), new Vector2(300f, 34f));
+                new Vector2(685f, 112f), new Vector2(280f, 34f));
             Text inventoryText = CreateText("Chest Inventory Page", chestRoot.transform,
                 "INVENTORY  0", 16, TextAnchor.MiddleCenter,
                 new Vector2(.5f, .5f), new Vector2(.5f, .5f),
-                new Vector2(650f, 45f), new Vector2(300f, 34f));
+                new Vector2(685f, 45f), new Vector2(280f, 34f));
             Text feedbackText = CreateText("Chest Feedback", chestRoot.transform, string.Empty, 15,
                 TextAnchor.UpperLeft, new Vector2(.5f, .5f), new Vector2(.5f, .5f),
-                new Vector2(680f, -48f), new Vector2(280f, 130f));
+                new Vector2(700f, -48f), new Vector2(240f, 130f));
             Image rewardThumbnail = CreateSpriteImage("Chest Blueprint Reward", chestRoot.transform,
-                null, new Vector2(.5f, .5f), new Vector2(545f, -45f), new Vector2(80f, 80f));
+                null, new Vector2(.5f, .5f), new Vector2(620f, -45f), new Vector2(80f, 80f));
             rewardThumbnail.enabled = false;
             chestPanel.Assign(assets.catalog, chestButtons, chestImages, chestLabels,
                 progressFill, progressText, inventoryText, feedbackText, rewardThumbnail,
                 previousChestPage, nextChestPage);
 
             Text selectTitle = CreateText("Select Track Title", safe, "SELECT A TRACK", 27,
-                TextAnchor.MiddleCenter, new Vector2(.5f, .49f), new Vector2(.5f, .49f),
-                new Vector2(0f, 8f), new Vector2(520f, 44f));
+                TextAnchor.MiddleCenter, new Vector2(.5f, .505f), new Vector2(.5f, .505f),
+                Vector2.zero, new Vector2(520f, 44f));
             selectTitle.fontStyle = FontStyle.Bold;
             GameObject scrollRoot = CreateImage("Track Scroll", safe,
-                new Color(.004f, .012f, .035f, .68f), new Vector2(.065f, .045f),
-                new Vector2(.935f, .465f), Vector2.zero, Vector2.zero);
+                new Color(.004f, .012f, .035f, .68f), new Vector2(.05f, .035f),
+                new Vector2(.95f, .49f), Vector2.zero, Vector2.zero);
             ScrollRect scroll = scrollRoot.AddComponent<ScrollRect>();
             scroll.horizontal = false;
             scroll.vertical = true;
@@ -357,7 +359,8 @@ namespace AnimeHillRacing.Editor
                 Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             emptyState.gameObject.SetActive(false);
             menu.AssignTrackSelectionTemplate(assets.catalog, scroll, grid, content, cardTemplate,
-                coins, selectTitle, emptyState, scrollRoot, 1.62f);
+                coins, selectTitle, emptyState, scrollRoot, 2.30f);
+            menu.AssignSharedMenuBackground(background, defaultMenuBackground, neonMenuBackground);
             Button back = CreateGrayNavButton("Back To Main Menu", safe, "HOME",
                 new Vector2(105f, 35f), new Vector2(170f, 56f), Vector2.zero);
             Bind(back, menu.BackStep);
@@ -370,7 +373,7 @@ namespace AnimeHillRacing.Editor
         {
             GameObject cardObject = UIObject("Track Card Template", content,
                 new Vector2(.5f, .5f), new Vector2(.5f, .5f),
-                Vector2.zero, new Vector2(720f, 444f));
+                Vector2.zero, new Vector2(760f, 330f));
             Image cardImage = cardObject.AddComponent<Image>();
             cardImage.color = new Color(.025f, .055f, .12f, .97f);
             cardImage.sprite = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
@@ -427,6 +430,8 @@ namespace AnimeHillRacing.Editor
             Sprite defaultGarage = RequireHillSprite(HillDefaultGaragePath);
             Sprite neonGarage = RequireHillSprite(HillNeonGaragePath);
             Sprite animeGarage = RequireHillSprite(HillAnimeGaragePath);
+            Sprite defaultMenu = RequireHillSprite(HillDefaultBackgroundPath);
+            Sprite neonMenu = RequireHillSprite(HillNeonBackgroundPath);
             garageBackground.sprite = defaultGarage;
             garageBackground.color = Color.white;
             Image garageOverlay = FindHillComponent<Image>(scene, "Garage Overlay");
@@ -526,6 +531,16 @@ namespace AnimeHillRacing.Editor
             tuningPanelRect.sizeDelta = Vector2.zero;
             Image[] tuneIcons = new Image[6];
             Image[] tuneCoinIcons = new Image[6];
+            Button[] tuneCardButtons = new Button[6];
+            UnityAction[] tuneCardActions =
+            {
+                menu.UpgradeTune0,
+                menu.UpgradeTune1,
+                menu.UpgradeTune2,
+                menu.UpgradeTune3,
+                menu.UpgradeTune4,
+                menu.UpgradeTune5
+            };
             for (int i = 0; i < tuneIcons.Length; i++)
             {
                 Transform row = tuningPanel.transform.Find("Tune Row " + (i + 1));
@@ -592,10 +607,13 @@ namespace AnimeHillRacing.Editor
 
             GameObject storePanel = FindHillObject(scene, "Store Panel");
             if (storePanel == null) throw new InvalidOperationException("Garage Shop panel is missing.");
-            Image storeBackground = CreateAspectCoverBackground(storePanel.transform,
-                RequireHillSprite(HillNeonBackgroundPath));
-            storeBackground.name = "Shop Neon Background";
-            storeBackground.color = new Color(1f, 1f, 1f, .42f);
+            Image storePanelImage = storePanel.GetComponent<Image>();
+            if (storePanelImage != null)
+                storePanelImage.color = new Color(.025f, .06f, .12f, .78f);
+            Image storeBackground = CreateAspectCoverBackground(storePanel.transform, defaultMenu);
+            storeBackground.name = "Shop Shared Background (Compatibility Layer)";
+            storeBackground.color = Color.white;
+            storeBackground.enabled = false;
             storeBackground.transform.SetAsFirstSibling();
             Text premiumHeading = FindHillChildComponent<Text>(storePanel.transform, "Special Offers Title");
             if (premiumHeading != null) premiumHeading.text = "PREMIUM CONTENT";
@@ -609,24 +627,26 @@ namespace AnimeHillRacing.Editor
             {
                 oldSettings.name = "Settings Title";
                 oldSettings.text = "SETTINGS";
-                oldSettings.rectTransform.anchorMin = new Vector2(.10f, .80f);
-                oldSettings.rectTransform.anchorMax = new Vector2(.90f, .95f);
+                oldSettings.rectTransform.anchorMin = new Vector2(.10f, .88f);
+                oldSettings.rectTransform.anchorMax = new Vector2(.90f, .98f);
             }
             CreateText("Audio Label", settingsPanel.transform, "MASTER AUDIO", 28,
-                TextAnchor.MiddleLeft, new Vector2(.12f, .62f), new Vector2(.54f, .75f),
+                TextAnchor.MiddleLeft, new Vector2(.12f, .76f), new Vector2(.54f, .86f),
                 Vector2.zero, Vector2.zero).fontStyle = FontStyle.Bold;
             Toggle audioToggle = CreateHillToggle("Master Audio Toggle", settingsPanel.transform,
-                new Vector2(.72f, .685f));
+                new Vector2(.72f, .81f));
             UnityEventTools.AddPersistentListener(audioToggle.onValueChanged,
                 menu.SetMasterAudioEnabled);
             Text audioStatus = CreateText("Master Audio Status", settingsPanel.transform, "ON", 23,
-                TextAnchor.MiddleCenter, new Vector2(.62f, .54f), new Vector2(.84f, .61f),
+                TextAnchor.MiddleCenter, new Vector2(.62f, .69f), new Vector2(.84f, .75f),
                 Vector2.zero, Vector2.zero);
+            Button[] menuBackgroundButtons = CreateHillMenuBackgroundSelector(settingsPanel.transform,
+                menu, defaultMenu, neonMenu);
             Button[] backgroundButtons = CreateHillGarageBackgroundSelector(settingsPanel.transform,
                 menu, defaultGarage, neonGarage, animeGarage);
             CreateText("Settings Note", settingsPanel.transform,
-                "AUDIO AND GARAGE BACKGROUND ARE SAVED ON THIS DEVICE.", 16, TextAnchor.MiddleCenter,
-                new Vector2(.08f, .04f), new Vector2(.92f, .12f),
+                "AUDIO AND BACKGROUNDS ARE SAVED ON THIS DEVICE.", 16, TextAnchor.MiddleCenter,
+                new Vector2(.08f, .015f), new Vector2(.92f, .065f),
                 Vector2.zero, Vector2.zero).color = new Color(.62f, .78f, .88f);
 
             GameObject modal = FindHillObject(scene, "Purchase Confirmation");
@@ -671,7 +691,19 @@ namespace AnimeHillRacing.Editor
                 card.type = Image.Type.Simple;
                 card.preserveAspect = false;
                 card.color = Color.white;
-                card.raycastTarget = false;
+                card.raycastTarget = true;
+                Button cardButton = card.GetComponent<Button>();
+                if (cardButton == null) cardButton = card.gameObject.AddComponent<Button>();
+                cardButton.targetGraphic = card;
+                ColorBlock colors = cardButton.colors;
+                colors.normalColor = Color.white;
+                colors.highlightedColor = new Color(1.04f, 1.04f, 1.04f, 1f);
+                colors.pressedColor = new Color(.78f, .88f, 1f, 1f);
+                colors.disabledColor = new Color(.65f, .65f, .65f, .72f);
+                colors.fadeDuration = .06f;
+                cardButton.colors = colors;
+                Bind(cardButton, tuneCardActions[i]);
+                tuneCardButtons[i] = cardButton;
             }
             var bindings = new HillAdventurerGarageBindings
             {
@@ -683,12 +715,17 @@ namespace AnimeHillRacing.Editor
                 neonGarageBackground = neonGarage,
                 animeGarageBackground = animeGarage,
                 backgroundButtons = backgroundButtons,
+                shopMenuBackground = storeBackground,
+                defaultMenuBackground = defaultMenu,
+                neonMenuBackground = neonMenu,
+                menuBackgroundButtons = menuBackgroundButtons,
                 previousVehicleButton = previousVehicle,
                 nextVehicleButton = nextVehicle,
                 masterAudioToggle = audioToggle,
                 masterAudioStatus = audioStatus,
                 tuneIcons = tuneIcons,
                 tuneCoinIcons = tuneCoinIcons,
+                tuneCardButtons = tuneCardButtons,
                 engineTuneIcon = RequireHillSprite(HillTuneRoot + "/MotorTune.png"),
                 accelerationTuneIcon = RequireHillSprite(HillTuneRoot + "/AccelerationTune.png"),
                 suspensionTuneIcon = RequireHillSprite(HillTuneRoot + "/SuspensionTune.png"),
@@ -737,7 +774,7 @@ namespace AnimeHillRacing.Editor
             Sprite defaultGarage, Sprite neonGarage, Sprite animeGarage)
         {
             CreateText("Garage Background Title", parent, "GARAGE BACKGROUND", 22,
-                TextAnchor.MiddleCenter, new Vector2(.10f, .42f), new Vector2(.90f, .52f),
+                TextAnchor.MiddleCenter, new Vector2(.10f, .31f), new Vector2(.90f, .38f),
                 Vector2.zero, Vector2.zero).fontStyle = FontStyle.Bold;
             Sprite[] sprites = { defaultGarage, neonGarage, animeGarage };
             string[] labels = { "DEFAULT", "NEON", "ANIME" };
@@ -751,7 +788,7 @@ namespace AnimeHillRacing.Editor
             for (int i = 0; i < buttons.Length; i++)
             {
                 buttons[i] = CreateSpriteButton("Garage Background " + labels[i], parent,
-                    sprites[i], new Vector2(.5f, .28f),
+                    sprites[i], new Vector2(.5f, .23f),
                     new Vector2(-180f + i * 180f, 0f), new Vector2(158f, 108f));
                 buttons[i].image.color = Color.white;
                 Outline outline = buttons[i].gameObject.AddComponent<Outline>();
@@ -766,6 +803,48 @@ namespace AnimeHillRacing.Editor
                 Text label = CreateText("Label", labelBack.transform, labels[i], 15,
                     TextAnchor.MiddleCenter, Vector2.zero, Vector2.one,
                     Vector2.zero, Vector2.zero);
+                label.fontStyle = FontStyle.Bold;
+                GameObject selectedMarker = CreateImage("Selected Marker", buttons[i].transform,
+                    new Color(.14f, .90f, 1f, .98f), new Vector2(.17f, .73f),
+                    new Vector2(.83f, .98f), Vector2.zero, Vector2.zero);
+                selectedMarker.GetComponent<Image>().raycastTarget = false;
+                Text selectedLabel = CreateText("Label", selectedMarker.transform, "SELECTED", 12,
+                    TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+                selectedLabel.color = new Color(.01f, .04f, .08f, 1f);
+                selectedLabel.fontStyle = FontStyle.Bold;
+                selectedMarker.SetActive(false);
+                Bind(buttons[i], actions[i]);
+            }
+            return buttons;
+        }
+
+        private static Button[] CreateHillMenuBackgroundSelector(Transform parent, GarageUI menu,
+            Sprite defaultBackground, Sprite neonBackground)
+        {
+            CreateText("Menu Background Title", parent, "BACKGROUND  —  ADVENTURE / SHOP", 20,
+                TextAnchor.MiddleCenter, new Vector2(.08f, .59f), new Vector2(.92f, .66f),
+                Vector2.zero, Vector2.zero).fontStyle = FontStyle.Bold;
+            Sprite[] sprites = { defaultBackground, neonBackground };
+            string[] labels = { "DEFAULT", "NEON" };
+            UnityAction[] actions = { menu.SelectMenuBackground0, menu.SelectMenuBackground1 };
+            Button[] buttons = new Button[2];
+            for (int i = 0; i < buttons.Length; i++)
+            {
+                buttons[i] = CreateSpriteButton("Menu Background " + labels[i], parent,
+                    sprites[i], new Vector2(.5f, .51f),
+                    new Vector2(-105f + i * 210f, 0f), new Vector2(190f, 100f));
+                buttons[i].image.color = Color.white;
+                Outline outline = buttons[i].gameObject.AddComponent<Outline>();
+                outline.effectColor = new Color(.14f, .90f, 1f, 1f);
+                outline.effectDistance = new Vector2(4f, -4f);
+                outline.useGraphicAlpha = false;
+                outline.enabled = false;
+                GameObject labelBack = CreateImage("Label Background", buttons[i].transform,
+                    new Color(.005f, .012f, .03f, .88f), Vector2.zero,
+                    new Vector2(1f, .25f), Vector2.zero, Vector2.zero);
+                labelBack.GetComponent<Image>().raycastTarget = false;
+                Text label = CreateText("Label", labelBack.transform, labels[i], 15,
+                    TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
                 label.fontStyle = FontStyle.Bold;
                 GameObject selectedMarker = CreateImage("Selected Marker", buttons[i].transform,
                     new Color(.14f, .90f, 1f, .98f), new Vector2(.17f, .73f),

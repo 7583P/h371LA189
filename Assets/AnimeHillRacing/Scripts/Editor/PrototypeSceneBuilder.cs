@@ -462,9 +462,9 @@ namespace AnimeHillRacing.Editor
             BuildTrackSelectionHillAdventurer(assets);
             EditorBuildSettings.scenes = new[]
             {
-                new EditorBuildSettingsScene(MainMenuPath, true),
-                new EditorBuildSettingsScene(GaragePath, true),
                 new EditorBuildSettingsScene(PreStartPath, true),
+                new EditorBuildSettingsScene(GaragePath, true),
+                new EditorBuildSettingsScene(MainMenuPath, true),
                 new EditorBuildSettingsScene(Adventure2DPath, true),
                 new EditorBuildSettingsScene(Adventure3DPath, true),
                 new EditorBuildSettingsScene(TimeTrialPath, true)
@@ -473,8 +473,8 @@ namespace AnimeHillRacing.Editor
             AssetDatabase.Refresh();
             AdventureBox2DGoldenInstaller.InstallGoldenBox2D();
             ValidateAllGameScenes();
-            EditorSceneManager.OpenScene(MainMenuPath, OpenSceneMode.Single);
-            Selection.activeObject = AssetDatabase.LoadAssetAtPath<SceneAsset>(MainMenuPath);
+            EditorSceneManager.OpenScene(PreStartPath, OpenSceneMode.Single);
+            Selection.activeObject = AssetDatabase.LoadAssetAtPath<SceneAsset>(PreStartPath);
             Debug.Log("Anime Hill Racing: all six definitive game scenes built successfully.");
         }
 

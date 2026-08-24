@@ -107,7 +107,7 @@ namespace AnimeHillRacing.UI
             if (target == null) return;
             target.sprite = sprite;
             target.enabled = sprite != null;
-            target.preserveAspect = false;
+            target.preserveAspect = true;
             target.raycastTarget = false;
         }
 

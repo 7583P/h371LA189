@@ -134,7 +134,7 @@ namespace AnimeHillRacing.TimeTrial
 
         public void MainMenu()
         {
-            Time.timeScale = 1f; capture?.Release(); SceneManager.LoadScene("MainMenu");
+            Time.timeScale = 1f; capture?.Release(); SceneManager.LoadScene("PreStart");
         }
 
         public static string FormatTime(float seconds)

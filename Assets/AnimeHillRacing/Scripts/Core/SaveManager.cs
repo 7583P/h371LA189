@@ -24,6 +24,7 @@ namespace AnimeHillRacing.Core
         // Keep the switch visible to the existing economy code, but ship against real balances.
         public static bool TemporaryUnlimitedCurrencyEnabled => false;
         public const int UnlimitedCurrencyDisplayAmount = 999_999_999;
+        public const string DefaultMenuBackgroundId = "default";
         public const string DefaultGarageBackgroundId = "default";
 
         public const int DistanceBonusMinimum = 200;
@@ -39,6 +40,7 @@ namespace AnimeHillRacing.Core
         private const string SelectedTransmissionKey = "AHR.SelectedTransmission";
         private const string SelectedDriverKey = "AHR.Customize.Driver";
         private const string SelectedCharacterAccessoryKey = "AHR.Customize.CharacterAccessory";
+        private const string SelectedMenuBackgroundKey = "AHR.Menu.Background";
         private const string SelectedGarageBackgroundKey = "AHR.Garage.Background";
         private const string MasterAudioEnabledKey = "AHR.Settings.MasterAudioEnabled";
         private const string DistanceBonusValueKey = "AHR.DistanceBonus.CurrentValue";
@@ -113,6 +115,22 @@ namespace AnimeHillRacing.Core
             {
                 PlayerPrefs.SetString(SelectedGarageBackgroundKey,
                     string.IsNullOrEmpty(value) ? DefaultGarageBackgroundId : value);
+                PlayerPrefs.Save();
+            }
+        }
+
+        public static string SelectedMenuBackgroundId
+        {
+            get
+            {
+                string backgroundId = PlayerPrefs.GetString(SelectedMenuBackgroundKey,
+                    DefaultMenuBackgroundId);
+                return string.IsNullOrEmpty(backgroundId) ? DefaultMenuBackgroundId : backgroundId;
+            }
+            set
+            {
+                PlayerPrefs.SetString(SelectedMenuBackgroundKey,
+                    string.IsNullOrEmpty(value) ? DefaultMenuBackgroundId : value);
                 PlayerPrefs.Save();
             }
         }

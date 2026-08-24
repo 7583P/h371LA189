@@ -135,6 +135,7 @@ namespace AnimeHillRacing.Editor
             {
                 var errors = new List<string>();
                 ValidateRequiredAssets(errors);
+                ValidateAdventureBuildEntry(errors);
                 ValidateScene(MainMenuScene, errors, scene =>
                 {
                     ValidateCommonMenuScene(scene, errors);
@@ -218,6 +219,21 @@ namespace AnimeHillRacing.Editor
                 Error(errors, "Assets", "GameCatalog has no Adventure 2.5D tracks.");
         }
 
+        private static void ValidateAdventureBuildEntry(List<string> errors)
+        {
+            EditorBuildSettingsScene[] scenes = EditorBuildSettings.scenes;
+            for (int i = 0; i < scenes.Length; i++)
+            {
+                if (!scenes[i].enabled) continue;
+                if (!string.Equals(NormalizePath(scenes[i].path), NormalizePath(TrackSelectionScene),
+                        StringComparison.OrdinalIgnoreCase))
+                    Error(errors, "Build Settings", "the first enabled scene must be PreStart/Adventure, found " +
+                                                   scenes[i].path + ".");
+                return;
+            }
+            Error(errors, "Build Settings", "there is no enabled startup scene.");
+        }
+
         private static void ValidateScene(string path, List<string> errors, Action<Scene> validator)
         {
             if (AssetDatabase.LoadAssetAtPath<SceneAsset>(path) == null)
@@ -257,6 +273,10 @@ namespace AnimeHillRacing.Editor
             string scope = scene.name;
             RequireCount(ComponentsInScene<Canvas>(scene), 1, scope, "Canvas", errors);
             RequireCount(ComponentsInScene<CanvasScaler>(scene), 1, scope, "CanvasScaler", errors);
+            GraphicRaycaster[] raycasters = ComponentsInScene<GraphicRaycaster>(scene);
+            RequireCount(raycasters, 1, scope, "GraphicRaycaster", errors);
+            if (raycasters.Length == 1 && !raycasters[0].enabled)
+                Error(errors, scope, "GraphicRaycaster is disabled.");
             RequireCount(ComponentsInScene<SafeArea>(scene), 1, scope, "SafeArea", errors);
             EventSystem[] eventSystems = ComponentsInScene<EventSystem>(scene);
             RequireCount(eventSystems, 1, scope, "EventSystem", errors);
@@ -318,6 +338,15 @@ namespace AnimeHillRacing.Editor
                 GridLayoutGroup grid = RequireObjectReference<GridLayoutGroup>(menu, "trackGrid", scope, errors);
                 RequireObjectReference(menu, "trackSelectionRoot", scope, errors);
                 RequireObjectReference(menu, "trackSelectionTitleText", scope, errors);
+                RequireObjectReference(menu, "menuBackground", scope, errors);
+                RequireSpriteField(menu, "defaultMenuBackground", MainDefaultBackgroundPath,
+                    scope, errors);
+                RequireSpriteField(menu, "neonMenuBackground", MainNeonBackgroundPath,
+                    scope, errors);
+                SerializedProperty aspect = menu.FindProperty("trackCardAspectRatio");
+                if (aspect == null || aspect.propertyType != SerializedPropertyType.Float ||
+                    aspect.floatValue < 2.27f)
+                    Error(errors, scope, "Track cards are too tall to expose BEST on initial entry.");
 
                 if (scroll != null)
                 {
@@ -367,7 +396,7 @@ namespace AnimeHillRacing.Editor
             ChestPanelUI[] chestPanels = ComponentsInScene<ChestPanelUI>(scene);
             RequireCount(chestPanels, 1, scope, "ChestPanelUI", errors);
             if (chestPanels.Length == 1) ValidateChestPanel(chestPanels[0], scope, errors);
-            RequireSpriteUsed(scene, MainNeonBackgroundPath, "neon track background", errors);
+            RequireSpriteUsed(scene, MainDefaultBackgroundPath, "default Adventure background", errors);
             RequireSpriteUsed(scene, ChestSlotsPath, "supplied Chest Slots artwork", errors);
         }
 
@@ -440,6 +469,14 @@ namespace AnimeHillRacing.Editor
             if (topNavigation != null && topNavigation.gameObject.scene != scene)
                 Error(errors, scope, "Garage topNavigation points outside the Garage scene.");
 
+            GameObject tunesTabObject = FindGameObject(scene, "Garage Tunes Tab");
+            Button tunesTab = tunesTabObject != null ? tunesTabObject.GetComponent<Button>() : null;
+            if (tunesTab == null || !tunesTab.interactable || tunesTab.image == null ||
+                !tunesTab.image.raycastTarget)
+                Error(errors, scope, "Garage TUNES tab is not an enabled raycast target.");
+            else
+                RequirePersistentListener(tunesTab.onClick, garage, "ShowTuning", scope, errors);
+
             RequireObjectReference(serializedGarage, "garageBackground", scope, errors);
             RequireSpriteField(serializedGarage, "defaultGarageBackground", DefaultGaragePath, scope, errors);
             RequireSpriteField(serializedGarage, "neonGarageBackground", NeonGaragePath, scope, errors);
@@ -447,6 +484,21 @@ namespace AnimeHillRacing.Editor
             RequireArray(serializedGarage, "backgroundButtons", 3, true, scope, errors);
             ValidateButtonArrayListeners(serializedGarage, "backgroundButtons", garage,
                 "SelectGarageBackground", 3, scope, errors);
+            Image shopMenuBackground = RequireObjectReference<Image>(serializedGarage,
+                "shopMenuBackground", scope, errors);
+            RequireSpriteField(serializedGarage, "defaultMenuBackground", MainDefaultBackgroundPath,
+                scope, errors);
+            RequireSpriteField(serializedGarage, "neonMenuBackground", MainNeonBackgroundPath,
+                scope, errors);
+            SerializedProperty menuBackgroundButtons = serializedGarage.FindProperty("menuBackgroundButtons");
+            bool serializedMenuBackgroundControls = HasAssignedArray(menuBackgroundButtons, 2);
+            if (serializedMenuBackgroundControls)
+                ValidateButtonArrayListeners(serializedGarage, "menuBackgroundButtons", garage,
+                    "SelectMenuBackground", 2, scope, errors);
+            else if (typeof(GarageUI).GetMethod("EnsureSharedMenuBackgroundControls",
+                         BindingFlags.Instance | BindingFlags.NonPublic) == null)
+                Error(errors, scope, "Adventure/Shop background controls have neither serialized buttons " +
+                                     "nor a runtime compatibility factory.");
             Button previousVehicle = RequireObjectReference<Button>(serializedGarage,
                 "previousVehicleButton", scope, errors);
             Button nextVehicle = RequireObjectReference<Button>(serializedGarage,
@@ -459,12 +511,17 @@ namespace AnimeHillRacing.Editor
             GameObject settingsPanel = FindGameObject(scene, "Settings Panel");
             GameObject vehiclePanel = FindGameObject(scene, "Vehicle Panel");
             GameObject backgroundTitle = FindGameObject(scene, "Garage Background Title");
-            if (settingsPanel == null || vehiclePanel == null || backgroundTitle == null)
+            GameObject menuBackgroundTitle = FindGameObject(scene, "Menu Background Title");
+            if (settingsPanel == null || vehiclePanel == null || backgroundTitle == null ||
+                (serializedMenuBackgroundControls && menuBackgroundTitle == null))
                 Error(errors, scope, "Garage background Settings hierarchy is incomplete.");
             else if (!backgroundTitle.transform.IsChildOf(settingsPanel.transform) ||
-                     backgroundTitle.transform.IsChildOf(vehiclePanel.transform))
+                     backgroundTitle.transform.IsChildOf(vehiclePanel.transform) ||
+                     (menuBackgroundTitle != null &&
+                      !menuBackgroundTitle.transform.IsChildOf(settingsPanel.transform)))
                 Error(errors, scope,
-                    "GARAGE BACKGROUND must live inside Settings and never inside Vehicle Selection.");
+                    "Both background selectors must live inside Settings; GARAGE BACKGROUND must never " +
+                    "enter Vehicle Selection.");
 
             SerializedProperty backgroundButtons = serializedGarage.FindProperty("backgroundButtons");
             int selectedBackgroundMarkers = 0;
@@ -502,15 +559,13 @@ namespace AnimeHillRacing.Editor
             if (garageOverlay == null || garageOverlay.color.a > .16f)
                 Error(errors, scope, "Garage overlay darkens the selected background excessively.");
 
-            GameObject shopBackground = FindGameObject(scene, "Shop Neon Background");
-            Image shopBackgroundImage = shopBackground != null ? shopBackground.GetComponent<Image>() : null;
             GameObject storePanel = FindGameObject(scene, "Store Panel");
-            if (shopBackgroundImage == null || storePanel == null ||
-                !shopBackground.transform.IsChildOf(storePanel.transform))
-                Error(errors, scope, "Shop general background is missing from the Shop panel.");
-            else
-                RequireAssetPath(shopBackgroundImage.sprite, MainNeonBackgroundPath, scope,
-                    "Shop general background shared with Adventure", errors);
+            if (shopMenuBackground == null || storePanel == null ||
+                !shopMenuBackground.transform.IsChildOf(storePanel.transform))
+                Error(errors, scope, "Shop compatibility background reference is missing.");
+            else if (shopMenuBackground.enabled || shopMenuBackground.raycastTarget)
+                Error(errors, scope, "Shop's old nested background must stay disabled and non-blocking; " +
+                    "the full-screen shared Adventure background is authoritative.");
 
             RequireArray(serializedGarage, "tuningNames", 6, true, scope, errors);
             RequireArray(serializedGarage, "tuningLevels", 6, true, scope, errors);
@@ -518,8 +573,16 @@ namespace AnimeHillRacing.Editor
             RequireArray(serializedGarage, "tuningButtons", 6, true, scope, errors);
             RequireArray(serializedGarage, "tuningIcons", 6, true, scope, errors);
             RequireArray(serializedGarage, "tuningCoinIcons", 6, true, scope, errors);
+            SerializedProperty tuneCardButtons = serializedGarage.FindProperty("tuningCardButtons");
+            bool serializedTuneCards = HasAssignedArray(tuneCardButtons, 6);
+            if (!serializedTuneCards && typeof(GarageUI).GetMethod("EnsureTuneCardButtons",
+                    BindingFlags.Instance | BindingFlags.NonPublic) == null)
+                Error(errors, scope, "Tune cards have neither serialized hit targets nor a runtime factory.");
             ValidateButtonArrayListeners(serializedGarage, "tuningButtons", garage,
                 "UpgradeTune", 6, scope, errors);
+            if (serializedTuneCards)
+                ValidateButtonArrayListeners(serializedGarage, "tuningCardButtons", garage,
+                    "UpgradeTune", 6, scope, errors);
             SerializedProperty tuneButtons = serializedGarage.FindProperty("tuningButtons");
             if (tuneButtons != null && tuneButtons.isArray)
             {
@@ -535,6 +598,11 @@ namespace AnimeHillRacing.Editor
                         Mathf.Abs(cardRect.sizeDelta.x / cardRect.sizeDelta.y - .75f) > .08f)
                         Error(errors, scope, "Tune card " + (i + 1) +
                             " does not preserve the supplied portrait frame proportions.");
+                    Button cardButton = card != null ? card.GetComponent<Button>() : null;
+                    if (serializedTuneCards &&
+                        (cardButton == null || cardButton.targetGraphic != card || !card.raycastTarget))
+                        Error(errors, scope, "Tune card " + (i + 1) +
+                            " is not a complete mouse/touch hit target.");
                 }
             }
 
@@ -1109,6 +1177,14 @@ namespace AnimeHillRacing.Editor
                     Error(errors, scope, serialized.targetObject.GetType().Name + "." + propertyName +
                                          "[" + i + "] is null.");
             }
+        }
+
+        private static bool HasAssignedArray(SerializedProperty property, int expectedSize)
+        {
+            if (property == null || !property.isArray || property.arraySize != expectedSize) return false;
+            for (int i = 0; i < property.arraySize; i++)
+                if (property.GetArrayElementAtIndex(i).objectReferenceValue == null) return false;
+            return true;
         }
 
         private static void RequireBoolean(SerializedObject serialized, string propertyName,

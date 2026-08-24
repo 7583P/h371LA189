@@ -49,7 +49,9 @@ namespace AnimeHillRacing.EditorTools
             string[] requiredBindings =
             {
                 "startButton", "topNavigation", "garageBackground", "backgroundButtons",
-                "masterAudioToggle", "tuneIcons", "tuneCoinIcons", "tuneAffordableBackground",
+                "shopMenuBackground", "defaultMenuBackground", "neonMenuBackground",
+                "menuBackgroundButtons", "masterAudioToggle", "tuneIcons", "tuneCoinIcons",
+                "tuneCardButtons", "tuneAffordableBackground",
                 "tuneUnaffordableBackground", "confirmationIcon", "confirmationCoinIcon",
                 "confirmationDescription"
             };

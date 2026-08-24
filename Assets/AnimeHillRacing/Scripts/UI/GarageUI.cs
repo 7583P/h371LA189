@@ -19,6 +19,10 @@ namespace AnimeHillRacing.UI
         public Sprite neonGarageBackground;
         public Sprite animeGarageBackground;
         public Button[] backgroundButtons;
+        public Image shopMenuBackground;
+        public Sprite defaultMenuBackground;
+        public Sprite neonMenuBackground;
+        public Button[] menuBackgroundButtons;
         public Button previousVehicleButton;
         public Button nextVehicleButton;
 
@@ -27,6 +31,7 @@ namespace AnimeHillRacing.UI
 
         public Image[] tuneIcons;
         public Image[] tuneCoinIcons;
+        public Button[] tuneCardButtons;
         public Sprite engineTuneIcon;
         public Sprite accelerationTuneIcon;
         public Sprite suspensionTuneIcon;
@@ -103,12 +108,17 @@ namespace AnimeHillRacing.UI
         [SerializeField] private Sprite neonGarageBackground;
         [SerializeField] private Sprite animeGarageBackground;
         [SerializeField] private Button[] backgroundButtons;
+        [SerializeField] private Image shopMenuBackground;
+        [SerializeField] private Sprite defaultMenuBackground;
+        [SerializeField] private Sprite neonMenuBackground;
+        [SerializeField] private Button[] menuBackgroundButtons;
         [SerializeField] private Button previousVehicleButton;
         [SerializeField] private Button nextVehicleButton;
         [SerializeField] private Toggle masterAudioToggle;
         [SerializeField] private Text masterAudioStatus;
         [SerializeField] private Image[] tuningIcons;
         [SerializeField] private Image[] tuningCoinIcons;
+        [SerializeField] private Button[] tuningCardButtons;
         [SerializeField] private Sprite engineTuneIcon;
         [SerializeField] private Sprite accelerationTuneIcon;
         [SerializeField] private Sprite suspensionTuneIcon;
@@ -149,6 +159,8 @@ namespace AnimeHillRacing.UI
         private int pendingPurchasedTune;
         private int pendingTuneMaximum;
         private int pendingTuneCost = -1;
+        private bool tuneCardListenersInitialized;
+        private GameObject[] garageSectionTabs;
 
         private const string DefaultBackgroundId = "default";
         private const string NeonBackgroundId = "neon";
@@ -166,15 +178,18 @@ namespace AnimeHillRacing.UI
             lastTuneCardFrame = -1;
             lastTuneCardSlot = -1;
             nextEconomyCheck = 0f;
+            EnsureSharedMenuBackgroundControls();
             EnsureRuntimeTuningRows();
             EnsureTuneAdjustmentButtons();
+            EnsureTuneCardButtons();
             FindSavedVehicle();
             section = GameSession.RequestedGarageSection;
             if (confirmationModal != null) confirmationModal.SetActive(false);
             Refresh();
+            if (section == GarageSection.Store) ResetStoreScrollToTop();
         }
 
-        public void Back() => SceneManager.LoadScene("MainMenu");
+        public void Back() => SceneManager.LoadScene("PreStart");
         public void PreviousVehicle() => CycleVehicle(-1);
         public void NextVehicle() => CycleVehicle(1);
         public void ShowWheels() { category = Category.Wheels; Refresh(); }
@@ -203,6 +218,8 @@ namespace AnimeHillRacing.UI
         public void SelectGarageBackground0() => SelectGarageBackground(DefaultBackgroundId);
         public void SelectGarageBackground1() => SelectGarageBackground(NeonBackgroundId);
         public void SelectGarageBackground2() => SelectGarageBackground(AnimeBackgroundId);
+        public void SelectMenuBackground0() => SelectMenuBackground(DefaultBackgroundId);
+        public void SelectMenuBackground1() => SelectMenuBackground(NeonBackgroundId);
         public void ToggleMasterAudio() => SetMasterAudioEnabled(!SaveManager.MasterAudioEnabled);
         public void SetMasterAudioEnabled(bool enabled)
         {
@@ -268,9 +285,11 @@ namespace AnimeHillRacing.UI
 
         private void SetSection(GarageSection targetSection)
         {
+            bool enteringStore = section != GarageSection.Store && targetSection == GarageSection.Store;
             section = targetSection;
             GameSession.RequestedGarageSection = targetSection;
             Refresh();
+            if (enteringStore) ResetStoreScrollToTop();
         }
 
         private void CycleVehicle(int direction)
@@ -704,6 +723,130 @@ namespace AnimeHillRacing.UI
             }
         }
 
+        private void EnsureSharedMenuBackgroundControls()
+        {
+            if (!Application.isPlaying || settingsPanel == null) return;
+            if (shopMenuBackground == null)
+            {
+                Image[] images = settingsPanel.transform.root.GetComponentsInChildren<Image>(true);
+                for (int i = 0; i < images.Length; i++)
+                    if (images[i] != null &&
+                        (images[i].name == "Shop Neon Background" ||
+                         images[i].name == "Shop Shared Background (Compatibility Layer)"))
+                    {
+                        shopMenuBackground = images[i];
+                        break;
+                    }
+            }
+
+            PositionSettingsControl("Settings Title", new Vector2(.10f, .88f), new Vector2(.90f, .98f));
+            PositionSettingsControl("Audio Label", new Vector2(.12f, .76f), new Vector2(.54f, .86f));
+            PositionSettingsControl("Master Audio Status", new Vector2(.62f, .69f), new Vector2(.84f, .75f));
+            Transform audioToggle = FindSettingsDescendant("Master Audio Toggle");
+            if (audioToggle is RectTransform audioRect)
+            {
+                audioRect.anchorMin = audioRect.anchorMax = new Vector2(.72f, .81f);
+                audioRect.anchoredPosition = Vector2.zero;
+            }
+            PositionSettingsControl("Garage Background Title", new Vector2(.10f, .31f),
+                new Vector2(.90f, .38f));
+            PositionSettingsControl("Settings Note", new Vector2(.08f, .015f), new Vector2(.92f, .065f));
+            Text settingsNote = FindSettingsDescendant("Settings Note")?.GetComponent<Text>();
+            if (settingsNote != null)
+                settingsNote.text = "AUDIO AND BACKGROUNDS ARE SAVED ON THIS DEVICE.";
+
+            for (int i = 0; i < (backgroundButtons?.Length ?? 0); i++)
+            {
+                Button button = backgroundButtons[i];
+                if (button == null) continue;
+                RectTransform rect = button.transform as RectTransform;
+                rect.anchorMin = rect.anchorMax = new Vector2(.5f, .23f);
+                rect.anchoredPosition = new Vector2(-180f + i * 180f, 0f);
+                rect.sizeDelta = new Vector2(158f, 108f);
+            }
+
+            if (menuBackgroundButtons != null && menuBackgroundButtons.Length == 2 &&
+                menuBackgroundButtons[0] != null && menuBackgroundButtons[1] != null) return;
+            if (backgroundButtons == null || backgroundButtons.Length < 2 ||
+                backgroundButtons[0] == null || backgroundButtons[1] == null) return;
+
+            Text garageTitle = FindSettingsDescendant("Garage Background Title")?.GetComponent<Text>();
+            if (garageTitle != null && FindSettingsDescendant("Menu Background Title") == null)
+            {
+                Text title = Instantiate(garageTitle, settingsPanel.transform);
+                title.name = "Menu Background Title";
+                title.text = "BACKGROUND  —  ADVENTURE / SHOP";
+                title.fontSize = 20;
+                SetStretchRect(title.rectTransform, new Vector2(.08f, .59f), new Vector2(.92f, .66f));
+            }
+
+            menuBackgroundButtons = new Button[2];
+            Sprite[] sprites = { defaultMenuBackground, neonMenuBackground };
+            for (int i = 0; i < menuBackgroundButtons.Length; i++)
+            {
+                Button button = Instantiate(backgroundButtons[i], settingsPanel.transform);
+                button.name = i == 0 ? "Menu Background DEFAULT" : "Menu Background NEON";
+                RectTransform rect = button.transform as RectTransform;
+                rect.anchorMin = rect.anchorMax = new Vector2(.5f, .51f);
+                rect.anchoredPosition = new Vector2(-105f + i * 210f, 0f);
+                rect.sizeDelta = new Vector2(190f, 100f);
+                if (button.image != null)
+                {
+                    button.image.sprite = sprites[i];
+                    button.image.color = Color.white;
+                }
+                // Replace the cloned UnityEvent so the Garage-background persistent listener is
+                // not inherited by the separate Adventure/Shop selector.
+                button.onClick = new Button.ButtonClickedEvent();
+                if (i == 0) button.onClick.AddListener(SelectMenuBackground0);
+                else button.onClick.AddListener(SelectMenuBackground1);
+                menuBackgroundButtons[i] = button;
+            }
+        }
+
+        private Transform FindSettingsDescendant(string objectName)
+        {
+            if (settingsPanel == null) return null;
+            Transform[] transforms = settingsPanel.GetComponentsInChildren<Transform>(true);
+            for (int i = 0; i < transforms.Length; i++)
+                if (transforms[i].name == objectName) return transforms[i];
+            return null;
+        }
+
+        private void PositionSettingsControl(string objectName, Vector2 anchorMin, Vector2 anchorMax)
+        {
+            RectTransform rect = FindSettingsDescendant(objectName) as RectTransform;
+            SetStretchRect(rect, anchorMin, anchorMax);
+        }
+
+        private void EnsureTuneCardButtons()
+        {
+            if (!Application.isPlaying || tuningButtons == null) return;
+            if (tuningCardButtons == null || tuningCardButtons.Length != tuningButtons.Length)
+                System.Array.Resize(ref tuningCardButtons, tuningButtons.Length);
+
+            for (int i = 0; i < tuningButtons.Length; i++)
+            {
+                Button upgrade = tuningButtons[i];
+                if (upgrade == null || upgrade.transform.parent == null) continue;
+                GameObject row = upgrade.transform.parent.gameObject;
+                Image cardImage = row.GetComponent<Image>();
+                Button cardButton = row.GetComponent<Button>();
+                if (cardButton == null) cardButton = row.AddComponent<Button>();
+                cardButton.targetGraphic = cardImage;
+                cardButton.transition = Selectable.Transition.ColorTint;
+                if (cardImage != null) cardImage.raycastTarget = true;
+                tuningCardButtons[i] = cardButton;
+
+                if (!tuneCardListenersInitialized && cardButton.onClick.GetPersistentEventCount() == 0)
+                {
+                    int capturedSlot = i;
+                    cardButton.onClick.AddListener(() => PurchaseTune(capturedSlot));
+                }
+            }
+            tuneCardListenersInitialized = true;
+        }
+
         private Button CreateTuneDownButton(Button template, int slot)
         {
             GameObject gameObject = new GameObject("Decrease", typeof(RectTransform), typeof(Image), typeof(Button));
@@ -822,6 +965,7 @@ namespace AnimeHillRacing.UI
                     $"FUEL  {stats.totalRunFuelDuration:0} SEC";
             }
             RefreshAdventureContext();
+            RefreshStoreIsolation();
             RefreshGarageBackground();
             RefreshAudioSetting();
         }
@@ -832,7 +976,8 @@ namespace AnimeHillRacing.UI
             VehicleDefinition vehicle = CurrentVehicle;
             bool vehicleUnlocked = vehicle != null && SaveManager.IsVehicleUnlocked(vehicle.vehicleId,
                 vehicle.unlockedByDefault);
-            bool showStart = hasTrack && vehicleUnlocked;
+            bool showGarageContext = section != GarageSection.Store;
+            bool showStart = showGarageContext && hasTrack && vehicleUnlocked;
             if (startButton != null)
             {
                 startButton.gameObject.SetActive(showStart);
@@ -840,7 +985,7 @@ namespace AnimeHillRacing.UI
             }
             if (pendingTrackLabel != null)
             {
-                pendingTrackLabel.gameObject.SetActive(hasTrack);
+                pendingTrackLabel.gameObject.SetActive(showGarageContext && hasTrack);
                 if (hasTrack)
                     pendingTrackLabel.text = vehicleUnlocked
                         ? $"ADVENTURE TRACK  {pendingMap.displayName.ToUpperInvariant()}"
@@ -857,20 +1002,116 @@ namespace AnimeHillRacing.UI
             RefreshGarageBackground();
         }
 
+        private void RefreshStoreIsolation()
+        {
+            if (!Application.isPlaying) return;
+            bool showGarageChrome = section != GarageSection.Store;
+
+            ResolveGarageSectionTabs();
+            for (int i = 0; i < (garageSectionTabs?.Length ?? 0); i++)
+                if (garageSectionTabs[i] != null)
+                    garageSectionTabs[i].SetActive(showGarageChrome);
+
+            if (preview != null && preview.TargetImage != null)
+                preview.TargetImage.gameObject.SetActive(showGarageChrome);
+            SetGraphicActive(vehicleName, showGarageChrome);
+            SetGraphicActive(skinSummary, showGarageChrome);
+            SetGraphicActive(wheelSummary, showGarageChrome);
+            SetGraphicActive(driverSummary, showGarageChrome);
+            SetGraphicActive(characterSummary, showGarageChrome);
+            if (previousVehicleButton != null)
+                previousVehicleButton.gameObject.SetActive(showGarageChrome);
+            if (nextVehicleButton != null)
+                nextVehicleButton.gameObject.SetActive(showGarageChrome);
+
+            if (!showGarageChrome && storePanel != null && storePanel.transform is RectTransform storeRect)
+            {
+                storeRect.anchorMin = new Vector2(.06f, .15f);
+                storeRect.anchorMax = new Vector2(.94f, .84f);
+                storeRect.anchoredPosition = Vector2.zero;
+                storeRect.sizeDelta = Vector2.zero;
+            }
+        }
+
+        private void ResolveGarageSectionTabs()
+        {
+            if (garageSectionTabs != null && garageSectionTabs.Length == 4) return;
+            string[] names =
+            {
+                "Garage Vehicle Tab",
+                "Garage Tunes Tab",
+                "Garage Paint Tab",
+                "Garage Stats Tab"
+            };
+            garageSectionTabs = new GameObject[names.Length];
+            GameObject[] roots = gameObject.scene.GetRootGameObjects();
+            for (int rootIndex = 0; rootIndex < roots.Length; rootIndex++)
+            {
+                Transform[] descendants = roots[rootIndex].GetComponentsInChildren<Transform>(true);
+                for (int descendantIndex = 0; descendantIndex < descendants.Length; descendantIndex++)
+                    for (int nameIndex = 0; nameIndex < names.Length; nameIndex++)
+                        if (garageSectionTabs[nameIndex] == null &&
+                            descendants[descendantIndex].name == names[nameIndex])
+                            garageSectionTabs[nameIndex] = descendants[descendantIndex].gameObject;
+            }
+        }
+
+        private static void SetGraphicActive(Graphic graphic, bool active)
+        {
+            if (graphic != null) graphic.gameObject.SetActive(active);
+        }
+
+        private void ResetStoreScrollToTop()
+        {
+            ScrollRect scroll = storePanel != null ? storePanel.GetComponent<ScrollRect>() : null;
+            if (scroll == null) return;
+            Canvas.ForceUpdateCanvases();
+            scroll.horizontal = false;
+            scroll.vertical = true;
+            scroll.verticalNormalizedPosition = 1f;
+        }
+
+        private void SelectMenuBackground(string backgroundId)
+        {
+            if (!Application.isPlaying) return;
+            if (backgroundId != DefaultBackgroundId && backgroundId != NeonBackgroundId)
+                backgroundId = DefaultBackgroundId;
+            SaveManager.SelectedMenuBackgroundId = backgroundId;
+            RefreshGarageBackground();
+        }
+
         private void RefreshGarageBackground()
         {
-            string storedId = SaveManager.SelectedGarageBackgroundId;
+            string storedId = Application.isPlaying
+                ? SaveManager.SelectedGarageBackgroundId : DefaultBackgroundId;
             string selectedId = storedId == NeonBackgroundId || storedId == AnimeBackgroundId ||
                 storedId == DefaultBackgroundId ? storedId : DefaultBackgroundId;
-            Sprite selectedSprite = selectedId == NeonBackgroundId ? neonGarageBackground :
+            Sprite selectedGarageSprite = selectedId == NeonBackgroundId ? neonGarageBackground :
                 selectedId == AnimeBackgroundId ? animeGarageBackground : defaultGarageBackground;
-            if (selectedSprite == null)
+            if (selectedGarageSprite == null)
             {
                 selectedId = DefaultBackgroundId;
-                selectedSprite = defaultGarageBackground ?? neonGarageBackground ?? animeGarageBackground;
+                selectedGarageSprite = defaultGarageBackground ?? neonGarageBackground ?? animeGarageBackground;
             }
             if (Application.isPlaying && selectedId != storedId)
                 SaveManager.SelectedGarageBackgroundId = selectedId;
+
+            string storedMenuId = Application.isPlaying
+                ? SaveManager.SelectedMenuBackgroundId : DefaultBackgroundId;
+            string selectedMenuId = storedMenuId == NeonBackgroundId || storedMenuId == DefaultBackgroundId
+                ? storedMenuId : DefaultBackgroundId;
+            Sprite selectedMenuSprite = selectedMenuId == NeonBackgroundId
+                ? neonMenuBackground : defaultMenuBackground;
+            if (selectedMenuSprite == null)
+            {
+                selectedMenuId = DefaultBackgroundId;
+                selectedMenuSprite = defaultMenuBackground ?? neonMenuBackground;
+            }
+            if (Application.isPlaying && selectedMenuId != storedMenuId)
+                SaveManager.SelectedMenuBackgroundId = selectedMenuId;
+
+            Sprite selectedSprite = section == GarageSection.Store
+                ? selectedMenuSprite : selectedGarageSprite;
             if (garageBackground != null)
             {
                 garageBackground.sprite = selectedSprite;
@@ -878,6 +1119,15 @@ namespace AnimeHillRacing.UI
                 AspectRatioFitter fitter = garageBackground.GetComponent<AspectRatioFitter>();
                 if (fitter != null && selectedSprite != null && selectedSprite.rect.height > 0f)
                     fitter.aspectRatio = selectedSprite.rect.width / selectedSprite.rect.height;
+            }
+
+            // Shop now uses the same full-screen background as Adventure. Keep the old nested
+            // image disabled so it cannot add a second, independently tinted background layer.
+            if (shopMenuBackground != null)
+            {
+                shopMenuBackground.sprite = selectedMenuSprite;
+                shopMenuBackground.enabled = false;
+                shopMenuBackground.raycastTarget = false;
             }
 
             for (int i = 0; i < (backgroundButtons?.Length ?? 0); i++)
@@ -889,6 +1139,18 @@ namespace AnimeHillRacing.UI
                 bool isSelected = buttonId == selectedId;
                 // Keep the authored thumbnail colors intact. Selection is communicated by a
                 // dedicated badge and outline instead of multiplying the image by a dark tint.
+                if (button.image != null) button.image.color = Color.white;
+                Outline outline = button.GetComponent<Outline>();
+                if (outline != null) outline.enabled = isSelected;
+                Transform marker = button.transform.Find("Selected Marker");
+                if (marker != null) marker.gameObject.SetActive(isSelected);
+            }
+
+            for (int i = 0; i < (menuBackgroundButtons?.Length ?? 0); i++)
+            {
+                Button button = menuBackgroundButtons[i];
+                if (button == null) continue;
+                bool isSelected = (i == 1 ? NeonBackgroundId : DefaultBackgroundId) == selectedMenuId;
                 if (button.image != null) button.image.color = Color.white;
                 Outline outline = button.GetComponent<Outline>();
                 if (outline != null) outline.enabled = isSelected;
@@ -1244,7 +1506,8 @@ namespace AnimeHillRacing.UI
                     }
                     cardImage.color = blocked && stateSprite == null
                         ? new Color(.72f, .08f, .06f, 1f) : Color.white;
-                    cardImage.raycastTarget = false;
+                    cardImage.raycastTarget = tuningCardButtons != null &&
+                        i < tuningCardButtons.Length && tuningCardButtons[i] != null;
                 }
                 Image priceHitTarget = tuningButtons[i].image;
                 if (priceHitTarget != null)
@@ -1254,8 +1517,12 @@ namespace AnimeHillRacing.UI
                     priceHitTarget.sprite = null;
                     priceHitTarget.color = Color.clear;
                 }
-                tuningButtons[i].interactable = vehicleUnlocked && maximum > 0 &&
-                    (canEquipUp || (!purchasedMax && cost >= 0 && !insufficient));
+                // Keep the price strip clickable even when unaffordable or at MAX so it can open
+                // the same explanatory modal as the rest of the card; the modal disables purchase.
+                tuningButtons[i].interactable = vehicleUnlocked && maximum > 0;
+                if (tuningCardButtons != null && i < tuningCardButtons.Length &&
+                    tuningCardButtons[i] != null)
+                    tuningCardButtons[i].interactable = vehicleUnlocked && maximum > 0;
                 if (tuningDownButtons != null && i < tuningDownButtons.Length && tuningDownButtons[i] != null)
                     tuningDownButtons[i].interactable = vehicleUnlocked && current > 1;
             }
@@ -1516,12 +1783,17 @@ namespace AnimeHillRacing.UI
             neonGarageBackground = bindings.neonGarageBackground;
             animeGarageBackground = bindings.animeGarageBackground;
             backgroundButtons = bindings.backgroundButtons;
+            shopMenuBackground = bindings.shopMenuBackground;
+            defaultMenuBackground = bindings.defaultMenuBackground;
+            neonMenuBackground = bindings.neonMenuBackground;
+            menuBackgroundButtons = bindings.menuBackgroundButtons;
             previousVehicleButton = bindings.previousVehicleButton;
             nextVehicleButton = bindings.nextVehicleButton;
             masterAudioToggle = bindings.masterAudioToggle;
             masterAudioStatus = bindings.masterAudioStatus;
             tuningIcons = bindings.tuneIcons;
             tuningCoinIcons = bindings.tuneCoinIcons;
+            tuningCardButtons = bindings.tuneCardButtons;
             engineTuneIcon = bindings.engineTuneIcon;
             accelerationTuneIcon = bindings.accelerationTuneIcon;
             suspensionTuneIcon = bindings.suspensionTuneIcon;

@@ -43,6 +43,11 @@ namespace AnimeHillRacing.UI
         [SerializeField] private Button[] tuningButtons;
         [SerializeField] private Text tuningCoinsText;
 
+        [Header("Shared Menu Background")]
+        [SerializeField] private Image menuBackground;
+        [SerializeField] private Sprite defaultMenuBackground;
+        [SerializeField] private Sprite neonMenuBackground;
+
         [Header("Adventure Track Selection")]
         [SerializeField] private bool trackSelectionLayout;
         [SerializeField] private GameObject trackSelectionRoot;
@@ -53,7 +58,7 @@ namespace AnimeHillRacing.UI
         [SerializeField] private TrackSelectionCardUI[] trackCards;
         [SerializeField] private Text trackSelectionTitleText;
         [SerializeField] private Text trackSelectionEmptyText;
-        [SerializeField, Min(.5f)] private float trackCardAspectRatio = 1.62f;
+        [SerializeField, Min(.5f)] private float trackCardAspectRatio = 2.30f;
 
         private Step step;
         private GameModeType mode = GameModeType.Adventure2_5D;
@@ -70,6 +75,7 @@ namespace AnimeHillRacing.UI
 
         private void Awake()
         {
+            RefreshMenuBackground();
             if (!trackSelectionLayout) EnsureModernLayout();
         }
 
@@ -599,11 +605,34 @@ namespace AnimeHillRacing.UI
             if (trackSelectionLayout)
             {
                 GameSession.ClearGarageContext();
-                SceneManager.LoadScene("MainMenu");
+                SceneManager.LoadScene("PreStart");
                 return;
             }
-            if (step == Step.Mode) { SceneManager.LoadScene("MainMenu"); return; }
+            if (step == Step.Mode) { SceneManager.LoadScene("PreStart"); return; }
             ShowStep(Step.Mode);
+        }
+
+        private void RefreshMenuBackground()
+        {
+            string storedId = Application.isPlaying
+                ? SaveManager.SelectedMenuBackgroundId : SaveManager.DefaultMenuBackgroundId;
+            bool neon = storedId == "neon";
+            string selectedId = neon || storedId == SaveManager.DefaultMenuBackgroundId
+                ? storedId : SaveManager.DefaultMenuBackgroundId;
+            Sprite selectedSprite = selectedId == "neon" ? neonMenuBackground : defaultMenuBackground;
+            if (selectedSprite == null)
+            {
+                selectedId = SaveManager.DefaultMenuBackgroundId;
+                selectedSprite = defaultMenuBackground ?? neonMenuBackground;
+            }
+            if (Application.isPlaying && selectedId != storedId)
+                SaveManager.SelectedMenuBackgroundId = selectedId;
+            if (menuBackground == null) return;
+            menuBackground.sprite = selectedSprite;
+            menuBackground.enabled = selectedSprite != null;
+            AspectRatioFitter fitter = menuBackground.GetComponent<AspectRatioFitter>();
+            if (fitter != null && selectedSprite != null && selectedSprite.rect.height > 0f)
+                fitter.aspectRatio = selectedSprite.rect.width / selectedSprite.rect.height;
         }
 
         public void Back() => BackStep();
@@ -1052,7 +1081,7 @@ namespace AnimeHillRacing.UI
 
         public void AssignTrackSelection(GameCatalog gameCatalog, ScrollRect scroll, GridLayoutGroup grid,
             TrackSelectionCardUI[] cards, Text coins = null, Text title = null, Text emptyState = null,
-            GameObject selectionRoot = null, float cardAspectRatio = 1.62f)
+            GameObject selectionRoot = null, float cardAspectRatio = 2.30f)
         {
             catalog = gameCatalog;
             trackSelectionLayout = true;
@@ -1072,7 +1101,7 @@ namespace AnimeHillRacing.UI
         public void AssignTrackSelectionTemplate(GameCatalog gameCatalog, ScrollRect scroll,
             GridLayoutGroup grid, RectTransform content, TrackSelectionCardUI cardTemplate,
             Text coins = null, Text title = null, Text emptyState = null,
-            GameObject selectionRoot = null, float cardAspectRatio = 1.62f)
+            GameObject selectionRoot = null, float cardAspectRatio = 2.30f)
         {
             catalog = gameCatalog;
             trackSelectionLayout = true;
@@ -1088,6 +1117,15 @@ namespace AnimeHillRacing.UI
             trackSelectionEmptyText = emptyState;
             trackCardAspectRatio = Mathf.Max(.5f, cardAspectRatio);
             ConfigureTwoColumnGrid(true);
+        }
+
+        public void AssignSharedMenuBackground(Image target, Sprite defaultBackground,
+            Sprite neonBackground)
+        {
+            menuBackground = target;
+            defaultMenuBackground = defaultBackground;
+            neonMenuBackground = neonBackground;
+            RefreshMenuBackground();
         }
 
         public void Assign(GameCatalog gameCatalog, Text coins, Text progress, GameObject[] panels,

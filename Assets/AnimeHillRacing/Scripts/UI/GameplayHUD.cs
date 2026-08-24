@@ -76,16 +76,19 @@ namespace AnimeHillRacing.UI
                 fuelEmptyOffsetMax.x = fuelFillRect.offsetMin.x;
             }
             debugPanel?.SetActive(false);
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            teleportModal = TeleportModalUI.Create(transform);
-            EnsureTeleportButton();
-#endif
+            // Long-distance teleport belongs to the procedural 2D gameplay. Road/3D tracks use
+            // a different coordinate system and intentionally do not expose this control.
+            if (terrainManager != null)
+            {
+                teleportMenu = GameplayTeleportMenu.Create(transform,
+                    distanceText != null ? distanceText.font : null);
+                EnsureTeleportButton();
+            }
             EnsureLowFuelWarning();
             SetLowFuelWarningVisible(false);
         }
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-        private TeleportModalUI teleportModal;
+        private GameplayTeleportMenu teleportMenu;
 
         private void EnsureTeleportButton()
         {
@@ -130,29 +133,25 @@ namespace AnimeHillRacing.UI
             label.fontStyle = FontStyle.Bold;
             label.alignment = TextAnchor.MiddleCenter;
             label.color = new Color(1f, 0.94f, 0.25f, 1f);
-            label.text = "🚀 TELEPORT [T]";
+            label.text = "TELEPORT";
             label.raycastTarget = false;
 
             Button btn = buttonObj.GetComponent<Button>();
             btn.targetGraphic = img;
             ColorBlock colors = btn.colors;
-            colors.normalColor = img.color;
-            colors.highlightedColor = new Color(0.15f, 0.25f, 0.45f, 1f);
-            colors.pressedColor = new Color(0.04f, 0.06f, 0.14f, 1f);
+            colors.normalColor = Color.white;
+            colors.highlightedColor = new Color(1.18f, 1.18f, 1.18f, 1f);
+            colors.pressedColor = new Color(.72f, .72f, .72f, 1f);
             colors.selectedColor = colors.highlightedColor;
             btn.colors = colors;
             btn.onClick.AddListener(OnTeleportClicked);
 
             buttonObj.AddComponent<ButtonPressFeedback>();
         }
-#endif
 
         public void OnTeleportClicked()
         {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            if (teleportModal != null)
-                teleportModal.Toggle();
-#endif
+            teleportMenu?.Toggle();
         }
 
         private static void RemoveDecorativeCardBackground(Text content, string expectedCardName)
@@ -417,6 +416,178 @@ namespace AnimeHillRacing.UI
                 new GradientColorKey(new Color(0.55f, 0.85f, 0.08f), 0.60f),
                 new GradientColorKey(new Color(0.08f, 0.86f, 0.22f), 1f)
             }, new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(1f, 1f) });
+        }
+    }
+
+    /// <summary>
+    /// Runtime mouse/touch menu for the supported long-distance destinations.
+    /// It is created under the existing gameplay Canvas, so scenes need no migration.
+    /// </summary>
+    internal sealed class GameplayTeleportMenu : MonoBehaviour
+    {
+        private GameObject modalContainer;
+        private bool isOpen;
+        private float previousTimeScale = 1f;
+
+        public static GameplayTeleportMenu Create(Transform parent, Font preferredFont)
+        {
+            Canvas rootCanvas = parent != null ? parent.GetComponentInParent<Canvas>() : null;
+            Transform targetParent = rootCanvas != null ? rootCanvas.transform : parent;
+            GameObject root = new GameObject("Gameplay Teleport Menu", typeof(RectTransform),
+                typeof(Canvas), typeof(GraphicRaycaster));
+            root.transform.SetParent(targetParent, false);
+            RectTransform rootRect = root.GetComponent<RectTransform>();
+            rootRect.anchorMin = Vector2.zero;
+            rootRect.anchorMax = Vector2.one;
+            rootRect.offsetMin = Vector2.zero;
+            rootRect.offsetMax = Vector2.zero;
+
+            Canvas canvas = root.GetComponent<Canvas>();
+            canvas.overrideSorting = true;
+            canvas.sortingOrder = 100;
+
+            GameplayTeleportMenu menu = root.AddComponent<GameplayTeleportMenu>();
+            menu.Build(preferredFont);
+            return menu;
+        }
+
+        private void Build(Font preferredFont)
+        {
+            Font font = preferredFont != null
+                ? preferredFont
+                : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            if (font == null) font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+
+            modalContainer = CreateImageObject("Modal Blocker", transform,
+                new Color(0f, 0f, .04f, .76f), Vector2.zero, Vector2.one);
+            GameObject window = CreateImageObject("Window", modalContainer.transform,
+                new Color(.035f, .065f, .13f, .99f), new Vector2(.5f, .5f), new Vector2(.5f, .5f));
+            RectTransform windowRect = window.GetComponent<RectTransform>();
+            windowRect.sizeDelta = new Vector2(570f, 300f);
+            Outline windowOutline = window.AddComponent<Outline>();
+            windowOutline.effectColor = new Color(.12f, .86f, 1f, .98f);
+            windowOutline.effectDistance = new Vector2(3f, -3f);
+
+            CreateText(window.transform, "Title", "TELEPORT", 30, FontStyle.Bold,
+                new Vector2(0f, 102f), new Vector2(480f, 48f), Color.white, font);
+            CreateText(window.transform, "Instructions", "SELECT A DISTANCE", 17, FontStyle.Bold,
+                new Vector2(0f, 58f), new Vector2(480f, 30f),
+                new Color(.55f, .88f, 1f, 1f), font);
+
+            CreateTeleportButton(window.transform, "Teleport 131K", "131K", -180f, 131000f, font);
+            CreateTeleportButton(window.transform, "Teleport 262K", "262K", 0f, 262000f, font);
+            CreateTeleportButton(window.transform, "Teleport 544K", "544K", 180f, 544000f, font);
+            CreateButton(window.transform, "Close", "CLOSE", new Vector2(0f, -105f),
+                new Vector2(210f, 44f), new Color(.55f, .10f, .14f, 1f), font, Close, 17);
+
+            modalContainer.SetActive(false);
+        }
+
+        private void CreateTeleportButton(Transform parent, string name, string label,
+            float x, float distance, Font font)
+        {
+            CreateButton(parent, name, label, new Vector2(x, -12f), new Vector2(160f, 76f),
+                new Color(.06f, .46f, .72f, 1f), font, () => Teleport(distance), 24);
+        }
+
+        public void Toggle()
+        {
+            if (isOpen) Close();
+            else Open();
+        }
+
+        public void Open()
+        {
+            if (modalContainer == null) return;
+            previousTimeScale = Time.timeScale;
+            Time.timeScale = 0f;
+            isOpen = true;
+            modalContainer.SetActive(true);
+            transform.SetAsLastSibling();
+        }
+
+        public void Close()
+        {
+            if (!isOpen) return;
+            isOpen = false;
+            Time.timeScale = previousTimeScale > .001f ? previousTimeScale : 1f;
+            if (modalContainer != null) modalContainer.SetActive(false);
+        }
+
+        private void Teleport(float distance)
+        {
+            Close();
+            GameManager manager = GameManager.Instance != null
+                ? GameManager.Instance
+                : FindFirstObjectByType<GameManager>();
+            manager?.TeleportTo(distance);
+        }
+
+        private void OnDestroy()
+        {
+            if (isOpen) Time.timeScale = previousTimeScale > .001f ? previousTimeScale : 1f;
+        }
+
+        private static GameObject CreateImageObject(string name, Transform parent, Color color,
+            Vector2 anchorMin, Vector2 anchorMax)
+        {
+            GameObject target = new GameObject(name, typeof(RectTransform), typeof(Image));
+            target.transform.SetParent(parent, false);
+            RectTransform rect = target.GetComponent<RectTransform>();
+            rect.anchorMin = anchorMin;
+            rect.anchorMax = anchorMax;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            Image image = target.GetComponent<Image>();
+            image.color = color;
+            image.raycastTarget = true;
+            return target;
+        }
+
+        private static Text CreateText(Transform parent, string name, string content, int size,
+            FontStyle style, Vector2 position, Vector2 dimensions, Color color, Font font)
+        {
+            GameObject target = new GameObject(name, typeof(RectTransform), typeof(Text));
+            target.transform.SetParent(parent, false);
+            RectTransform rect = target.GetComponent<RectTransform>();
+            rect.anchoredPosition = position;
+            rect.sizeDelta = dimensions;
+            Text text = target.GetComponent<Text>();
+            text.font = font;
+            text.fontSize = size;
+            text.fontStyle = style;
+            text.alignment = TextAnchor.MiddleCenter;
+            text.color = color;
+            text.text = content;
+            text.raycastTarget = false;
+            return text;
+        }
+
+        private static Button CreateButton(Transform parent, string name, string label,
+            Vector2 position, Vector2 dimensions, Color color, Font font,
+            UnityEngine.Events.UnityAction onClick, int fontSize)
+        {
+            GameObject target = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button));
+            target.transform.SetParent(parent, false);
+            RectTransform rect = target.GetComponent<RectTransform>();
+            rect.anchoredPosition = position;
+            rect.sizeDelta = dimensions;
+            Image image = target.GetComponent<Image>();
+            image.color = color;
+            image.raycastTarget = true;
+            Button button = target.GetComponent<Button>();
+            button.targetGraphic = image;
+            ColorBlock colors = button.colors;
+            colors.normalColor = Color.white;
+            colors.highlightedColor = new Color(1.18f, 1.18f, 1.18f, 1f);
+            colors.pressedColor = new Color(.72f, .72f, .72f, 1f);
+            colors.selectedColor = colors.highlightedColor;
+            button.colors = colors;
+            button.onClick.AddListener(onClick);
+            target.AddComponent<ButtonPressFeedback>();
+            CreateText(target.transform, "Label", label, fontSize, FontStyle.Bold,
+                Vector2.zero, dimensions, Color.white, font);
+            return button;
         }
     }
 }

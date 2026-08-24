@@ -488,7 +488,7 @@ namespace AnimeHillRacing.Core
         public void MainMenu()
         {
             Time.timeScale = 1f;
-            SceneManager.LoadScene("MainMenu");
+            SceneManager.LoadScene("PreStart");
         }
 
         public void Retry()

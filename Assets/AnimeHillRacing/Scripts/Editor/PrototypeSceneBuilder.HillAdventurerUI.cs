@@ -478,7 +478,7 @@ namespace AnimeHillRacing.Editor
             if (previousVehicle == null || nextVehicle == null)
                 throw new InvalidOperationException("Garage vehicle navigation arrows are missing.");
             Button paintButton = CreateSpriteButton("Paint and Skins", safe,
-                RequireHillSprite(HillSkinsIconPath), new Vector2(.88f, .30f),
+                RequireHillSprite(HillSkinsIconPath), new Vector2(.80f, .68f),
                 Vector2.zero, new Vector2(132f, 98f));
             CreateHillNavigationMarker(paintButton.transform, "PAINT / SKINS")
                 .SetActive(false);

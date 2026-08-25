@@ -1,4 +1,5 @@
 using AnimeHillRacing.Core;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace AnimeHillRacing.Vehicle
@@ -36,6 +37,8 @@ namespace AnimeHillRacing.Vehicle
         private Quaternion torsoBaseRotation;
         private Quaternion headBaseRotation;
         private int resolvedAccessorySortingOrder = AccessorySortingOrder;
+        private readonly Dictionary<SpriteRenderer, Material> defaultBodyMaterials =
+            new Dictionary<SpriteRenderer, Material>();
         private readonly Transform[] reactiveLimbs = new Transform[4];
         private readonly Quaternion[] reactiveLimbBaseRotations = new Quaternion[4];
         private Vector3 previousVelocity;
@@ -139,6 +142,7 @@ namespace AnimeHillRacing.Vehicle
             ApplyPart(rightThigh, driver.thigh, reference.thigh, pose.rightThigh, visualScaleCompensation, false);
             ApplyPart(rightLowerLeg, driver.lowerLeg, reference.lowerLeg, pose.rightLowerLeg,
                 visualScaleCompensation, false);
+            ApplyBodyMaterial(driver.bodyMaterial);
             headImpact?.ConfigureHeadCollider(head);
             EnsureAccessoryRenderer();
             VehicleDefinition.DriverPartPose accessoryPose = pose.accessory;
@@ -180,6 +184,24 @@ namespace AnimeHillRacing.Vehicle
         }
 
         public void AssignAccessory(SpriteRenderer accessoryPart) => accessory = accessoryPart;
+
+        private void ApplyBodyMaterial(Material materialOverride)
+        {
+            SpriteRenderer[] bodyParts =
+            {
+                torso, head, leftUpperArm, leftForearm, rightUpperArm, rightForearm,
+                leftThigh, leftLowerLeg, rightThigh, rightLowerLeg
+            };
+            for (int i = 0; i < bodyParts.Length; i++)
+            {
+                SpriteRenderer renderer = bodyParts[i];
+                if (renderer == null) continue;
+                if (!defaultBodyMaterials.ContainsKey(renderer))
+                    defaultBodyMaterials.Add(renderer, renderer.sharedMaterial);
+                renderer.sharedMaterial = materialOverride != null
+                    ? materialOverride : defaultBodyMaterials[renderer];
+            }
+        }
 
         private void EnsureAccessoryRenderer()
         {

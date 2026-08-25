@@ -226,6 +226,7 @@ namespace AnimeHillRacing.Editor
             public Sprite goldChestClosed, goldChestOpen, masterChestClosed, masterChestOpen;
             public Sprite legendaryChestClosed, legendaryChestOpen, coinsChest, chestShelf;
             public DriverDefinition stickmanBlack;
+            public DriverDefinition stickmanWhite;
             public EnvironmentDefinition countrysideEnvironment;
             public EnvironmentDefinition northPoleEnvironment;
             public EnvironmentDefinition neonCityEnvironment;
@@ -5477,6 +5478,7 @@ namespace AnimeHillRacing.Editor
             assets.stickmanBlack.driverId = "stickman-black";
             assets.stickmanBlack.displayName = "STICKMAN BLACK";
             assets.stickmanBlack.unlockedByDefault = true;
+            assets.stickmanBlack.bodyMaterial = null;
             assets.stickmanBlack.previewSprite = AssetDatabase.LoadAssetAtPath<Sprite>(DriverPreviewPath);
             assets.stickmanBlack.head = AssetDatabase.LoadAssetAtPath<Sprite>(DriverHeadPath);
             assets.stickmanBlack.torso = AssetDatabase.LoadAssetAtPath<Sprite>(DriverTorsoPath);
@@ -5515,6 +5517,23 @@ namespace AnimeHillRacing.Editor
                 }
             };
             EditorUtility.SetDirty(assets.stickmanBlack);
+
+            assets.stickmanWhite = LoadOrCreate<DriverDefinition>(Root + "/VehicleData/StickmanWhite.asset");
+            assets.stickmanWhite.driverId = "stickman-white";
+            assets.stickmanWhite.displayName = "STICKMAN WHITE";
+            assets.stickmanWhite.unlockedByDefault = true;
+            assets.stickmanWhite.poseReference = assets.stickmanBlack;
+            assets.stickmanWhite.bodyMaterial = AssetDatabase.LoadAssetAtPath<Material>(
+                Root + "/Materials/StickmanWhite.mat");
+            assets.stickmanWhite.previewSprite = assets.stickmanBlack.previewSprite;
+            assets.stickmanWhite.head = assets.stickmanBlack.head;
+            assets.stickmanWhite.torso = assets.stickmanBlack.torso;
+            assets.stickmanWhite.upperArm = assets.stickmanBlack.upperArm;
+            assets.stickmanWhite.forearm = assets.stickmanBlack.forearm;
+            assets.stickmanWhite.thigh = assets.stickmanBlack.thigh;
+            assets.stickmanWhite.lowerLeg = assets.stickmanBlack.lowerLeg;
+            assets.stickmanWhite.accessories = assets.stickmanBlack.accessories;
+            EditorUtility.SetDirty(assets.stickmanWhite);
 
             CreateVehiclePrefabs(assets);
 
@@ -5966,7 +5985,7 @@ namespace AnimeHillRacing.Editor
             if (buggy != null) vehicles.Add(buggy);
             if (aerialSatelite != null) vehicles.Add(aerialSatelite);
             assets.catalog.vehicles = vehicles.ToArray();
-            assets.catalog.drivers = new[] { assets.stickmanBlack };
+            assets.catalog.drivers = new[] { assets.stickmanBlack, assets.stickmanWhite };
             assets.catalog.upgradeEconomy = assets.economy;
             assets.catalog.chestCatalog = assets.chestCatalog;
             EditorUtility.SetDirty(assets.catalog);

@@ -228,6 +228,21 @@ MonoBehaviour:
     exceptionalEveryCells: 7
     crestWidthFraction: 0.035
     recoveryWidthFraction: 0.07
+    valleyChance: 0.22
+    crestPositionVariation: 0.22
+    macroReliefHeight: 30
+    macroReliefWavelength: 1150
+    warmupMountainHeight: 4.5
+    peakMountainHeight: 72
+    initialFlatSectionChance: 0.42
+    peakFlatSectionChance: 0.16
+    peakExtremeBumpChance: 0.28
+    peakExtremeBumpHeight: 4.8
+    bumpyClimbChance: 0.38
+    hardBumpChance: 0.18
+    veryHardBumpChance: 0.72
+    veryHardBumpCooldownDistance: 1200
+    veryHardBumpHeight: 18
   rainstorm:
     permanentRain: 0
     maximumParticles: 520

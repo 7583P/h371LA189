@@ -58,6 +58,18 @@ namespace AnimeHillRacing.UI
 
         public void Settings()
         {
+            if (SceneManager.GetActiveScene().name == "Garage")
+            {
+                GarageUI garage = Object.FindFirstObjectByType<GarageUI>();
+                if (garage != null)
+                {
+                    if (GameSession.RequestedGarageSection != GarageSection.Settings)
+                        GameSession.RequestDirectGarage(GarageSection.Settings);
+                    garage.ShowSettings();
+                    return;
+                }
+            }
+
             GameSession.RequestDirectGarage(GarageSection.Settings);
             SceneManager.LoadScene("Garage");
         }

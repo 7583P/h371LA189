@@ -25,6 +25,9 @@ namespace AnimeHillRacing.Vehicle
         [Tooltip("Canonical character whose body-part dimensions and pivots this character follows. " +
                  "The first driver in GameCatalog is assigned automatically to future characters.")]
         public DriverDefinition poseReference;
+        [Tooltip("Optional material applied to every articulated body part and to the Garage preview. " +
+                 "Leave empty to render the authored sprites normally.")]
+        public Material bodyMaterial;
         public Sprite previewSprite;
         public Sprite head;
         public Sprite torso;

@@ -137,6 +137,7 @@ namespace AnimeHillRacing.UI
         private int vehicleIndex;
         private Category category;
         private GarageSection section;
+        private GarageSection sectionBeforeSettings = GarageSection.Vehicle;
         private VehicleUpgradeType pendingType;
         private PurchaseKind pendingPurchaseKind;
         private Category pendingCategory;
@@ -199,8 +200,33 @@ namespace AnimeHillRacing.UI
         public void ShowVehicle() => SetSection(GarageSection.Vehicle);
         public void ShowUpgrade() => SetSection(GarageSection.Upgrade);
         public void ShowStore() => SetSection(GarageSection.Store);
-        public void ShowSettings() => SetSection(GarageSection.Settings);
-        public void ShowSkins() { category = Category.Skin; SetSection(GarageSection.Skins); }
+        public void ShowSettings()
+        {
+            if (section == GarageSection.Settings)
+            {
+                GarageSection returnSection = sectionBeforeSettings == GarageSection.Settings
+                    ? GarageSection.Vehicle : sectionBeforeSettings;
+                SetSection(returnSection);
+                return;
+            }
+
+            sectionBeforeSettings = section;
+            SetSection(GarageSection.Settings);
+        }
+
+        public void ShowSkins()
+        {
+            // In Adventure preparation the supplied Paint/Skins artwork is also the way back
+            // to the tune cards, so the screen needs no extra text tab.
+            if (GameSession.HasPendingAdventureTrack && section == GarageSection.Skins)
+            {
+                SetSection(GarageSection.Tuning);
+                return;
+            }
+
+            category = Category.Skin;
+            SetSection(GarageSection.Skins);
+        }
         public void StartAdventure()
         {
             if (!Application.isPlaying || startInFlight || catalog == null) return;
@@ -899,8 +925,12 @@ namespace AnimeHillRacing.UI
                     (vehicleUnlocked ? string.Empty : "  —  LOCKED");
                 vehicleName.color = vehicleUnlocked ? Color.white : new Color(1f, .28f, .22f, 1f);
             }
+            bool adventurePreparation = GameSession.HasPendingAdventureTrack;
             if (sectionTitle != null) sectionTitle.text = section.ToString().ToUpperInvariant();
-            topNavigation?.SetGarageSection(section);
+            if (adventurePreparation)
+                topNavigation?.SetSelectedSection(TopNavigationSection.Adventure);
+            else
+                topNavigation?.SetGarageSection(section);
             if (categoryName != null) categoryName.text = category == Category.Skin ? "VEHICLE SKIN" :
                 category == Category.Wheels ? "WHEELS" : category == Category.Driver ? "DRIVER" :
                 category == Category.Characters ? "CHARACTERS / ACCESSORIES" : "TUNING";
@@ -934,6 +964,9 @@ namespace AnimeHillRacing.UI
                 {
                     optionImages[i].sprite = icon; optionImages[i].enabled = icon != null;
                     optionImages[i].preserveAspect = true;
+                    optionImages[i].material = category == Category.Driver &&
+                        catalog?.drivers != null && i < catalog.drivers.Length
+                            ? catalog.drivers[i]?.bodyMaterial : null;
                 }
                 if (optionLabels != null && i < optionLabels.Length && optionLabels[i] != null)
                     optionLabels[i].text = OptionName(i) + (isSelected ? "\nSELECTED" : unlocked
@@ -1006,23 +1039,30 @@ namespace AnimeHillRacing.UI
         {
             if (!Application.isPlaying) return;
             bool showGarageChrome = section != GarageSection.Store;
+            bool adventurePreparation = GameSession.HasPendingAdventureTrack;
 
             ResolveGarageSectionTabs();
             for (int i = 0; i < (garageSectionTabs?.Length ?? 0); i++)
                 if (garageSectionTabs[i] != null)
-                    garageSectionTabs[i].SetActive(showGarageChrome);
+                    garageSectionTabs[i].SetActive(showGarageChrome && !adventurePreparation);
 
             if (preview != null && preview.TargetImage != null)
                 preview.TargetImage.gameObject.SetActive(showGarageChrome);
             SetGraphicActive(vehicleName, showGarageChrome);
-            SetGraphicActive(skinSummary, showGarageChrome);
-            SetGraphicActive(wheelSummary, showGarageChrome);
-            SetGraphicActive(driverSummary, showGarageChrome);
-            SetGraphicActive(characterSummary, showGarageChrome);
+            SetGraphicActive(sectionTitle, showGarageChrome && !adventurePreparation);
+            SetGraphicActive(skinSummary, showGarageChrome && !adventurePreparation);
+            SetGraphicActive(wheelSummary, showGarageChrome && !adventurePreparation);
+            SetGraphicActive(driverSummary, showGarageChrome && !adventurePreparation);
+            SetGraphicActive(characterSummary, showGarageChrome && !adventurePreparation);
             if (previousVehicleButton != null)
                 previousVehicleButton.gameObject.SetActive(showGarageChrome);
             if (nextVehicleButton != null)
                 nextVehicleButton.gameObject.SetActive(showGarageChrome);
+
+            Button paintButton = ResolveAdventurePaintButton();
+            if (paintButton != null)
+                paintButton.gameObject.SetActive(showGarageChrome &&
+                    section != GarageSection.Settings);
 
             if (!showGarageChrome && storePanel != null && storePanel.transform is RectTransform storeRect)
             {
@@ -1054,6 +1094,20 @@ namespace AnimeHillRacing.UI
                             descendants[descendantIndex].name == names[nameIndex])
                             garageSectionTabs[nameIndex] = descendants[descendantIndex].gameObject;
             }
+        }
+
+        private Button ResolveAdventurePaintButton()
+        {
+            GameObject[] roots = gameObject.scene.GetRootGameObjects();
+            for (int rootIndex = 0; rootIndex < roots.Length; rootIndex++)
+            {
+                Transform[] descendants = roots[rootIndex].GetComponentsInChildren<Transform>(true);
+                for (int descendantIndex = 0; descendantIndex < descendants.Length; descendantIndex++)
+                    if (descendants[descendantIndex].name == "Paint and Skins")
+                        return descendants[descendantIndex].GetComponent<Button>();
+            }
+
+            return null;
         }
 
         private static void SetGraphicActive(Graphic graphic, bool active)
@@ -1162,14 +1216,20 @@ namespace AnimeHillRacing.UI
         private void RefreshVehiclePresentationLayout()
         {
             bool centered = section == GarageSection.Vehicle;
+            bool adventureTunes = GameSession.HasPendingAdventureTrack &&
+                section == GarageSection.Tuning;
             RectTransform previewRect = preview != null && preview.TargetImage != null
                 ? preview.TargetImage.rectTransform : null;
             SetStretchRect(previewRect,
-                centered ? new Vector2(.16f, .26f) : new Vector2(.08f, .08f),
-                centered ? new Vector2(.84f, .70f) : new Vector2(.55f, .42f));
+                adventureTunes ? new Vector2(.24f, .10f) :
+                    centered ? new Vector2(.16f, .26f) : new Vector2(.08f, .08f),
+                adventureTunes ? new Vector2(.76f, .44f) :
+                    centered ? new Vector2(.84f, .70f) : new Vector2(.55f, .42f));
             SetStretchRect(vehicleName != null ? vehicleName.rectTransform : null,
-                centered ? new Vector2(.22f, .70f) : new Vector2(.08f, .43f),
-                centered ? new Vector2(.78f, .78f) : new Vector2(.55f, .49f));
+                adventureTunes ? new Vector2(.24f, .44f) :
+                    centered ? new Vector2(.22f, .70f) : new Vector2(.08f, .43f),
+                adventureTunes ? new Vector2(.76f, .50f) :
+                    centered ? new Vector2(.78f, .78f) : new Vector2(.55f, .49f));
 
             Text[] summaries = { skinSummary, wheelSummary, driverSummary, characterSummary };
             for (int i = 0; i < summaries.Length; i++)
@@ -1181,9 +1241,21 @@ namespace AnimeHillRacing.UI
             }
 
             SetAnchoredButton(previousVehicleButton,
-                centered ? new Vector2(-690f, -80f) : new Vector2(-840f, -120f));
+                adventureTunes ? new Vector2(-520f, -125f) :
+                    centered ? new Vector2(-690f, -80f) : new Vector2(-840f, -120f));
             SetAnchoredButton(nextVehicleButton,
-                centered ? new Vector2(690f, -80f) : new Vector2(130f, -120f));
+                adventureTunes ? new Vector2(520f, -125f) :
+                    centered ? new Vector2(690f, -80f) : new Vector2(130f, -120f));
+
+            Button paintButton = ResolveAdventurePaintButton();
+            if (paintButton != null && paintButton.transform is RectTransform paintRect)
+            {
+                paintRect.anchorMin = paintRect.anchorMax = adventureTunes
+                    ? new Vector2(.76f, .43f)
+                    : centered ? new Vector2(.80f, .68f) : new Vector2(.50f, .43f);
+                paintRect.anchoredPosition = Vector2.zero;
+                paintRect.sizeDelta = new Vector2(132f, 98f);
+            }
         }
 
         private static void SetStretchRect(RectTransform rect, Vector2 anchorMin, Vector2 anchorMax)

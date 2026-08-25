@@ -81,7 +81,9 @@ namespace AnimeHillRacing.Core
             SelectedGameMode = GameModeType.Adventure2_5D;
             SelectedMapId = map.mapId;
             SelectedTransmission = TransmissionMode.Auto;
-            RequestedGarageSection = GarageSection.Vehicle;
+            // Adventure preparation opens directly on the useful upgrade cards. The regular
+            // Garage still opens on Vehicle through RequestDirectGarage.
+            RequestedGarageSection = GarageSection.Tuning;
             pendingAdventureMapId = map.mapId;
             adventureGarageContext = true;
             return true;

@@ -735,12 +735,12 @@ MonoBehaviour:
   frontSuspension: {fileID: 8535418597755754961}
   rearSuspension: {fileID: 3075895799656184869}
   driveMethod: 0
-  torqueRampSeconds: 0.16
+  torqueRampSeconds: 0.13
   maxReverseSpeedKmh: 35
   reverseEngageSpeedThresholdKmh: 4
-  suspensionFrequency: 3.6
-  suspensionDampingRatio: 1.03
-  suspensionTravel: 0.5
+  suspensionFrequency: 3.2
+  suspensionDampingRatio: 1.08
+  suspensionTravel: 0.7
   airborneGraceSeconds: 0.08
   maxAirAngularVelocity: 2.5
   airAngularAcceleration: 14

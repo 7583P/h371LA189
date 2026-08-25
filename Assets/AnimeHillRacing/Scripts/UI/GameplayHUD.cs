@@ -22,6 +22,9 @@ namespace AnimeHillRacing.UI
         [SerializeField] private Image fuelFill;
         [SerializeField] private Image lowFuelWarning;
         [SerializeField, Min(0f)] private float lowFuelWarningSeconds = 5f;
+        [SerializeField, Min(.8f)] private float lowFuelBlinkPeriod = 2f;
+        [SerializeField, Range(0f, .8f)] private float lowFuelBlinkMinimumAlpha = .18f;
+        [SerializeField, Min(20f)] private float lowFuelBottomOffset = 135f;
         [SerializeField] private GameObject liquidExposurePanel;
         [SerializeField] private Text liquidExposureText;
         [SerializeField] private Image liquidExposureFill;
@@ -49,6 +52,21 @@ namespace AnimeHillRacing.UI
         private Vector2 fuelFullOffsetMax;
         private Vector2 fuelEmptyOffsetMax;
         private int displayedDistance;
+        private CanvasGroup lowFuelCanvasGroup;
+        private bool lowFuelWarningVisible;
+        private float lowFuelBlinkStartedAt;
+        private RectTransform configuredStatusRect;
+        private Vector2 statusOriginalAnchorMin;
+        private Vector2 statusOriginalAnchorMax;
+        private Vector2 statusOriginalPivot;
+        private Vector2 statusOriginalPosition;
+        private Vector2 statusOriginalSize;
+        private int statusOriginalFontSize;
+        private bool statusOriginalBestFit;
+        private int statusOriginalMinSize;
+        private int statusOriginalMaxSize;
+        private TextAnchor statusOriginalAlignment;
+        private float statusOriginalLineSpacing;
 
         private void Awake()
         {
@@ -75,6 +93,7 @@ namespace AnimeHillRacing.UI
                 fuelEmptyOffsetMax = fuelFullOffsetMax;
                 fuelEmptyOffsetMax.x = fuelFillRect.offsetMin.x;
             }
+            ConfigureGameOverCountdown();
             debugPanel?.SetActive(false);
             // Long-distance teleport belongs to the procedural 2D gameplay. Road/3D tracks use
             // a different coordinate system and intentionally do not expose this control.
@@ -85,6 +104,7 @@ namespace AnimeHillRacing.UI
                 EnsureTeleportButton();
             }
             EnsureLowFuelWarning();
+            ConfigureLowFuelWarning();
             SetLowFuelWarningVisible(false);
         }
 
@@ -168,6 +188,7 @@ namespace AnimeHillRacing.UI
 
         private void Update()
         {
+            UpdateLowFuelBlink();
             if (input != null && input.ToggleDebugPressedThisFrame)
             {
                 showDebug = !showDebug;
@@ -206,9 +227,14 @@ namespace AnimeHillRacing.UI
             }
             FuelSystem runtimeFuel = vehicle.Fuel;
             float normalizedFuel = runtimeFuel != null ? runtimeFuel.NormalizedFuel : 0f;
-            SetLowFuelWarningVisible(runtimeFuel != null && ShouldDisplayLowFuel(
+            bool showLowFuelImage = runtimeFuel != null && ShouldDisplayLowFuel(
                 runtimeFuel.CurrentFuel, runtimeFuel.CurrentConsumptionPerSecond,
-                lowFuelWarningSeconds));
+                lowFuelWarningSeconds);
+            bool showDepletedImage = normalizedFuel <= 0f &&
+                                     (gameManager.State == RunState.OutOfFuelPending ||
+                                      gameManager.State == RunState.OutOfFuelFinal ||
+                                      gameManager.EndReason == RunEndReason.DriverDownAndOutOfFuel);
+            SetLowFuelWarningVisible(showLowFuelImage || showDepletedImage);
             if (fuelText != null) fuelText.text = $"{normalizedFuel * 100f:0}%";
             if (fuelFill != null)
             {
@@ -239,19 +265,18 @@ namespace AnimeHillRacing.UI
                 rpmNeedleZeroAngle, rpmNeedleFullAngle);
             if (statusText != null)
             {
+                bool showingCountdown = false;
                 if (gameManager.State == RunState.CrashPending || gameManager.State == RunState.OutOfFuelPending)
                 {
-                    if (gameManager.EndReason == RunEndReason.DriverDownAndOutOfFuel)
-                        statusText.text = $"DRIVER DOWN & OUT OF FUEL  {gameManager.GameOverRemaining:0.0}";
-                    else if (gameManager.EndReason == RunEndReason.OutOfFuel)
-                        statusText.text = $"OUT OF FUEL  {gameManager.GameOverRemaining:0.0}";
-                    else
-                        statusText.text = $"DRIVER DOWN  {gameManager.GameOverRemaining:0.0}";
+                    statusText.text = FormatGameOverCountdown(gameManager.EndReason,
+                        gameManager.GameOverRemaining);
+                    showingCountdown = true;
                 }
                 else if (gameManager.State == RunState.OutOfFuelFinal)
                 {
                     statusText.text = gameManager.EndReason == RunEndReason.DriverDownAndOutOfFuel
-                        ? "DRIVER DOWN & OUT OF FUEL" : "OUT OF FUEL";
+                        ? "DRIVER DOWN\nOUT OF FUEL" : "OUT OF FUEL";
+                    showingCountdown = true;
                 }
                 else if (gameManager.ShowGemAward)
                     statusText.text = gameManager.LastGemAward == 1 ? "+1 GEM" : $"+{gameManager.LastGemAward} GEMS";
@@ -259,6 +284,8 @@ namespace AnimeHillRacing.UI
                     statusText.text = $"DISTANCE BONUS  +{gameManager.LastDistanceBonus}  |  NEXT {gameManager.NextDistanceBonusThreshold:0} m";
                 else
                     statusText.text = transmission.ShiftStatus;
+
+                SetGameOverCountdownLayout(showingCountdown);
             }
         }
 
@@ -300,6 +327,7 @@ namespace AnimeHillRacing.UI
             AddTextOutline(fuelText);
             AddTextOutline(coinsText);
             AddTextOutline(bestText);
+            ConfigureGameOverCountdown();
         }
 
         public void AssignLiquidExposure(GameObject panel, Text label, Image fill)
@@ -314,6 +342,7 @@ namespace AnimeHillRacing.UI
             if (warning == lowFuelWarning) return;
             if (lowFuelWarning != null) lowFuelWarning.gameObject.SetActive(false);
             lowFuelWarning = warning;
+            ConfigureLowFuelWarning();
             SetLowFuelWarningVisible(false);
         }
 
@@ -331,6 +360,16 @@ namespace AnimeHillRacing.UI
             return remainingSeconds <= warningSeconds;
         }
 
+        public static string FormatGameOverCountdown(RunEndReason reason, float remainingSeconds)
+        {
+            int seconds = Mathf.Max(1, Mathf.CeilToInt(Mathf.Max(0f, remainingSeconds)));
+            if (reason == RunEndReason.DriverDownAndOutOfFuel)
+                return $"DRIVER DOWN\nOUT OF FUEL\n{seconds}";
+            if (reason == RunEndReason.OutOfFuel)
+                return $"OUT OF FUEL\n{seconds}";
+            return $"DRIVER DOWN\n{seconds}";
+        }
+
         private static void SetNeedle(RectTransform needle, float normalized, float zeroAngle, float fullAngle)
         {
             if (needle == null) return;
@@ -341,6 +380,60 @@ namespace AnimeHillRacing.UI
         public void AssignPickupPool(PickupPool pool) => pickupPool = pool;
 
         public void ResetDisplayedDistance() => displayedDistance = int.MinValue;
+
+        private void ConfigureGameOverCountdown()
+        {
+            if (statusText == null) return;
+            RectTransform rect = statusText.rectTransform;
+            if (configuredStatusRect != rect)
+            {
+                configuredStatusRect = rect;
+                statusOriginalAnchorMin = rect.anchorMin;
+                statusOriginalAnchorMax = rect.anchorMax;
+                statusOriginalPivot = rect.pivot;
+                statusOriginalPosition = rect.anchoredPosition;
+                statusOriginalSize = rect.sizeDelta;
+                statusOriginalFontSize = statusText.fontSize;
+                statusOriginalBestFit = statusText.resizeTextForBestFit;
+                statusOriginalMinSize = statusText.resizeTextMinSize;
+                statusOriginalMaxSize = statusText.resizeTextMaxSize;
+                statusOriginalAlignment = statusText.alignment;
+                statusOriginalLineSpacing = statusText.lineSpacing;
+            }
+            SetGameOverCountdownLayout(false);
+        }
+
+        private void SetGameOverCountdownLayout(bool countdownLayout)
+        {
+            if (configuredStatusRect == null || statusText == null) return;
+            if (countdownLayout)
+            {
+                configuredStatusRect.anchorMin = new Vector2(.5f, .5f);
+                configuredStatusRect.anchorMax = new Vector2(.5f, .5f);
+                configuredStatusRect.pivot = new Vector2(.5f, .5f);
+                configuredStatusRect.anchoredPosition = Vector2.zero;
+                configuredStatusRect.sizeDelta = new Vector2(900f, 260f);
+                statusText.fontSize = 64;
+                statusText.resizeTextForBestFit = true;
+                statusText.resizeTextMinSize = 30;
+                statusText.resizeTextMaxSize = 64;
+                statusText.alignment = TextAnchor.MiddleCenter;
+                statusText.lineSpacing = .82f;
+                return;
+            }
+
+            configuredStatusRect.anchorMin = statusOriginalAnchorMin;
+            configuredStatusRect.anchorMax = statusOriginalAnchorMax;
+            configuredStatusRect.pivot = statusOriginalPivot;
+            configuredStatusRect.anchoredPosition = statusOriginalPosition;
+            configuredStatusRect.sizeDelta = statusOriginalSize;
+            statusText.fontSize = statusOriginalFontSize;
+            statusText.resizeTextForBestFit = statusOriginalBestFit;
+            statusText.resizeTextMinSize = statusOriginalMinSize;
+            statusText.resizeTextMaxSize = statusOriginalMaxSize;
+            statusText.alignment = statusOriginalAlignment;
+            statusText.lineSpacing = statusOriginalLineSpacing;
+        }
 
         private void EnsureLowFuelWarning()
         {
@@ -355,11 +448,11 @@ namespace AnimeHillRacing.UI
                 typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
             warningObject.transform.SetParent(transform, false);
             RectTransform warningRect = warningObject.GetComponent<RectTransform>();
-            warningRect.anchorMin = new Vector2(0.5f, 1f);
-            warningRect.anchorMax = new Vector2(0.5f, 1f);
-            warningRect.pivot = new Vector2(0.5f, 1f);
-            warningRect.anchoredPosition = new Vector2(0f, -110f);
-            warningRect.sizeDelta = new Vector2(280f, 84f);
+            warningRect.anchorMin = new Vector2(.5f, 0f);
+            warningRect.anchorMax = new Vector2(.5f, 0f);
+            warningRect.pivot = new Vector2(.5f, 0f);
+            warningRect.anchoredPosition = new Vector2(0f, lowFuelBottomOffset);
+            warningRect.sizeDelta = new Vector2(240f, 160f);
 
             lowFuelWarning = warningObject.GetComponent<Image>();
             lowFuelWarning.color = new Color(0.78f, 0.025f, 0.015f, 0.92f);
@@ -387,10 +480,55 @@ namespace AnimeHillRacing.UI
             AddTextOutline(label);
         }
 
+        private void ConfigureLowFuelWarning()
+        {
+            if (lowFuelWarning == null) return;
+            if (lowFuelBlinkPeriod < .8f) lowFuelBlinkPeriod = 2f;
+            lowFuelBlinkMinimumAlpha = Mathf.Clamp(lowFuelBlinkMinimumAlpha, 0f, .8f);
+            if (lowFuelBottomOffset < 20f) lowFuelBottomOffset = 135f;
+
+            RectTransform rect = lowFuelWarning.rectTransform;
+            rect.anchorMin = new Vector2(.5f, 0f);
+            rect.anchorMax = new Vector2(.5f, 0f);
+            rect.pivot = new Vector2(.5f, 0f);
+            rect.anchoredPosition = new Vector2(0f, lowFuelBottomOffset);
+            rect.sizeDelta = new Vector2(240f, 160f);
+            lowFuelWarning.preserveAspect = true;
+            lowFuelWarning.raycastTarget = false;
+
+            lowFuelCanvasGroup = lowFuelWarning.GetComponent<CanvasGroup>();
+            if (lowFuelCanvasGroup == null)
+                lowFuelCanvasGroup = lowFuelWarning.gameObject.AddComponent<CanvasGroup>();
+            lowFuelCanvasGroup.interactable = false;
+            lowFuelCanvasGroup.blocksRaycasts = false;
+        }
+
+        private void UpdateLowFuelBlink()
+        {
+            if (!lowFuelWarningVisible || lowFuelCanvasGroup == null) return;
+            float phase = Mathf.Repeat(Time.unscaledTime - lowFuelBlinkStartedAt,
+                lowFuelBlinkPeriod) / lowFuelBlinkPeriod;
+            float pulse = .5f - Mathf.Cos(phase * Mathf.PI * 2f) * .5f;
+            lowFuelCanvasGroup.alpha = Mathf.Lerp(lowFuelBlinkMinimumAlpha, 1f, pulse);
+        }
+
         private void SetLowFuelWarningVisible(bool visible)
         {
-            if (lowFuelWarning != null && lowFuelWarning.gameObject.activeSelf != visible)
-                lowFuelWarning.gameObject.SetActive(visible);
+            if (visible && !lowFuelWarningVisible)
+                lowFuelBlinkStartedAt = Time.unscaledTime;
+            lowFuelWarningVisible = visible;
+            if (lowFuelWarning == null) return;
+            if (visible)
+            {
+                if (!lowFuelWarning.gameObject.activeSelf)
+                    lowFuelWarning.gameObject.SetActive(true);
+                UpdateLowFuelBlink();
+                return;
+            }
+
+            if (lowFuelCanvasGroup != null) lowFuelCanvasGroup.alpha = 0f;
+            if (lowFuelWarning.gameObject.activeSelf)
+                lowFuelWarning.gameObject.SetActive(false);
         }
 
         private static void AddTextOutline(Text text)

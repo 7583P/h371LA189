@@ -11,26 +11,48 @@ namespace AnimeHillRacing.Terrain
         [Header("Deterministic Mountain Grammar")]
         [Min(1000f), Tooltip("Distance at which Mountains reaches its full extreme slope grammar.")]
         public float peakDifficultyDistance = 10000f;
-        [Min(4f)] public float miniBumpMinimumWavelength = 7f;
-        [Min(6f)] public float miniBumpMaximumWavelength = 18f;
-        [Min(.05f)] public float initialMiniBumpHeight = .22f;
-        [Min(.1f)] public float maximumMiniBumpHeight = 1.15f;
-        [Range(10f, 50f)] public Vector2 easySlopeRange = new Vector2(20f, 45f);
-        [Range(30f, 65f)] public Vector2 mediumSlopeRange = new Vector2(40f, 60f);
-        [Range(45f, 75f)] public Vector2 hardSlopeRange = new Vector2(55f, 70f);
-        [Range(55f, 80f)] public Vector2 extremeSlopeRange = new Vector2(65f, 75f);
-        [Range(70f, 82f)] public float exceptionalSlope = 79.5f;
-        [Range(3, 12)] public int exceptionalEveryCells = 7;
-        [Range(.01f, .12f)] public float crestWidthFraction = .035f;
-        [Range(.03f, .18f)] public float recoveryWidthFraction = .07f;
+        [Min(6f)] public float miniBumpMinimumWavelength = 10f;
+        [Min(10f)] public float miniBumpMaximumWavelength = 24f;
+        [Min(.05f)] public float initialMiniBumpHeight = .12f;
+        [Min(.1f)] public float maximumMiniBumpHeight = 1f;
+        [Range(6f, 35f)] public Vector2 easySlopeRange = new Vector2(12f, 24f);
+        [Range(10f, 45f)] public Vector2 mediumSlopeRange = new Vector2(18f, 34f);
+        [Range(15f, 55f)] public Vector2 hardSlopeRange = new Vector2(26f, 44f);
+        [Range(20f, 60f)] public Vector2 extremeSlopeRange = new Vector2(34f, 54f);
+        [Range(35f, 62f)] public float exceptionalSlope = 58f;
+        [Range(3, 12)] public int exceptionalEveryCells = 9;
+        [Range(.01f, .12f)] public float crestWidthFraction = .06f;
+        [Range(.03f, .18f)] public float recoveryWidthFraction = .1f;
         [Range(0f, .35f), Tooltip("Chance that a mountain cell becomes a descending valley instead of another positive peak.")]
-        public float valleyChance = .18f;
+        public float valleyChance = .22f;
         [Range(0f, .28f), Tooltip("Moves each crest away from the centre to create asymmetric climbs and descents.")]
-        public float crestPositionVariation = .2f;
+        public float crestPositionVariation = .22f;
         [Min(0f), Tooltip("Height of the long connected relief below the individual mountain silhouettes.")]
-        public float macroReliefHeight = 18f;
+        public float macroReliefHeight = 30f;
         [Min(300f), Tooltip("Approximate wavelength of broad elevation changes that prevent every cell returning to one baseline.")]
-        public float macroReliefWavelength = 950f;
+        public float macroReliefWavelength = 1150f;
+        [Min(1f), Tooltip("Maximum broad hill height during the first 1000 metres.")]
+        public float warmupMountainHeight = 4.5f;
+        [Min(10f), Tooltip("Maximum mountain or deep-valley height once peak difficulty is reached.")]
+        public float peakMountainHeight = 72f;
+        [Range(.1f, .6f), Tooltip("Share of early cells reserved for straight bumpy terrain.")]
+        public float initialFlatSectionChance = .42f;
+        [Range(.05f, .4f), Tooltip("Share of cells that remain straight and bumpy at peak difficulty.")]
+        public float peakFlatSectionChance = .16f;
+        [Range(0f, .4f), Tooltip("Chance that a straight section becomes an extreme bump course at peak.")]
+        public float peakExtremeBumpChance = .28f;
+        [Min(.5f), Tooltip("Maximum height of the largest smooth, driveable bump course.")]
+        public float peakExtremeBumpHeight = 4.8f;
+        [Range(0f, 1f), Tooltip("Chance that a mountain face receives suspension-scale bumps.")]
+        public float bumpyClimbChance = .38f;
+        [Range(0f, .5f), Tooltip("Chance that a mountain cell receives a difficult bump course over its global slope.")]
+        public float hardBumpChance = .18f;
+        [Range(0f, 1f), Tooltip("Chance to place one Very Hard Bump inside an eligible cooldown window.")]
+        public float veryHardBumpChance = .72f;
+        [Min(600f), Tooltip("Minimum centre-to-centre recovery distance between Very Hard Bumps.")]
+        public float veryHardBumpCooldownDistance = 1200f;
+        [Min(4f), Tooltip("Peak height or valley depth of a Very Hard Bump at full difficulty.")]
+        public float veryHardBumpHeight = 18f;
     }
 
     public enum ArenaSegmentType

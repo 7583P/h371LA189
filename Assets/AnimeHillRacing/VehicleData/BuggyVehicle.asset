@@ -192,7 +192,7 @@ MonoBehaviour:
   halfTrack: 0.88
   topSpeedMps: 61.111115
   brakeForce: 15500
-  reverseForce: 6100
+  reverseForce: 8000
   airControlTorque: 3600
   downforceReferenceSpeedMps: 30
   maximumDownforceAcceleration: 14
@@ -207,9 +207,9 @@ MonoBehaviour:
   maximumPassiveAngularVelocity: 7.5
   accelerationForceCalibration: 1
   adaptiveAllWheelDrive: 1
-  groundedWheelTorqueShare: 0.84
-  maxClimbAssist: 5.8
-  climbAssistStartAngle: 58
+  groundedWheelTorqueShare: 0.9
+  maxClimbAssist: 9.5
+  climbAssistStartAngle: 42
   climbAssistFullAngle: 80
   highSpeedDamping: 0.72
   centerOfMass: {x: -0.06, y: -0.43, z: 0}
@@ -310,12 +310,12 @@ MonoBehaviour:
       m_PreInfinity: 2
       m_PostInfinity: 2
       m_RotationOrder: 4
-    minTorqueNm: 285
-    maxTorqueNm: 620
-    drivetrainEfficiency: 0.87
+    minTorqueNm: 340
+    maxTorqueNm: 720
+    drivetrainEfficiency: 0.9
   transmission:
     forwardGearRatios:
-    - 5.4
+    - 5.8
     - 3.72
     - 2.78
     - 2.2
@@ -323,7 +323,7 @@ MonoBehaviour:
     - 1.54
     - 1.32
     reverseRatio: 3.6
-    finalDrive: 4.1
+    finalDrive: 4.4
     autoShiftDuration: 0.3
     autoTorqueDuringShift: 0.2
     autoUpshiftRpm: 6650
@@ -334,39 +334,39 @@ MonoBehaviour:
     badTorqueDuringShift: 0.08
     perfectRpmWindow: {x: 6100, y: 6900}
   suspension:
-    restLength: 0.72
-    compressionTravelRatio: 0.82
-    minTravel: 0.34
-    maxTravel: 0.5
+    restLength: 0.82
+    compressionTravelRatio: 0.78
+    minTravel: 0.48
+    maxTravel: 0.7
     springMin: 26000
     springMax: 38000
     dampingMin: 3600
     dampingMax: 5200
-    targetSag01: 0.31
-    stiffnessTuneScale: {x: 0.82, y: 1.02}
-    dampingRatio: {x: 0.82, y: 1.12}
-    compressionDampingMultiplier: 0.82
-    reboundDampingMultiplier: 1.25
-    compressionDampingTuneScale: {x: 0.8, y: 1.1}
-    reboundDampingTuneScale: {x: 0.92, y: 1.55}
-    reboundAccelerationTune: {x: 1.55, y: 0.55}
-    wheelContactTolerance: {x: 0.016, y: 0.032}
-    landingDampingScale: {x: 1.08, y: 1.52}
-    landingDampingDuration: 0.19
-    bumpStopStart: 0.76
-    progressiveSpringMultiplier: 2.8
-    hardStopSpringMultiplier: 8.5
-    maximumAcceleration: 31
-    maximumReboundAcceleration: 0.75
+    targetSag01: 0.34
+    stiffnessTuneScale: {x: 0.75, y: 0.96}
+    dampingRatio: {x: 0.92, y: 1.18}
+    compressionDampingMultiplier: 0.88
+    reboundDampingMultiplier: 1.32
+    compressionDampingTuneScale: {x: 0.85, y: 1.16}
+    reboundDampingTuneScale: {x: 0.98, y: 1.65}
+    reboundAccelerationTune: {x: 1.4, y: 0.6}
+    wheelContactTolerance: {x: 0.02, y: 0.038}
+    landingDampingScale: {x: 1.15, y: 1.65}
+    landingDampingDuration: 0.22
+    bumpStopStart: 0.82
+    progressiveSpringMultiplier: 3.4
+    hardStopSpringMultiplier: 10
+    maximumAcceleration: 34
+    maximumReboundAcceleration: 0.9
   grip:
-    minGrip: 1.35
-    maxGrip: 3.55
-    slipThreshold: 0.14
-    slidingGripMultiplier: 0.58
-    tractionRecoveryPerSecond: 5.2
+    minGrip: 4.8
+    maxGrip: 8.2
+    slipThreshold: 0.1
+    slidingGripMultiplier: 0.78
+    tractionRecoveryPerSecond: 7.5
     rollingResistance: 0.019
     aerodynamicDrag: 0.4
-    maximumPhysicsFriction: 4.2
+    maximumPhysicsFriction: 8.3
   fuel:
     capacityUnits: 100
     minimumRunDurationSeconds: 36
@@ -395,37 +395,37 @@ MonoBehaviour:
     - 215.72522
     - 220
     accelerationZeroToHundredSeconds:
-    - 7.6
-    - 7.186498
-    - 6.8700013
-    - 6.5820723
-    - 6.3112555
-    - 6.0524917
-    - 5.802944
-    - 5.560809
-    - 5.3248434
-    - 5.0941424
-    - 4.86802
-    - 4.6459384
-    - 4.427467
-    - 4.2122526
-    - 4
+    - 6.8
+    - 6.455415
+    - 6.191668
+    - 5.951727
+    - 5.726047
+    - 5.51041
+    - 5.302454
+    - 5.100674
+    - 4.904036
+    - 4.711785
+    - 4.52335
+    - 4.338282
+    - 4.156223
+    - 3.976877
+    - 3.8
     gripRatings:
-    - 260
-    - 292.38693
-    - 328.46713
-    - 366.08664
-    - 404.74197
-    - 444.1863
-    - 484.271
-    - 524.8961
-    - 565.9898
-    - 607.4975
-    - 649.3765
-    - 691.59247
-    - 734.11694
-    - 776.9262
-    - 820
+    - 600
+    - 620.24183
+    - 642.791958
+    - 666.304151
+    - 690.463744
+    - 715.116445
+    - 740.169368
+    - 765.560088
+    - 791.243618
+    - 817.185925
+    - 843.360319
+    - 869.745287
+    - 896.323102
+    - 923.078893
+    - 950
     airControlTorque:
     - 3600
     airborneDownforceAcceleration:

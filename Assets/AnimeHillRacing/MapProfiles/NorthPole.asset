@@ -250,6 +250,17 @@ MonoBehaviour:
     crestPositionVariation: 0.2
     macroReliefHeight: 18
     macroReliefWavelength: 950
+    warmupMountainHeight: 4.5
+    peakMountainHeight: 72
+    initialFlatSectionChance: 0.42
+    peakFlatSectionChance: 0.16
+    peakExtremeBumpChance: 0.28
+    peakExtremeBumpHeight: 4.8
+    bumpyClimbChance: 0.38
+    hardBumpChance: 0.18
+    veryHardBumpChance: 0.72
+    veryHardBumpCooldownDistance: 1200
+    veryHardBumpHeight: 18
   rainstorm:
     permanentRain: 0
     maximumParticles: 520

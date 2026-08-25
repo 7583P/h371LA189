@@ -47,8 +47,8 @@ namespace AnimeHillRacing.UI
                                $"STUNT BONUS   {manager.StuntBonus}\n\n" +
                                $"MAX SPEED   {manager.MaxSpeedKmh:0} km/h\n" +
                                $"{GameModeNames.DisplayName(manager.Mode)}   -   {manager.MapId.ToUpperInvariant()}";
-            SetPhotoMetadata($"DISTANCE   <size=44>{manager.Distance:N0} m</size>\n" +
-                             $"TRACK      <size=42>{FormatMapName(manager.MapId)}</size>");
+            SetPhotoMetadata($"<size=44>{manager.Distance:N0} m</size>\n" +
+                             $"<size=42>{FormatMapName(manager.MapId)}</size>");
         }
 
         public void ShowTimeTrial(TimeTrialManager manager)

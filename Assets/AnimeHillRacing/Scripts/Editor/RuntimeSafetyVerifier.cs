@@ -26,6 +26,10 @@ namespace AnimeHillRacing.EditorTools
             ExpectLowFuel(errors, "non-finite consumption", false, 1f, float.PositiveInfinity, 5f);
             ExpectLowFuel(errors, "normal consumption before threshold", false, 12.5f, 1f, 5f);
             ExpectLowFuel(errors, "thruster-rate threshold", true, 12.5f, 2.5f, 5f);
+            ExpectGameOverCountdown(errors, RunEndReason.OutOfFuel, 2.99f, "OUT OF FUEL\n3");
+            ExpectGameOverCountdown(errors, RunEndReason.DriverDown, 1.99f, "DRIVER DOWN\n2");
+            ExpectGameOverCountdown(errors, RunEndReason.DriverDownAndOutOfFuel, .25f,
+                "DRIVER DOWN\nOUT OF FUEL\n1");
             ValidateGarageRuntimeContract(errors);
 
             if (errors.Count > 0)
@@ -41,6 +45,16 @@ namespace AnimeHillRacing.EditorTools
                 thresholdSeconds);
             if (actual != expected)
                 errors.Add($"Low-fuel policy failed for {scenario}: expected {expected}, got {actual}.");
+        }
+
+        private static void ExpectGameOverCountdown(List<string> errors, RunEndReason reason,
+            float remainingSeconds, string expected)
+        {
+            string actual = GameplayHUD.FormatGameOverCountdown(reason, remainingSeconds);
+            if (actual != expected)
+                errors.Add($"Game-over countdown failed for {reason}: expected {expected}, got {actual}.");
+            if (!StylizedBitmapFont.SupportsAllVisibleGlyphs(actual, false))
+                errors.Add($"Game-over countdown for {reason} contains glyphs outside the stylized atlas.");
         }
 
         private static void ValidateGarageRuntimeContract(List<string> errors)

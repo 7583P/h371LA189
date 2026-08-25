@@ -25,7 +25,7 @@ namespace AnimeHillRacing.Vehicle
         [Header("2D Suspension & Geometry Defaults")]
         [SerializeField, Range(2.0f, 12.0f)] private float suspensionFrequency = 4.5f;
         [SerializeField, Range(0.2f, 1.5f)] private float suspensionDampingRatio = 0.75f;
-        [SerializeField, Range(0.1f, 0.6f)] private float suspensionTravel = 0.35f;
+        [SerializeField, Range(0.1f, 0.8f)] private float suspensionTravel = 0.35f;
 
         [Header("Air Control")]
         [SerializeField, Range(0.02f, 0.20f)] private float airborneGraceSeconds = 0.08f;
@@ -161,18 +161,23 @@ namespace AnimeHillRacing.Vehicle
                 Mathf.Max(1.50f, suspensionDampingRatio * 1.55f), tuneProgress);
             float effectiveTravel = stats.suspensionTravel > .05f
                 ? stats.suspensionTravel : suspensionTravel;
+            // Legacy vehicles still feed their old small grip coefficient through the rating adapter.
+            // Buggy's mountain tires are authored as a real Box2D coefficient and must not be divided by 150,
+            // otherwise even its maximum Grip tune is silently clamped to the 0.6 minimum.
+            float tireGripInput = definition.archetype == VehicleArchetype.Buggy
+                ? stats.grip * 150f : stats.grip;
 
             if (frontSuspension != null)
             {
                 frontSuspension.Initialize(body, definition, stats, definition.FrontWheelAnchor,
                     definition.frontWheelVisualPosition.y, frontRadius,
-                    effectiveTravel, tunedFrequency, tunedDamping, stats.grip, driveMethod);
+                    effectiveTravel, tunedFrequency, tunedDamping, tireGripInput, driveMethod);
             }
             if (rearSuspension != null)
             {
                 rearSuspension.Initialize(body, definition, stats, definition.RearWheelAnchor,
                     definition.rearWheelVisualPosition.y, rearRadius,
-                    effectiveTravel, tunedFrequency, tunedDamping, stats.grip, driveMethod);
+                    effectiveTravel, tunedFrequency, tunedDamping, tireGripInput, driveMethod);
             }
         }
 

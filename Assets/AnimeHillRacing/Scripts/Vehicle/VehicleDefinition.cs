@@ -307,8 +307,8 @@ namespace AnimeHillRacing.Vehicle
             [Min(.1f)] public float tractionRecoveryPerSecond = 5.5f;
             [Min(0f)] public float rollingResistance = 0.018f;
             [Min(0f)] public float aerodynamicDrag = 0.46f;
-            [Tooltip("Maximum Box2D tire friction authored for this vehicle. Existing vehicles retain the legacy 2.4 cap.")]
-            [Range(.6f, 5f)] public float maximumPhysicsFriction = 2.4f;
+            [Tooltip("Maximum Box2D tire friction authored for this vehicle. Extreme off-road tires may exceed the legacy 5.0 cap.")]
+            [Range(.6f, 8.5f)] public float maximumPhysicsFriction = 2.4f;
         }
 
         [Serializable]
@@ -512,7 +512,9 @@ namespace AnimeHillRacing.Vehicle
                 peakPowerKw = torque * 6200f / 9549f,
                 zeroToHundredTargetSeconds = accelerationTarget,
                 targetAccelerationMps2 = EvaluateZeroToHundredAcceleration(accelerationTarget),
-                lowSpeedTorqueMultiplier = Mathf.Lerp(0.82f, 1.15f, accelerationAuthority),
+                lowSpeedTorqueMultiplier = archetype == VehicleArchetype.Buggy
+                    ? Mathf.Lerp(1.12f, 1.32f, accelerationAuthority)
+                    : Mathf.Lerp(0.82f, 1.15f, accelerationAuthority),
                 shiftRecovery = Mathf.Lerp(0f, 0.30f, accelerationAuthority),
                 suspensionTravel = suspensionTravel,
                 spring = resolvedSpring,
@@ -542,9 +544,9 @@ namespace AnimeHillRacing.Vehicle
                 airborneDownforceAcceleration = airborneDownforce,
                 climbAssistAcceleration = maxClimbAssist *
                                            (archetype == VehicleArchetype.Buggy
-                                               ? Mathf.Lerp(.18f, 1f, climbTune) : 1f),
+                                               ? Mathf.Lerp(.45f, 1f, climbTune) : 1f),
                 maximumClimbAngle = archetype == VehicleArchetype.Buggy
-                    ? Mathf.Lerp(70f, 80f, climbTune) : climbAssistFullAngle,
+                    ? Mathf.Lerp(78f, 80f, climbTune) : climbAssistFullAngle,
                 topSpeedMps = topSpeed
             };
         }
@@ -707,7 +709,7 @@ namespace AnimeHillRacing.Vehicle
             grip.slipThreshold = Mathf.Clamp(grip.slipThreshold, .02f, 1f);
             grip.slidingGripMultiplier = Mathf.Clamp(grip.slidingGripMultiplier, .1f, 1f);
             grip.tractionRecoveryPerSecond = Mathf.Max(.1f, grip.tractionRecoveryPerSecond);
-            grip.maximumPhysicsFriction = Mathf.Clamp(grip.maximumPhysicsFriction, .6f, 5f);
+            grip.maximumPhysicsFriction = Mathf.Clamp(grip.maximumPhysicsFriction, .6f, 8.5f);
             groundedWheelTorqueShare = Mathf.Clamp(groundedWheelTorqueShare, .5f, .95f);
             climbAssistFullAngle = Mathf.Max(climbAssistStartAngle + 1f, climbAssistFullAngle);
             maxClimbAssist = Mathf.Max(0f, maxClimbAssist);

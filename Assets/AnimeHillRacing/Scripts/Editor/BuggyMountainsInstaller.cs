@@ -112,8 +112,8 @@ namespace AnimeHillRacing.Editor
             v.tuneTargets = new VehicleDefinition.TuneTargets
             {
                 engineTopSpeedKmh = Values(128f, 220f, v.engineMaxTunes, .88f),
-                accelerationZeroToHundredSeconds = Values(7.6f, 4f, v.accelerationMaxTunes, .82f),
-                gripRatings = Values(260f, 820f, v.gripMaxTunes, 1.08f),
+                accelerationZeroToHundredSeconds = Values(6.8f, 3.8f, v.accelerationMaxTunes, .82f),
+                gripRatings = Values(600f, 950f, v.gripMaxTunes, 1.08f),
                 airControlTorque = new[] { 3600f },
                 airborneDownforceAcceleration = new[] { 0f },
                 fuelRunDurationSeconds = Values(36f, 60f, v.fuelMaxTunes, 1f)
@@ -126,7 +126,7 @@ namespace AnimeHillRacing.Editor
             v.halfTrack = .88f;
             v.topSpeedMps = 220f / 3.6f;
             v.brakeForce = 15500f;
-            v.reverseForce = 6100f;
+            v.reverseForce = 8000f;
             v.airControlTorque = 3600f;
             v.maxAirAngularVelocity = 2.2f;
             v.airAngularAcceleration = 13f;
@@ -140,25 +140,25 @@ namespace AnimeHillRacing.Editor
             v.accelerationForceCalibration = 1f;
             v.centerOfMass = new Vector3(-.06f, -.43f, 0f);
             v.adaptiveAllWheelDrive = true;
-            v.groundedWheelTorqueShare = .84f;
-            v.maxClimbAssist = 5.8f;
-            v.climbAssistStartAngle = 58f;
+            v.groundedWheelTorqueShare = .90f;
+            v.maxClimbAssist = 9.5f;
+            v.climbAssistStartAngle = 42f;
             v.climbAssistFullAngle = 80f;
             v.highSpeedDamping = .72f;
 
             v.engine.idleRpm = 1050f;
             v.engine.redlineRpm = 7200f;
             v.engine.limiterRpm = 7550f;
-            v.engine.minTorqueNm = 285f;
-            v.engine.maxTorqueNm = 620f;
-            v.engine.drivetrainEfficiency = .87f;
+            v.engine.minTorqueNm = 340f;
+            v.engine.maxTorqueNm = 720f;
+            v.engine.drivetrainEfficiency = .90f;
             v.engine.torqueCurve = new AnimationCurve(new Keyframe(0f, .82f), new Keyframe(.28f, 1f),
                 new Keyframe(.64f, .96f), new Keyframe(1f, .66f));
             v.engine.speedTorqueCurve = new AnimationCurve(new Keyframe(0f, 1f), new Keyframe(.48f, 1f),
                 new Keyframe(.76f, .82f), new Keyframe(.92f, .38f), new Keyframe(1.02f, 0f));
-            v.transmission.forwardGearRatios = new[] { 5.40f, 3.72f, 2.78f, 2.20f, 1.82f, 1.54f, 1.32f };
+            v.transmission.forwardGearRatios = new[] { 5.80f, 3.72f, 2.78f, 2.20f, 1.82f, 1.54f, 1.32f };
             v.transmission.reverseRatio = 3.6f;
-            v.transmission.finalDrive = 4.10f;
+            v.transmission.finalDrive = 4.40f;
             v.transmission.autoShiftDuration = .30f;
             v.transmission.autoTorqueDuringShift = .20f;
             v.transmission.autoUpshiftRpm = 6650f;
@@ -169,35 +169,35 @@ namespace AnimeHillRacing.Editor
             v.transmission.badTorqueDuringShift = .08f;
             v.transmission.perfectRpmWindow = new Vector2(6100f, 6900f);
 
-            v.suspension.restLength = .72f;
-            v.suspension.minTravel = .34f;
-            v.suspension.maxTravel = .50f;
-            v.suspension.compressionTravelRatio = .82f;
-            v.suspension.targetSag01 = .31f;
-            v.suspension.stiffnessTuneScale = new Vector2(.82f, 1.02f);
-            v.suspension.dampingRatio = new Vector2(.82f, 1.12f);
-            v.suspension.compressionDampingMultiplier = .82f;
-            v.suspension.reboundDampingMultiplier = 1.25f;
-            v.suspension.compressionDampingTuneScale = new Vector2(.80f, 1.10f);
-            v.suspension.reboundDampingTuneScale = new Vector2(.92f, 1.55f);
-            v.suspension.reboundAccelerationTune = new Vector2(1.55f, .55f);
-            v.suspension.wheelContactTolerance = new Vector2(.016f, .032f);
-            v.suspension.landingDampingScale = new Vector2(1.08f, 1.52f);
-            v.suspension.landingDampingDuration = .19f;
-            v.suspension.bumpStopStart = .76f;
-            v.suspension.progressiveSpringMultiplier = 2.8f;
-            v.suspension.hardStopSpringMultiplier = 8.5f;
-            v.suspension.maximumAcceleration = 31f;
-            v.suspension.maximumReboundAcceleration = .75f;
+            v.suspension.restLength = .82f;
+            v.suspension.minTravel = .48f;
+            v.suspension.maxTravel = .70f;
+            v.suspension.compressionTravelRatio = .78f;
+            v.suspension.targetSag01 = .34f;
+            v.suspension.stiffnessTuneScale = new Vector2(.75f, .96f);
+            v.suspension.dampingRatio = new Vector2(.92f, 1.18f);
+            v.suspension.compressionDampingMultiplier = .88f;
+            v.suspension.reboundDampingMultiplier = 1.32f;
+            v.suspension.compressionDampingTuneScale = new Vector2(.85f, 1.16f);
+            v.suspension.reboundDampingTuneScale = new Vector2(.98f, 1.65f);
+            v.suspension.reboundAccelerationTune = new Vector2(1.40f, .60f);
+            v.suspension.wheelContactTolerance = new Vector2(.020f, .038f);
+            v.suspension.landingDampingScale = new Vector2(1.15f, 1.65f);
+            v.suspension.landingDampingDuration = .22f;
+            v.suspension.bumpStopStart = .82f;
+            v.suspension.progressiveSpringMultiplier = 3.4f;
+            v.suspension.hardStopSpringMultiplier = 10f;
+            v.suspension.maximumAcceleration = 34f;
+            v.suspension.maximumReboundAcceleration = .90f;
 
-            v.grip.minGrip = 1.35f;
-            v.grip.maxGrip = 3.55f;
-            v.grip.slipThreshold = .14f;
-            v.grip.slidingGripMultiplier = .58f;
-            v.grip.tractionRecoveryPerSecond = 5.2f;
+            v.grip.minGrip = 4.8f;
+            v.grip.maxGrip = 8.2f;
+            v.grip.slipThreshold = .10f;
+            v.grip.slidingGripMultiplier = .78f;
+            v.grip.tractionRecoveryPerSecond = 7.5f;
             v.grip.rollingResistance = .019f;
             v.grip.aerodynamicDrag = .40f;
-            v.grip.maximumPhysicsFriction = 4.2f;
+            v.grip.maximumPhysicsFriction = 8.3f;
             v.fuel.capacityUnits = 100f;
             v.fuel.minimumRunDurationSeconds = 36f;
             v.fuel.maximumRunDurationSeconds = 60f;
@@ -299,10 +299,10 @@ namespace AnimeHillRacing.Editor
                 controllerData.FindProperty("definition").objectReferenceValue = definition;
                 controllerData.FindProperty("frontSuspension").objectReferenceValue = front;
                 controllerData.FindProperty("rearSuspension").objectReferenceValue = rear;
-                controllerData.FindProperty("suspensionFrequency").floatValue = 3.6f;
-                controllerData.FindProperty("suspensionDampingRatio").floatValue = 1.03f;
-                controllerData.FindProperty("suspensionTravel").floatValue = .50f;
-                controllerData.FindProperty("torqueRampSeconds").floatValue = .16f;
+                controllerData.FindProperty("suspensionFrequency").floatValue = 3.2f;
+                controllerData.FindProperty("suspensionDampingRatio").floatValue = 1.08f;
+                controllerData.FindProperty("suspensionTravel").floatValue = .70f;
+                controllerData.FindProperty("torqueRampSeconds").floatValue = .13f;
                 controllerData.ApplyModifiedPropertiesWithoutUndo();
 
                 SpriteRenderer bodyRenderer = visual.BodyRenderer;
@@ -427,7 +427,7 @@ namespace AnimeHillRacing.Editor
             profile.displayName = "MOUNTAINS";
             profile.supportedGameMode = GameModeType.Adventure2_5D;
             profile.seed = 40822;
-            profile.introEndDistance = 500f;
+            profile.introEndDistance = 1000f;
             profile.easyEndDistance = 2500f;
             profile.normalEndDistance = 5000f;
             profile.hardEndDistance = 10000f;
@@ -436,7 +436,7 @@ namespace AnimeHillRacing.Editor
             profile.maximumDifficulty = 1f;
             profile.introductoryAmplitude = .18f;
             profile.sectionLength = 125f;
-            profile.maxSlopeAngle = 80f;
+            profile.maxSlopeAngle = 60f;
             profile.maxHeightDeltaPerSample = 12f;
             profile.maximumCrestSharpness = 18f;
             profile.smoothingPasses = 2;
@@ -456,22 +456,33 @@ namespace AnimeHillRacing.Editor
             profile.mountains = new MountainsSettings
             {
                 peakDifficultyDistance = 10000f,
-                miniBumpMinimumWavelength = 7.5f,
-                miniBumpMaximumWavelength = 18f,
-                initialMiniBumpHeight = .20f,
-                maximumMiniBumpHeight = 1.10f,
-                easySlopeRange = new Vector2(20f, 45f),
-                mediumSlopeRange = new Vector2(40f, 60f),
-                hardSlopeRange = new Vector2(55f, 70f),
-                extremeSlopeRange = new Vector2(65f, 75f),
-                exceptionalSlope = 79f,
-                exceptionalEveryCells = 7,
-                crestWidthFraction = .032f,
-                recoveryWidthFraction = .07f,
-                valleyChance = .18f,
-                crestPositionVariation = .2f,
-                macroReliefHeight = 18f,
-                macroReliefWavelength = 950f
+                miniBumpMinimumWavelength = 10f,
+                miniBumpMaximumWavelength = 24f,
+                initialMiniBumpHeight = .12f,
+                maximumMiniBumpHeight = 1f,
+                easySlopeRange = new Vector2(12f, 24f),
+                mediumSlopeRange = new Vector2(18f, 34f),
+                hardSlopeRange = new Vector2(26f, 44f),
+                extremeSlopeRange = new Vector2(34f, 54f),
+                exceptionalSlope = 58f,
+                exceptionalEveryCells = 9,
+                crestWidthFraction = .06f,
+                recoveryWidthFraction = .10f,
+                valleyChance = .22f,
+                crestPositionVariation = .22f,
+                macroReliefHeight = 30f,
+                macroReliefWavelength = 1150f,
+                warmupMountainHeight = 4.5f,
+                peakMountainHeight = 72f,
+                initialFlatSectionChance = .42f,
+                peakFlatSectionChance = .16f,
+                peakExtremeBumpChance = .28f,
+                peakExtremeBumpHeight = 4.8f,
+                bumpyClimbChance = .38f,
+                hardBumpChance = .18f,
+                veryHardBumpChance = .72f,
+                veryHardBumpCooldownDistance = 1200f,
+                veryHardBumpHeight = 18f
             };
             profile.environment = environment;
             Texture2D rock = AssetDatabase.LoadAssetAtPath<Texture2D>(MountainsTerrainRoot + "/Mountains_Rock.png");
@@ -524,10 +535,15 @@ namespace AnimeHillRacing.Editor
                 fuelTune = buggy.fuelMaxTunes, turboTune = buggy.turboMaxTunes
             };
             ResolvedVehicleStats stats = buggy.Resolve(max);
+            ResolvedVehicleStats baseStats = buggy.Resolve(new VehicleUpgradeState());
             if (Mathf.Abs(stats.topSpeedMps * 3.6f - 220f) > .1f ||
-                Mathf.Abs(stats.zeroToHundredTargetSeconds - 4f) > .01f ||
-                Mathf.Abs(stats.totalRunFuelDuration - 60f) > .01f || stats.suspensionTravel < .49f ||
-                Mathf.Abs(stats.maximumClimbAngle - 80f) > .01f || stats.climbAssistAcceleration < 5.79f ||
+                Mathf.Abs(stats.zeroToHundredTargetSeconds - 3.8f) > .01f ||
+                Mathf.Abs(stats.totalRunFuelDuration - 60f) > .01f || stats.suspensionTravel < .69f ||
+                stats.grip < 8.1f || stats.gripRating < 940 ||
+                Mathf.Abs(stats.maximumClimbAngle - 80f) > .01f || stats.climbAssistAcceleration < 9.49f ||
+                baseStats.suspensionTravel < .47f || baseStats.grip < 7.8f ||
+                baseStats.maximumClimbAngle < 77.9f || baseStats.climbAssistAcceleration < 4.27f ||
+                baseStats.lowSpeedTorqueMultiplier < 1.11f ||
                 Mathf.Abs(buggy.visualWidth - 4.85f) > .001f ||
                 Mathf.Abs(buggy.wheelRadius - .53f) > .001f ||
                 Mathf.Abs(buggy.wheelVisualDiameter - 1.06f) > .001f)
@@ -537,35 +553,84 @@ namespace AnimeHillRacing.Editor
             Mesh mesh = new Mesh();
             float endHeight = 0f;
             float endSlope = 0f;
+            float maximumSeamError = 0f;
+            bool invalidTerrainSample = false;
             const float chunkLength = 80f;
             const int samples = 96;
             int chunkCount = Mathf.CeilToInt(12000f / chunkLength);
             for (int chunk = 0; chunk < chunkCount; chunk++)
             {
+                float expectedStartHeight = endHeight;
                 TerrainGenerator.BuildMesh(mesh, mountains, chunk * chunkLength, chunkLength, samples, 10f,
                     chunk > 0, endHeight, endSlope, out float[] heights, out endHeight, out endSlope);
+                if (chunk > 0)
+                    maximumSeamError = Mathf.Max(maximumSeamError,
+                        Mathf.Abs(heights[0] - expectedStartHeight));
                 float dx = chunkLength / samples;
                 for (int i = 1; i < heights.Length; i++)
                 {
+                    if (float.IsNaN(heights[i]) || float.IsInfinity(heights[i]))
+                        invalidTerrainSample = true;
                     float distance = chunk * chunkLength + i * dx;
                     float angle = Mathf.Abs(Mathf.Atan2(heights[i] - heights[i - 1], dx) * Mathf.Rad2Deg);
-                    int band = distance < 500f ? 0 : distance < 2500f ? 1 : distance < 5000f ? 2 :
+                    int band = distance < 1000f ? 0 : distance < 2500f ? 1 : distance < 5000f ? 2 :
                         distance < 10000f ? 3 : 4;
                     maxima[band] = Mathf.Max(maxima[band], angle);
                 }
             }
+
+            float[] teleportCentres = { 131000f, 262000f, 544000f };
+            float[] teleportMaxima = new float[teleportCentres.Length];
+            for (int window = 0; window < teleportCentres.Length; window++)
+            {
+                float start = teleportCentres[window] - 1000f;
+                endHeight = 0f;
+                endSlope = 0f;
+                for (int chunk = 0; chunk < 25; chunk++)
+                {
+                    float chunkStart = start + chunk * chunkLength;
+                    float expectedStartHeight = endHeight;
+                    TerrainGenerator.BuildMesh(mesh, mountains, chunkStart, chunkLength, samples, 10f,
+                        chunk > 0, endHeight, endSlope, out float[] heights, out endHeight, out endSlope);
+                    if (chunk > 0)
+                        maximumSeamError = Mathf.Max(maximumSeamError,
+                            Mathf.Abs(heights[0] - expectedStartHeight));
+                    float dx = chunkLength / samples;
+                    for (int i = 1; i < heights.Length; i++)
+                    {
+                        if (float.IsNaN(heights[i]) || float.IsInfinity(heights[i]))
+                            invalidTerrainSample = true;
+                        float angle = Mathf.Abs(Mathf.Atan2(heights[i] - heights[i - 1], dx) * Mathf.Rad2Deg);
+                        teleportMaxima[window] = Mathf.Max(teleportMaxima[window], angle);
+                    }
+                }
+            }
             UnityEngine.Object.DestroyImmediate(mesh);
-            if (maxima[4] < 75f || maxima[4] > 80.1f || maxima[3] < 60f ||
+            if (maxima[0] < 7f || maxima[0] > 20f ||
+                maxima[1] < 10f || maxima[1] > 28f ||
+                maxima[2] < 16f || maxima[2] > 38f ||
+                maxima[3] < 40f || maxima[3] > 60.1f ||
+                maxima[4] < 30f || maxima[4] > 60.1f ||
+                teleportMaxima[0] < 35f || teleportMaxima[0] > 60.1f ||
+                teleportMaxima[1] < 35f || teleportMaxima[1] > 60.1f ||
+                teleportMaxima[2] < 35f || teleportMaxima[2] > 60.1f ||
+                invalidTerrainSample || maximumSeamError > .001f ||
+                Mathf.Abs(mountains.introEndDistance - 1000f) > .01f ||
                 Mathf.Abs(mountains.hardEndDistance - 10000f) > .01f ||
                 mountains.mountains == null ||
-                Mathf.Abs(mountains.mountains.peakDifficultyDistance - 10000f) > .01f)
+                Mathf.Abs(mountains.mountains.peakDifficultyDistance - 10000f) > .01f ||
+                Mathf.Abs(mountains.mountains.bumpyClimbChance - .38f) > .001f ||
+                Mathf.Abs(mountains.mountains.hardBumpChance - .18f) > .001f ||
+                mountains.mountains.veryHardBumpCooldownDistance < 1200f)
                 throw new InvalidOperationException($"Mountains slope audit failed: {string.Join(",", maxima)}");
             ValidateMountainsBackdrop(mountains.environment);
             ValidateCatalogTrackOrder();
             Debug.Log($"BUGGY_STATS_OK|vmax={stats.topSpeedMps * 3.6f:F1}|zero100={stats.zeroToHundredTargetSeconds:F2}" +
                       $"|fuel={stats.totalRunFuelDuration:F1}|travel={stats.suspensionTravel:F2}|grip={stats.gripRating}|width={buggy.visualWidth:F2}");
-            Debug.Log($"MOUNTAINS_SLOPE_AUDIT_OK|0-500={maxima[0]:F1}|500-2500={maxima[1]:F1}" +
-                      $"|2500-5000={maxima[2]:F1}|5000-10000={maxima[3]:F1}|10000+={maxima[4]:F1}");
+            Debug.Log($"MOUNTAINS_SLOPE_AUDIT_OK|0-1000={maxima[0]:F1}|1000-2500={maxima[1]:F1}" +
+                      $"|2500-5000={maxima[2]:F1}|5000-10000={maxima[3]:F1}|10000+={maxima[4]:F1}" +
+                      $"|131K={teleportMaxima[0]:F1}|262K={teleportMaxima[1]:F1}|544K={teleportMaxima[2]:F1}" +
+                      $"|seam={maximumSeamError:F5}");
         }
 
         private static void ValidateMountainsBackdrop(EnvironmentDefinition environment)

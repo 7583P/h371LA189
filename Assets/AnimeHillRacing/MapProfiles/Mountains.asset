@@ -81,7 +81,7 @@ MonoBehaviour:
   terrainEdgeMaterial: {fileID: 2100000, guid: 7bbc9455beeb6a24987ed1ca0b6968c2, type: 2}
   useSeparateTerrainMaterials: 1
   fitAuthoredTerrainTexture: 0
-  terrainTextureRepeatWidth: 18
+  terrainTextureRepeatWidth: 36
   terrainWallUvRange: {x: 0, y: 1}
   terrainSurfaceUvRange: {x: 0, y: 1}
   terrainSurfaceContactV: -1
@@ -219,6 +219,10 @@ MonoBehaviour:
     exceptionalEveryCells: 7
     crestWidthFraction: 0.032
     recoveryWidthFraction: 0.07
+    valleyChance: 0.18
+    crestPositionVariation: 0.2
+    macroReliefHeight: 18
+    macroReliefWavelength: 950
   rainstorm:
     permanentRain: 0
     maximumParticles: 520

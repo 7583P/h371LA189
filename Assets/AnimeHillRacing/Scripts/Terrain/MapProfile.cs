@@ -23,6 +23,14 @@ namespace AnimeHillRacing.Terrain
         [Range(3, 12)] public int exceptionalEveryCells = 7;
         [Range(.01f, .12f)] public float crestWidthFraction = .035f;
         [Range(.03f, .18f)] public float recoveryWidthFraction = .07f;
+        [Range(0f, .35f), Tooltip("Chance that a mountain cell becomes a descending valley instead of another positive peak.")]
+        public float valleyChance = .18f;
+        [Range(0f, .28f), Tooltip("Moves each crest away from the centre to create asymmetric climbs and descents.")]
+        public float crestPositionVariation = .2f;
+        [Min(0f), Tooltip("Height of the long connected relief below the individual mountain silhouettes.")]
+        public float macroReliefHeight = 18f;
+        [Min(300f), Tooltip("Approximate wavelength of broad elevation changes that prevent every cell returning to one baseline.")]
+        public float macroReliefWavelength = 950f;
     }
 
     public enum ArenaSegmentType

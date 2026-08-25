@@ -467,17 +467,21 @@ namespace AnimeHillRacing.Editor
                 exceptionalSlope = 79f,
                 exceptionalEveryCells = 7,
                 crestWidthFraction = .032f,
-                recoveryWidthFraction = .07f
+                recoveryWidthFraction = .07f,
+                valleyChance = .18f,
+                crestPositionVariation = .2f,
+                macroReliefHeight = 18f,
+                macroReliefWavelength = 950f
             };
             profile.environment = environment;
             Texture2D rock = AssetDatabase.LoadAssetAtPath<Texture2D>(MountainsTerrainRoot + "/Mountains_Rock.png");
             profile.terrainMaterial = LoadOrCreateMaterial(Root + "/Materials/MountainsRock.mat", rock,
-                new Color(.47f, .49f, .52f, 1f));
+                Color.white);
             profile.terrainEdgeMaterial = LoadOrCreateMaterial(Root + "/Materials/MountainsRockSurface.mat", rock,
-                new Color(.62f, .64f, .66f, 1f));
+                Color.white);
             profile.useSeparateTerrainMaterials = true;
             profile.fitAuthoredTerrainTexture = false;
-            profile.terrainTextureRepeatWidth = 18f;
+            profile.terrainTextureRepeatWidth = 36f;
             profile.terrainVisualDepth = 360f;
             profile.terrainEdgeWidth = .24f;
             profile.groundPhysicsMaterial = LoadOrCreatePhysicsMaterial(
@@ -674,7 +678,10 @@ namespace AnimeHillRacing.Editor
                 new Color32(82, 101, 116, 225));
             WriteMountainLayer(MountainsArtRoot + "/Mountains_Near.png", 2,
                 new Color32(48, 57, 66, 255));
-            WriteRockTexture(MountainsTerrainRoot + "/Mountains_Rock.png");
+            // Keep the production rock/soil artwork. The procedural fallback is only for a missing checkout;
+            // running the installer must never replace the authored terrain with the old flat grey noise.
+            string rockPath = MountainsTerrainRoot + "/Mountains_Rock.png";
+            if (!File.Exists(Absolute(rockPath))) WriteRockTexture(rockPath);
         }
 
         private static void WriteSky(string assetPath)
@@ -773,11 +780,13 @@ namespace AnimeHillRacing.Editor
             TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
             if (importer == null) return;
             importer.textureType = TextureImporterType.Default;
-            importer.wrapMode = TextureWrapMode.Repeat;
+            // Mirroring guarantees a continuous join for detailed natural artwork and doubles the visible
+            // repeat period, avoiding a conspicuous tile edge under the procedural terrain.
+            importer.wrapMode = TextureWrapMode.Mirror;
             importer.mipmapEnabled = true;
             importer.filterMode = FilterMode.Bilinear;
             importer.textureCompression = TextureImporterCompression.Compressed;
-            importer.maxTextureSize = 512;
+            importer.maxTextureSize = 1024;
             importer.SaveAndReimport();
         }
 

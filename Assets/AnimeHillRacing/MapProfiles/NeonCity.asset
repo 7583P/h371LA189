@@ -219,6 +219,10 @@ MonoBehaviour:
     exceptionalEveryCells: 7
     crestWidthFraction: 0.035
     recoveryWidthFraction: 0.07
+    valleyChance: 0.18
+    crestPositionVariation: 0.2
+    macroReliefHeight: 18
+    macroReliefWavelength: 950
   rainstorm:
     permanentRain: 0
     maximumParticles: 520

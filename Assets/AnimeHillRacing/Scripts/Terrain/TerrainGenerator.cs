@@ -334,7 +334,9 @@ namespace AnimeHillRacing.Terrain
             float initialGrowth = Smooth01(Mathf.InverseLerp(0f, 90f, distance));
             float initialAmplitude = Mathf.Lerp(settings.initialMiniBumpHeight,
                 settings.maximumMiniBumpHeight * .48f, Mathf.InverseLerp(0f, 500f, distance));
-            float initial = profile.baseHeight + rhythm * initialAmplitude * initialGrowth;
+            float initialMacroBlend = Smooth01(Mathf.InverseLerp(320f, 560f, distance));
+            float initial = profile.baseHeight + rhythm * initialAmplitude * initialGrowth +
+                            SampleMountainMacroRelief(profile, settings, distance) * initialMacroBlend;
             if (distance <= 480f) return initial;
 
             float mountain;
@@ -407,28 +409,82 @@ namespace AnimeHillRacing.Terrain
             float t = position - cell;
             float angle = MountainCellAngle(profile, distance, phaseStart, cellLength, slopeRange,
                 allowExceptional, settings);
+            uint seed = CombinedSeed(profile);
+            int phaseSalt = Mathf.RoundToInt(phaseStart) * 13;
             float recovery = Mathf.Clamp(settings.recoveryWidthFraction, .03f, .18f);
-            float crestHalf = Mathf.Clamp(settings.crestWidthFraction, .01f, .12f) * .5f;
-            float ascentStart = recovery;
-            float ascentEnd = .5f - crestHalf;
-            float descentStart = .5f + crestHalf;
-            float descentEnd = 1f - recovery;
-            float run = Mathf.Max(1f, (ascentEnd - ascentStart) * cellLength);
-            float height = Mathf.Tan(angle * Mathf.Deg2Rad) * run;
+            float leadingRecovery = Mathf.Clamp(recovery * Mathf.Lerp(.55f, 1.55f,
+                Hash01(seed, cell * 2027 + phaseSalt + 31)), .025f, .2f);
+            float trailingRecovery = Mathf.Clamp(recovery * Mathf.Lerp(.55f, 1.55f,
+                Hash01(seed, cell * 2081 + phaseSalt + 43)), .025f, .2f);
+            float crestVariation = Mathf.Clamp(settings.crestPositionVariation, 0f, .28f);
+            float crestCenter = .5f + (Hash01(seed, cell * 2111 + phaseSalt + 59) * 2f - 1f) *
+                                crestVariation;
+            float crestHalf = Mathf.Clamp(settings.crestWidthFraction * Mathf.Lerp(.35f, 2.2f,
+                Hash01(seed, cell * 2141 + phaseSalt + 71)), .008f, .12f) * .5f;
+            float ascentStart = leadingRecovery;
+            float ascentEnd = Mathf.Max(ascentStart + .08f, crestCenter - crestHalf);
+            float descentEnd = 1f - trailingRecovery;
+            float descentStart = Mathf.Min(descentEnd - .08f, crestCenter + crestHalf);
+            float ascentRun = Mathf.Max(1f, (ascentEnd - ascentStart) * cellLength);
+            float descentRun = Mathf.Max(1f, (descentEnd - descentStart) * cellLength);
+            float height = Mathf.Tan(angle * Mathf.Deg2Rad) * Mathf.Min(ascentRun, descentRun);
+            float heightScale = Mathf.Lerp(.74f, 1f, Hash01(seed, cell * 2203 + phaseSalt + 83));
             float shape;
             if (t <= ascentStart || t >= descentEnd) shape = 0f;
             else if (t < ascentEnd) shape = (t - ascentStart) / Mathf.Max(.001f, ascentEnd - ascentStart);
             else if (t <= descentStart) shape = 1f;
             else shape = 1f - (t - descentStart) / Mathf.Max(.001f, descentEnd - descentStart);
 
-            float edgeTaper = Mathf.Sin(Mathf.PI * Mathf.Clamp01((t - recovery) /
-                Mathf.Max(.001f, 1f - recovery * 2f)));
+            int topology = Mathf.Min(4, Mathf.FloorToInt(Hash01(seed,
+                cell * 2237 + phaseSalt + 101) * 5f));
+            if (topology == 1)
+            {
+                // A rounded dome has a softer start and finish than the angular default peak.
+                shape = Smooth01(Mathf.Clamp01(shape)) * .64f;
+            }
+            else if (topology == 2 && shape > 0f)
+            {
+                // Split the high point into two readable summits without creating a collider spike.
+                float notchRadius = Mathf.Max(.045f, crestHalf * 2.8f);
+                float notch = 1f - Mathf.Clamp01(Mathf.Abs(t - crestCenter) / notchRadius);
+                shape *= 1f - Smooth01(notch) * .2f;
+                heightScale *= .82f;
+            }
+            else if (topology == 3 && shape > 0f)
+            {
+                // Uneven shoulders interrupt the repeated straight ascent/straight descent silhouette.
+                float activeT = Mathf.InverseLerp(ascentStart, descentEnd, t);
+                float shoulder = Mathf.Sin(activeT * Mathf.PI * 2f +
+                    Hash01(seed, cell * 2269 + phaseSalt + 113) * Mathf.PI) * .075f;
+                shape = Mathf.Clamp01(shape + shoulder * shape * (1f - shape));
+                heightScale *= .88f;
+            }
+            else if (topology == 4 && shape > 0f)
+            {
+                // A low secondary knoll creates a two-stage approach or exit.
+                bool placeAfter = Hash01(seed, cell * 2293 + phaseSalt + 127) > .5f;
+                float knollCenter = placeAfter ? Mathf.Lerp(descentStart, descentEnd, .62f) :
+                    Mathf.Lerp(ascentStart, ascentEnd, .38f);
+                float knoll = 1f - Mathf.Clamp01(Mathf.Abs(t - knollCenter) / .09f);
+                shape = Mathf.Max(shape * .82f, Smooth01(knoll) * .28f);
+                heightScale *= .82f;
+            }
+
+            if (Hash01(seed, cell * 2333 + phaseSalt + 139) < Mathf.Clamp(settings.valleyChance, 0f, .35f))
+            {
+                shape *= -.68f;
+                heightScale *= .86f;
+            }
+
+            float edgeTaper = Mathf.Sin(Mathf.PI * Mathf.Clamp01((t - leadingRecovery) /
+                Mathf.Max(.001f, 1f - leadingRecovery - trailingRecovery)));
             edgeTaper *= edgeTaper;
             // Preserve visible rock rhythm without silently raising an authored 60-degree face to 80 degrees.
             float detailAmplitude = Mathf.Lerp(settings.maximumMiniBumpHeight * .25f,
                 settings.maximumMiniBumpHeight * .44f,
                 Mathf.InverseLerp(500f, Mathf.Max(1000f, settings.peakDifficultyDistance), distance));
-            return profile.baseHeight + Mathf.Max(0f, shape) * height +
+            return profile.baseHeight + SampleMountainMacroRelief(profile, settings, distance) +
+                   shape * height * heightScale +
                    SampleMountainRockRhythm(profile, settings, distance) * detailAmplitude * edgeTaper;
         }
 
@@ -440,7 +496,7 @@ namespace AnimeHillRacing.Terrain
             float variant = Hash01(seed, cell * 1877 + Mathf.RoundToInt(phaseStart) * 13 + 97);
             int interval = Mathf.Max(3, settings.exceptionalEveryCells);
             if (allowExceptional && PositiveModulo(cell + profile.seed, interval) == interval - 1)
-                return Mathf.Clamp(settings.exceptionalSlope - (1f - variant) * 1.25f, 75f, 80f);
+                return Mathf.Clamp(settings.exceptionalSlope - (1f - variant) * 1.25f, 75f, 78.5f);
             return Mathf.Lerp(Mathf.Min(range.x, range.y), Mathf.Max(range.x, range.y), variant);
         }
 
@@ -452,9 +508,36 @@ namespace AnimeHillRacing.Terrain
             float phaseB = Hash01(seed, 409) * TwoPi;
             float minWave = Mathf.Max(4f, settings.miniBumpMinimumWavelength);
             float maxWave = Mathf.Max(minWave, settings.miniBumpMaximumWavelength);
-            return Mathf.Sin(distance * TwoPi / minWave + phaseA) * .48f +
-                   Mathf.Sin(distance * TwoPi / Mathf.Lerp(minWave, maxWave, .58f) + phaseB) * .34f +
-                   Mathf.Sin(distance * TwoPi / maxWave + phaseA * .37f) * .18f;
+            float domainWarp = SmoothMountainNoise(seed, distance / 83f, 467) * maxWave * .72f +
+                               SmoothMountainNoise(seed, distance / 191f, 479) * maxWave * .38f;
+            float warpedDistance = distance + domainWarp;
+            float wavelengthBlend = .5f + SmoothMountainNoise(seed, distance / 127f, 487) * .24f;
+            float middleWave = Mathf.Lerp(minWave, maxWave, Mathf.Clamp01(wavelengthBlend));
+            return Mathf.Sin(warpedDistance * TwoPi / minWave + phaseA) * .44f +
+                   Mathf.Sin(warpedDistance * TwoPi / middleWave + phaseB) * .34f +
+                   Mathf.Sin(warpedDistance * TwoPi / maxWave + phaseA * .37f) * .16f +
+                   SmoothMountainNoise(seed, distance / 31f, 499) * .06f;
+        }
+
+        private static float SampleMountainMacroRelief(MapProfile profile, MountainsSettings settings,
+            float distance)
+        {
+            uint seed = CombinedSeed(profile);
+            float wavelength = Mathf.Max(300f, settings.macroReliefWavelength);
+            float growth = Smooth01(Mathf.InverseLerp(360f,
+                Mathf.Max(1200f, settings.peakDifficultyDistance), distance));
+            float broad = SmoothMountainNoise(seed, distance / wavelength, 541) * .62f;
+            float distant = SmoothMountainNoise(seed, distance / (wavelength * 2.35f), 557) * .38f;
+            return (broad + distant) * Mathf.Max(0f, settings.macroReliefHeight) * growth;
+        }
+
+        private static float SmoothMountainNoise(uint seed, float position, int salt)
+        {
+            int lower = Mathf.FloorToInt(position);
+            float t = Smooth01(position - lower);
+            float a = Hash01(seed, lower * 1597 + salt) * 2f - 1f;
+            float b = Hash01(seed, (lower + 1) * 1597 + salt) * 2f - 1f;
+            return Mathf.Lerp(a, b, t);
         }
 
         private static float SampleProceduralProfileHeight(MapProfile profile, float worldX)
@@ -1457,7 +1540,7 @@ namespace AnimeHillRacing.Terrain
                 float rawLocalX = i * dx;
                 float worldX = chunkStartX + rawLocalX;
                 float localX = rawLocalX;
-                float textureU = profile.fitAuthoredTerrainTexture
+                float textureU = profile.fitAuthoredTerrainTexture || profile.useMountainsTerrain
                     ? worldX / Mathf.Max(1f, profile.terrainTextureRepeatWidth)
                     : localX * .1f;
 

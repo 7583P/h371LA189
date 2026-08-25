@@ -122,6 +122,10 @@ namespace AnimeHillRacing.Editor
         private const string DriverGlassesPath = DriverAccessoryRoot + "/Glasses.png";
         private const string DriverFireGlassesPath = DriverAccessoryRoot + "/Fire Glasses.png";
         private const string DriverScarfPath = DriverAccessoryRoot + "/Scarf.png";
+        private const string DriverSantaHatPath = DriverAccessoryRoot + "/SantaHat.png";
+        private const string DriverNeonGlassesPath = DriverAccessoryRoot + "/NeonGlasses.png";
+        private const string DriverTireAccessoryPath = DriverAccessoryRoot + "/TireAccessory.png";
+        private const string DriverBaseballCapPath = DriverAccessoryRoot + "/BaseballCap.png";
         private const string CountrysideRoot = "Assets/Art/Backgrounds/Countryside";
         private const string CountrysideSkyPath = CountrysideRoot + "/Countryside_Sky.png";
         private const string CountrysideMountainsPath = CountrysideRoot + "/Countryside_Mountains.png";
@@ -184,6 +188,10 @@ namespace AnimeHillRacing.Editor
             public Sprite driverGlasses;
             public Sprite driverFireGlasses;
             public Sprite driverScarf;
+            public Sprite driverSantaHat;
+            public Sprite driverNeonGlasses;
+            public Sprite driverTireAccessory;
+            public Sprite driverBaseballCap;
             public Sprite neonSky;
             public Sprite neonBackground;
             public Sprite neonTerrain;
@@ -3376,13 +3384,27 @@ namespace AnimeHillRacing.Editor
         private static void ValidateCharacterAccessoryAndShopContract(BuiltAssets assets)
         {
             DriverDefinition driver = assets.stickmanBlack;
-            if (driver?.accessories == null || driver.accessories.Length != 3 ||
-                driver.accessories[0]?.accessoryId != "default" || driver.accessories[0].sprite != null ||
-                driver.accessories[1]?.accessoryId != "glasses" || driver.accessories[1].sprite != assets.driverGlasses ||
-                driver.accessories[2]?.accessoryId != "fire-glasses" ||
-                driver.accessories[2].sprite != assets.driverFireGlasses)
+            string[] requiredAccessoryIds =
+            {
+                "default", "glasses", "fire-glasses", "scarf", "santa-hat", "neon-glasses",
+                "tire-accessory", "baseball-cap", "baseball-cap-rainbow"
+            };
+            bool stableOrder = driver?.accessories != null &&
+                driver.accessories.Length == requiredAccessoryIds.Length;
+            for (int i = 0; stableOrder && i < requiredAccessoryIds.Length; i++)
+                stableOrder &= driver.accessories[i] != null &&
+                    driver.accessories[i].accessoryId == requiredAccessoryIds[i];
+            DriverDefinition.CharacterAccessoryOption normalCap = stableOrder ? driver.accessories[7] : null;
+            DriverDefinition.CharacterAccessoryOption rainbowCap = stableOrder ? driver.accessories[8] : null;
+            if (!stableOrder || driver.accessories[0].sprite != null ||
+                driver.accessories[1].sprite != assets.driverGlasses ||
+                driver.accessories[2].sprite != assets.driverFireGlasses || normalCap.sprite == null ||
+                !normalCap.unlockedByDefault || normalCap.gemPrice != 0 || !normalCap.supportsFlipVariant ||
+                rainbowCap.sprite != normalCap.sprite || rainbowCap.unlockedByDefault ||
+                rainbowCap.gemPrice != 100 || !rainbowCap.supportsFlipVariant || !rainbowCap.animateRainbow)
                 throw new System.InvalidOperationException(
-                    "Characters requires stable default/glasses/fire-glasses accessory data and real sprites.");
+                    "Characters requires nine stable accessories, one shared-orientation free cap and " +
+                    "the animated 100-gem Rainbow cap.");
 
             VehicleDefinition[] vehicles = { assets.jeep, assets.formula, assets.rally, assets.sportBike };
             GaragePreviewRenderer preview = Object.FindFirstObjectByType<GaragePreviewRenderer>(FindObjectsInactive.Include);
@@ -3438,8 +3460,9 @@ namespace AnimeHillRacing.Editor
                     "Shop requires one clamped vertical ScrollRect with Viewport/Content/layout and both ordered sections.");
             if (shop.transform.parent == null || shop.transform.parent.name != "Safe Area")
                 throw new System.InvalidOperationException("Shop is not contained by the mobile Safe Area.");
-            Debug.Log("CHARACTERS_SHOP_AUDIT_PASS: 3 stable accessories x 4 vehicle poses, preview transitions, " +
-                      "save/restore and clamped mobile vertical Shop structure validated; IAP offers remain disabled.");
+            Debug.Log("CHARACTERS_SHOP_AUDIT_PASS: 9 stable accessories x 4 vehicle poses, shared cap " +
+                      "orientation, animated Rainbow pricing, preview transitions, save/restore and clamped " +
+                      "mobile vertical Shop structure validated; IAP offers remain disabled.");
         }
 
         private static VehicleDefinition.DriverPose CreateJeepDriverPose()
@@ -4854,7 +4877,8 @@ namespace AnimeHillRacing.Editor
                 RpmGaugePath, RpmNeedlePath, SpeedGaugePath, SpeedNeedlePath,
                 DriverPreviewPath, DriverHeadPath, DriverTorsoPath,
                 DriverUpperArmPath, DriverForearmPath, DriverThighPath, DriverLowerLegPath,
-                DriverGlassesPath, DriverFireGlassesPath, DriverScarfPath,
+                DriverGlassesPath, DriverFireGlassesPath, DriverScarfPath, DriverSantaHatPath,
+                DriverNeonGlassesPath, DriverTireAccessoryPath, DriverBaseballCapPath,
                  CountrysideSkyPath, CountrysideMountainsPath, CountrysideTerrainPath, CountrysideGroundPath,
                  NorthPoleSkyPath, NorthPolePanoramaPath, NorthPoleNearPinesPath,
                  NorthPoleTerrainPath, NorthPoleGroundPath,
@@ -4909,6 +4933,10 @@ namespace AnimeHillRacing.Editor
             assets.driverGlasses = AssetDatabase.LoadAssetAtPath<Sprite>(DriverGlassesPath);
             assets.driverFireGlasses = AssetDatabase.LoadAssetAtPath<Sprite>(DriverFireGlassesPath);
             assets.driverScarf = AssetDatabase.LoadAssetAtPath<Sprite>(DriverScarfPath);
+            assets.driverSantaHat = AssetDatabase.LoadAssetAtPath<Sprite>(DriverSantaHatPath);
+            assets.driverNeonGlasses = AssetDatabase.LoadAssetAtPath<Sprite>(DriverNeonGlassesPath);
+            assets.driverTireAccessory = AssetDatabase.LoadAssetAtPath<Sprite>(DriverTireAccessoryPath);
+            assets.driverBaseballCap = AssetDatabase.LoadAssetAtPath<Sprite>(DriverBaseballCapPath);
             assets.neonSky = AssetDatabase.LoadAssetAtPath<Sprite>(NeonSkyPath);
             assets.neonBackground = AssetDatabase.LoadAssetAtPath<Sprite>(NeonBackgroundPath);
             assets.neonTerrain = AssetDatabase.LoadAssetAtPath<Sprite>(NeonTerrainPath);
@@ -5514,6 +5542,44 @@ namespace AnimeHillRacing.Editor
                     sprite = assets.driverScarf, unlockedByDefault = true, gemPrice = 0,
                     visibleWidth = .68f, anchorOffset = new Vector2(.04f, -.04f),
                     allowsBlueprintProgression = true
+                },
+                new DriverDefinition.CharacterAccessoryOption
+                {
+                    accessoryId = "santa-hat", displayName = "SANTA HAT",
+                    sprite = assets.driverSantaHat, unlockedByDefault = true, gemPrice = 0,
+                    visibleWidth = .78f, anchorOffset = new Vector2(0f, .22f),
+                    allowsBlueprintProgression = false
+                },
+                new DriverDefinition.CharacterAccessoryOption
+                {
+                    accessoryId = "neon-glasses", displayName = "NEON GLASSES",
+                    sprite = assets.driverNeonGlasses, unlockedByDefault = true, gemPrice = 0,
+                    visibleWidth = .56f, anchorOffset = new Vector2(.28f, 0f),
+                    allowsBlueprintProgression = false
+                },
+                new DriverDefinition.CharacterAccessoryOption
+                {
+                    accessoryId = "tire-accessory", displayName = "TIRE",
+                    sprite = assets.driverTireAccessory, unlockedByDefault = true, gemPrice = 0,
+                    visibleWidth = .62f, anchorOffset = new Vector2(.20f, -.05f),
+                    allowsBlueprintProgression = false
+                },
+                new DriverDefinition.CharacterAccessoryOption
+                {
+                    accessoryId = "baseball-cap", displayName = "CAP - FORWARD / BACKWARD",
+                    sprite = assets.driverBaseballCap, unlockedByDefault = true, gemPrice = 0,
+                    visibleWidth = .78f, anchorOffset = new Vector2(.18f, .18f),
+                    supportsFlipVariant = true,
+                    allowsBlueprintProgression = false
+                },
+                new DriverDefinition.CharacterAccessoryOption
+                {
+                    accessoryId = "baseball-cap-rainbow", displayName = "CAP - NEON LIGHTNING",
+                    sprite = assets.driverBaseballCap, unlockedByDefault = false, gemPrice = 100,
+                    visibleWidth = .78f, anchorOffset = new Vector2(.18f, .18f),
+                    animateRainbow = true, rainbowSpeed = 2.6f, rainbowFrequency = 1.15f,
+                    supportsFlipVariant = true, rainbowNeonGlow = 1.6f,
+                    allowsBlueprintProgression = false
                 }
             };
             EditorUtility.SetDirty(assets.stickmanBlack);

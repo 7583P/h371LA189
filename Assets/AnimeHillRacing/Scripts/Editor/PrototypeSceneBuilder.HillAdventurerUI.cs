@@ -456,23 +456,23 @@ namespace AnimeHillRacing.Editor
             RectTransform vehicleNameRect = FindHillComponent<RectTransform>(scene, "Vehicle Name");
             if (vehicleNameRect != null)
             {
-                vehicleNameRect.anchorMin = new Vector2(.08f, .43f);
-                vehicleNameRect.anchorMax = new Vector2(.55f, .49f);
+                vehicleNameRect.anchorMin = new Vector2(.22f, .70f);
+                vehicleNameRect.anchorMax = new Vector2(.78f, .78f);
                 vehicleNameRect.anchoredPosition = Vector2.zero;
                 vehicleNameRect.sizeDelta = Vector2.zero;
             }
             RectTransform livePreviewRect = FindHillComponent<RectTransform>(scene, "Live Composed Preview");
             if (livePreviewRect != null)
             {
-                livePreviewRect.anchorMin = new Vector2(.08f, .08f);
-                livePreviewRect.anchorMax = new Vector2(.55f, .42f);
+                livePreviewRect.anchorMin = new Vector2(.16f, .26f);
+                livePreviewRect.anchorMax = new Vector2(.84f, .70f);
                 livePreviewRect.anchoredPosition = Vector2.zero;
                 livePreviewRect.sizeDelta = Vector2.zero;
             }
             MoveHillRect(scene, "Previous Vehicle", new Vector2(.5f, .5f),
-                new Vector2(-840f, -120f), new Vector2(76f, 100f));
+                new Vector2(-690f, -80f), new Vector2(76f, 100f));
             MoveHillRect(scene, "Next Vehicle", new Vector2(.5f, .5f),
-                new Vector2(130f, -120f), new Vector2(76f, 100f));
+                new Vector2(690f, -80f), new Vector2(76f, 100f));
             Button previousVehicle = FindHillComponent<Button>(scene, "Previous Vehicle");
             Button nextVehicle = FindHillComponent<Button>(scene, "Next Vehicle");
             if (previousVehicle == null || nextVehicle == null)
@@ -482,7 +482,7 @@ namespace AnimeHillRacing.Editor
                 Vector2.zero, new Vector2(132f, 98f));
             CreateHillNavigationMarker(paintButton.transform, "PAINT / SKINS")
                 .SetActive(false);
-            Bind(paintButton, menu.ShowSkins);
+            Bind(paintButton, menu.ToggleSkins);
 
             GameObject vehiclePanel = FindHillObject(scene, "Vehicle Panel");
             if (vehiclePanel == null) throw new InvalidOperationException("Garage Vehicle Panel is missing.");
@@ -541,13 +541,15 @@ namespace AnimeHillRacing.Editor
                 menu.UpgradeTune4,
                 menu.UpgradeTune5
             };
+            const float tuneCardSpacing = 240f;
+            float firstTuneCardX = -(tuneIcons.Length - 1) * tuneCardSpacing * .5f;
             for (int i = 0; i < tuneIcons.Length; i++)
             {
                 Transform row = tuningPanel.transform.Find("Tune Row " + (i + 1));
                 if (row == null) throw new InvalidOperationException("Garage tune row is missing: " + (i + 1));
                 RectTransform rowRect = row as RectTransform;
                 rowRect.anchorMin = rowRect.anchorMax = new Vector2(.5f, .5f);
-                rowRect.anchoredPosition = new Vector2(-600f + i * 240f, 0f);
+                rowRect.anchoredPosition = new Vector2(firstTuneCardX + i * tuneCardSpacing, 0f);
                 rowRect.sizeDelta = new Vector2(205f, 273f);
                 tuneIcons[i] = CreateSpriteImage("Tune Icon", row, null,
                     new Vector2(.5f, 1f), new Vector2(0f, -76f), new Vector2(64f, 64f));

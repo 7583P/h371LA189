@@ -651,10 +651,15 @@ namespace AnimeHillRacing.Editor
             float fittedScale = option.visibleWidth / sourceWidth;
             Vector2 scale = new Vector2(Mathf.Abs(pose.scale.x), Mathf.Abs(pose.scale.y)) *
                             (fittedScale * ArticulatedDriver2D.CharacterVisualScaleMultiplier);
+            bool flipX = option.supportsFlipVariant
+                ? SaveManager.GetCharacterAccessoryFlipX(option.accessoryId, option.flipX)
+                : option.flipX;
             float rootScale = Mathf.Max(.01f, workingPose.rootScale);
-            Vector2 localPosition = pose.position + option.anchorOffset;
+            Vector2 sharedOffset = option.anchorOffset;
+            if (option.supportsFlipVariant && flipX) sharedOffset.x = -sharedOffset.x;
+            Vector2 localPosition = pose.position + sharedOffset;
             Vector2 worldPosition = workingPose.rootPosition + localPosition * rootScale;
-            DrawSprite(sprite, worldPosition, scale, pose.rotation, false, origin, pixelsPerUnit, Color.white);
+            DrawSprite(sprite, worldPosition, scale, pose.rotation, flipX, origin, pixelsPerUnit, Color.white);
         }
 
         private void DrawHandles(Vector2 origin, float pixelsPerUnit, Rect canvas)

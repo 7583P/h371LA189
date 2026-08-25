@@ -30,7 +30,7 @@ MonoBehaviour:
     bundleType: 0
     allowsBlueprintProgression: 1
     visibleDiameter: 0
-    visibleSize: {x: 21.72, y: 6.91}
+    visibleSize: {x: 21.72, y: 6.55}
     visualOffset: {x: 0, y: 0}
   - optionId: hill-adventurer-skin-purple-4x4
     displayName: PURPLE 4x4
@@ -40,8 +40,18 @@ MonoBehaviour:
     bundleType: 0
     allowsBlueprintProgression: 1
     visibleDiameter: 0
-    visibleSize: {x: 21.34, y: 6.44}
-    visualOffset: {x: 0, y: 0.355}
+    visibleSize: {x: 21.72, y: 6.62}
+    visualOffset: {x: 0, y: 0}
+  - optionId: hill-adventurer-skin-darker
+    displayName: Darker
+    sprite: {fileID: 21300000, guid: e2d9b86cb741418fa11f48e7748dff85, type: 3}
+    unlockedByDefault: 0
+    gemPrice: 1000
+    bundleType: 0
+    allowsBlueprintProgression: 1
+    visibleDiameter: 0
+    visibleSize: {x: 21.72, y: 6.56}
+    visualOffset: {x: 0, y: 0}
   wheels:
   - optionId: hill-adventurer-wheel-default
     displayName: DEFAULT WHEEL
@@ -153,6 +163,38 @@ MonoBehaviour:
         visible: 0
         sortingOrder: 6
         vehicleLayer: 0
+    - accessoryId: baseball-cap-rainbow
+      pose:
+        position: {x: 0.866956, y: 0.60811996}
+        rotation: -3
+        scale: {x: 1, y: 1}
+        visible: 1
+        sortingOrder: 6
+        vehicleLayer: 1
+    - accessoryId: tire-accessory
+      pose:
+        position: {x: 0.599651, y: 0.9348256}
+        rotation: -3
+        scale: {x: 0.6560999, y: 0.6560999}
+        visible: 1
+        sortingOrder: 6
+        vehicleLayer: 0
+    - accessoryId: neon-glasses
+      pose:
+        position: {x: 0.647172, y: 0.5784191}
+        rotation: -3
+        scale: {x: 0.80999994, y: 0.80999994}
+        visible: 1
+        sortingOrder: 6
+        vehicleLayer: 0
+    - accessoryId: baseball-cap
+      pose:
+        position: {x: 0.9144766, y: 0.6140597}
+        rotation: -3
+        scale: {x: 1, y: 1}
+        visible: 1
+        sortingOrder: 6
+        vehicleLayer: 1
   visualWidth: 6.2
   flipBodyX: 0
   bodyVisualOffset: {x: 0, y: 0.35}

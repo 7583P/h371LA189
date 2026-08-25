@@ -32,6 +32,12 @@ MonoBehaviour:
     gemPrice: 0
     visibleWidth: 0.72
     anchorOffset: {x: 0, y: 0}
+    flipX: 0
+    supportsFlipVariant: 0
+    animateRainbow: 0
+    rainbowSpeed: 0.35
+    rainbowFrequency: 1.15
+    rainbowNeonGlow: 1.25
     allowsBlueprintProgression: 0
   - accessoryId: glasses
     displayName: GLASSES
@@ -40,6 +46,12 @@ MonoBehaviour:
     gemPrice: 0
     visibleWidth: 0.5
     anchorOffset: {x: 0.28, y: 0}
+    flipX: 0
+    supportsFlipVariant: 0
+    animateRainbow: 0
+    rainbowSpeed: 0.35
+    rainbowFrequency: 1.15
+    rainbowNeonGlow: 1.25
     allowsBlueprintProgression: 1
   - accessoryId: fire-glasses
     displayName: FIRE GLASSES
@@ -48,6 +60,12 @@ MonoBehaviour:
     gemPrice: 0
     visibleWidth: 0.52
     anchorOffset: {x: 0.28, y: 0}
+    flipX: 0
+    supportsFlipVariant: 0
+    animateRainbow: 0
+    rainbowSpeed: 0.35
+    rainbowFrequency: 1.15
+    rainbowNeonGlow: 1.25
     allowsBlueprintProgression: 1
   - accessoryId: scarf
     displayName: SCARF
@@ -56,4 +74,80 @@ MonoBehaviour:
     gemPrice: 0
     visibleWidth: 0.68
     anchorOffset: {x: 0.04, y: -0.04}
+    flipX: 0
+    supportsFlipVariant: 0
+    animateRainbow: 0
+    rainbowSpeed: 0.35
+    rainbowFrequency: 1.15
+    rainbowNeonGlow: 1.25
     allowsBlueprintProgression: 1
+  - accessoryId: santa-hat
+    displayName: SANTA HAT
+    sprite: {fileID: 21300000, guid: 5633e7981cc54d398d7f39e39030257e, type: 3}
+    unlockedByDefault: 1
+    gemPrice: 0
+    visibleWidth: 0.78
+    anchorOffset: {x: 0, y: 0.22}
+    flipX: 0
+    supportsFlipVariant: 0
+    animateRainbow: 0
+    rainbowSpeed: 0.35
+    rainbowFrequency: 1.15
+    rainbowNeonGlow: 1.25
+    allowsBlueprintProgression: 0
+  - accessoryId: neon-glasses
+    displayName: NEON GLASSES
+    sprite: {fileID: 21300000, guid: 3d855860c5a94d799849e4f4653609ff, type: 3}
+    unlockedByDefault: 1
+    gemPrice: 0
+    visibleWidth: 0.56
+    anchorOffset: {x: 0.28, y: 0}
+    flipX: 0
+    supportsFlipVariant: 0
+    animateRainbow: 0
+    rainbowSpeed: 0.35
+    rainbowFrequency: 1.15
+    rainbowNeonGlow: 1.25
+    allowsBlueprintProgression: 0
+  - accessoryId: tire-accessory
+    displayName: TIRE
+    sprite: {fileID: 21300000, guid: 76e2d9137f014e1d983e1cac51f85fb9, type: 3}
+    unlockedByDefault: 1
+    gemPrice: 0
+    visibleWidth: 0.62
+    anchorOffset: {x: 0.2, y: -0.05}
+    flipX: 0
+    supportsFlipVariant: 0
+    animateRainbow: 0
+    rainbowSpeed: 0.35
+    rainbowFrequency: 1.15
+    rainbowNeonGlow: 1.25
+    allowsBlueprintProgression: 0
+  - accessoryId: baseball-cap
+    displayName: CAP - FORWARD / BACKWARD
+    sprite: {fileID: 21300000, guid: ea2f66b188644723b8a8822a5e1adeb5, type: 3}
+    unlockedByDefault: 1
+    gemPrice: 0
+    visibleWidth: 0.78
+    anchorOffset: {x: 0.18, y: 0.18}
+    flipX: 0
+    supportsFlipVariant: 1
+    animateRainbow: 0
+    rainbowSpeed: 0.35
+    rainbowFrequency: 1.15
+    rainbowNeonGlow: 1.25
+    allowsBlueprintProgression: 0
+  - accessoryId: baseball-cap-rainbow
+    displayName: CAP - NEON LIGHTNING
+    sprite: {fileID: 21300000, guid: ea2f66b188644723b8a8822a5e1adeb5, type: 3}
+    unlockedByDefault: 0
+    gemPrice: 100
+    visibleWidth: 0.78
+    anchorOffset: {x: 0.18, y: 0.18}
+    flipX: 0
+    supportsFlipVariant: 1
+    animateRainbow: 1
+    rainbowSpeed: 2.6
+    rainbowFrequency: 1.15
+    rainbowNeonGlow: 1.6
+    allowsBlueprintProgression: 0

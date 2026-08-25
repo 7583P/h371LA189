@@ -40,6 +40,7 @@ namespace AnimeHillRacing.Core
         private const string SelectedTransmissionKey = "AHR.SelectedTransmission";
         private const string SelectedDriverKey = "AHR.Customize.Driver";
         private const string SelectedCharacterAccessoryKey = "AHR.Customize.CharacterAccessory";
+        private const string CharacterAccessoryFlipKeyPrefix = "AHR.Customize.CharacterAccessory.Flip.";
         private const string SelectedMenuBackgroundKey = "AHR.Menu.Background";
         private const string SelectedGarageBackgroundKey = "AHR.Garage.Background";
         private const string MasterAudioEnabledKey = "AHR.Settings.MasterAudioEnabled";
@@ -203,13 +204,50 @@ namespace AnimeHillRacing.Core
             PlayerPrefs.Save();
         }
 
-        public static string GetSelectedCharacterAccessoryId(string defaultAccessoryId) =>
-            PlayerPrefs.GetString(SelectedCharacterAccessoryKey, defaultAccessoryId ?? "default");
+        public static string GetSelectedCharacterAccessoryId(string defaultAccessoryId)
+        {
+            string selected = PlayerPrefs.GetString(SelectedCharacterAccessoryKey,
+                defaultAccessoryId ?? "default");
+            if (selected != "baseball-cap-forward" && selected != "baseball-cap-backward")
+                return selected;
+
+            // Merge saves created while both cap orientations were separate store entries.
+            bool backwards = selected == "baseball-cap-backward";
+            selected = "baseball-cap";
+            PlayerPrefs.SetString(SelectedCharacterAccessoryKey, selected);
+            PlayerPrefs.SetInt(CharacterAccessoryFlipKey(selected), backwards ? 1 : 0);
+            PlayerPrefs.Save();
+            return selected;
+        }
 
         public static void SetSelectedCharacterAccessoryId(string accessoryId)
         {
             PlayerPrefs.SetString(SelectedCharacterAccessoryKey, accessoryId ?? "default");
             PlayerPrefs.Save();
+        }
+
+        public static bool GetCharacterAccessoryFlipX(string accessoryId, bool defaultValue = false)
+        {
+            string key = CharacterAccessoryFlipKey(accessoryId);
+            return PlayerPrefs.HasKey(key) ? PlayerPrefs.GetInt(key, 0) != 0 : defaultValue;
+        }
+
+        public static bool ToggleCharacterAccessoryFlipX(string accessoryId, bool defaultValue = false)
+        {
+            bool next = !GetCharacterAccessoryFlipX(accessoryId, defaultValue);
+            PlayerPrefs.SetInt(CharacterAccessoryFlipKey(accessoryId), next ? 1 : 0);
+            PlayerPrefs.Save();
+            return next;
+        }
+
+        private static string CharacterAccessoryFlipKey(string accessoryId)
+        {
+            // Both cap products intentionally share one orientation, so flipping either card is
+            // reflected immediately by the free and Rainbow previews.
+            string orientationId = accessoryId == "baseball-cap-rainbow" ||
+                accessoryId == "baseball-cap-forward" || accessoryId == "baseball-cap-backward"
+                    ? "baseball-cap" : accessoryId;
+            return CharacterAccessoryFlipKeyPrefix + (orientationId ?? "default");
         }
 
         public static bool IsCustomizationUnlocked(string scopeId, string category, string optionId,

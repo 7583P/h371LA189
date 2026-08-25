@@ -79,6 +79,7 @@ namespace AnimeHillRacing.UI
             AddTextOutline(fuelText);
             AddTextOutline(coinsText);
             AddTextOutline(bestText);
+            ConfigurePrimaryHudLayout();
             terrainManager = FindFirstObjectByType<TerrainManager>();
             roadManager = FindFirstObjectByType<RoadTrackGenerator>();
             if (input == null)
@@ -103,12 +104,21 @@ namespace AnimeHillRacing.UI
                     distanceText != null ? distanceText.font : null);
                 EnsureTeleportButton();
             }
+            pauseMenu = GameplayPauseMenu.Create(transform,
+                distanceText != null ? distanceText.font : null);
+            EnsurePauseButton();
             EnsureLowFuelWarning();
             ConfigureLowFuelWarning();
             SetLowFuelWarningVisible(false);
         }
 
+        private void OnValidate()
+        {
+            if (!Application.isPlaying) ConfigurePrimaryHudLayout();
+        }
+
         private GameplayTeleportMenu teleportMenu;
+        private GameplayPauseMenu pauseMenu;
 
         private void EnsureTeleportButton()
         {
@@ -126,7 +136,8 @@ namespace AnimeHillRacing.UI
             rect.anchorMin = new Vector2(1f, 1f);
             rect.anchorMax = new Vector2(1f, 1f);
             rect.pivot = new Vector2(1f, 1f);
-            rect.anchoredPosition = new Vector2(-330f, -22f);
+            // Pause occupies the far-right corner; keep teleport immediately to its left.
+            rect.anchoredPosition = new Vector2(-112f, -22f);
             rect.sizeDelta = new Vector2(185f, 44f);
 
             Image img = buttonObj.GetComponent<Image>();
@@ -174,6 +185,71 @@ namespace AnimeHillRacing.UI
             teleportMenu?.Toggle();
         }
 
+        private void EnsurePauseButton()
+        {
+            if (transform.Find("Pause Button") != null) return;
+
+            GameObject buttonObject = new GameObject("Pause Button", typeof(RectTransform),
+                typeof(Image), typeof(Button));
+            buttonObject.transform.SetParent(transform, false);
+
+            Canvas buttonCanvas = buttonObject.AddComponent<Canvas>();
+            buttonCanvas.overrideSorting = true;
+            buttonCanvas.sortingOrder = 60;
+            buttonObject.AddComponent<GraphicRaycaster>();
+
+            RectTransform rect = buttonObject.GetComponent<RectTransform>();
+            rect.anchorMin = Vector2.one;
+            rect.anchorMax = Vector2.one;
+            rect.pivot = Vector2.one;
+            rect.anchoredPosition = new Vector2(-20f, -20f);
+            rect.sizeDelta = new Vector2(76f, 76f);
+
+            Image image = buttonObject.GetComponent<Image>();
+            Sprite pauseSprite = Resources.Load<Sprite>("UI/PauseIcon");
+            image.sprite = pauseSprite;
+            image.color = pauseSprite != null ? Color.white : new Color(.06f, .11f, .2f, .96f);
+            image.preserveAspect = true;
+            image.raycastTarget = true;
+
+            Button button = buttonObject.GetComponent<Button>();
+            button.targetGraphic = image;
+            ColorBlock colors = button.colors;
+            colors.normalColor = Color.white;
+            colors.highlightedColor = new Color(1.12f, 1.12f, 1.12f, 1f);
+            colors.pressedColor = new Color(.72f, .72f, .72f, 1f);
+            colors.selectedColor = colors.highlightedColor;
+            button.colors = colors;
+            button.onClick.AddListener(OnPauseClicked);
+            buttonObject.AddComponent<ButtonPressFeedback>();
+
+            if (pauseSprite == null)
+                CreatePauseFallbackBars(buttonObject.transform);
+        }
+
+        private static void CreatePauseFallbackBars(Transform parent)
+        {
+            for (int i = 0; i < 2; i++)
+            {
+                GameObject bar = new GameObject($"Pause Bar {i + 1}", typeof(RectTransform), typeof(Image));
+                bar.transform.SetParent(parent, false);
+                RectTransform barRect = bar.GetComponent<RectTransform>();
+                barRect.anchorMin = new Vector2(.5f, .5f);
+                barRect.anchorMax = new Vector2(.5f, .5f);
+                barRect.pivot = new Vector2(.5f, .5f);
+                barRect.anchoredPosition = new Vector2(i == 0 ? -13f : 13f, 0f);
+                barRect.sizeDelta = new Vector2(15f, 48f);
+                Image barImage = bar.GetComponent<Image>();
+                barImage.color = Color.white;
+                barImage.raycastTarget = false;
+            }
+        }
+
+        public void OnPauseClicked()
+        {
+            pauseMenu?.Open();
+        }
+
         private static void RemoveDecorativeCardBackground(Text content, string expectedCardName)
         {
             if (content == null || content.transform.parent == null) return;
@@ -184,6 +260,95 @@ namespace AnimeHillRacing.UI
             if (background != null) background.enabled = false;
             Outline outline = card.GetComponent<Outline>();
             if (outline != null) outline.enabled = false;
+        }
+
+        private void ConfigurePrimaryHudLayout()
+        {
+            RectTransform fuelCard = ParentRect(fuelText, "Fuel Card");
+            RectTransform bestCard = ParentRect(bestText, "Best Card");
+            RectTransform coinsCard = ParentRect(coinsText, "Coin Balance Card");
+
+            // Top-left cluster at the 1920x1080 reference resolution:
+            // [ enlarged fuel bar ][ best distance ]
+            // [      coin balance ]
+            ConfigureRect(fuelCard, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(20f, -20f), new Vector2(450f, 104f));
+            ConfigureRect(bestCard, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(500f, -20f), new Vector2(260f, 104f));
+            ConfigureRect(coinsCard, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(20f, -132f), new Vector2(280f, 72f));
+
+            RectTransform resolvedFuelIcon = ResolveChildRect(fuelIcon, fuelCard, "Fuel Icon");
+            ConfigureRect(resolvedFuelIcon, new Vector2(0f, .5f), new Vector2(0f, .5f),
+                new Vector2(8f, 0f), new Vector2(68f, 68f));
+
+            if (fuelText != null)
+            {
+                ConfigureRect(fuelText.rectTransform, new Vector2(0f, .5f), new Vector2(0f, .5f),
+                    new Vector2(82f, 0f), new Vector2(84f, 76f));
+                fuelText.fontSize = 32;
+                fuelText.resizeTextForBestFit = false;
+                fuelText.alignment = TextAnchor.MiddleCenter;
+            }
+
+            RectTransform fuelBackground = fuelFill != null
+                ? fuelFill.rectTransform.parent as RectTransform
+                : fuelCard != null ? fuelCard.Find("Fuel Background") as RectTransform : null;
+            ConfigureRect(fuelBackground, new Vector2(0f, .5f), new Vector2(0f, .5f),
+                new Vector2(170f, 0f), new Vector2(270f, 34f));
+
+            if (bestText != null)
+            {
+                Stretch(bestText.rectTransform, new Vector2(8f, 5f), new Vector2(-8f, -5f));
+                bestText.fontSize = 30;
+                bestText.resizeTextForBestFit = false;
+                bestText.alignment = TextAnchor.MiddleCenter;
+            }
+
+            RectTransform resolvedCoinIcon = ResolveChildRect(coinIcon, coinsCard, "Coin Icon");
+            ConfigureRect(resolvedCoinIcon, new Vector2(0f, .5f), new Vector2(0f, .5f),
+                new Vector2(8f, 0f), new Vector2(58f, 58f));
+            if (coinsText != null)
+            {
+                Stretch(coinsText.rectTransform, new Vector2(76f, 4f), new Vector2(-10f, -4f));
+                coinsText.fontSize = 32;
+                coinsText.resizeTextForBestFit = false;
+                coinsText.alignment = TextAnchor.MiddleRight;
+            }
+        }
+
+        private static RectTransform ParentRect(Text content, string expectedName)
+        {
+            if (content == null || content.transform.parent == null) return null;
+            RectTransform parent = content.transform.parent as RectTransform;
+            return parent != null && parent.name == expectedName ? parent : null;
+        }
+
+        private static RectTransform ResolveChildRect(Graphic graphic, RectTransform parent, string childName)
+        {
+            if (graphic != null) return graphic.rectTransform;
+            return parent != null ? parent.Find(childName) as RectTransform : null;
+        }
+
+        private static void ConfigureRect(RectTransform rect, Vector2 anchor, Vector2 pivot,
+            Vector2 position, Vector2 size)
+        {
+            if (rect == null) return;
+            rect.anchorMin = anchor;
+            rect.anchorMax = anchor;
+            rect.pivot = pivot;
+            rect.anchoredPosition = position;
+            rect.sizeDelta = size;
+        }
+
+        private static void Stretch(RectTransform rect, Vector2 offsetMin, Vector2 offsetMax)
+        {
+            if (rect == null) return;
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.pivot = new Vector2(.5f, .5f);
+            rect.offsetMin = offsetMin;
+            rect.offsetMax = offsetMax;
         }
 
         private void Update()
@@ -327,6 +492,7 @@ namespace AnimeHillRacing.UI
             AddTextOutline(fuelText);
             AddTextOutline(coinsText);
             AddTextOutline(bestText);
+            ConfigurePrimaryHudLayout();
             ConfigureGameOverCountdown();
         }
 

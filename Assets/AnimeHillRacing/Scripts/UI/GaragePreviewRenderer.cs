@@ -22,6 +22,7 @@ namespace AnimeHillRacing.UI
         private Sprite appliedWheel;
         private DriverDefinition appliedDriver;
         private string appliedAccessoryId;
+        private bool appliedAccessoryFlipX;
         private Vector2 lastTargetSize;
         private bool animateElectricSkin;
         private bool animateHillAdventurerSkin;
@@ -55,6 +56,7 @@ namespace AnimeHillRacing.UI
 
         private void OnEnable()
         {
+            Invalidate();
             warmUpFrames = 4;
             EnsureTexture();
             if (body != null && body.sharedMaterial == null)
@@ -62,10 +64,30 @@ namespace AnimeHillRacing.UI
             RenderNow();
         }
 
+        public void Invalidate()
+        {
+            appliedVehicle = null;
+            appliedSkin = null;
+            appliedWheel = null;
+            appliedDriver = null;
+            appliedAccessoryId = null;
+            appliedAccessoryFlipX = false;
+            lastTargetSize = Vector2.zero;
+            warmUpFrames = 4;
+        }
+
+        public void RefreshNow()
+        {
+            warmUpFrames = Mathf.Max(warmUpFrames, 4);
+            lastTargetSize = Vector2.zero;
+            RenderNow();
+        }
+
         private void LateUpdate()
         {
             if (targetImage == null) return;
-            if (animateElectricSkin || animateHillAdventurerSkin)
+            if (animateElectricSkin || animateHillAdventurerSkin ||
+                (driver != null && driver.AnimatedAccessoryActive))
             {
                 RenderNow();
                 return;
@@ -156,14 +178,21 @@ namespace AnimeHillRacing.UI
             string accessoryId = driverDefinition != null
                 ? AnimeHillRacing.Core.SaveManager.GetSelectedCharacterAccessoryId(driverDefinition.DefaultAccessoryId)
                 : string.Empty;
+            DriverDefinition.CharacterAccessoryOption accessory = driverDefinition?.FindAccessory(accessoryId);
+            bool accessoryFlipX = accessory != null && (accessory.supportsFlipVariant
+                ? AnimeHillRacing.Core.SaveManager.GetCharacterAccessoryFlipX(
+                    accessory.accessoryId, accessory.flipX)
+                : accessory.flipX);
             if (vehicle == appliedVehicle && skinSprite == appliedSkin && wheelSprite == appliedWheel &&
-                driverDefinition == appliedDriver && accessoryId == appliedAccessoryId)
+                driverDefinition == appliedDriver && accessoryId == appliedAccessoryId &&
+                accessoryFlipX == appliedAccessoryFlipX)
                 return;
             appliedVehicle = vehicle;
             appliedSkin = skinSprite;
             appliedWheel = wheelSprite;
             appliedDriver = driverDefinition;
             appliedAccessoryId = accessoryId;
+            appliedAccessoryFlipX = accessoryFlipX;
             if (body != null)
             {
                 body.sprite = skinSprite;
@@ -180,7 +209,7 @@ namespace AnimeHillRacing.UI
             if (driver != null)
             {
                 driver.Apply(driverDefinition, vehicle.driverPose,
-                    driverDefinition?.FindAccessory(accessoryId), null, false);
+                    accessory, null, false);
                 driver.EnforceRenderingRelativeToVehicle(body);
             }
             ApplyWheel(rearWheel, wheelOption, vehicle.rearWheelVisualPosition, vehicle.RearWheelDiameter,

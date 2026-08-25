@@ -16,6 +16,15 @@ namespace AnimeHillRacing.Vehicle
             [Min(.05f)] public float visibleWidth = .72f;
             [Tooltip("Shared local correction applied from every vehicle Accessory Anchor.")]
             public Vector2 anchorOffset;
+            [Tooltip("Default horizontal orientation of the sprite.")]
+            public bool flipX;
+            [Tooltip("Lets the equipped accessory toggle between its normal and mirrored orientations.")]
+            public bool supportsFlipVariant;
+            [Tooltip("Animates fast multicolor neon lightning across the accessory from left to right.")]
+            public bool animateRainbow;
+            [Min(.01f)] public float rainbowSpeed = .35f;
+            [Min(.1f)] public float rainbowFrequency = 1.15f;
+            [Range(0f, 2f)] public float rainbowNeonGlow = 1.25f;
             public bool allowsBlueprintProgression = true;
         }
 

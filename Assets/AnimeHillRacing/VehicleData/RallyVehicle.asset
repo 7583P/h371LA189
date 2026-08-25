@@ -201,6 +201,46 @@ MonoBehaviour:
         visible: 1
         sortingOrder: 9
         vehicleLayer: 1
+    - accessoryId: baseball-cap-rainbow
+      pose:
+        position: {x: 0.14593577, y: 0.4137431}
+        rotation: -3
+        scale: {x: 1, y: 1}
+        visible: 1
+        sortingOrder: 9
+        vehicleLayer: 1
+    - accessoryId: tire-accessory
+      pose:
+        position: {x: 0.0068985494, y: 0.8575935}
+        rotation: -3
+        scale: {x: 0.6560999, y: 0.6560999}
+        visible: 1
+        sortingOrder: 9
+        vehicleLayer: 1
+    - accessoryId: neon-glasses
+      pose:
+        position: {x: -0.030534621, y: 0.34957203}
+        rotation: -3
+        scale: {x: 0.80999994, y: 0.80999994}
+        visible: 1
+        sortingOrder: 9
+        vehicleLayer: 1
+    - accessoryId: santa-hat
+      pose:
+        position: {x: 0.07106964, y: 0.59021413}
+        rotation: -3
+        scale: {x: 0.80999994, y: 0.80999994}
+        visible: 1
+        sortingOrder: 9
+        vehicleLayer: 1
+    - accessoryId: baseball-cap
+      pose:
+        position: {x: 0.23684491, y: 0.42443863}
+        rotation: -3
+        scale: {x: 1, y: 1}
+        visible: 1
+        sortingOrder: 9
+        vehicleLayer: 1
   visualWidth: 4.65
   flipBodyX: 0
   bodyVisualOffset: {x: 0, y: 0.16}

@@ -95,10 +95,10 @@ MonoBehaviour:
     visualOffset: {x: 0, y: 0}
   electricSkinOverlay: {fileID: 21300000, guid: e91b5cf2d3564b2fbc32e54d21f25b04, type: 3}
   preserveDriverPose: 1
-  preserveWheelVisualPositions: 0
+  preserveWheelVisualPositions: 1
   driverPose:
     rootPosition: {x: 0.16, y: 0.18}
-    rootScale: 0.86
+    rootScale: 0.774
     torso:
       position: {x: 0.19300361, y: 0.11373522}
       rotation: -1
@@ -200,6 +200,46 @@ MonoBehaviour:
         scale: {x: 1, y: 1}
         visible: 1
         sortingOrder: 16
+        vehicleLayer: 0
+    - accessoryId: baseball-cap-rainbow
+      pose:
+        position: {x: 0.33383477, y: 0.81588954}
+        rotation: -10
+        scale: {x: 1, y: 1}
+        visible: 1
+        sortingOrder: 9
+        vehicleLayer: 0
+    - accessoryId: tire-accessory
+      pose:
+        position: {x: 0.17698921, y: 1.4349793}
+        rotation: -10
+        scale: {x: 0.6495389, y: 0.6495389}
+        visible: 1
+        sortingOrder: 9
+        vehicleLayer: 0
+    - accessoryId: neon-glasses
+      pose:
+        position: {x: 0.106555015, y: 0.8089158}
+        rotation: -10
+        scale: {x: 0.80999994, y: 0.80999994}
+        visible: 1
+        sortingOrder: 9
+        vehicleLayer: 0
+    - accessoryId: santa-hat
+      pose:
+        position: {x: 0.24894284, y: 1.1519426}
+        rotation: -10
+        scale: {x: 0.80999994, y: 0.80999994}
+        visible: 1
+        sortingOrder: 9
+        vehicleLayer: 0
+    - accessoryId: baseball-cap
+      pose:
+        position: {x: 0.35249856, y: 0.8283322}
+        rotation: -10
+        scale: {x: 1, y: 1}
+        visible: 1
+        sortingOrder: 9
         vehicleLayer: 0
   visualWidth: 5.6
   flipBodyX: 0

@@ -162,6 +162,14 @@ namespace AnimeHillRacing.UI
         private int pendingTuneCost = -1;
         private bool tuneCardListenersInitialized;
         private GameObject[] garageSectionTabs;
+        private int customizationAccessoryPage;
+        private int shopAccessoryPage;
+        private GameObject customizationAccessoryPager;
+        private GameObject shopAccessoryPager;
+        private Text customizationAccessoryPageText;
+        private Text shopAccessoryPageText;
+        private Button[] customizationAccessoryFlipButtons;
+        private Button[] shopAccessoryFlipButtons;
 
         private const string DefaultBackgroundId = "default";
         private const string NeonBackgroundId = "neon";
@@ -183,8 +191,10 @@ namespace AnimeHillRacing.UI
             EnsureRuntimeTuningRows();
             EnsureTuneAdjustmentButtons();
             EnsureTuneCardButtons();
+            EnsureAccessoryPaginationControls();
             FindSavedVehicle();
             section = GameSession.RequestedGarageSection;
+            preview?.Invalidate();
             if (confirmationModal != null) confirmationModal.SetActive(false);
             Refresh();
             if (section == GarageSection.Store) ResetStoreScrollToTop();
@@ -195,7 +205,14 @@ namespace AnimeHillRacing.UI
         public void NextVehicle() => CycleVehicle(1);
         public void ShowWheels() { category = Category.Wheels; Refresh(); }
         public void ShowDrivers() { category = Category.Driver; Refresh(); }
-        public void ShowCharacters() { category = Category.Characters; Refresh(); }
+        public void ShowCharacters()
+        {
+            category = Category.Characters;
+            int selectedIndex = SelectedAccessoryIndex();
+            int pageSize = Mathf.Max(1, optionButtons?.Length ?? 0);
+            customizationAccessoryPage = selectedIndex >= 0 ? selectedIndex / pageSize : 0;
+            Refresh();
+        }
         public void ShowTuning() => SetSection(GarageSection.Tuning);
         public void ShowVehicle() => SetSection(GarageSection.Vehicle);
         public void ShowUpgrade() => SetSection(GarageSection.Upgrade);
@@ -216,16 +233,20 @@ namespace AnimeHillRacing.UI
 
         public void ShowSkins()
         {
-            // In Adventure preparation the supplied Paint/Skins artwork is also the way back
-            // to the tune cards, so the screen needs no extra text tab.
-            if (GameSession.HasPendingAdventureTrack && section == GarageSection.Skins)
+            category = Category.Skin;
+            SetSection(GarageSection.Skins);
+        }
+
+        public void ToggleSkins()
+        {
+            if (section == GarageSection.Skins)
             {
-                SetSection(GarageSection.Tuning);
+                SetSection(GameSession.HasPendingAdventureTrack
+                    ? GarageSection.Tuning : GarageSection.Vehicle);
                 return;
             }
 
-            category = Category.Skin;
-            SetSection(GarageSection.Skins);
+            ShowSkins();
         }
         public void StartAdventure()
         {
@@ -285,6 +306,31 @@ namespace AnimeHillRacing.UI
         public void SelectShopAccessory1() => SelectShopAccessory(1);
         public void SelectShopAccessory2() => SelectShopAccessory(2);
         public void SelectShopAccessory3() => SelectShopAccessory(3);
+        public void PreviousCustomizationAccessoryPage()
+        {
+            customizationAccessoryPage = Mathf.Max(0, customizationAccessoryPage - 1);
+            Refresh();
+        }
+        public void NextCustomizationAccessoryPage()
+        {
+            int pageSize = Mathf.Max(1, optionButtons?.Length ?? 0);
+            int pages = Mathf.Max(1, Mathf.CeilToInt(OptionCount() / (float)pageSize));
+            customizationAccessoryPage = Mathf.Min(pages - 1, customizationAccessoryPage + 1);
+            Refresh();
+        }
+        public void PreviousShopAccessoryPage()
+        {
+            shopAccessoryPage = Mathf.Max(0, shopAccessoryPage - 1);
+            RefreshShopAccessories();
+        }
+        public void NextShopAccessoryPage()
+        {
+            int count = SelectedDriver()?.accessories?.Length ?? 0;
+            int pageSize = Mathf.Max(1, shopAccessoryButtons?.Length ?? 0);
+            int pages = Mathf.Max(1, Mathf.CeilToInt(count / (float)pageSize));
+            shopAccessoryPage = Mathf.Min(pages - 1, shopAccessoryPage + 1);
+            RefreshShopAccessories();
+        }
         public void PreviousBlueprintPage() { blueprintPage = Mathf.Max(0, blueprintPage - 1); RefreshBlueprintShop(); }
         public void NextBlueprintPage()
         {
@@ -312,6 +358,9 @@ namespace AnimeHillRacing.UI
         private void SetSection(GarageSection targetSection)
         {
             bool enteringStore = section != GarageSection.Store && targetSection == GarageSection.Store;
+            bool previewVisibilityChanged = (section == GarageSection.Store) !=
+                (targetSection == GarageSection.Store);
+            if (previewVisibilityChanged) preview?.Invalidate();
             section = targetSection;
             GameSession.RequestedGarageSection = targetSection;
             Refresh();
@@ -491,6 +540,7 @@ namespace AnimeHillRacing.UI
                 if (cosmeticPurchased || cosmeticResult == CustomizationPurchaseResult.AlreadyUnlocked)
                 {
                     SetSelectedOption(CurrentVehicle, pendingCategory, pendingOptionId);
+                    preview?.Invalidate();
                     ClearPendingPurchase();
                     if (confirmationModal != null) confirmationModal.SetActive(false);
                     Refresh();
@@ -652,8 +702,11 @@ namespace AnimeHillRacing.UI
                     ? Color.white : new Color(1f, .20f, .16f, 1f);
         }
 
-        private void SelectOption(int index)
+        private void SelectOption(int slot)
         {
+            int index = category == Category.Characters
+                ? customizationAccessoryPage * Mathf.Max(1, optionButtons?.Length ?? 0) + slot
+                : slot;
             VehicleDefinition vehicle = CurrentVehicle;
             if (category == Category.Tuning || vehicle == null || !IsVehicleUnlocked(vehicle) ||
                 !TryGetOption(index, out string id, out _, out bool unlocked, out int gemPrice)) return;
@@ -678,7 +731,214 @@ namespace AnimeHillRacing.UI
                 return;
             }
             SetSelectedOption(vehicle, category, id);
+            preview?.Invalidate();
             Refresh();
+        }
+
+        private void EnsureAccessoryPaginationControls()
+        {
+            if (!Application.isPlaying) return;
+            if (customizationAccessoryPager == null && optionButtons != null && optionButtons.Length > 0 &&
+                optionButtons[0] != null)
+            {
+                customizationAccessoryPager = CreateAccessoryPager(optionButtons[0].transform.parent,
+                    "Customization Accessory Pages", new Vector2(320f, 205f), false,
+                    out customizationAccessoryPageText);
+            }
+            if (shopAccessoryPager == null && shopAccessoryButtons != null && shopAccessoryButtons.Length > 0 &&
+                shopAccessoryButtons[0] != null)
+            {
+                shopAccessoryPager = CreateAccessoryPager(shopAccessoryButtons[0].transform.parent,
+                    "Shop Accessory Pages", new Vector2(260f, 260f), true,
+                    out shopAccessoryPageText);
+            }
+            EnsureAccessoryFlipButtons();
+        }
+
+        private void EnsureAccessoryFlipButtons()
+        {
+            int customizationCount = optionButtons?.Length ?? 0;
+            if (customizationAccessoryFlipButtons == null ||
+                customizationAccessoryFlipButtons.Length != customizationCount)
+                customizationAccessoryFlipButtons = new Button[customizationCount];
+            for (int i = 0; i < customizationCount; i++)
+            {
+                if (optionButtons[i] == null) continue;
+                int slot = i;
+                customizationAccessoryFlipButtons[i] = FindOrCreateAccessoryFlipButton(
+                    optionButtons[i], "Cap Orientation", () => ToggleCustomizationCap(slot));
+            }
+
+            int shopCount = shopAccessoryButtons?.Length ?? 0;
+            if (shopAccessoryFlipButtons == null || shopAccessoryFlipButtons.Length != shopCount)
+                shopAccessoryFlipButtons = new Button[shopCount];
+            for (int i = 0; i < shopCount; i++)
+            {
+                if (shopAccessoryButtons[i] == null) continue;
+                int slot = i;
+                shopAccessoryFlipButtons[i] = FindOrCreateAccessoryFlipButton(
+                    shopAccessoryButtons[i], "Cap Orientation", () => ToggleShopCap(slot));
+            }
+        }
+
+        private static Button FindOrCreateAccessoryFlipButton(Button card, string name,
+            UnityEngine.Events.UnityAction action)
+        {
+            Transform existing = card.transform.Find(name);
+            Button button = existing != null ? existing.GetComponent<Button>() : null;
+            if (button == null)
+            {
+                GameObject buttonObject = new GameObject(name, typeof(RectTransform),
+                    typeof(CanvasRenderer), typeof(Image), typeof(Button));
+                RectTransform rect = buttonObject.GetComponent<RectTransform>();
+                rect.SetParent(card.transform, false);
+                rect.anchorMin = rect.anchorMax = rect.pivot = Vector2.one;
+                rect.anchoredPosition = new Vector2(-7f, -7f);
+                rect.sizeDelta = new Vector2(44f, 38f);
+                button = buttonObject.GetComponent<Button>();
+                buttonObject.GetComponent<Image>().color = new Color(.08f, .68f, .95f, .98f);
+
+                GameObject labelObject = new GameObject("Arrow", typeof(RectTransform),
+                    typeof(CanvasRenderer), typeof(Text));
+                RectTransform labelRect = labelObject.GetComponent<RectTransform>();
+                labelRect.SetParent(rect, false);
+                labelRect.anchorMin = Vector2.zero;
+                labelRect.anchorMax = Vector2.one;
+                labelRect.sizeDelta = Vector2.zero;
+                Text label = labelObject.GetComponent<Text>();
+                label.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+                label.fontSize = 26;
+                label.fontStyle = FontStyle.Bold;
+                label.alignment = TextAnchor.MiddleCenter;
+                label.color = Color.white;
+                label.raycastTarget = false;
+            }
+
+            button.onClick = new Button.ButtonClickedEvent();
+            button.onClick.AddListener(action);
+            button.gameObject.SetActive(false);
+            return button;
+        }
+
+        private void ToggleCustomizationCap(int slot)
+        {
+            if (category != Category.Characters) return;
+            DriverDefinition driver = SelectedDriver();
+            int pageSize = Mathf.Max(1, optionButtons?.Length ?? 0);
+            int index = customizationAccessoryPage * pageSize + slot;
+            if (driver?.accessories == null || index < 0 || index >= driver.accessories.Length) return;
+            DriverDefinition.CharacterAccessoryOption option = driver.accessories[index];
+            if (option == null || !option.supportsFlipVariant || !IsAccessoryUnlocked(option)) return;
+            SaveManager.ToggleCharacterAccessoryFlipX(option.accessoryId, option.flipX);
+            Refresh();
+        }
+
+        private void ToggleShopCap(int slot)
+        {
+            DriverDefinition driver = SelectedDriver();
+            int pageSize = Mathf.Max(1, shopAccessoryButtons?.Length ?? 0);
+            int index = shopAccessoryPage * pageSize + slot;
+            if (driver?.accessories == null || index < 0 || index >= driver.accessories.Length) return;
+            DriverDefinition.CharacterAccessoryOption option = driver.accessories[index];
+            if (option == null || !option.supportsFlipVariant || !IsAccessoryUnlocked(option)) return;
+            SaveManager.ToggleCharacterAccessoryFlipX(option.accessoryId, option.flipX);
+            Refresh();
+        }
+
+        private static void RefreshAccessoryFlipButton(Button button,
+            DriverDefinition.CharacterAccessoryOption option, bool interactable)
+        {
+            if (button == null) return;
+            bool visible = option != null && option.supportsFlipVariant;
+            button.gameObject.SetActive(visible);
+            if (!visible) return;
+            bool backwards = SaveManager.GetCharacterAccessoryFlipX(option.accessoryId, option.flipX);
+            button.interactable = interactable;
+            if (button.image != null)
+                button.image.color = backwards ? new Color(.96f, .16f, .66f, .98f) :
+                    new Color(.08f, .68f, .95f, .98f);
+            Text label = button.GetComponentInChildren<Text>(true);
+            if (label != null) label.text = backwards ? "<" : ">";
+        }
+
+        private GameObject CreateAccessoryPager(Transform parent, string name, Vector2 position,
+            bool shopPager, out Text pageText)
+        {
+            GameObject root = new GameObject(name, typeof(RectTransform));
+            RectTransform rootRect = root.GetComponent<RectTransform>();
+            rootRect.SetParent(parent, false);
+            rootRect.anchorMin = rootRect.anchorMax = new Vector2(.5f, .5f);
+            rootRect.anchoredPosition = position;
+            rootRect.sizeDelta = new Vector2(190f, 52f);
+
+            Button previous = CreateAccessoryPageButton(rootRect, "Previous", "<", new Vector2(-72f, 0f));
+            Button next = CreateAccessoryPageButton(rootRect, "Next", ">", new Vector2(72f, 0f));
+            if (shopPager)
+            {
+                previous.onClick.AddListener(PreviousShopAccessoryPage);
+                next.onClick.AddListener(NextShopAccessoryPage);
+            }
+            else
+            {
+                previous.onClick.AddListener(PreviousCustomizationAccessoryPage);
+                next.onClick.AddListener(NextCustomizationAccessoryPage);
+            }
+
+            GameObject labelObject = new GameObject("Page", typeof(RectTransform), typeof(CanvasRenderer),
+                typeof(Text));
+            RectTransform labelRect = labelObject.GetComponent<RectTransform>();
+            labelRect.SetParent(rootRect, false);
+            labelRect.anchorMin = labelRect.anchorMax = new Vector2(.5f, .5f);
+            labelRect.sizeDelta = new Vector2(82f, 48f);
+            pageText = labelObject.GetComponent<Text>();
+            pageText.font = optionLabels != null && optionLabels.Length > 0 && optionLabels[0] != null
+                ? optionLabels[0].font : Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            pageText.fontSize = 18;
+            pageText.fontStyle = FontStyle.Bold;
+            pageText.alignment = TextAnchor.MiddleCenter;
+            pageText.color = Color.white;
+            pageText.raycastTarget = false;
+            return root;
+        }
+
+        private static Button CreateAccessoryPageButton(Transform parent, string name, string label,
+            Vector2 position)
+        {
+            GameObject buttonObject = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer),
+                typeof(Image), typeof(Button));
+            RectTransform rect = buttonObject.GetComponent<RectTransform>();
+            rect.SetParent(parent, false);
+            rect.anchorMin = rect.anchorMax = new Vector2(.5f, .5f);
+            rect.anchoredPosition = position;
+            rect.sizeDelta = new Vector2(48f, 48f);
+            Image image = buttonObject.GetComponent<Image>();
+            image.color = new Color(.10f, .35f, .58f, .98f);
+            Button button = buttonObject.GetComponent<Button>();
+
+            GameObject textObject = new GameObject("Label", typeof(RectTransform), typeof(CanvasRenderer),
+                typeof(Text));
+            RectTransform textRect = textObject.GetComponent<RectTransform>();
+            textRect.SetParent(rect, false);
+            textRect.anchorMin = Vector2.zero;
+            textRect.anchorMax = Vector2.one;
+            textRect.sizeDelta = Vector2.zero;
+            Text text = textObject.GetComponent<Text>();
+            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.text = label;
+            text.fontSize = 28;
+            text.fontStyle = FontStyle.Bold;
+            text.alignment = TextAnchor.MiddleCenter;
+            text.color = Color.white;
+            text.raycastTarget = false;
+            return button;
+        }
+
+        private static void RefreshAccessoryPager(GameObject pager, Text pageText, int page, int count,
+            int pageSize)
+        {
+            int pages = Mathf.Max(1, Mathf.CeilToInt(count / (float)Mathf.Max(1, pageSize)));
+            if (pager != null) pager.SetActive(pages > 1);
+            if (pageText != null) pageText.text = $"{page + 1}/{pages}";
         }
 
         // Keeps previously generated Garage scenes forward-compatible. Newly rebuilt scenes already
@@ -950,28 +1210,54 @@ namespace AnimeHillRacing.UI
             if (section == GarageSection.Store) RefreshBlueprintShop();
             int count = section == GarageSection.Skins ? OptionCount() : 0;
             string selected = section == GarageSection.Skins ? SelectedOptionId() : string.Empty;
+            int optionPageSize = Mathf.Max(1, optionButtons?.Length ?? 0);
+            int optionPages = Mathf.Max(1, Mathf.CeilToInt(count / (float)optionPageSize));
+            customizationAccessoryPage = category == Category.Characters
+                ? Mathf.Clamp(customizationAccessoryPage, 0, optionPages - 1) : 0;
+            RefreshAccessoryPager(customizationAccessoryPager, customizationAccessoryPageText,
+                customizationAccessoryPage, category == Category.Characters ? count : 0, optionPageSize);
             for (int i = 0; i < (optionButtons != null ? optionButtons.Length : 0); i++)
             {
-                bool visible = i < count;
+                int optionIndex = category == Category.Characters
+                    ? customizationAccessoryPage * optionPageSize + i : i;
+                bool visible = optionIndex < count;
                 optionButtons[i].gameObject.SetActive(visible);
                 if (!visible) continue;
-                TryGetOption(i, out string id, out Sprite icon, out bool unlocked, out int gemPrice);
+                TryGetOption(optionIndex, out string id, out Sprite icon, out bool unlocked, out int gemPrice);
                 bool isSelected = id == selected;
+                DriverDefinition.CharacterAccessoryOption accessory = category == Category.Characters
+                    ? SelectedDriver()?.accessories[optionIndex] : null;
+                bool accessoryFlipX = accessory != null && accessory.supportsFlipVariant &&
+                    SaveManager.GetCharacterAccessoryFlipX(accessory.accessoryId, accessory.flipX);
                 optionButtons[i].interactable = vehicleUnlocked && (unlocked || gemPrice > 0);
                 optionButtons[i].image.color = isSelected ? new Color(.18f, .60f, .82f, 1f) :
                     unlocked ? new Color(.10f, .20f, .32f, 1f) : new Color(.12f, .12f, .14f, .78f);
+                RefreshAccessoryFlipButton(customizationAccessoryFlipButtons != null &&
+                    i < customizationAccessoryFlipButtons.Length ? customizationAccessoryFlipButtons[i] : null,
+                    accessory, vehicleUnlocked && unlocked);
                 if (optionImages != null && i < optionImages.Length && optionImages[i] != null)
                 {
                     optionImages[i].sprite = icon; optionImages[i].enabled = icon != null;
                     optionImages[i].preserveAspect = true;
-                    optionImages[i].material = category == Category.Driver &&
-                        catalog?.drivers != null && i < catalog.drivers.Length
-                            ? catalog.drivers[i]?.bodyMaterial : null;
+                    Vector3 imageScale = optionImages[i].rectTransform.localScale;
+                    float absoluteScaleX = Mathf.Abs(imageScale.x);
+                    imageScale.x = (absoluteScaleX > .001f ? absoluteScaleX : 1f) *
+                        (accessoryFlipX ? -1f : 1f);
+                    optionImages[i].rectTransform.localScale = imageScale;
+                    optionImages[i].material = accessory != null && accessory.animateRainbow
+                        ? AccessoryRainbowEffect.GetMaterial(accessory.rainbowSpeed,
+                            accessory.rainbowFrequency, accessory.rainbowNeonGlow, accessoryFlipX)
+                        : category == Category.Driver &&
+                        catalog?.drivers != null && optionIndex < catalog.drivers.Length
+                            ? catalog.drivers[optionIndex]?.bodyMaterial : null;
                 }
                 if (optionLabels != null && i < optionLabels.Length && optionLabels[i] != null)
-                    optionLabels[i].text = OptionName(i) + (isSelected ? "\nSELECTED" : unlocked
-                        ? "\nSELECT" : gemPrice > 0 ? $"\n{gemPrice:N0} GEMS" : "\nLOCKED");
-                RefreshOptionBlueprintProgress(i, unlocked);
+                {
+                    string action = isSelected ? SelectedAccessoryAction(accessory) : unlocked
+                        ? "SELECT" : gemPrice > 0 ? $"{gemPrice:N0} GEMS" : "LOCKED";
+                    optionLabels[i].text = OptionName(optionIndex) + "\n" + action;
+                }
+                RefreshOptionBlueprintProgress(i, optionIndex, unlocked);
             }
 
             DriverDefinition driver = SelectedDriver();
@@ -984,7 +1270,10 @@ namespace AnimeHillRacing.UI
             if (characterSummary != null)
             {
                 DriverDefinition.CharacterAccessoryOption selectedAccessory = SelectedAccessory();
-                characterSummary.text = "CHARACTERS\n" + (selectedAccessory?.displayName ?? "DEFAULT");
+                string orientation = selectedAccessory != null && selectedAccessory.supportsFlipVariant
+                    ? " - " + AccessoryOrientation(selectedAccessory) : string.Empty;
+                characterSummary.text = "CHARACTERS\n" +
+                    (selectedAccessory?.displayName ?? "DEFAULT") + orientation;
             }
             if (showingTuning) RefreshTuning(vehicle);
             if (upgradeSummary != null)
@@ -1047,7 +1336,11 @@ namespace AnimeHillRacing.UI
                     garageSectionTabs[i].SetActive(showGarageChrome && !adventurePreparation);
 
             if (preview != null && preview.TargetImage != null)
+            {
+                bool wasVisible = preview.TargetImage.gameObject.activeSelf;
                 preview.TargetImage.gameObject.SetActive(showGarageChrome);
+                if (showGarageChrome && !wasVisible) preview.RefreshNow();
+            }
             SetGraphicActive(vehicleName, showGarageChrome);
             SetGraphicActive(sectionTitle, showGarageChrome && !adventurePreparation);
             SetGraphicActive(skinSummary, showGarageChrome && !adventurePreparation);
@@ -1075,6 +1368,8 @@ namespace AnimeHillRacing.UI
 
         private void ResolveGarageSectionTabs()
         {
+            Scene scene = gameObject.scene;
+            if (!scene.IsValid() || !scene.isLoaded) return;
             if (garageSectionTabs != null && garageSectionTabs.Length == 4) return;
             string[] names =
             {
@@ -1084,7 +1379,7 @@ namespace AnimeHillRacing.UI
                 "Garage Stats Tab"
             };
             garageSectionTabs = new GameObject[names.Length];
-            GameObject[] roots = gameObject.scene.GetRootGameObjects();
+            GameObject[] roots = scene.GetRootGameObjects();
             for (int rootIndex = 0; rootIndex < roots.Length; rootIndex++)
             {
                 Transform[] descendants = roots[rootIndex].GetComponentsInChildren<Transform>(true);
@@ -1098,7 +1393,9 @@ namespace AnimeHillRacing.UI
 
         private Button ResolveAdventurePaintButton()
         {
-            GameObject[] roots = gameObject.scene.GetRootGameObjects();
+            Scene scene = gameObject.scene;
+            if (!scene.IsValid() || !scene.isLoaded) return null;
+            GameObject[] roots = scene.GetRootGameObjects();
             for (int rootIndex = 0; rootIndex < roots.Length; rootIndex++)
             {
                 Transform[] descendants = roots[rootIndex].GetComponentsInChildren<Transform>(true);
@@ -1215,6 +1512,10 @@ namespace AnimeHillRacing.UI
 
         private void RefreshVehiclePresentationLayout()
         {
+            // The scene builder owns the serialized neutral Vehicle layout. GarageUI is
+            // ExecuteAlways, so applying a stale GameSession section while F8 rebuilds the scene
+            // would otherwise move the preview left immediately before the scene is saved.
+            if (!Application.isPlaying) return;
             bool centered = section == GarageSection.Vehicle;
             bool adventureTunes = GameSession.HasPendingAdventureTrack &&
                 section == GarageSection.Tuning;
@@ -1404,41 +1705,61 @@ namespace AnimeHillRacing.UI
         {
             DriverDefinition driver = SelectedDriver();
             int count = driver?.accessories?.Length ?? 0;
+            int pageSize = Mathf.Max(1, shopAccessoryButtons?.Length ?? 0);
+            int pages = Mathf.Max(1, Mathf.CeilToInt(count / (float)pageSize));
+            shopAccessoryPage = Mathf.Clamp(shopAccessoryPage, 0, pages - 1);
+            RefreshAccessoryPager(shopAccessoryPager, shopAccessoryPageText, shopAccessoryPage, count, pageSize);
             for (int i = 0; i < (shopAccessoryButtons?.Length ?? 0); i++)
             {
-                bool visible = i < count && driver.accessories[i] != null;
+                int accessoryIndex = shopAccessoryPage * pageSize + i;
+                bool visible = accessoryIndex < count && driver.accessories[accessoryIndex] != null;
                 Button button = shopAccessoryButtons[i];
                 if (button == null) continue;
                 button.gameObject.SetActive(visible);
                 if (!visible) continue;
-                DriverDefinition.CharacterAccessoryOption option = driver.accessories[i];
+                DriverDefinition.CharacterAccessoryOption option = driver.accessories[accessoryIndex];
                 bool unlocked = IsAccessoryUnlocked(option);
                 bool selected = option.accessoryId == SaveManager.GetSelectedCharacterAccessoryId(driver.DefaultAccessoryId);
+                bool flipX = option.supportsFlipVariant &&
+                    SaveManager.GetCharacterAccessoryFlipX(option.accessoryId, option.flipX);
                 button.interactable = unlocked || option.gemPrice > 0;
                 button.image.color = selected ? new Color(.18f, .60f, .82f, 1f) :
                     unlocked ? new Color(.10f, .30f, .24f, .96f) : new Color(.12f, .12f, .14f, .84f);
+                RefreshAccessoryFlipButton(shopAccessoryFlipButtons != null &&
+                    i < shopAccessoryFlipButtons.Length ? shopAccessoryFlipButtons[i] : null,
+                    option, unlocked);
                 if (shopAccessoryImages != null && i < shopAccessoryImages.Length && shopAccessoryImages[i] != null)
                 {
                     shopAccessoryImages[i].sprite = option.sprite;
                     shopAccessoryImages[i].enabled = option.sprite != null;
                     shopAccessoryImages[i].preserveAspect = true;
+                    Vector3 imageScale = shopAccessoryImages[i].rectTransform.localScale;
+                    float absoluteScaleX = Mathf.Abs(imageScale.x);
+                    imageScale.x = (absoluteScaleX > .001f ? absoluteScaleX : 1f) *
+                        (flipX ? -1f : 1f);
+                    shopAccessoryImages[i].rectTransform.localScale = imageScale;
+                    shopAccessoryImages[i].material = option.animateRainbow
+                        ? AccessoryRainbowEffect.GetMaterial(option.rainbowSpeed, option.rainbowFrequency,
+                            option.rainbowNeonGlow, flipX) : null;
                 }
                 if (shopAccessoryLabels != null && i < shopAccessoryLabels.Length && shopAccessoryLabels[i] != null)
                     shopAccessoryLabels[i].text = option.displayName.ToUpperInvariant() + "\n" +
-                        (selected ? "EQUIPPED" : unlocked ? "EQUIP" : option.gemPrice > 0
-                            ? $"{option.gemPrice:N0} GEMS" : "LOCKED");
+                        (selected ? SelectedAccessoryAction(option, "EQUIPPED") : unlocked ? "EQUIP" :
+                            option.gemPrice > 0 ? $"{option.gemPrice:N0} GEMS" : "LOCKED");
             }
         }
 
-        private void SelectShopAccessory(int index)
+        private void SelectShopAccessory(int slot)
         {
             DriverDefinition driver = SelectedDriver();
+            int index = shopAccessoryPage * Mathf.Max(1, shopAccessoryButtons?.Length ?? 0) + slot;
             if (driver?.accessories == null || index < 0 || index >= driver.accessories.Length) return;
             DriverDefinition.CharacterAccessoryOption option = driver.accessories[index];
             if (option == null) return;
             if (IsAccessoryUnlocked(option))
             {
                 SaveManager.SetSelectedCharacterAccessoryId(option.accessoryId);
+                preview?.Invalidate();
                 Refresh();
                 return;
             }
@@ -1471,14 +1792,14 @@ namespace AnimeHillRacing.UI
             RefreshBlueprintShop();
         }
 
-        private void RefreshOptionBlueprintProgress(int index, bool unlocked)
+        private void RefreshOptionBlueprintProgress(int slot, int optionIndex, bool unlocked)
         {
-            Image fill = optionBlueprintFills != null && index < optionBlueprintFills.Length
-                ? optionBlueprintFills[index] : null;
-            Text progressText = optionBlueprintTexts != null && index < optionBlueprintTexts.Length
-                ? optionBlueprintTexts[index] : null;
+            Image fill = optionBlueprintFills != null && slot < optionBlueprintFills.Length
+                ? optionBlueprintFills[slot] : null;
+            Text progressText = optionBlueprintTexts != null && slot < optionBlueprintTexts.Length
+                ? optionBlueprintTexts[slot] : null;
             GameObject bar = fill != null && fill.transform.parent != null ? fill.transform.parent.gameObject : null;
-            BundleDefinition bundle = GetOptionBundle(index);
+            BundleDefinition bundle = GetOptionBundle(optionIndex);
             bool visible = bundle != null && !unlocked;
             if (bar != null) bar.SetActive(visible);
             if (!visible) return;
@@ -1518,6 +1839,7 @@ namespace AnimeHillRacing.UI
             bool vehicleUnlocked = IsVehicleUnlocked(vehicle);
             if (tuningCoins != null) tuningCoins.text = $"COINS  {coins:N0}";
             int count = vehicle.GetTuneSlotCount();
+            CenterVisibleTuneCards(count);
             for (int i = 0; i < (tuningButtons != null ? tuningButtons.Length : 0); i++)
             {
                 bool visible = i < count;
@@ -1597,6 +1919,27 @@ namespace AnimeHillRacing.UI
                     tuningCardButtons[i].interactable = vehicleUnlocked && maximum > 0;
                 if (tuningDownButtons != null && i < tuningDownButtons.Length && tuningDownButtons[i] != null)
                     tuningDownButtons[i].interactable = vehicleUnlocked && current > 1;
+            }
+        }
+
+        private void CenterVisibleTuneCards(int visibleCount)
+        {
+            // The Hill Adventurer Garage presents tunes as one horizontal row. Vehicles expose
+            // either five or six tune slots, so derive the first X from the visible count instead
+            // of retaining the six-card positions after the last card is hidden.
+            if (tuningIcons == null || tuningIcons.Length == 0 || tuningButtons == null) return;
+            int count = Mathf.Clamp(visibleCount, 0, tuningButtons.Length);
+            const float spacing = 240f;
+            float firstX = -(count - 1) * spacing * .5f;
+            int positioned = 0;
+            for (int i = 0; i < tuningButtons.Length && positioned < count; i++)
+            {
+                Button button = tuningButtons[i];
+                RectTransform row = button != null ? button.transform.parent as RectTransform : null;
+                if (row == null) continue;
+                row.anchorMin = row.anchorMax = new Vector2(.5f, .5f);
+                row.anchoredPosition = new Vector2(firstX + positioned * spacing, row.anchoredPosition.y);
+                positioned++;
             }
         }
 
@@ -1759,6 +2102,26 @@ namespace AnimeHillRacing.UI
         {
             DriverDefinition driver = SelectedDriver();
             return driver?.FindAccessory(SaveManager.GetSelectedCharacterAccessoryId(driver.DefaultAccessoryId));
+        }
+
+        private static string AccessoryOrientation(DriverDefinition.CharacterAccessoryOption option) =>
+            SaveManager.GetCharacterAccessoryFlipX(option.accessoryId, option.flipX)
+                ? "BACKWARD" : "FORWARD";
+
+        private static string SelectedAccessoryAction(DriverDefinition.CharacterAccessoryOption option,
+            string selectedLabel = "SELECTED") => option != null && option.supportsFlipVariant
+                ? selectedLabel + " - " + AccessoryOrientation(option)
+                : selectedLabel;
+
+        private int SelectedAccessoryIndex()
+        {
+            DriverDefinition driver = SelectedDriver();
+            if (driver?.accessories == null) return -1;
+            string selectedId = SaveManager.GetSelectedCharacterAccessoryId(driver.DefaultAccessoryId);
+            for (int i = 0; i < driver.accessories.Length; i++)
+                if (driver.accessories[i] != null && driver.accessories[i].accessoryId == selectedId)
+                    return i;
+            return -1;
         }
 
         private static bool IsAccessoryUnlocked(DriverDefinition.CharacterAccessoryOption option) =>

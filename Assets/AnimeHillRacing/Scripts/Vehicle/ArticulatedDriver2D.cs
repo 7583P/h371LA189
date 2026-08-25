@@ -37,6 +37,9 @@ namespace AnimeHillRacing.Vehicle
         private Quaternion torsoBaseRotation;
         private Quaternion headBaseRotation;
         private int resolvedAccessorySortingOrder = AccessorySortingOrder;
+        private Material defaultAccessoryMaterial;
+        private bool accessoryMaterialCaptured;
+        private bool animatedAccessoryActive;
         private readonly Dictionary<SpriteRenderer, Material> defaultBodyMaterials =
             new Dictionary<SpriteRenderer, Material>();
         private readonly Transform[] reactiveLimbs = new Transform[4];
@@ -45,6 +48,7 @@ namespace AnimeHillRacing.Vehicle
 
         public SpriteRenderer HeadRenderer => head;
         public SpriteRenderer AccessoryRenderer => accessory;
+        public bool AnimatedAccessoryActive => animatedAccessoryActive && accessory != null && accessory.enabled;
         public DriverHeadImpact HeadImpact => headImpact;
 
         private void Awake()
@@ -187,6 +191,10 @@ namespace AnimeHillRacing.Vehicle
 
         private void ApplyBodyMaterial(Material materialOverride)
         {
+            // White uses a silhouette override, while Black intentionally has no override. Do not
+            // restore the material captured after White was already applied: that makes switching
+            // White -> Black leave every articulated part white in the Garage and in gameplay.
+            Material defaultSpriteMaterial = HillAdventurerSkinEffect.GetDefaultSpriteMaterial();
             SpriteRenderer[] bodyParts =
             {
                 torso, head, leftUpperArm, leftForearm, rightUpperArm, rightForearm,
@@ -199,22 +207,28 @@ namespace AnimeHillRacing.Vehicle
                 if (!defaultBodyMaterials.ContainsKey(renderer))
                     defaultBodyMaterials.Add(renderer, renderer.sharedMaterial);
                 renderer.sharedMaterial = materialOverride != null
-                    ? materialOverride : defaultBodyMaterials[renderer];
+                    ? materialOverride
+                    : (defaultSpriteMaterial != null ? defaultSpriteMaterial : defaultBodyMaterials[renderer]);
             }
         }
 
         private void EnsureAccessoryRenderer()
         {
-            if (accessory != null) return;
-            Transform existing = transform.Find("Accessory Anchor");
-            if (existing == null)
+            if (accessory == null)
             {
-                var anchor = new GameObject("Accessory Anchor");
-                anchor.transform.SetParent(transform, false);
-                existing = anchor.transform;
+                Transform existing = transform.Find("Accessory Anchor");
+                if (existing == null)
+                {
+                    var anchor = new GameObject("Accessory Anchor");
+                    anchor.transform.SetParent(transform, false);
+                    existing = anchor.transform;
+                }
+                accessory = existing.GetComponent<SpriteRenderer>();
+                if (accessory == null) accessory = existing.gameObject.AddComponent<SpriteRenderer>();
             }
-            accessory = existing.GetComponent<SpriteRenderer>();
-            if (accessory == null) accessory = existing.gameObject.AddComponent<SpriteRenderer>();
+            if (accessoryMaterialCaptured) return;
+            defaultAccessoryMaterial = accessory.sharedMaterial;
+            accessoryMaterialCaptured = true;
         }
 
         private void ApplyAccessory(DriverDefinition.CharacterAccessoryOption option,
@@ -224,12 +238,23 @@ namespace AnimeHillRacing.Vehicle
             Sprite sprite = option != null ? option.sprite : null;
             accessory.sprite = sprite;
             accessory.enabled = pose.visible && sprite != null;
+            bool flipX = option != null && (option.supportsFlipVariant
+                ? SaveManager.GetCharacterAccessoryFlipX(option.accessoryId, option.flipX)
+                : option.flipX);
+            accessory.flipX = flipX;
+            animatedAccessoryActive = option != null && option.animateRainbow && accessory.enabled;
+            accessory.sharedMaterial = animatedAccessoryActive
+                ? AccessoryRainbowEffect.GetMaterial(option.rainbowSpeed, option.rainbowFrequency,
+                    option.rainbowNeonGlow, flipX)
+                : defaultAccessoryMaterial;
 
             bool isScarf = option != null && (option.accessoryId == "scarf" ||
                 option.displayName.IndexOf("scarf", System.StringComparison.OrdinalIgnoreCase) >= 0);
 
             Transform part = accessory.transform;
             Vector2 sharedOffset = option != null ? option.anchorOffset : Vector2.zero;
+            if (option != null && option.supportsFlipVariant && flipX)
+                sharedOffset.x = -sharedOffset.x;
             if (isScarf && !hasVehicleOverride && torso != null && head != null)
             {
                 // Preserve the legacy neck placement until this vehicle receives an authored scarf override.

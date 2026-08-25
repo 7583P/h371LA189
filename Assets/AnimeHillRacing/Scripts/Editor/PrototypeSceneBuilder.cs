@@ -1677,8 +1677,12 @@ namespace AnimeHillRacing.Editor
 
             TerrainDifficultyAudit countryside = AuditGeneratedTerrain(assets.countryside, 6000f);
             TerrainDifficultyAudit northPole = AuditGeneratedTerrain(profile, 6000f);
+            // Countryside's pointed-terrain update raised its authored cap from 32 to 38 degrees.
+            // North Pole remains broader and steeper at 40 degrees; requiring a 3-degree measured
+            // lead is now impossible while still respecting North Pole's own safety cap.
+            const float minimumNorthPoleSlopeLead = 1.5f;
             if (northPole.HeightRange < countryside.HeightRange * 1.35f ||
-                northPole.maximumSlope < countryside.maximumSlope + 3f ||
+                northPole.maximumSlope < countryside.maximumSlope + minimumNorthPoleSlopeLead ||
                 northPole.maximumSlope > profile.maxSlopeAngle + .1f)
                 throw new System.InvalidOperationException(
                     $"North Pole terrain audit failed: range/slope={northPole.HeightRange:0.0}m/" +
@@ -1704,8 +1708,23 @@ namespace AnimeHillRacing.Editor
             SpaceChallengeSettings settings = profile.spaceChallenges;
             SpaceChallengeLayout first = TerrainGenerator.GetSpaceChallenge(profile, 1);
             SpaceChallengeLayout second = TerrainGenerator.GetSpaceChallenge(profile, 2);
+            SpaceChallengeLayout third = TerrainGenerator.GetSpaceChallenge(profile, 3);
+            SpaceChallengeLayout fourth = TerrainGenerator.GetSpaceChallenge(profile, 4);
+            SpaceChallengeLayout jupiter = TerrainGenerator.GetSpaceChallenge(profile, 8);
+            SpaceChallengeLayout saturn = TerrainGenerator.GetSpaceChallenge(profile, 9);
+            SpaceChallengeLayout uranus = TerrainGenerator.GetSpaceChallenge(profile, 11);
+            SpaceChallengeLayout neptune = TerrainGenerator.GetSpaceChallenge(profile, 12);
             if (Mathf.Abs(first.eventDistance - 2000f) > .01f ||
                 Mathf.Abs(first.warningX - 1900f) > .01f ||
+                first.eventType != SpaceEventType.Void ||
+                second.eventType != SpaceEventType.Planet || second.planetType != SpacePlanetType.Mercury ||
+                third.eventType != SpaceEventType.Planet || third.planetType != SpacePlanetType.Venus ||
+                fourth.eventType != SpaceEventType.Void ||
+                TerrainGenerator.GetSpaceChallenge(profile, 5).planetType != SpacePlanetType.Earth ||
+                TerrainGenerator.GetSpaceChallenge(profile, 6).planetType != SpacePlanetType.Mars ||
+                jupiter.planetType != SpacePlanetType.Jupiter || saturn.planetType != SpacePlanetType.Saturn ||
+                uranus.planetType != SpacePlanetType.Uranus || neptune.planetType != SpacePlanetType.Neptune ||
+                TerrainGenerator.GetSpaceChallenge(profile, 14).planetType != SpacePlanetType.Mercury ||
                 Mathf.Abs(settings.approachLength - 200f) > .01f ||
                 Mathf.Abs(TerrainGenerator.SampleHeight(profile, first.rampStart - 199f) -
                           first.baselineHeight) > .001f ||
@@ -1713,17 +1732,23 @@ namespace AnimeHillRacing.Editor
                           first.baselineHeight) > .001f ||
                 TerrainGenerator.IsTerrainGap(profile, first.rampStart + 1f) ||
                 TerrainGenerator.SampleHeight(profile, first.gapStart - 1f) <= first.baselineHeight + 1f ||
-                Mathf.Abs(first.gapLength - 10f) > .01f || Mathf.Abs(second.gapLength - 15f) > .01f ||
+                Mathf.Abs(first.gapLength - 15f) > .01f || Mathf.Abs(fourth.gapLength - 30f) > .01f ||
                 !TerrainGenerator.IsTerrainGap(profile, (first.gapStart + first.gapEnd) * .5f) ||
+                !TerrainGenerator.IsTerrainGap(profile, second.planetCenterX) ||
                 TerrainGenerator.IsTerrainGap(profile, first.gapEnd - .25f) ||
                 TerrainGenerator.IsTerrainGap(profile, first.gapEnd + 1f) ||
-                Mathf.Abs(TerrainGenerator.GetSpaceChallenge(profile, 10).gapLength - 55f) > .01f ||
+                Mathf.Abs(TerrainGenerator.GetSpaceChallenge(profile, 10).gapLength - 75f) > .01f ||
                 Mathf.Abs(first.blackHoleDiameter - first.gapLength) > .01f ||
-                Mathf.Abs(second.blackHoleDiameter - second.gapLength) > .01f ||
+                second.blackHoleDiameter > .01f || jupiter.planetRadius <= second.planetRadius ||
+                profile.hardEndDistance != 10000f ||
+                !profile.terrainMaterial.HasProperty("_SurfaceMode") ||
+                !profile.terrainEdgeMaterial.HasProperty("_SurfaceMode") ||
+                profile.terrainMaterial.GetFloat("_SurfaceMode") > .5f ||
+                profile.terrainEdgeMaterial.GetFloat("_SurfaceMode") < .5f ||
                 settings.rampRise < 5f ||
                 settings.rampFlatFraction > .1f)
                 throw new System.InvalidOperationException(
-                    "Space void cadence, 100m warning, +5m growth, terrain removal or safety caps are invalid.");
+                    "Space event cadence, solar order, 15m/5000m gap growth, physical-planet void or peak difficulty is invalid.");
 
             EnvironmentDefinition environment = profile.environment;
             if (!environment.overrideCameraBackground || environment.sky == null ||
@@ -5628,7 +5653,7 @@ namespace AnimeHillRacing.Editor
             assets.countryside.introEndDistance = 750f;
             assets.countryside.easyEndDistance = 3000f;
             assets.countryside.normalEndDistance = 6000f;
-            assets.countryside.hardEndDistance = 15000f;
+            assets.countryside.hardEndDistance = 10000f;
             assets.countryside.difficultyCurve = new AnimationCurve(
                 new Keyframe(0f, 0f), new Keyframe(0.25f, 0.22f), new Keyframe(0.60f, 0.55f),
                 new Keyframe(0.80f, 0.82f), new Keyframe(1f, 1f));
@@ -5640,12 +5665,18 @@ namespace AnimeHillRacing.Editor
             assets.countryside.hillFeatureWeight = 0.49f;
             assets.countryside.valleyFeatureWeight = 0.29f;
             assets.countryside.technicalFeatureWeight = 0.19f;
-            assets.countryside.maxSlopeAngle = 32f;
-            assets.countryside.maxHeightDeltaPerSample = Mathf.Tan(32f * Mathf.Deg2Rad) * (80f / 48f);
+            assets.countryside.usePointedTerrainRhythm = true;
+            assets.countryside.pointedMiniFeatureStrength = .11f;
+            assets.countryside.pointedFeatureAsymmetry = .26f;
+            assets.countryside.pointedPeakMiniFeatureCount = 10;
+            assets.countryside.pointedExtremeShapeChance = .72f;
+            assets.countryside.pointedExtremeShapeStrength = .42f;
+            assets.countryside.maxSlopeAngle = 38f;
+            assets.countryside.maxHeightDeltaPerSample = Mathf.Tan(38f * Mathf.Deg2Rad) * (80f / 48f);
             assets.countryside.minimumValleyWidth = 20f;
             assets.countryside.minimumLandingLength = 16f;
-            assets.countryside.maximumCrestSharpness = 6f;
-            assets.countryside.smoothingPasses = 1;
+            assets.countryside.maximumCrestSharpness = 14f;
+            assets.countryside.smoothingPasses = 0;
             assets.countryside.initialFuelGap = 5f;
             assets.countryside.fuelGapIncrease = 5f;
             assets.countryside.terrainMaterial = assets.countrysideMaterial;
@@ -7647,6 +7678,12 @@ namespace AnimeHillRacing.Editor
             else if (material.shader != shader) material.shader = shader;
             material.mainTexture = texture;
             material.color = Color.white;
+            bool useSeamlessTerrainTiling = name == "CityTerrain" || name == "CityGround" ||
+                                             name == "CountrysideTerrain" || name == "CountrysideGround";
+            if (material.HasProperty("_SeamlessHorizontalTiling"))
+                material.SetFloat("_SeamlessHorizontalTiling", useSeamlessTerrainTiling ? 1f : 0f);
+            if (material.HasProperty("_HorizontalInset"))
+                material.SetFloat("_HorizontalInset", useSeamlessTerrainTiling ? .012f : 0f);
             if (name == "CityTerrain" || name == "CountrysideTerrain" || name == "NorthPoleTerrain")
                 material.renderQueue = 2450;
             else if (name == "CityGround" || name == "CountrysideGround" || name == "NorthPoleGround")

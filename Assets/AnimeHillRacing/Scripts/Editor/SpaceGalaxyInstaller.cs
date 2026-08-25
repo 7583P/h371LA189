@@ -8,7 +8,7 @@ namespace AnimeHillRacing.Editor
 {
     public static class SpaceGalaxyInstaller
     {
-        private const string SessionKey = "AHR.SpaceGalaxyInstaller.v7";
+        private const string SessionKey = "AHR.SpaceGalaxyInstaller.v8";
         private const string GalaxyPath = "Assets/Art/Backgrounds/Space/Space_Cosmic_Panorama_v4.png";
         private const string StarfieldPath = "Assets/Art/Backgrounds/Space/Space_Stars.png";
         private const string PanoramaShaderPath =
@@ -90,6 +90,8 @@ namespace AnimeHillRacing.Editor
             AssetDatabase.SaveAssets();
 
             SpaceChallengeLayout first = TerrainGenerator.GetSpaceChallenge(profile, 1);
+            SpaceChallengeLayout mercury = TerrainGenerator.GetSpaceChallenge(profile, 2);
+            SpaceChallengeLayout venus = TerrainGenerator.GetSpaceChallenge(profile, 3);
             SpaceChallengeLayout tenth = TerrainGenerator.GetSpaceChallenge(profile, 10);
             float firstTop = SpaceGapEvent.CalculateBlackHoleCenterY(
                                  profile.spaceChallenges.verticalOffset, first.gapLength) +
@@ -100,13 +102,17 @@ namespace AnimeHillRacing.Editor
                 environment.starTwinkleAmount < .25f ||
                 AssetDatabase.GetAssetPath(environment.sky) != StarfieldPath ||
                 AssetDatabase.GetAssetPath(environment.mountains) != GalaxyPath ||
+                !first.IsVoid || !mercury.IsPlanet || mercury.planetType != SpacePlanetType.Mercury ||
+                !venus.IsPlanet || venus.planetType != SpacePlanetType.Venus ||
+                Mathf.Abs(first.gapLength - 15f) > .01f || Mathf.Abs(tenth.gapLength - 75f) > .01f ||
                 Mathf.Abs(first.blackHoleDiameter - first.gapLength) > .01f ||
                 Mathf.Abs(tenth.blackHoleDiameter - tenth.gapLength) > .01f || firstTop > -.19f)
                 throw new InvalidOperationException("Space galaxy or black-hole coverage validation failed.");
 
             Debug.Log($"SPACE_UNIVERSE_INSTALL_OK|asset={GalaxyPath}|twinklingStars=56|shootingStars=cinematic|" +
                       $"sun=removed|earth=removed|panorama=seamless-scroll|void1={first.gapLength:0}/{first.blackHoleDiameter:0}|" +
-                      $"void10={tenth.gapLength:0}/{tenth.blackHoleDiameter:0}|top={firstTop:0.00}");
+                      $"void10={tenth.gapLength:0}/{tenth.blackHoleDiameter:0}|planets=Mercury-Venus|" +
+                      $"top={firstTop:0.00}");
         }
     }
 }

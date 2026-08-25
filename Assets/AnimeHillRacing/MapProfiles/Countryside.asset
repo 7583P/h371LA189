@@ -20,7 +20,7 @@ MonoBehaviour:
   introEndDistance: 750
   easyEndDistance: 3000
   normalEndDistance: 6000
-  hardEndDistance: 15000
+  hardEndDistance: 10000
   elevationProfile: {fileID: 11400000, guid: 384dbc7f85eef824598e4c7fdebae8e3, type: 2}
   baseHeight: 0
   amplitude: 20
@@ -91,12 +91,18 @@ MonoBehaviour:
   hillFeatureWeight: 0.49
   valleyFeatureWeight: 0.29
   technicalFeatureWeight: 0.19
-  maxSlopeAngle: 32
-  maxHeightDeltaPerSample: 1.0414488
+  usePointedTerrainRhythm: 1
+  pointedMiniFeatureStrength: 0.11
+  pointedFeatureAsymmetry: 0.26
+  pointedPeakMiniFeatureCount: 10
+  pointedExtremeShapeChance: 0.72
+  pointedExtremeShapeStrength: 0.42
+  maxSlopeAngle: 38
+  maxHeightDeltaPerSample: 1.3021427
   minimumValleyWidth: 20
   minimumLandingLength: 16
-  maximumCrestSharpness: 6
-  smoothingPasses: 1
+  maximumCrestSharpness: 14
+  smoothingPasses: 0
   coinDensityPer100m: 9
   initialFuelGap: 5
   fuelGapIncrease: 5
@@ -177,8 +183,15 @@ MonoBehaviour:
     landingLength: 42
     recoveryLength: 86
     initialGapLength: 10
-    gapIncreasePerPhase: 5
+    gapIncreasePerTier: 5
+    gapGrowthDistance: 5000
     landingDrop: 0.35
+    planetLaunchClearance: 4.5
+    planetExitClearance: 4
+    minimumPlanetRadius: 4.8
+    maximumPlanetRadius: 10.5
+    planetRampRise: 3.8
+    planetCenterDrop: 0.82
     blackHoleSprite: {fileID: 0}
     baseDiameter: 5.5
     diameterGrowthPerGapMetre: 0.14

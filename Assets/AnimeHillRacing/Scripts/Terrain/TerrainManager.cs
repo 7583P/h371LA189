@@ -745,7 +745,7 @@ namespace AnimeHillRacing.Terrain
             if (mapProfile == null || !mapProfile.useSpaceTerrain) return;
             while (spaceEventPool.Count < count)
             {
-                GameObject eventObject = new GameObject("Space Void - Available Pooled Instance");
+                GameObject eventObject = new GameObject("Space Event - Available Pooled Instance");
                 eventObject.transform.SetParent(transform, false);
                 SpaceGapEvent spaceEvent = eventObject.AddComponent<SpaceGapEvent>();
                 eventObject.SetActive(false);

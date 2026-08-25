@@ -25,10 +25,15 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
+    - _LayerScale: 0.16
     - _PatternScale: 0.14
+    - _SurfaceMode: 0
     - _Variation: 0.42
     m_Colors:
-    - _AccentColor: {r: 0.19, g: 0.075, b: 0.29, a: 1}
-    - _Color: {r: 0.055, g: 0.018, b: 0.105, a: 1}
+    - _AccentColor: {r: 0.27, g: 0.24, b: 0.34, a: 1}
+    - _Color: {r: 0.16, g: 0.15, b: 0.21, a: 1}
+    - _DeepColor: {r: 0.025, g: 0.045, b: 0.14, a: 1}
+    - _SecondaryColor: {r: 0.34, g: 0.32, b: 0.39, a: 1}
+    - _VeinColor: {r: 0.53, g: 0.48, b: 0.6, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

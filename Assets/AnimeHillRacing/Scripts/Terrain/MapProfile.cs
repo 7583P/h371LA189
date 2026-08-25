@@ -195,10 +195,28 @@ namespace AnimeHillRacing.Terrain
             new[] { 430f, 1280f, 2040f, 2770f, 3460f, 4140f, 4980f, 5530f };
     }
 
+    public enum SpaceEventType
+    {
+        Void,
+        Planet
+    }
+
+    public enum SpacePlanetType
+    {
+        Mercury,
+        Venus,
+        Earth,
+        Mars,
+        Jupiter,
+        Saturn,
+        Uranus,
+        Neptune
+    }
+
     [System.Serializable]
     public sealed class SpaceChallengeSettings
     {
-        [Header("Deterministic Void Layout")]
+        [Header("Deterministic Event Layout")]
         [Min(250f)] public float eventInterval = 2000f;
         [Min(25f)] public float warningDistance = 100f;
         [Min(120f), Tooltip("Exact flat run-up before the reusable ramp.")]
@@ -210,9 +228,23 @@ namespace AnimeHillRacing.Terrain
         [Min(.2f)] public float rampRise = 5.2f;
         [Min(8f)] public float landingLength = 42f;
         [Min(15f)] public float recoveryLength = 86f;
-        [Min(1f)] public float initialGapLength = 10f;
-        [Min(0f)] public float gapIncreasePerPhase = 5f;
+        [Min(1f), Tooltip("Base gap width in logical metres.")]
+        public float initialGapLength = 15f;
+        [FormerlySerializedAs("gapIncreasePerPhase"), Min(0f),
+         Tooltip("Additional width applied at every distance tier.")]
+        public float gapIncreasePerTier = 15f;
+        [Min(100f), Tooltip("Logical metres between gap-width increases.")]
+        public float gapGrowthDistance = 5000f;
         [Min(0f)] public float landingDrop = .35f;
+
+        [Header("Driveable Planets")]
+        [Min(2f)] public float planetLaunchClearance = 4.5f;
+        [Min(2f)] public float planetExitClearance = 4f;
+        [Min(2f)] public float minimumPlanetRadius = 4.8f;
+        [Min(3f)] public float maximumPlanetRadius = 10.5f;
+        [Min(0f)] public float planetRampRise = 3.8f;
+        [Range(.6f, .88f), Tooltip("Height of each upper-arc endpoint above the planet centre, as a radius fraction.")]
+        public float planetCenterDrop = .82f;
 
         [Header("Black Hole")]
         public Sprite blackHoleSprite;
@@ -260,6 +292,17 @@ namespace AnimeHillRacing.Terrain
         [Range(0f, 1f)] public float hillFeatureWeight = 0.45f;
         [Range(0f, 1f)] public float valleyFeatureWeight = 0.20f;
         [Range(0f, 1f)] public float technicalFeatureWeight = 0.15f;
+
+        [Header("Optional Pointed Terrain Rhythm")]
+        [Tooltip("Uses deterministic asymmetric peaks plus small pointed rises and dips inside each section.")]
+        public bool usePointedTerrainRhythm;
+        [Range(.01f, .15f)] public float pointedMiniFeatureStrength = .07f;
+        [Range(0f, .3f)] public float pointedFeatureAsymmetry = .18f;
+        [Range(4, 12), Tooltip("Approximate number of small pointed rises/dips per section at peak difficulty.")]
+        public int pointedPeakMiniFeatureCount = 8;
+        [Range(0f, 1f), Tooltip("Peak-difficulty chance of adding a larger V valley or inverted-V crest.")]
+        public float pointedExtremeShapeChance = .55f;
+        [Range(.05f, .6f)] public float pointedExtremeShapeStrength = .32f;
 
         [Header("Geometric Safety")]
         [FormerlySerializedAs("maximumSlopeDegrees"), Range(5f, 82f)] public float maxSlopeAngle = 18f;
@@ -371,6 +414,14 @@ namespace AnimeHillRacing.Terrain
                 spaceChallenges.approachLength = Mathf.Max(120f, spaceChallenges.approachLength);
                 spaceChallenges.approachBlendLength = Mathf.Max(10f, spaceChallenges.approachBlendLength);
                 spaceChallenges.rampFlatFraction = Mathf.Clamp(spaceChallenges.rampFlatFraction, .05f, .5f);
+                spaceChallenges.initialGapLength = Mathf.Max(1f, spaceChallenges.initialGapLength);
+                spaceChallenges.gapIncreasePerTier = Mathf.Max(0f, spaceChallenges.gapIncreasePerTier);
+                spaceChallenges.gapGrowthDistance = Mathf.Max(100f, spaceChallenges.gapGrowthDistance);
+                spaceChallenges.maximumPlanetRadius = Mathf.Max(spaceChallenges.minimumPlanetRadius,
+                    spaceChallenges.maximumPlanetRadius);
+                spaceChallenges.planetLaunchClearance = Mathf.Max(2f, spaceChallenges.planetLaunchClearance);
+                spaceChallenges.planetExitClearance = Mathf.Max(2f, spaceChallenges.planetExitClearance);
+                spaceChallenges.planetCenterDrop = Mathf.Clamp(spaceChallenges.planetCenterDrop, .6f, .88f);
             }
             if (useArenaTerrain)
             {

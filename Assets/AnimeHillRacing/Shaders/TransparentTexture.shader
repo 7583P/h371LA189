@@ -5,6 +5,8 @@ Shader "AnimeHillRacing/Transparent Texture"
         _MainTex ("Texture", 2D) = "white" {}
         _Color ("Tint", Color) = (1,1,1,1)
         _HorizontalSample ("Horizontal Sample (-1 = tiled)", Range(-1,1)) = -1
+        _SeamlessHorizontalTiling ("Seamless Mirrored Horizontal Tiling", Float) = 0
+        _HorizontalInset ("Horizontal Transparent Edge Inset", Range(0,0.1)) = 0
     }
 
     SubShader
@@ -44,6 +46,8 @@ Shader "AnimeHillRacing/Transparent Texture"
             float4 _MainTex_ST;
             fixed4 _Color;
             float _HorizontalSample;
+            float _SeamlessHorizontalTiling;
+            float _HorizontalInset;
 
             v2f vert(appdata input)
             {
@@ -52,6 +56,18 @@ Shader "AnimeHillRacing/Transparent Texture"
                 output.uv = TRANSFORM_TEX(input.uv, _MainTex);
                 if (_HorizontalSample >= 0.0)
                     output.uv.x = _HorizontalSample;
+                else if (_SeamlessHorizontalTiling > 0.5)
+                {
+                    // The authored terrain PNGs have a narrow transparent gutter on both horizontal
+                    // edges. Mirrored tiling joins equal edges and the inset keeps that gutter out of
+                    // the sampled range, eliminating vertical cuts without changing terrain geometry.
+                    float tile = floor(output.uv.x);
+                    float localU = frac(output.uv.x);
+                    if (fmod(abs(tile), 2.0) >= 1.0)
+                        localU = 1.0 - localU;
+                    float inset = clamp(_HorizontalInset, 0.0, 0.49);
+                    output.uv.x = lerp(inset, 1.0 - inset, localU);
+                }
                 return output;
             }
 

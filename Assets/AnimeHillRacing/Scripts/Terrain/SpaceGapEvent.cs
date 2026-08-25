@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace AnimeHillRacing.Terrain
 {
-    /// <summary>A pooled Space event: independent launch ramp, warning, animated black hole and hazard.</summary>
+    /// <summary>A pooled Space event: integrated ramp plus either a void or a physical driveable planet.</summary>
     public sealed class SpaceGapEvent : MonoBehaviour
     {
         private MeshFilter rampFilter;
@@ -16,8 +16,12 @@ namespace AnimeHillRacing.Terrain
         private SpriteRenderer innerRenderer;
         private SphereCollider hazard3D;
         private CircleCollider2D hazard2D;
+        private SpriteRenderer planetRenderer;
+        private SphereCollider planetCollider3D;
+        private EdgeCollider2D planetCollider2D;
         private Mesh rampMesh;
         private GameManager gameManager;
+        private static PhysicsMaterial2D fallbackPlanetMaterial2D;
         private Vector3 innerBaseScale;
         private float pulsePhase;
         private bool triggered;
@@ -39,7 +43,7 @@ namespace AnimeHillRacing.Terrain
 
         private void EnsureComponents()
         {
-            Transform ramp = GetOrCreate("Thin Light-Brown Launch Ramp");
+            Transform ramp = GetOrCreate("Integrated Lunar Launch Ramp");
             // Unity objects can survive a domain reload as "fake null" references. Explicit Unity null
             // checks rebuild every missing component; C# ??/??= would keep the destroyed wrapper instead.
             if (rampFilter == null) rampFilter = ramp.GetComponent<MeshFilter>();
@@ -80,6 +84,19 @@ namespace AnimeHillRacing.Terrain
             SpaceGapEvent2DForwarder forwarder = trigger2D.GetComponent<SpaceGapEvent2DForwarder>();
             if (forwarder == null) forwarder = trigger2D.gameObject.AddComponent<SpaceGapEvent2DForwarder>();
             forwarder.AssignParent(this);
+
+            Transform planetVisual = GetOrCreate("Planet Visual - No Ring Collider");
+            if (planetRenderer == null) planetRenderer = planetVisual.GetComponent<SpriteRenderer>();
+            if (planetRenderer == null) planetRenderer = planetVisual.gameObject.AddComponent<SpriteRenderer>();
+            Transform planetPhysics = GetOrCreate("Physical Circular Planet Surface");
+            if (planetCollider3D == null) planetCollider3D = planetPhysics.GetComponent<SphereCollider>();
+            if (planetCollider3D == null) planetCollider3D = planetPhysics.gameObject.AddComponent<SphereCollider>();
+            CircleCollider2D obsoleteCircle = planetPhysics.GetComponent<CircleCollider2D>();
+            if (obsoleteCircle != null) obsoleteCircle.enabled = false;
+            if (planetCollider2D == null) planetCollider2D = planetPhysics.GetComponent<EdgeCollider2D>();
+            if (planetCollider2D == null) planetCollider2D = planetPhysics.gameObject.AddComponent<EdgeCollider2D>();
+            planetCollider3D.isTrigger = false;
+            planetCollider2D.isTrigger = false;
         }
 
         public void Configure(MapProfile profile, SpaceChallengeLayout layout, float trackWidth,
@@ -96,11 +113,11 @@ namespace AnimeHillRacing.Terrain
             pulsePhase = layout.phase * 1.713f;
             transform.position = new Vector3(layout.rampStart, layout.baselineHeight, 0f);
 
-            BuildRamp(settings, trackWidth);
+            BuildRamp(settings, layout, trackWidth);
             rampFilter.transform.localPosition = new Vector3(0f, .025f, -.06f);
             rampRenderer.sharedMaterial = settings.rampMaterial != null
                 ? settings.rampMaterial : profile != null ? profile.terrainEdgeMaterial : null;
-            // Physics follows the same integrated terrain ramp used by the track. The brown mesh remains
+            // Physics follows the same integrated terrain ramp used by the track. The lunar mesh remains
             // as a visual coating, without overlapping contacts or a seam at the takeoff edge.
             rampCollider.enabled = false;
             rampCollider2D.enabled = false;
@@ -114,6 +131,25 @@ namespace AnimeHillRacing.Terrain
             warningRenderer.transform.localScale = Vector3.one *
                                                    (settings.warningWidth / Mathf.Max(.001f, warningSourceWidth));
 
+            if (layout.IsPlanet)
+            {
+                ConfigurePlanet(profile, layout, trackWidth);
+                outerRenderer.enabled = false;
+                innerRenderer.enabled = false;
+                hazard3D.enabled = false;
+                hazard2D.enabled = false;
+                gameObject.name = $"Space Planet {layout.planetType} Phase {layout.phase} - Pooled";
+                gameObject.SetActive(true);
+                return;
+            }
+
+            planetRenderer.enabled = false;
+            planetCollider3D.enabled = false;
+            planetCollider2D.enabled = false;
+            outerRenderer.enabled = true;
+            innerRenderer.enabled = true;
+            hazard3D.enabled = true;
+            hazard2D.enabled = true;
             float blackHoleX = (layout.gapStart + layout.gapEnd) * .5f - layout.rampStart;
             float blackHoleWidth = Mathf.Max(1f, layout.gapLength);
             float blackHoleHeight = CalculateBlackHoleVisualHeight(blackHoleWidth);
@@ -141,6 +177,58 @@ namespace AnimeHillRacing.Terrain
             gameObject.SetActive(true);
         }
 
+        private void ConfigurePlanet(MapProfile profile, SpaceChallengeLayout layout, float trackWidth)
+        {
+            float localX = layout.planetCenterX - layout.rampStart;
+            float localY = layout.planetCenterY - layout.baselineHeight;
+            planetRenderer.sprite = SpacePlanetSpriteFactory.GetSprite(layout.planetType);
+            planetRenderer.color = Color.white;
+            planetRenderer.sortingOrder = 6;
+            planetRenderer.enabled = true;
+            planetRenderer.transform.localPosition = new Vector3(localX, localY, -trackWidth * .5f - .18f);
+            planetRenderer.transform.localRotation = Quaternion.identity;
+            planetRenderer.transform.localScale = Vector3.one * layout.planetRadius;
+
+            Transform physics = planetCollider2D.transform;
+            physics.localPosition = new Vector3(localX, localY, 0f);
+            physics.localRotation = Quaternion.identity;
+            physics.localScale = Vector3.one;
+            planetCollider3D.radius = layout.planetRadius;
+            const int arcSegments = 28;
+            var arc = new Vector2[arcSegments + 1];
+            float endpointHeight = profile != null && profile.spaceChallenges != null
+                ? Mathf.Clamp(profile.spaceChallenges.planetCenterDrop, .6f, .88f) : .82f;
+            float rightAngle = Mathf.Asin(endpointHeight);
+            float leftAngle = Mathf.PI - rightAngle;
+            for (int i = 0; i <= arcSegments; i++)
+            {
+                float angle = Mathf.Lerp(leftAngle, rightAngle, i / (float)arcSegments);
+                arc[i] = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * layout.planetRadius;
+            }
+            planetCollider2D.points = arc;
+            planetCollider2D.edgeRadius = .055f;
+            planetCollider3D.sharedMaterial = profile != null ? profile.groundPhysicsMaterial : null;
+            if (profile != null && profile.groundPhysicsMaterial2D != null)
+            {
+                planetCollider2D.sharedMaterial = profile.groundPhysicsMaterial2D;
+            }
+            else
+            {
+                if (fallbackPlanetMaterial2D == null)
+                {
+                    fallbackPlanetMaterial2D = new PhysicsMaterial2D("Runtime Lunar Planet Surface")
+                    {
+                        friction = .82f,
+                        bounciness = .015f,
+                        hideFlags = HideFlags.HideAndDontSave
+                    };
+                }
+                planetCollider2D.sharedMaterial = fallbackPlanetMaterial2D;
+            }
+            planetCollider3D.enabled = true;
+            planetCollider2D.enabled = true;
+        }
+
         public static float CalculateBlackHoleVisualHeight(float width) =>
             Mathf.Clamp(Mathf.Max(1f, width) * .62f, 9f, 18f);
 
@@ -165,26 +253,44 @@ namespace AnimeHillRacing.Terrain
                 height / Mathf.Max(.001f, sourceHeight), 1f);
         }
 
-        private void BuildRamp(SpaceChallengeSettings settings, float trackWidth)
+        private void BuildRamp(SpaceChallengeSettings settings, SpaceChallengeLayout layout, float trackWidth)
         {
-            float length = Mathf.Max(4f, settings.rampLength);
+            float length = Mathf.Max(4f, layout.rampLength);
             float flatEnd = length * Mathf.Clamp(settings.rampFlatFraction, .05f, .5f);
-            float rise = Mathf.Max(.2f, settings.rampRise);
+            float rise = Mathf.Max(.2f, layout.rampRise);
             float halfWidth = Mathf.Max(1f, trackWidth * .5f);
             float thickness = .62f;
-            Vector3[] vertices =
+            const int segments = 12;
+            var vertices = new Vector3[(segments + 1) * 3];
+            var triangles = new int[segments * 12];
+            var edge = new Vector2[segments + 1];
+            for (int i = 0; i <= segments; i++)
             {
-                new Vector3(0f, 0f, -halfWidth), new Vector3(0f, 0f, halfWidth),
-                new Vector3(flatEnd, 0f, -halfWidth), new Vector3(flatEnd, 0f, halfWidth),
-                new Vector3(length, rise, -halfWidth), new Vector3(length, rise, halfWidth),
-                new Vector3(0f, -thickness, -halfWidth), new Vector3(flatEnd, -thickness, -halfWidth),
-                new Vector3(length, rise - thickness, -halfWidth)
-            };
-            int[] triangles =
-            {
-                0, 1, 2, 1, 3, 2, 2, 3, 4, 3, 5, 4,
-                0, 2, 6, 2, 7, 6, 2, 4, 7, 4, 8, 7
-            };
+                float x = length * i / segments;
+                float t = x <= flatEnd ? 0f : Mathf.InverseLerp(flatEnd, length, x);
+                float launchCurve = t * t * (2f - t);
+                float y = rise * launchCurve;
+                int vertex = i * 3;
+                vertices[vertex] = new Vector3(x, y, -halfWidth);
+                vertices[vertex + 1] = new Vector3(x, y, halfWidth);
+                vertices[vertex + 2] = new Vector3(x, y - thickness, -halfWidth);
+                edge[i] = new Vector2(x, y);
+                if (i == segments) continue;
+                int triangle = i * 12;
+                int next = vertex + 3;
+                triangles[triangle] = vertex;
+                triangles[triangle + 1] = vertex + 1;
+                triangles[triangle + 2] = next;
+                triangles[triangle + 3] = vertex + 1;
+                triangles[triangle + 4] = next + 1;
+                triangles[triangle + 5] = next;
+                triangles[triangle + 6] = vertex;
+                triangles[triangle + 7] = next;
+                triangles[triangle + 8] = vertex + 2;
+                triangles[triangle + 9] = next;
+                triangles[triangle + 10] = next + 2;
+                triangles[triangle + 11] = vertex + 2;
+            }
             rampMesh.Clear();
             rampMesh.vertices = vertices;
             rampMesh.triangles = triangles;
@@ -192,12 +298,12 @@ namespace AnimeHillRacing.Terrain
             rampMesh.RecalculateBounds();
             rampCollider.sharedMesh = null;
             rampCollider.sharedMesh = rampMesh;
-            rampCollider2D.points = new[] { Vector2.zero, new Vector2(flatEnd, 0f), new Vector2(length, rise) };
+            rampCollider2D.points = edge;
         }
 
         private void Update()
         {
-            if (outerRenderer == null || innerRenderer == null) return;
+            if (outerRenderer == null || innerRenderer == null || !outerRenderer.enabled) return;
             // The hole and its horizontal silhouette remain perfectly fixed beneath the ramp. Only the
             // orange overlay flickers and breathes, like fire moving around an immobile event horizon.
             outerRenderer.transform.localRotation = Quaternion.identity;

@@ -210,6 +210,10 @@ namespace AnimeHillRacing.Editor
             else if (material.shader != shader) material.shader = shader;
             material.mainTexture = texture;
             material.color = Color.white;
+            if (material.HasProperty("_SeamlessHorizontalTiling"))
+                material.SetFloat("_SeamlessHorizontalTiling", 1f);
+            if (material.HasProperty("_HorizontalInset"))
+                material.SetFloat("_HorizontalInset", .012f);
             material.renderQueue = path == GroundMaterialPath ? 2451 : 2450;
             EditorUtility.SetDirty(material);
             return material;

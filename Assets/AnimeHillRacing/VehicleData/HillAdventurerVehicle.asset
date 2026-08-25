@@ -30,7 +30,7 @@ MonoBehaviour:
     bundleType: 0
     allowsBlueprintProgression: 1
     visibleDiameter: 0
-    visibleSize: {x: 21.72, y: 6.55}
+    visibleSize: {x: 21.72, y: 6.91}
     visualOffset: {x: 0, y: 0}
   - optionId: hill-adventurer-skin-purple-4x4
     displayName: PURPLE 4x4
@@ -41,17 +41,7 @@ MonoBehaviour:
     allowsBlueprintProgression: 1
     visibleDiameter: 0
     visibleSize: {x: 21.72, y: 6.62}
-    visualOffset: {x: 0, y: 0}
-  - optionId: hill-adventurer-skin-darker
-    displayName: Darker
-    sprite: {fileID: 21300000, guid: e2d9b86cb741418fa11f48e7748dff85, type: 3}
-    unlockedByDefault: 0
-    gemPrice: 1000
-    bundleType: 0
-    allowsBlueprintProgression: 1
-    visibleDiameter: 0
-    visibleSize: {x: 21.72, y: 6.56}
-    visualOffset: {x: 0, y: 0}
+    visualOffset: {x: 0, y: 0.355}
   wheels:
   - optionId: hill-adventurer-wheel-default
     displayName: DEFAULT WHEEL

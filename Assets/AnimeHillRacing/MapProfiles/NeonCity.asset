@@ -64,6 +64,12 @@ MonoBehaviour:
   hillFeatureWeight: 0.54
   valleyFeatureWeight: 0.25
   technicalFeatureWeight: 0.18
+  usePointedTerrainRhythm: 0
+  pointedMiniFeatureStrength: 0.07
+  pointedFeatureAsymmetry: 0.18
+  pointedPeakMiniFeatureCount: 8
+  pointedExtremeShapeChance: 0.55
+  pointedExtremeShapeStrength: 0.32
   maxSlopeAngle: 50
   maxHeightDeltaPerSample: 1.986256
   minimumValleyWidth: 24
@@ -150,8 +156,15 @@ MonoBehaviour:
     landingLength: 42
     recoveryLength: 86
     initialGapLength: 10
-    gapIncreasePerPhase: 5
+    gapIncreasePerTier: 5
+    gapGrowthDistance: 5000
     landingDrop: 0.35
+    planetLaunchClearance: 4.5
+    planetExitClearance: 4
+    minimumPlanetRadius: 4.8
+    maximumPlanetRadius: 10.5
+    planetRampRise: 3.8
+    planetCenterDrop: 0.82
     blackHoleSprite: {fileID: 0}
     baseDiameter: 5.5
     diameterGrowthPerGapMetre: 0.14

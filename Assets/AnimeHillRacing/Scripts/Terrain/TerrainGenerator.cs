@@ -59,9 +59,13 @@ namespace AnimeHillRacing.Terrain
     public struct SpaceChallengeLayout
     {
         public int phase;
+        public SpaceEventType eventType;
+        public SpacePlanetType planetType;
         public float eventDistance;
         public float approachStart;
         public float rampStart;
+        public float rampLength;
+        public float rampRise;
         public float gapStart;
         public float gapEnd;
         public float landingEnd;
@@ -70,6 +74,13 @@ namespace AnimeHillRacing.Terrain
         public float baselineHeight;
         public float gapLength;
         public float blackHoleDiameter;
+        public float planetRadius;
+        public float planetCenterX;
+        public float planetCenterY;
+        public float landingHeight;
+
+        public bool IsVoid => eventType == SpaceEventType.Void;
+        public bool IsPlanet => eventType == SpaceEventType.Planet;
     }
 
     public struct ArenaSegmentLayout
@@ -673,15 +684,18 @@ namespace AnimeHillRacing.Terrain
             TerrainFeatureType feature = GetFeatureType(profile, featureIndex, featureDifficulty);
             uint seed = CombinedSeed(profile);
             float variant = Hash01(seed, featureIndex * 271 + 37);
-            float featureShape = EvaluateFeature(feature, t, variant, Mathf.Clamp01(featureDifficulty),
-                profile.technicalDetailStrength);
+            float featureShape = profile.usePointedTerrainRhythm
+                ? EvaluatePointedTerrainFeature(profile, feature, featureIndex, t,
+                    variant, Mathf.Clamp01(featureDifficulty))
+                : EvaluateFeature(feature, t, variant, Mathf.Clamp01(featureDifficulty),
+                    profile.technicalDetailStrength);
             float frequency = profile.frequency / Mathf.Max(0.1f, profile.hillSize);
             float phase = Hash01(seed, 73) * TwoPi;
             float broadVariation = Mathf.Sin(worldX * frequency * 0.38f + phase) * 0.12f;
             float perlinVariation = (Mathf.PerlinNoise(seed * 0.000031f + worldX * frequency * 0.24f, 0.417f) * 2f - 1f) * 0.08f;
             float immediateSpaceRelief = profile.useSpaceTerrain
-                ? Mathf.Sin((worldX + 34f) * TwoPi / 172f) * .24f +
-                  Mathf.Sin((worldX + 9f) * TwoPi / 69f) * .10f
+                ? Mathf.Sin((worldX + 34f) * TwoPi / 172f) * .045f +
+                  Mathf.Sin((worldX + 9f) * TwoPi / 69f) * .018f
                 : 0f;
             // Other maps retain their gentle intro. Space becomes demanding after its short safe launch.
             float startFlatten = profile.useSpaceTerrain
@@ -691,14 +705,52 @@ namespace AnimeHillRacing.Terrain
                                     profile.amplitude * amplitudeProgress * startFlatten;
             if (!profile.useSpaceTerrain) return generatedHeight;
 
+            float lunarDetail = SampleLunarSurfaceDetail(profile, distance, Mathf.Clamp01(difficulty));
+            generatedHeight += lunarDetail;
+
             // The first 100 metres are deliberately ordinary and low-relief so every vehicle has a
             // reliable launch surface. Difficulty blends back in from 100 to 160 metres without a seam.
             float gentleFadeIn = Smooth01(Mathf.InverseLerp(0f, 14f, distance));
             float gentleHeight = profile.baseHeight + gentleFadeIn *
                                  (Mathf.Sin(distance * TwoPi / 128f) * .52f +
-                                  Mathf.Sin(distance * TwoPi / 47f) * .11f);
+                                  Mathf.Sin(distance * TwoPi / 47f) * .11f + lunarDetail * .24f);
             float difficultTerrainBlend = Smooth01(Mathf.InverseLerp(100f, 160f, distance));
             return Mathf.Lerp(gentleHeight, generatedHeight, difficultTerrainBlend);
+        }
+
+        private static float SampleLunarSurfaceDetail(MapProfile profile, float distance, float difficulty)
+        {
+            uint seed = CombinedSeed(profile);
+            float strength = Mathf.Lerp(.32f, 1.35f, difficulty);
+            float broadCrater = SampleLunarCraterCell(seed, distance, 61f, 1201, 1.15f * strength);
+            float mediumCrater = SampleLunarCraterCell(seed, distance, 27f, 1237, .52f * strength);
+            float stones = SampleLunarRockCell(seed, distance, 13f, 1279, .24f * Mathf.Lerp(.65f, 1.4f, difficulty));
+            return broadCrater + mediumCrater + stones;
+        }
+
+        private static float SampleLunarCraterCell(uint seed, float distance, float cellLength,
+            int salt, float depth)
+        {
+            int cell = Mathf.FloorToInt(distance / cellLength);
+            float centre = (cell + Mathf.Lerp(.24f, .76f, Hash01(seed, cell * 2371 + salt))) * cellLength;
+            float radius = cellLength * Mathf.Lerp(.15f, .31f, Hash01(seed, cell * 2381 + salt + 7));
+            float u = Mathf.Abs(distance - centre) / Mathf.Max(.01f, radius);
+            if (u >= 1.28f) return 0f;
+            float bowl = u < 1f ? -Mathf.Pow(1f - u * u, 2f) * depth : 0f;
+            float rimDistance = Mathf.Abs(u - 1f);
+            float rim = (1f - Smooth01(Mathf.Clamp01(rimDistance / .28f))) * depth * .26f;
+            return bowl + rim;
+        }
+
+        private static float SampleLunarRockCell(uint seed, float distance, float cellLength,
+            int salt, float height)
+        {
+            int cell = Mathf.FloorToInt(distance / cellLength);
+            if (Hash01(seed, cell * 1877 + salt) < .28f) return 0f;
+            float centre = (cell + Mathf.Lerp(.2f, .8f, Hash01(seed, cell * 1889 + salt + 3))) * cellLength;
+            float halfWidth = cellLength * Mathf.Lerp(.08f, .18f, Hash01(seed, cell * 1901 + salt + 9));
+            float u = Mathf.Abs(distance - centre) / Mathf.Max(.01f, halfWidth);
+            return u < 1f ? Smooth01(1f - u) * height : 0f;
         }
 
         public static int GetArenaSegmentIndex(MapProfile profile, float worldX)
@@ -1149,26 +1201,61 @@ namespace AnimeHillRacing.Terrain
             SpaceChallengeSettings settings = profile != null ? profile.spaceChallenges : null;
             int safePhase = Mathf.Max(1, phase);
             float interval = settings != null ? Mathf.Max(250f, settings.eventInterval) : 2000f;
-            float rampLength = settings != null ? Mathf.Max(4f, settings.rampLength) : 15f;
             float eventDistance = safePhase * interval;
-            float gapLength = settings != null
-                ? settings.initialGapLength + (safePhase - 1) * settings.gapIncreasePerPhase
-                : 10f + (safePhase - 1) * 5f;
+            int eventOffset = (safePhase - 1) % 3;
+            SpaceEventType eventType = eventOffset == 0 ? SpaceEventType.Void : SpaceEventType.Planet;
+            int planetPair = (safePhase - 1) / 3;
+            int planetIndex = (planetPair * 2 + Mathf.Max(0, eventOffset - 1)) % 8;
+            SpacePlanetType planetType = (SpacePlanetType)planetIndex;
+            float logicalDistance = eventDistance * Core.GameManager.LogicalDistanceScale;
+            float growthDistance = settings != null ? Mathf.Max(100f, settings.gapGrowthDistance) : 5000f;
+            int gapTier = Mathf.Max(0, Mathf.FloorToInt(logicalDistance / growthDistance));
+            float voidLength = settings != null
+                ? settings.initialGapLength + gapTier * settings.gapIncreasePerTier
+                : 15f * (gapTier + 1);
+            float planetRadius = eventType == SpaceEventType.Planet
+                ? GetSpacePlanetRadius(settings, planetType) : 0f;
+            float launchClearance = settings != null ? Mathf.Max(2f, settings.planetLaunchClearance) : 4.5f;
+            float exitClearance = settings != null ? Mathf.Max(2f, settings.planetExitClearance) : 4f;
+            float planetArcHeight = settings != null
+                ? Mathf.Clamp(settings.planetCenterDrop, .6f, .88f) : .82f;
+            float planetArcHalfWidth = planetRadius *
+                                       Mathf.Sqrt(Mathf.Max(.01f, 1f - planetArcHeight * planetArcHeight));
+            float gapLength = eventType == SpaceEventType.Void
+                ? voidLength : launchClearance + planetArcHalfWidth * 2f + exitClearance;
+            float baseRampLength = settings != null ? Mathf.Max(4f, settings.rampLength) : 15f;
+            float rampLength = baseRampLength + (eventType == SpaceEventType.Void
+                ? Mathf.Clamp((gapLength - 15f) * .035f, 0f, 7f)
+                : Mathf.Clamp(planetRadius * .22f, .8f, 2.4f));
+            float baseRampRise = settings != null ? settings.rampRise : 5.2f;
+            float rampRise = eventType == SpaceEventType.Void
+                ? baseRampRise + Mathf.Clamp((gapLength - 15f) * .016f, 0f, 2.8f)
+                : (settings != null ? settings.planetRampRise : 3.8f) +
+                  Mathf.Clamp01(logicalDistance / 10000f) * 1.05f + planetRadius * .055f;
             float rampStart = eventDistance;
             float gapStart = rampStart + rampLength;
             float gapEnd = gapStart + gapLength;
             float landingLength = settings != null ? settings.landingLength : 42f;
             float recoveryLength = settings != null ? settings.recoveryLength : 86f;
             float baseline = SampleProceduralProfileHeight(profile, rampStart);
-            // The visible plate follows the removed terrain exactly: it fills the void without extending
-            // beneath the surrounding track or the launch/landing structures.
-            float diameter = gapLength;
+            float landingDrop = settings != null ? settings.landingDrop : .35f;
+            float landingHeight = baseline - (eventType == SpaceEventType.Planet
+                ? landingDrop * .65f : landingDrop);
+            float planetCenterX = eventType == SpaceEventType.Planet
+                ? gapStart + launchClearance + planetArcHalfWidth : 0f;
+            float centreDrop = planetArcHeight;
+            float planetCenterY = eventType == SpaceEventType.Planet
+                ? baseline + rampRise - planetRadius * centreDrop : 0f;
             return new SpaceChallengeLayout
             {
                 phase = safePhase,
+                eventType = eventType,
+                planetType = planetType,
                 eventDistance = eventDistance,
                 approachStart = rampStart - (settings != null ? settings.approachLength : 200f),
                 rampStart = rampStart,
+                rampLength = rampLength,
+                rampRise = rampRise,
                 gapStart = gapStart,
                 gapEnd = gapEnd,
                 landingEnd = gapEnd + landingLength,
@@ -1176,8 +1263,31 @@ namespace AnimeHillRacing.Terrain
                 warningX = rampStart - (settings != null ? settings.warningDistance : 100f),
                 baselineHeight = baseline,
                 gapLength = gapLength,
-                blackHoleDiameter = diameter
+                blackHoleDiameter = eventType == SpaceEventType.Void ? gapLength : 0f,
+                planetRadius = planetRadius,
+                planetCenterX = planetCenterX,
+                planetCenterY = planetCenterY,
+                landingHeight = landingHeight
             };
+        }
+
+        private static float GetSpacePlanetRadius(SpaceChallengeSettings settings, SpacePlanetType planet)
+        {
+            float normalized = planet switch
+            {
+                SpacePlanetType.Mercury => 0f,
+                SpacePlanetType.Venus => .34f,
+                SpacePlanetType.Earth => .40f,
+                SpacePlanetType.Mars => .17f,
+                SpacePlanetType.Jupiter => 1f,
+                SpacePlanetType.Saturn => .84f,
+                SpacePlanetType.Uranus => .61f,
+                SpacePlanetType.Neptune => .59f,
+                _ => .4f
+            };
+            float minimum = settings != null ? Mathf.Max(2f, settings.minimumPlanetRadius) : 4.8f;
+            float maximum = settings != null ? Mathf.Max(minimum, settings.maximumPlanetRadius) : 10.5f;
+            return Mathf.Lerp(minimum, maximum, normalized);
         }
 
         public static bool TryGetSpaceChallengeNearDistance(MapProfile profile, float distance,
@@ -1242,11 +1352,13 @@ namespace AnimeHillRacing.Terrain
                 float rampDistance = worldX - layout.rampStart;
                 if (rampDistance <= flatEnd) return baseline;
                 float rampT = Mathf.InverseLerp(flatEnd, rampLength, rampDistance);
-                return baseline + Mathf.Lerp(0f, settings.rampRise, rampT);
+                // Zero slope at the join, but a positive final tangent so the vehicle actually launches.
+                float launchCurve = rampT * rampT * (2f - rampT);
+                return baseline + layout.rampRise * launchCurve;
             }
             float landingStart = GetSpaceLandingStart(layout);
-            if (worldX < landingStart) return baseline + settings.rampRise;
-            float landingHeight = baseline - settings.landingDrop;
+            if (worldX < landingStart) return baseline + layout.rampRise;
+            float landingHeight = layout.landingHeight;
             if (worldX < layout.landingEnd) return landingHeight;
             if (worldX < layout.recoveryEnd)
             {
@@ -1537,6 +1649,144 @@ namespace AnimeHillRacing.Terrain
             float detail = Mathf.Sin((clampedT * detailCycles + variant * 0.17f) * TwoPi) * envelope *
                            technicalDetailStrength * technicalFactor * Mathf.Lerp(0f, 0.20f, difficulty);
             return shape + detail;
+        }
+
+        private static float EvaluatePointedTerrainFeature(MapProfile profile, TerrainFeatureType feature,
+            int featureIndex, float t, float variant, float difficulty)
+        {
+            float clampedT = Mathf.Clamp01(t);
+            uint seed = CombinedSeed(profile);
+            float asymmetry = Mathf.Clamp(profile.pointedFeatureAsymmetry, 0f, .3f);
+            float centre = .5f + (Hash01(seed, featureIndex * 947 + 211) * 2f - 1f) * asymmetry;
+            if (feature == TerrainFeatureType.LongClimb)
+                centre = Mathf.Clamp(centre + .10f, .34f, .78f);
+            else if (feature == TerrainFeatureType.LongDescent)
+                centre = Mathf.Clamp(centre - .10f, .22f, .66f);
+
+            float sharpnessRoll = Hash01(seed, featureIndex * 971 + 223);
+            float pointPower = Mathf.Lerp(
+                Mathf.Lerp(1.05f, 1.42f, difficulty),
+                Mathf.Lerp(1.65f, 2.85f, difficulty), sharpnessRoll);
+            float pointedEnvelope = PointedEnvelope(clampedT, centre, pointPower);
+            // The range widens with distance: some hills remain deliberately low and gentle while
+            // others become substantially taller and steeper as the 10 km peak approaches.
+            float heightVariation = Mathf.Lerp(
+                Mathf.Lerp(.72f, .48f, difficulty),
+                Mathf.Lerp(1.22f, 1.42f, difficulty),
+                Hash01(seed, featureIndex * 991 + 227));
+            bool positiveHill = true;
+            float shape;
+            switch (feature)
+            {
+                case TerrainFeatureType.FlatRecovery:
+                    shape = pointedEnvelope * Mathf.Lerp(.055f, .105f, variant);
+                    break;
+                case TerrainFeatureType.SoftHill:
+                    shape = pointedEnvelope * Mathf.Lerp(.28f, .45f, variant);
+                    break;
+                case TerrainFeatureType.MediumHill:
+                    shape = pointedEnvelope * Mathf.Lerp(.54f, .80f, variant);
+                    break;
+                case TerrainFeatureType.LongClimb:
+                    shape = pointedEnvelope * Mathf.Lerp(.48f, .82f, variant);
+                    break;
+                case TerrainFeatureType.LongDescent:
+                    positiveHill = false;
+                    shape = -pointedEnvelope * Mathf.Lerp(.48f, .82f, 1f - variant);
+                    break;
+                case TerrainFeatureType.Valley:
+                    positiveHill = false;
+                    shape = -pointedEnvelope * Mathf.Lerp(.54f, .82f, variant);
+                    break;
+                case TerrainFeatureType.Crest:
+                    shape = Mathf.Pow(pointedEnvelope, 1.28f) * Mathf.Lerp(.72f, .96f, variant);
+                    break;
+                case TerrainFeatureType.RollingSection:
+                    float firstCentre = Mathf.Clamp(centre - .19f, .25f, .46f);
+                    float secondCentre = Mathf.Clamp(centre + .19f, .54f, .75f);
+                    shape = PointedPulse(clampedT, firstCentre, .24f, pointPower) *
+                            Mathf.Lerp(.42f, .62f, variant) -
+                            PointedPulse(clampedT, secondCentre, .24f, pointPower) *
+                            Mathf.Lerp(.34f, .56f, 1f - variant);
+                    break;
+                case TerrainFeatureType.JumpableCrest:
+                    shape = Mathf.Pow(pointedEnvelope, 1.42f) * Mathf.Lerp(.66f, .90f, variant);
+                    break;
+                default:
+                    shape = 0f;
+                    break;
+            }
+            shape *= heightVariation;
+
+            float extremeChance = Mathf.Clamp01(profile.pointedExtremeShapeChance) *
+                                  Mathf.Lerp(.18f, 1f, difficulty);
+            if (feature == TerrainFeatureType.FlatRecovery) extremeChance *= .18f;
+            if (Hash01(seed, featureIndex * 997 + 229) < extremeChance)
+            {
+                float extremeHalfWidth = Mathf.Lerp(.12f, .24f,
+                    Hash01(seed, featureIndex * 1019 + 235)) * Mathf.Lerp(1.12f, .86f, difficulty);
+                float extremeMargin = extremeHalfWidth + .01f;
+                float extremeCentre = Mathf.Lerp(extremeMargin, 1f - extremeMargin,
+                    Hash01(seed, featureIndex * 1009 + 231));
+                float extremePower = Mathf.Lerp(1.02f, 1.42f,
+                    Hash01(seed, featureIndex * 1021 + 237));
+                float extremeHeight = Mathf.Clamp(profile.pointedExtremeShapeStrength, .05f, .6f) *
+                                      Mathf.Lerp(.72f, 1.28f,
+                                          Hash01(seed, featureIndex * 1033 + 241));
+                float extremeDirection = Hash01(seed, featureIndex * 1039 + 243) < .5f ? -1f : 1f;
+                shape += PointedPulse(clampedT, extremeCentre, extremeHalfWidth, extremePower) *
+                         extremeHeight * extremeDirection;
+            }
+
+            // Every section receives a different deterministic set of small points. Before a positive
+            // crest they are rises; after it they become dips, so the descent is not one repeated smooth
+            // ramp. Valleys invert that order to match their descending and ascending sides.
+            int peakMiniCount = Mathf.Clamp(profile.pointedPeakMiniFeatureCount, 4, 12);
+            int initialMiniCount = Mathf.Max(3, peakMiniCount - 5);
+            int countVariation = Mathf.FloorToInt(Hash01(seed, featureIndex * 1049 + 247) * 3f) - 1;
+            int miniCount = Mathf.Clamp(
+                Mathf.RoundToInt(Mathf.Lerp(initialMiniCount, peakMiniCount, difficulty)) + countVariation,
+                3, 12);
+            float miniStrength = Mathf.Clamp(profile.pointedMiniFeatureStrength, .01f, .15f) *
+                                 Mathf.Lerp(.46f, 1.15f, difficulty);
+            float miniDetail = 0f;
+            for (int mini = 0; mini < miniCount; mini++)
+            {
+                float evenPosition = (mini + 1f) / (miniCount + 1f);
+                float jitter = (Hash01(seed, featureIndex * 1061 + mini * 67 + 251) * 2f - 1f) * .055f;
+                float halfWidth = Mathf.Lerp(
+                    Mathf.Lerp(.055f, .040f, difficulty),
+                    Mathf.Lerp(.105f, .080f, difficulty),
+                    Hash01(seed, featureIndex * 1087 + mini * 71 + 257));
+                float miniMargin = halfWidth + .01f;
+                float miniCentre = Mathf.Clamp(evenPosition + jitter, miniMargin, 1f - miniMargin);
+                float miniPower = Mathf.Lerp(1.02f, Mathf.Lerp(1.5f, 1.85f, difficulty),
+                    Hash01(seed, featureIndex * 1091 + mini * 73 + 263));
+                float miniHeight = Mathf.Lerp(.68f, Mathf.Lerp(1.24f, 1.48f, difficulty),
+                    Hash01(seed, featureIndex * 1103 + mini * 79 + 269));
+                bool beforeCrest = miniCentre < centre;
+                float direction = beforeCrest == positiveHill ? 1f : -1f;
+                miniDetail += PointedPulse(clampedT, miniCentre, halfWidth, miniPower) *
+                              miniHeight * direction;
+            }
+
+            return shape + miniDetail * miniStrength * profile.technicalDetailStrength;
+        }
+
+        private static float PointedEnvelope(float t, float centre, float power)
+        {
+            float safeCentre = Mathf.Clamp(centre, .08f, .92f);
+            if (t <= 0f || t >= 1f) return 0f;
+            return t < safeCentre
+                ? Mathf.Pow(Mathf.Clamp01(t / safeCentre), power)
+                : Mathf.Pow(Mathf.Clamp01((1f - t) / (1f - safeCentre)), power);
+        }
+
+        private static float PointedPulse(float t, float centre, float halfWidth, float power)
+        {
+            float radius = Mathf.Abs(t - centre) / Mathf.Max(.001f, halfWidth);
+            if (radius >= 1f) return 0f;
+            return Mathf.Pow(1f - radius, Mathf.Max(1f, power));
         }
 
         public static float EvaluateFloat32Precision(float value, float worldX)

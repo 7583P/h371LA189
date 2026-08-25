@@ -16,6 +16,8 @@ MonoBehaviour:
   displayName: COUNTRYSIDE
   supportedGameMode: 0
   seed: 18472
+  unlockedByDefault: 1
+  coinPrice: 0
   coinRoute: {fileID: 11400000, guid: 2d8f01a9a8d293943a19b887710af661, type: 2}
   introEndDistance: 750
   easyEndDistance: 3000
@@ -97,6 +99,18 @@ MonoBehaviour:
   pointedPeakMiniFeatureCount: 10
   pointedExtremeShapeChance: 0.72
   pointedExtremeShapeStrength: 0.42
+  useCountrysideSpecialFeatures: 1
+  countrysideSpecialFeatures:
+    eventInterval: 500
+    firstEventDistance: 260
+    eventChance: 0.88
+    longFlatChance: 0.58
+    transitionLength: 45
+    longFlatLengths: {x: 150, y: 200}
+    slashFlatLead: 18
+    slashLength: 96
+    slashHeight: 18
+    maximumStartJitter: 70
   maxSlopeAngle: 38
   maxHeightDeltaPerSample: 1.3021427
   minimumValleyWidth: 20

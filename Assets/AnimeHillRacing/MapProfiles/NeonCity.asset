@@ -16,6 +16,8 @@ MonoBehaviour:
   displayName: NEON CITY
   supportedGameMode: 0
   seed: 620031
+  unlockedByDefault: 0
+  coinPrice: 25000
   coinRoute: {fileID: 11400000, guid: 2d8f01a9a8d293943a19b887710af661, type: 2}
   introEndDistance: 750
   easyEndDistance: 9000
@@ -70,6 +72,18 @@ MonoBehaviour:
   pointedPeakMiniFeatureCount: 8
   pointedExtremeShapeChance: 0.55
   pointedExtremeShapeStrength: 0.32
+  useCountrysideSpecialFeatures: 0
+  countrysideSpecialFeatures:
+    eventInterval: 500
+    firstEventDistance: 260
+    eventChance: 0.88
+    longFlatChance: 0.58
+    transitionLength: 18
+    longFlatLengths: {x: 150, y: 200}
+    slashFlatLead: 18
+    slashLength: 96
+    slashHeight: 18
+    maximumStartJitter: 70
   maxSlopeAngle: 50
   maxHeightDeltaPerSample: 1.986256
   minimumValleyWidth: 24

@@ -98,7 +98,8 @@ namespace AnimeHillRacing.Editor
             v.vehicleId = "buggy-01";
             v.displayName = "BUGGY";
             v.archetype = VehicleArchetype.Buggy;
-            v.unlockedByDefault = true;
+            v.unlockedByDefault = false;
+            v.coinPrice = 30000;
             v.gemPrice = 0;
             v.allowsBlueprintProgression = true;
             v.engineMaxTunes = 20;
@@ -425,6 +426,8 @@ namespace AnimeHillRacing.Editor
         {
             profile.mapId = "mountains";
             profile.displayName = "MOUNTAINS";
+            profile.unlockedByDefault = false;
+            profile.coinPrice = 30000;
             profile.supportedGameMode = GameModeType.Adventure2_5D;
             profile.seed = 40822;
             profile.introEndDistance = 1000f;

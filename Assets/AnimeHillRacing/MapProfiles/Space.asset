@@ -16,6 +16,8 @@ MonoBehaviour:
   displayName: SPACE
   supportedGameMode: 0
   seed: 240921
+  unlockedByDefault: 0
+  coinPrice: 40000
   coinRoute: {fileID: 11400000, guid: 2d8f01a9a8d293943a19b887710af661, type: 2}
   introEndDistance: 800
   easyEndDistance: 3500

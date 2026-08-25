@@ -72,7 +72,8 @@ namespace AnimeHillRacing.Core
         public static bool PrepareAdventureGarage(MapDefinition map)
         {
             if (map == null || string.IsNullOrWhiteSpace(map.mapId) ||
-                map.supportedGameMode != GameModeType.Adventure2_5D)
+                map.supportedGameMode != GameModeType.Adventure2_5D ||
+                !SaveManager.IsMapUnlocked(map.mapId, map.unlockedByDefault))
             {
                 ClearGarageContext();
                 return false;
@@ -115,6 +116,11 @@ namespace AnimeHillRacing.Core
                 MapDefinition candidate = catalog.maps[i];
                 if (candidate == null || candidate.supportedGameMode != GameModeType.Adventure2_5D ||
                     candidate.mapId != pendingAdventureMapId) continue;
+                if (!SaveManager.IsMapUnlocked(candidate.mapId, candidate.unlockedByDefault))
+                {
+                    ClearGarageContext();
+                    return false;
+                }
                 map = candidate;
                 return true;
             }

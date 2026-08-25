@@ -12,6 +12,13 @@ namespace AnimeHillRacing.Terrain
         public string displayName = "MAP";
         public GameModeType supportedGameMode;
         public int seed = 1;
+
+        [Header("Unlock Economy")]
+        [Tooltip("Free maps stay available when no saved unlock key exists.")]
+        public bool unlockedByDefault = true;
+        [Min(0), Tooltip("Permanent unlock price in coins. Zero is only valid for a free map.")]
+        public int coinPrice;
+
         [Header("Deterministic Pickups")]
         public CoinRouteDefinition coinRoute;
 

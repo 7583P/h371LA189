@@ -227,7 +227,10 @@ namespace AnimeHillRacing.Vehicle
                 if (accessory == null) accessory = existing.gameObject.AddComponent<SpriteRenderer>();
             }
             if (accessoryMaterialCaptured) return;
-            defaultAccessoryMaterial = accessory.sharedMaterial;
+            // Ordinary accessories never need a bespoke runtime shader. A stale/stripped material
+            // renders the whole sprite quad magenta on Android, so use Unity's supported sprite
+            // material as the explicit baseline and reserve the custom shader for Rainbow only.
+            defaultAccessoryMaterial = HillAdventurerSkinEffect.GetDefaultSpriteMaterial();
             accessoryMaterialCaptured = true;
         }
 

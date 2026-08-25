@@ -214,6 +214,22 @@ namespace AnimeHillRacing.Terrain
     }
 
     [System.Serializable]
+    public sealed class CountrysideSpecialFeatureSettings
+    {
+        [Min(250f)] public float eventInterval = 500f;
+        [Min(0f)] public float firstEventDistance = 260f;
+        [Range(0f, 1f)] public float eventChance = .88f;
+        [Range(0f, 1f)] public float longFlatChance = .58f;
+        [Min(5f)] public float transitionLength = 45f;
+        [Tooltip("The deterministic flat core chooses exactly one of these two lengths.")]
+        public Vector2 longFlatLengths = new Vector2(150f, 200f);
+        [Min(10f)] public float slashFlatLead = 18f;
+        [Min(30f)] public float slashLength = 96f;
+        [Min(1f)] public float slashHeight = 18f;
+        [Min(0f)] public float maximumStartJitter = 70f;
+    }
+
+    [System.Serializable]
     public sealed class SpaceChallengeSettings
     {
         [Header("Deterministic Event Layout")]
@@ -304,6 +320,11 @@ namespace AnimeHillRacing.Terrain
         public float pointedExtremeShapeChance = .55f;
         [Range(.05f, .6f)] public float pointedExtremeShapeStrength = .32f;
 
+        [Header("Optional Countryside Special Features")]
+        public bool useCountrysideSpecialFeatures;
+        public CountrysideSpecialFeatureSettings countrysideSpecialFeatures =
+            new CountrysideSpecialFeatureSettings();
+
         [Header("Geometric Safety")]
         [FormerlySerializedAs("maximumSlopeDegrees"), Range(5f, 82f)] public float maxSlopeAngle = 18f;
         [Min(0.05f)] public float maxHeightDeltaPerSample = 1.05f;
@@ -381,6 +402,17 @@ namespace AnimeHillRacing.Terrain
             arena ??= new ArenaSettings();
             mountains ??= new MountainsSettings();
             rainstorm ??= new RainstormSettings();
+            countrysideSpecialFeatures ??= new CountrysideSpecialFeatureSettings();
+            countrysideSpecialFeatures.eventInterval = Mathf.Max(250f,
+                countrysideSpecialFeatures.eventInterval);
+            countrysideSpecialFeatures.transitionLength = Mathf.Max(5f,
+                countrysideSpecialFeatures.transitionLength);
+            countrysideSpecialFeatures.longFlatLengths.x = Mathf.Max(50f,
+                countrysideSpecialFeatures.longFlatLengths.x);
+            countrysideSpecialFeatures.longFlatLengths.y = Mathf.Max(50f,
+                countrysideSpecialFeatures.longFlatLengths.y);
+            countrysideSpecialFeatures.slashLength = Mathf.Max(30f,
+                countrysideSpecialFeatures.slashLength);
             rainstorm.maximumParticles = Mathf.Clamp(rainstorm.maximumParticles, 100, 900);
             rainstorm.emissionRate = Mathf.Clamp(rainstorm.emissionRate, 20f, 300f);
             rainstorm.surfaceGripMultiplier = Mathf.Clamp(rainstorm.surfaceGripMultiplier, .25f, 1f);

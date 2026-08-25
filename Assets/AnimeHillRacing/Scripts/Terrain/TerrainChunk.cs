@@ -140,25 +140,28 @@ namespace AnimeHillRacing.Terrain
             if (surfaceHeights != null && surfaceHeights.Length > 1 && edgeCollider2D != null)
             {
                 float dx = targetChunkLength / Mathf.Max(1, surfaceHeights.Length - 1);
-                int totalPoints = surfaceHeights.Length + 2;
+                int totalPoints = surfaceHeights.Length;
                 if (edgePoints2D == null || edgePoints2D.Length != totalPoints)
                     edgePoints2D = new Vector2[totalPoints];
 
                 float worldStartX = index * targetChunkLength;
-                float prevWorldX = worldStartX - dx;
-                float nextWorldX = worldStartX + targetChunkLength + dx;
-                float prevY = profile != null ? TerrainGenerator.SampleHeight(profile, prevWorldX) : surfaceHeights[0];
-                float nextY = profile != null ? TerrainGenerator.SampleHeight(profile, nextWorldX) : surfaceHeights[surfaceHeights.Length - 1];
-
-                edgePoints2D[0] = new Vector2(prevWorldX - worldStartX, prevY);
                 for (int i = 0; i < surfaceHeights.Length; i++)
                 {
                     float worldX = worldStartX + i * dx;
-                    edgePoints2D[i + 1] = new Vector2(worldX - worldStartX, surfaceHeights[i]);
+                    edgePoints2D[i] = new Vector2(worldX - worldStartX, surfaceHeights[i]);
                 }
-                edgePoints2D[totalPoints - 1] = new Vector2(nextWorldX - worldStartX, nextY);
 
                 edgeCollider2D.points = edgePoints2D;
+                // Ghost adjacency points provide the tangent used by Box2D at each endpoint without
+                // adding overlapping physical segments between chunks. Consecutive chunks share the
+                // exact boundary height/slope passed through TerrainManager.
+                edgeCollider2D.useAdjacentStartPoint = true;
+                edgeCollider2D.adjacentStartPoint = new Vector2(-dx,
+                    surfaceHeights[0] - (surfaceHeights[1] - surfaceHeights[0]));
+                int last = surfaceHeights.Length - 1;
+                edgeCollider2D.useAdjacentEndPoint = true;
+                edgeCollider2D.adjacentEndPoint = new Vector2(targetChunkLength + dx,
+                    surfaceHeights[last] + (surfaceHeights[last] - surfaceHeights[last - 1]));
                 edgeCollider2D.edgeRadius = 0f;
                 edgeCollider2D.sharedMaterial = profile != null && profile.groundPhysicsMaterial2D != null
                     ? profile.groundPhysicsMaterial2D : s_defaultGroundMaterial2D;

@@ -155,8 +155,11 @@ namespace AnimeHillRacing.Vehicle
         public GameObject gameplayPrefab3D;
         public Sprite previewSprite;
 
-        [Header("Premium Vehicle Bundle (optional)")]
+        [Header("Vehicle Unlock Economy")]
         public bool unlockedByDefault = true;
+        [Min(0), Tooltip("Permanent direct-unlock price in coins. Zero is only valid for the initial free vehicle.")]
+        public int coinPrice;
+        [Header("Premium Vehicle Bundle (optional)")]
         [Min(0)] public int gemPrice;
         public bool allowsBlueprintProgression = true;
 

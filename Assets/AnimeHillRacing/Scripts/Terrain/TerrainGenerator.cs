@@ -39,6 +39,25 @@ namespace AnimeHillRacing.Terrain
         Recovery
     }
 
+    public enum CountrysideSpecialFeatureType
+    {
+        LongFlat,
+        DiagonalSlash
+    }
+
+    public struct CountrysideSpecialFeatureLayout
+    {
+        public int index;
+        public CountrysideSpecialFeatureType type;
+        public float start;
+        public float coreStart;
+        public float slashStart;
+        public float coreEnd;
+        public float end;
+        public float baselineHeight;
+        public float peakHeight;
+    }
+
     public struct LiquidChallengeLayout
     {
         public int cycleIndex;
@@ -317,9 +336,10 @@ namespace AnimeHillRacing.Terrain
                 return SampleNeonHeight(profile, worldX);
             if (profile != null && profile.useSpaceTerrain)
                 return SampleSpaceHeight(profile, worldX);
-            return profile != null && profile.elevationProfile != null
+            float general = profile != null && profile.elevationProfile != null
                 ? profile.elevationProfile.GetHeightAtDistance(worldX)
                 : SampleProceduralProfileHeight(profile, worldX);
+            return SampleCountrysideSpecialHeight(profile, worldX, general);
         }
 
         public static float SampleProfileHeight(MapProfile profile, float worldX)
@@ -330,7 +350,91 @@ namespace AnimeHillRacing.Terrain
             if (profile.useCityHighwayTerrain) return SampleCityHighwayHeight(profile, worldX);
             if (profile.supportsLiquidExposure) return SampleNeonHeight(profile, worldX);
             if (profile.useSpaceTerrain) return SampleSpaceHeight(profile, worldX);
-            return SampleProceduralProfileHeight(profile, worldX);
+            float general = SampleProceduralProfileHeight(profile, worldX);
+            return SampleCountrysideSpecialHeight(profile, worldX, general);
+        }
+
+        private static float SampleCountrysideSpecialHeight(MapProfile profile, float worldX,
+            float generalHeight)
+        {
+            if (!TryGetCountrysideSpecialFeature(profile, worldX, out CountrysideSpecialFeatureLayout layout))
+                return generalHeight;
+
+            if (worldX < layout.coreStart)
+                return Mathf.Lerp(generalHeight, layout.baselineHeight,
+                    Smooth01(Mathf.InverseLerp(layout.start, layout.coreStart, worldX)));
+            if (worldX > layout.coreEnd)
+                return Mathf.Lerp(layout.baselineHeight, generalHeight,
+                    Smooth01(Mathf.InverseLerp(layout.coreEnd, layout.end, worldX)));
+            if (layout.type == CountrysideSpecialFeatureType.LongFlat || worldX <= layout.slashStart)
+                return layout.baselineHeight;
+
+            float slashLength = Mathf.Max(30f, layout.coreEnd - layout.slashStart);
+            float slashT = Mathf.Clamp01((worldX - layout.slashStart) / slashLength);
+            float triangle = slashT <= .5f ? slashT * 2f : (1f - slashT) * 2f;
+            return layout.baselineHeight + triangle * layout.peakHeight;
+        }
+
+        public static bool TryGetCountrysideSpecialFeature(MapProfile profile, float worldX,
+            out CountrysideSpecialFeatureLayout layout)
+        {
+            layout = default;
+            CountrysideSpecialFeatureSettings settings = profile?.countrysideSpecialFeatures;
+            if (profile == null || !profile.useCountrysideSpecialFeatures || settings == null || worldX < 0f)
+                return false;
+
+            float interval = Mathf.Max(250f, settings.eventInterval);
+            float first = Mathf.Max(0f, settings.firstEventDistance);
+            int approximateIndex = Mathf.FloorToInt((worldX - first) / interval);
+            uint seed = CombinedSeed(profile);
+            for (int index = Mathf.Max(0, approximateIndex - 1); index <= approximateIndex + 1; index++)
+            {
+                if (Hash01(seed, index * 1201 + 307) > Mathf.Clamp01(settings.eventChance)) continue;
+                float start = first + index * interval +
+                              Hash01(seed, index * 1213 + 311) * Mathf.Max(0f, settings.maximumStartJitter);
+                float transition = Mathf.Max(5f, settings.transitionLength);
+                bool isFlat = Hash01(seed, index * 1223 + 313) < Mathf.Clamp01(settings.longFlatChance);
+                float coreLength;
+                float slashStart;
+                if (isFlat)
+                {
+                    float shortLength = Mathf.Max(50f, Mathf.Min(settings.longFlatLengths.x,
+                        settings.longFlatLengths.y));
+                    float longLength = Mathf.Max(50f, Mathf.Max(settings.longFlatLengths.x,
+                        settings.longFlatLengths.y));
+                    coreLength = Hash01(seed, index * 1231 + 317) < .5f ? shortLength : longLength;
+                    slashStart = start + transition;
+                }
+                else
+                {
+                    coreLength = Mathf.Max(10f, settings.slashFlatLead) +
+                                 Mathf.Max(30f, settings.slashLength);
+                    slashStart = start + transition + Mathf.Max(10f, settings.slashFlatLead);
+                }
+                float coreStart = start + transition;
+                float coreEnd = coreStart + coreLength;
+                float end = coreEnd + transition;
+                if (worldX < start || worldX > end) continue;
+
+                float baselineOffset = (Hash01(seed, index * 1237 + 331) * 2f - 1f) *
+                                       Mathf.Min(3f, profile.amplitude * .12f);
+                layout = new CountrysideSpecialFeatureLayout
+                {
+                    index = index,
+                    type = isFlat ? CountrysideSpecialFeatureType.LongFlat :
+                        CountrysideSpecialFeatureType.DiagonalSlash,
+                    start = start,
+                    coreStart = coreStart,
+                    slashStart = slashStart,
+                    coreEnd = coreEnd,
+                    end = end,
+                    baselineHeight = profile.baseHeight + baselineOffset,
+                    peakHeight = Mathf.Max(1f, settings.slashHeight) *
+                                 Mathf.Lerp(.86f, 1.14f, Hash01(seed, index * 1249 + 337))
+                };
+                return true;
+            }
+            return false;
         }
 
         public static float SampleMountainsHeight(MapProfile profile, float worldX)

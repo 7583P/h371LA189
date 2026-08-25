@@ -96,6 +96,8 @@ namespace AnimeHillRacing.Editor
             profile.displayName = "CITY";
             profile.supportedGameMode = GameModeType.Adventure2_5D;
             profile.seed = 4152026;
+            profile.unlockedByDefault = false;
+            profile.coinPrice = 10000;
             profile.coinRoute = AssetDatabase.LoadAssetAtPath<CoinRouteDefinition>(CoinRoutePath);
             profile.elevationProfile = null;
             profile.baseHeight = 0f;

@@ -59,6 +59,7 @@ namespace AnimeHillRacing.UI
         [SerializeField] private Text trackSelectionTitleText;
         [SerializeField] private Text trackSelectionEmptyText;
         [SerializeField, Min(.5f)] private float trackCardAspectRatio = 2.30f;
+        [SerializeField] private CoinPurchaseConfirmationUI purchaseConfirmation;
 
         private Step step;
         private GameModeType mode = GameModeType.Adventure2_5D;
@@ -76,6 +77,7 @@ namespace AnimeHillRacing.UI
         private void Awake()
         {
             RefreshMenuBackground();
+            if (trackSelectionLayout) EnsurePurchaseConfirmation();
             if (!trackSelectionLayout) EnsureModernLayout();
         }
 
@@ -544,8 +546,50 @@ namespace AnimeHillRacing.UI
         public void SelectAdventureTrack(int compatibleMapIndex)
         {
             MapDefinition map = catalog?.GetCompatibleMap(GameModeType.Adventure2_5D, compatibleMapIndex);
+            if (map == null) return;
+            if (!SaveManager.IsMapUnlocked(map.mapId, map.unlockedByDefault))
+            {
+                ShowMapPurchase(map);
+                return;
+            }
+            CompleteAdventureTrackSelection(map);
+        }
+
+        private void CompleteAdventureTrackSelection(MapDefinition map)
+        {
             if (!GameSession.PrepareAdventureGarage(map)) return;
             SceneManager.LoadScene("Garage");
+        }
+
+        private void ShowMapPurchase(MapDefinition map)
+        {
+            EnsurePurchaseConfirmation();
+            if (purchaseConfirmation == null || map == null) return;
+            bool affordable = map.coinPrice > 0 && SaveManager.TotalCoins >= map.coinPrice;
+            purchaseConfirmation.Show("TRACK", map.displayName, map.coinPrice, affordable, () =>
+            {
+                bool purchased = SaveManager.TryPurchaseMap(map, out CoinUnlockPurchaseResult result);
+                if (purchased || result == CoinUnlockPurchaseResult.AlreadyUnlocked)
+                {
+                    purchaseConfirmation.Hide();
+                    CompleteAdventureTrackSelection(map);
+                    return;
+                }
+                purchaseConfirmation.SetFailure(result == CoinUnlockPurchaseResult.NotEnoughCoins
+                    ? "NOT ENOUGH COINS" : "UNAVAILABLE", false);
+                RefreshTrackSelectionCurrency();
+                RebuildTrackCards();
+            });
+        }
+
+        private void EnsurePurchaseConfirmation()
+        {
+            if (purchaseConfirmation != null) return;
+            Canvas canvas = trackSelectionRoot != null
+                ? trackSelectionRoot.GetComponentInParent<Canvas>() : GetComponentInParent<Canvas>();
+            if (canvas == null) canvas = Object.FindFirstObjectByType<Canvas>();
+            Transform parent = canvas != null ? canvas.transform : transform.root;
+            purchaseConfirmation = CoinPurchaseConfirmationUI.GetOrCreate(parent);
         }
 
         public void Adventure()

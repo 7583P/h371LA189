@@ -18,13 +18,17 @@ namespace AnimeHillRacing.Vehicle
             {
                 Shader shader = Resources.Load<Shader>(ShaderResourceName);
                 if (shader == null) shader = Shader.Find("AnimeHillRacing/Accessory Rainbow");
-                if (shader == null) return null;
+                if (shader == null || !shader.isSupported)
+                    return HillAdventurerSkinEffect.GetDefaultSpriteMaterial();
                 rainbowMaterial = new Material(shader)
                 {
                     name = "Accessory Rainbow (Runtime)",
                     hideFlags = HideFlags.HideAndDontSave
                 };
             }
+
+            if (rainbowMaterial.shader == null || !rainbowMaterial.shader.isSupported)
+                return HillAdventurerSkinEffect.GetDefaultSpriteMaterial();
 
             rainbowMaterial.SetFloat(SpeedId, Mathf.Max(.01f, speed));
             rainbowMaterial.SetFloat(FrequencyId, Mathf.Max(.1f, frequency));

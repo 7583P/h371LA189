@@ -54,6 +54,9 @@ namespace AnimeHillRacing.Editor
                 profile.spaceChallenges == null)
                 throw new InvalidOperationException("Space galaxy configuration assets are incomplete.");
 
+            profile.unlockedByDefault = false;
+            profile.coinPrice = 40000;
+
             environment.sky = starfield;
             environment.mountains = galaxy;
             environment.sun = null;

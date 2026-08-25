@@ -1,4 +1,5 @@
 using AnimeHillRacing.Vehicle;
+using AnimeHillRacing.Terrain;
 using UnityEngine;
 
 namespace AnimeHillRacing.Core
@@ -17,6 +18,14 @@ namespace AnimeHillRacing.Core
         AlreadyUnlocked,
         NotEnoughCoins,
         InvalidBundle
+    }
+
+    public enum CoinUnlockPurchaseResult
+    {
+        Success,
+        AlreadyUnlocked,
+        NotEnoughCoins,
+        InvalidConfiguration
     }
 
     public static class SaveManager
@@ -48,6 +57,7 @@ namespace AnimeHillRacing.Core
         private const string DistanceBonusThresholdKey = "AHR.DistanceBonus.NextThreshold";
         private const string DistanceBonusX10MigrationKey = "AHR.Migration.DistanceBonusX10.V1";
         private const string FormulaWheelMigrationKey = "AHR.Migration.FormulaDefaultWheel02.V1";
+        private const string PurchasableContentMigrationKey = "AHR.Migration.PurchasableContent.V1";
         private const string FormulaLegacyWheelId = "formula-wheel-rainbow";
         private const string FormulaLuxuryWheelId = "formula-wheel-luxury";
         private const string RallyLegacyWheelId = "rally-wheel-rainbow";
@@ -297,8 +307,66 @@ namespace AnimeHillRacing.Core
 
         public static bool IsVehicleUnlocked(string vehicleId, bool unlockedByDefault)
         {
+            EnsurePurchasableContentMigration();
             string key = VehicleUnlockKey(vehicleId);
             return PlayerPrefs.HasKey(key) ? PlayerPrefs.GetInt(key, 0) != 0 : unlockedByDefault;
+        }
+
+        public static bool IsMapUnlocked(string mapId, bool unlockedByDefault)
+        {
+            EnsurePurchasableContentMigration();
+            string key = MapUnlockKey(mapId);
+            return PlayerPrefs.HasKey(key) ? PlayerPrefs.GetInt(key, 0) != 0 : unlockedByDefault;
+        }
+
+        public static bool TryPurchaseMap(MapDefinition map, out CoinUnlockPurchaseResult result)
+        {
+            if (map == null || string.IsNullOrWhiteSpace(map.mapId) || map.coinPrice <= 0)
+            {
+                result = CoinUnlockPurchaseResult.InvalidConfiguration;
+                return false;
+            }
+            return TryPurchaseCoinUnlock(MapUnlockKey(map.mapId),
+                IsMapUnlocked(map.mapId, map.unlockedByDefault), map.coinPrice, out result);
+        }
+
+        public static bool TryPurchaseVehicle(VehicleDefinition vehicle,
+            out CoinUnlockPurchaseResult result)
+        {
+            if (vehicle == null || string.IsNullOrWhiteSpace(vehicle.vehicleId) || vehicle.coinPrice <= 0)
+            {
+                result = CoinUnlockPurchaseResult.InvalidConfiguration;
+                return false;
+            }
+            return TryPurchaseCoinUnlock(VehicleUnlockKey(vehicle.vehicleId),
+                IsVehicleUnlocked(vehicle.vehicleId, vehicle.unlockedByDefault), vehicle.coinPrice, out result);
+        }
+
+        private static bool TryPurchaseCoinUnlock(string unlockKey, bool alreadyUnlocked, int price,
+            out CoinUnlockPurchaseResult result)
+        {
+            if (alreadyUnlocked)
+            {
+                result = CoinUnlockPurchaseResult.AlreadyUnlocked;
+                return false;
+            }
+            if (price <= 0 || string.IsNullOrEmpty(unlockKey))
+            {
+                result = CoinUnlockPurchaseResult.InvalidConfiguration;
+                return false;
+            }
+            if (TotalCoins < price)
+            {
+                result = CoinUnlockPurchaseResult.NotEnoughCoins;
+                return false;
+            }
+
+            if (!TemporaryUnlimitedCurrencyEnabled)
+                PlayerPrefs.SetInt(TotalCoinsKey, StoredTotalCoins - price);
+            PlayerPrefs.SetInt(unlockKey, 1);
+            PlayerPrefs.Save();
+            result = CoinUnlockPurchaseResult.Success;
+            return true;
         }
 
         public static bool IsBundleUnlocked(BundleDefinition bundle)
@@ -695,6 +763,7 @@ namespace AnimeHillRacing.Core
 
         private static string BlueprintKey(string bundleId) => $"AHR.Blueprints.{bundleId}";
         private static string VehicleUnlockKey(string vehicleId) => $"AHR.Vehicle.Unlock.{vehicleId}";
+        private static string MapUnlockKey(string mapId) => $"AHR.Map.Unlock.{mapId}";
 
         private static string NormalizeLegacyWheelId(string vehicleId, string optionId)
         {
@@ -731,6 +800,31 @@ namespace AnimeHillRacing.Core
 
         private static int StoredTotalCoins => Mathf.Max(0, PlayerPrefs.GetInt(TotalCoinsKey, 0));
         private static int StoredTotalGems => Mathf.Max(0, PlayerPrefs.GetInt(TotalGemsKey, 0));
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void EnsurePurchasableContentMigration()
+        {
+            if (PlayerPrefs.GetInt(PurchasableContentMigrationKey, 0) != 0) return;
+
+            // Before direct coin purchases existed every catalog map and vehicle was available.
+            // Preserve only the content a returning player had selected before this one-time marker;
+            // later selection changes must never grant an unlock implicitly.
+            if (PlayerPrefs.HasKey(SelectedVehicleKey))
+            {
+                string vehicleId = PlayerPrefs.GetString(SelectedVehicleKey, string.Empty);
+                if (!string.IsNullOrWhiteSpace(vehicleId))
+                    PlayerPrefs.SetInt(VehicleUnlockKey(vehicleId), 1);
+            }
+            if (PlayerPrefs.HasKey(SelectedMapKey))
+            {
+                string mapId = PlayerPrefs.GetString(SelectedMapKey, string.Empty);
+                if (!string.IsNullOrWhiteSpace(mapId))
+                    PlayerPrefs.SetInt(MapUnlockKey(mapId), 1);
+            }
+
+            PlayerPrefs.SetInt(PurchasableContentMigrationKey, 1);
+            PlayerPrefs.Save();
+        }
 
         private static void EnsureDistanceBonusX10Migration()
         {

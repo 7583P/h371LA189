@@ -77,6 +77,8 @@ namespace AnimeHillRacing.Editor
             MapProfile profile = LoadOrCreate<MapProfile>(ProfilePath);
             profile.mapId = "rainyer";
             profile.displayName = "RAINYER";
+            profile.unlockedByDefault = false;
+            profile.coinPrice = 30000;
             profile.supportedGameMode = GameModeType.Adventure2_5D;
             profile.seed = 8152026;
             profile.coinRoute = AssetDatabase.LoadAssetAtPath<CoinRouteDefinition>(CoinRoutePath);

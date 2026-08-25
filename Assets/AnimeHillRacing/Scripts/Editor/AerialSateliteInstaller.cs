@@ -74,7 +74,8 @@ namespace AnimeHillRacing.Editor
             v.vehicleId = "aerial-satelite-01";
             v.displayName = "AERIAL SATELITE";
             v.archetype = VehicleArchetype.AerialSatelite;
-            v.unlockedByDefault = true;
+            v.unlockedByDefault = false;
+            v.coinPrice = 70000;
             v.gemPrice = 0;
             v.allowsBlueprintProgression = true;
             v.engineMaxTunes = 16;

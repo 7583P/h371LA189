@@ -18,7 +18,8 @@ MonoBehaviour:
   gameplayPrefab2D: {fileID: 120621363552503576, guid: 392fcf56785d321488b9e65d2d7f2eec, type: 3}
   gameplayPrefab3D: {fileID: 1064005315848091350, guid: 4ce36ca9a61350d4da7ea1588c202332, type: 3}
   previewSprite: {fileID: 21300000, guid: 2e5f54bc8fea407bb6b7a816f4657b13, type: 3}
-  unlockedByDefault: 1
+  unlockedByDefault: 0
+  coinPrice: 70000
   gemPrice: 0
   allowsBlueprintProgression: 1
   skins:

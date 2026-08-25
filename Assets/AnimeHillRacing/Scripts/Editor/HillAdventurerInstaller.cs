@@ -147,7 +147,8 @@ namespace AnimeHillRacing.Editor
             v.vehicleId = "hill-adventurer-01";
             v.displayName = "HILL ADVENTURER 4x4";
             v.archetype = VehicleArchetype.HillAdventurer;
-            v.unlockedByDefault = true;
+            v.unlockedByDefault = false;
+            v.coinPrice = 20000;
             v.gemPrice = 0;
             v.allowsBlueprintProgression = true;
 

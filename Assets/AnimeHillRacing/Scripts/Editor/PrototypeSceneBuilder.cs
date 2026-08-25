@@ -5051,7 +5051,7 @@ namespace AnimeHillRacing.Editor
 
             assets.jeep = LoadOrCreate<VehicleDefinition>(Root + "/VehicleData/MainVehicle.asset");
             assets.jeep.vehicleId = "car-01";
-            assets.jeep.unlockedByDefault = true; assets.jeep.gemPrice = 0;
+            assets.jeep.unlockedByDefault = true; assets.jeep.coinPrice = 0; assets.jeep.gemPrice = 0;
             assets.jeep.allowsBlueprintProgression = true;
             assets.jeep.displayName = "JEEP";
             assets.jeep.archetype = VehicleArchetype.Jeep;
@@ -5135,7 +5135,7 @@ namespace AnimeHillRacing.Editor
 
             assets.formula = LoadOrCreate<VehicleDefinition>(Root + "/VehicleData/FormulaVehicle.asset");
             assets.formula.vehicleId = "formula-01"; assets.formula.displayName = "FORMULA";
-            assets.formula.unlockedByDefault = true; assets.formula.gemPrice = 0;
+            assets.formula.unlockedByDefault = false; assets.formula.coinPrice = 100000; assets.formula.gemPrice = 0;
             assets.formula.allowsBlueprintProgression = true;
             assets.formula.archetype = VehicleArchetype.Formula; assets.formula.previewSprite = assets.formulaBody;
             assets.formula.engineMaxTunes = 20; assets.formula.accelerationMaxTunes = 20;
@@ -5224,7 +5224,7 @@ namespace AnimeHillRacing.Editor
 
             assets.rally = LoadOrCreate<VehicleDefinition>(Root + "/VehicleData/RallyVehicle.asset");
             assets.rally.vehicleId = "rally-01"; assets.rally.displayName = "RALLY";
-            assets.rally.unlockedByDefault = true; assets.rally.gemPrice = 0;
+            assets.rally.unlockedByDefault = false; assets.rally.coinPrice = 50000; assets.rally.gemPrice = 0;
             assets.rally.allowsBlueprintProgression = true;
             assets.rally.archetype = VehicleArchetype.Rally; assets.rally.previewSprite = assets.rallyBody;
             assets.rally.engineMaxTunes = 20; assets.rally.accelerationMaxTunes = 0;
@@ -5310,7 +5310,7 @@ namespace AnimeHillRacing.Editor
 
             assets.sportBike = LoadOrCreate<VehicleDefinition>(Root + "/VehicleData/SportBikeVehicle.asset");
             assets.sportBike.vehicleId = "sport-bike-01";
-            assets.sportBike.unlockedByDefault = true; assets.sportBike.gemPrice = 0;
+            assets.sportBike.unlockedByDefault = false; assets.sportBike.coinPrice = 50000; assets.sportBike.gemPrice = 0;
             assets.sportBike.allowsBlueprintProgression = true;
             assets.sportBike.displayName = "SPORT BIKE";
             assets.sportBike.archetype = VehicleArchetype.SportBike;
@@ -5424,7 +5424,8 @@ namespace AnimeHillRacing.Editor
             assets.hillAdventurer = LoadOrCreate<VehicleDefinition>(Root + "/VehicleData/HillAdventurerVehicle.asset");
             assets.hillAdventurer.vehicleId = "hill-adventurer-01";
             assets.hillAdventurer.displayName = "HILL ADVENTURER 4x4";
-            assets.hillAdventurer.unlockedByDefault = true;
+            assets.hillAdventurer.unlockedByDefault = false;
+            assets.hillAdventurer.coinPrice = 20000;
             assets.hillAdventurer.gemPrice = 0;
             assets.hillAdventurer.allowsBlueprintProgression = true;
             assets.hillAdventurer.archetype = VehicleArchetype.HillAdventurer;
@@ -5646,6 +5647,8 @@ namespace AnimeHillRacing.Editor
             assets.countryside.displayName = "COUNTRYSIDE";
             assets.countryside.supportedGameMode = GameModeType.Adventure2_5D;
             assets.countryside.seed = 18472;
+            assets.countryside.unlockedByDefault = true;
+            assets.countryside.coinPrice = 0;
             assets.countryside.coinRoute = assets.countrysideCoinRoute;
             assets.countryside.amplitude = 20f;
             assets.countryside.frequency = 0.019f;
@@ -5671,6 +5674,20 @@ namespace AnimeHillRacing.Editor
             assets.countryside.pointedPeakMiniFeatureCount = 10;
             assets.countryside.pointedExtremeShapeChance = .72f;
             assets.countryside.pointedExtremeShapeStrength = .42f;
+            assets.countryside.useCountrysideSpecialFeatures = true;
+            assets.countryside.countrysideSpecialFeatures = new CountrysideSpecialFeatureSettings
+            {
+                eventInterval = 500f,
+                firstEventDistance = 260f,
+                eventChance = .88f,
+                longFlatChance = .58f,
+                transitionLength = 45f,
+                longFlatLengths = new Vector2(150f, 200f),
+                slashFlatLead = 18f,
+                slashLength = 96f,
+                slashHeight = 18f,
+                maximumStartJitter = 70f
+            };
             assets.countryside.maxSlopeAngle = 38f;
             assets.countryside.maxHeightDeltaPerSample = Mathf.Tan(38f * Mathf.Deg2Rad) * (80f / 48f);
             assets.countryside.minimumValleyWidth = 20f;
@@ -5743,6 +5760,8 @@ namespace AnimeHillRacing.Editor
             assets.northPole.displayName = "NORTH POLE";
             assets.northPole.supportedGameMode = GameModeType.Adventure2_5D;
             assets.northPole.seed = 87231;
+            assets.northPole.unlockedByDefault = false;
+            assets.northPole.coinPrice = 50000;
             assets.northPole.coinRoute = assets.countrysideCoinRoute;
             assets.northPole.baseHeight = 0f;
             assets.northPole.amplitude = 38f;
@@ -5831,6 +5850,8 @@ namespace AnimeHillRacing.Editor
             assets.city.displayName = "CITY";
             assets.city.supportedGameMode = GameModeType.Adventure2_5D;
             assets.city.seed = 4152026;
+            assets.city.unlockedByDefault = false;
+            assets.city.coinPrice = 10000;
             assets.city.coinRoute = assets.countrysideCoinRoute;
             assets.city.elevationProfile = null;
             assets.city.baseHeight = 0f;
@@ -5905,6 +5926,8 @@ namespace AnimeHillRacing.Editor
             assets.neonCity.displayName = "NEON CITY";
             assets.neonCity.supportedGameMode = GameModeType.Adventure2_5D;
             assets.neonCity.seed = 620031;
+            assets.neonCity.unlockedByDefault = false;
+            assets.neonCity.coinPrice = 25000;
             assets.neonCity.coinRoute = assets.countrysideCoinRoute;
             assets.neonCity.elevationProfile = null;
             assets.neonCity.baseHeight = 0f;

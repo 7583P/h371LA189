@@ -16,6 +16,8 @@ MonoBehaviour:
   displayName: MOUNTAINS
   supportedGameMode: 0
   seed: 40822
+  unlockedByDefault: 0
+  coinPrice: 30000
   coinRoute: {fileID: 0}
   introEndDistance: 1000
   easyEndDistance: 2500

@@ -53,7 +53,7 @@ namespace AnimeHillRacing.UI
     public sealed class GarageUI : MonoBehaviour
     {
         private enum Category { Skin, Wheels, Driver, Characters, Tuning }
-        private enum PurchaseKind { None, Tune, Customization, Blueprints }
+        private enum PurchaseKind { None, Vehicle, Tune, Customization, Blueprints }
 
         [SerializeField] private GameCatalog catalog;
         [SerializeField] private GaragePreviewRenderer preview;
@@ -114,6 +114,8 @@ namespace AnimeHillRacing.UI
         [SerializeField] private Button[] menuBackgroundButtons;
         [SerializeField] private Button previousVehicleButton;
         [SerializeField] private Button nextVehicleButton;
+        [SerializeField, Tooltip("Optional transparent artwork displayed over locked vehicles.")]
+        private Sprite vehicleLockSprite;
         [SerializeField] private Toggle masterAudioToggle;
         [SerializeField] private Text masterAudioStatus;
         [SerializeField] private Image[] tuningIcons;
@@ -170,6 +172,13 @@ namespace AnimeHillRacing.UI
         private Text shopAccessoryPageText;
         private Button[] customizationAccessoryFlipButtons;
         private Button[] shopAccessoryFlipButtons;
+        private Image vehicleLockShade;
+        private Image vehicleLockIcon;
+        private Button vehiclePurchaseButton;
+        private Text vehiclePurchaseLabel;
+
+        private Sprite ResolvedVehicleLockSprite => vehicleLockSprite != null
+            ? vehicleLockSprite : Resources.Load<Sprite>("UI/LockIcon");
 
         private const string DefaultBackgroundId = "default";
         private const string NeonBackgroundId = "neon";
@@ -192,6 +201,7 @@ namespace AnimeHillRacing.UI
             EnsureTuneAdjustmentButtons();
             EnsureTuneCardButtons();
             EnsureAccessoryPaginationControls();
+            EnsureVehiclePurchaseControls();
             FindSavedVehicle();
             section = GameSession.RequestedGarageSection;
             preview?.Invalidate();
@@ -429,8 +439,13 @@ namespace AnimeHillRacing.UI
             lastTuneCardSlot = slot;
 
             VehicleDefinition vehicle = CurrentVehicle;
-            if (vehicle == null || !IsVehicleUnlocked(vehicle) || slot < 0 ||
-                slot >= vehicle.GetTuneSlotCount() || catalog?.upgradeEconomy == null) return;
+            if (vehicle == null) return;
+            if (!IsVehicleUnlocked(vehicle))
+            {
+                PurchaseCurrentVehicle();
+                return;
+            }
+            if (slot < 0 || slot >= vehicle.GetTuneSlotCount() || catalog?.upgradeEconomy == null) return;
             pendingType = vehicle.GetTuneTypeForSlot(slot);
             VehicleUpgradeState equippedState = SaveManager.LoadUpgrades(vehicle.vehicleId, vehicle);
             VehicleUpgradeState purchasedState = SaveManager.LoadPurchasedUpgrades(vehicle.vehicleId, vehicle);
@@ -498,6 +513,33 @@ namespace AnimeHillRacing.UI
             lastPurchaseAttemptFrame = Time.frameCount;
             purchaseInFlight = true;
             if (confirmationYes != null) confirmationYes.interactable = false;
+            if (pendingPurchaseKind == PurchaseKind.Vehicle)
+            {
+                VehicleDefinition vehicle = CurrentVehicle;
+                if (vehicle == null || vehicle.vehicleId != pendingVehicleId)
+                {
+                    purchaseInFlight = false;
+                    if (confirmationStatus != null) confirmationStatus.text = "VEHICLE STATE CHANGED";
+                    return;
+                }
+                bool vehiclePurchased = SaveManager.TryPurchaseVehicle(vehicle,
+                    out CoinUnlockPurchaseResult vehicleResult);
+                purchaseInFlight = false;
+                if (vehiclePurchased || vehicleResult == CoinUnlockPurchaseResult.AlreadyUnlocked)
+                {
+                    SaveManager.SelectedVehicleId = vehicle.vehicleId;
+                    ClearPendingPurchase();
+                    if (confirmationModal != null) confirmationModal.SetActive(false);
+                    preview?.Invalidate();
+                    Refresh();
+                    return;
+                }
+                if (confirmationStatus != null)
+                    confirmationStatus.text = vehicleResult == CoinUnlockPurchaseResult.NotEnoughCoins
+                        ? "NOT ENOUGH COINS" : "UNAVAILABLE";
+                RefreshOpenPurchaseAffordability();
+                return;
+            }
             if (pendingPurchaseKind == PurchaseKind.Blueprints)
             {
                 bool blueprintPurchased = SaveManager.TryPurchaseBlueprints(catalog, pendingBundleId,
@@ -733,6 +775,39 @@ namespace AnimeHillRacing.UI
             SetSelectedOption(vehicle, category, id);
             preview?.Invalidate();
             Refresh();
+        }
+
+        public void PurchaseCurrentVehicle()
+        {
+            VehicleDefinition vehicle = CurrentVehicle;
+            if (!Application.isPlaying || vehicle == null || IsVehicleUnlocked(vehicle)) return;
+            pendingPurchaseKind = PurchaseKind.Vehicle;
+            pendingVehicleId = vehicle.vehicleId;
+            bool affordable = vehicle.coinPrice > 0 && SaveManager.TotalCoins >= vehicle.coinPrice;
+            if (confirmationTitle != null)
+                confirmationTitle.text = $"UNLOCK FOR {vehicle.coinPrice:N0} COINS?";
+            if (confirmationValues != null)
+                confirmationValues.text = $"{vehicle.displayName.ToUpperInvariant()}\nPERMANENT VEHICLE UNLOCK";
+            ConfigureNonTuneConfirmation(true, affordable);
+            if (confirmationDescription != null)
+            {
+                confirmationDescription.enabled = true;
+                confirmationDescription.text = "Unlock this vehicle permanently and select it now.";
+            }
+            if (confirmationIcon != null)
+            {
+                confirmationIcon.sprite = vehicle.previewSprite;
+                confirmationIcon.enabled = vehicle.previewSprite != null;
+                confirmationIcon.preserveAspect = true;
+            }
+            if (confirmationCost != null)
+                confirmationCost.text = confirmationCoinIcon != null ? vehicle.coinPrice.ToString("N0") :
+                    $"COST  {vehicle.coinPrice:N0} COINS";
+            if (confirmationStatus != null)
+                confirmationStatus.text = affordable ? string.Empty : "NOT ENOUGH COINS";
+            if (confirmationYes != null) confirmationYes.interactable = affordable;
+            SetConfirmationActionLabel("YES");
+            if (confirmationModal != null) confirmationModal.SetActive(true);
         }
 
         private void EnsureAccessoryPaginationControls()
@@ -1168,6 +1243,83 @@ namespace AnimeHillRacing.UI
             return button;
         }
 
+        private void EnsureVehiclePurchaseControls()
+        {
+            if (!Application.isPlaying || vehiclePanel == null || vehiclePurchaseButton != null) return;
+            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            Transform overlayParent = preview != null && preview.TargetImage != null
+                ? preview.TargetImage.transform : vehiclePanel.transform.parent;
+            if (overlayParent == null) return;
+
+            GameObject shadeObject = new GameObject("Locked Vehicle Shade", typeof(RectTransform), typeof(Image));
+            RectTransform shadeRect = shadeObject.GetComponent<RectTransform>();
+            shadeRect.SetParent(overlayParent, false);
+            SetStretchRect(shadeRect, new Vector2(.34f, .22f), new Vector2(.66f, .82f));
+            vehicleLockShade = shadeObject.GetComponent<Image>();
+            vehicleLockShade.color = new Color(0f, 0f, 0f, .20f);
+            vehicleLockShade.raycastTarget = false;
+
+            GameObject iconObject = new GameObject("Locked Vehicle Icon", typeof(RectTransform), typeof(Image));
+            RectTransform iconRect = iconObject.GetComponent<RectTransform>();
+            iconRect.SetParent(overlayParent, false);
+            SetStretchRect(iconRect, new Vector2(.40f, .34f), new Vector2(.60f, .72f));
+            vehicleLockIcon = iconObject.GetComponent<Image>();
+            vehicleLockIcon.sprite = ResolvedVehicleLockSprite;
+            vehicleLockIcon.preserveAspect = true;
+            vehicleLockIcon.raycastTarget = true;
+            Button lockButton = iconObject.AddComponent<Button>();
+            lockButton.transition = Selectable.Transition.None;
+            lockButton.onClick.AddListener(PurchaseCurrentVehicle);
+            iconObject.AddComponent<ButtonPressFeedback>();
+
+            GameObject buttonObject = new GameObject("Purchase Vehicle", typeof(RectTransform), typeof(Image),
+                typeof(Button));
+            RectTransform buttonRect = buttonObject.GetComponent<RectTransform>();
+            buttonRect.SetParent(overlayParent, false);
+            SetStretchRect(buttonRect, new Vector2(.30f, .04f), new Vector2(.70f, .17f));
+            Image buttonImage = buttonObject.GetComponent<Image>();
+            buttonImage.color = new Color(.08f, .52f, .27f, .98f);
+            vehiclePurchaseButton = buttonObject.GetComponent<Button>();
+            vehiclePurchaseButton.onClick.AddListener(PurchaseCurrentVehicle);
+            buttonObject.AddComponent<ButtonPressFeedback>();
+
+            GameObject labelObject = new GameObject("Label", typeof(RectTransform), typeof(Text));
+            RectTransform labelRect = labelObject.GetComponent<RectTransform>();
+            labelRect.SetParent(buttonRect, false);
+            SetStretchRect(labelRect, Vector2.zero, Vector2.one);
+            vehiclePurchaseLabel = labelObject.GetComponent<Text>();
+            vehiclePurchaseLabel.font = font;
+            vehiclePurchaseLabel.fontSize = 22;
+            vehiclePurchaseLabel.fontStyle = FontStyle.Bold;
+            vehiclePurchaseLabel.alignment = TextAnchor.MiddleCenter;
+            vehiclePurchaseLabel.color = Color.white;
+            vehiclePurchaseLabel.resizeTextForBestFit = true;
+            vehiclePurchaseLabel.resizeTextMinSize = 12;
+            vehiclePurchaseLabel.resizeTextMaxSize = 22;
+            vehiclePurchaseLabel.raycastTarget = false;
+        }
+
+        private void RefreshVehiclePurchaseControls(VehicleDefinition vehicle, bool unlocked)
+        {
+            bool visible = vehicle != null && !unlocked &&
+                section != GarageSection.Store && section != GarageSection.Settings;
+            if (vehicleLockShade != null) vehicleLockShade.gameObject.SetActive(visible);
+            if (vehicleLockIcon != null)
+            {
+                Sprite sprite = ResolvedVehicleLockSprite;
+                vehicleLockIcon.sprite = sprite;
+                vehicleLockIcon.gameObject.SetActive(visible && sprite != null);
+            }
+            if (vehiclePurchaseButton != null)
+            {
+                vehiclePurchaseButton.gameObject.SetActive(visible);
+                vehiclePurchaseButton.interactable = visible && vehicle.coinPrice > 0;
+            }
+            if (vehiclePurchaseLabel != null && visible)
+                vehiclePurchaseLabel.text = vehicle.coinPrice > 0
+                    ? $"UNLOCK  {vehicle.coinPrice:N0} COINS" : "UNAVAILABLE";
+        }
+
         private void Refresh()
         {
             VehicleDefinition vehicle = CurrentVehicle;
@@ -1185,6 +1337,7 @@ namespace AnimeHillRacing.UI
                     (vehicleUnlocked ? string.Empty : "  —  LOCKED");
                 vehicleName.color = vehicleUnlocked ? Color.white : new Color(1f, .28f, .22f, 1f);
             }
+            RefreshVehiclePurchaseControls(vehicle, vehicleUnlocked);
             bool adventurePreparation = GameSession.HasPendingAdventureTrack;
             if (sectionTitle != null) sectionTitle.text = section.ToString().ToUpperInvariant();
             if (adventurePreparation)
@@ -1333,7 +1486,8 @@ namespace AnimeHillRacing.UI
             ResolveGarageSectionTabs();
             for (int i = 0; i < (garageSectionTabs?.Length ?? 0); i++)
                 if (garageSectionTabs[i] != null)
-                    garageSectionTabs[i].SetActive(showGarageChrome && !adventurePreparation);
+                    garageSectionTabs[i].SetActive(showGarageChrome && !adventurePreparation &&
+                        section != GarageSection.Settings);
 
             if (preview != null && preview.TargetImage != null)
             {
@@ -1611,7 +1765,8 @@ namespace AnimeHillRacing.UI
             {
                 if (coinsChanged && pendingPurchaseKind == PurchaseKind.Tune)
                     RefreshPendingTuneModalState();
-                else if ((coinsChanged && pendingPurchaseKind == PurchaseKind.Blueprints) ||
+                else if ((coinsChanged && (pendingPurchaseKind == PurchaseKind.Vehicle ||
+                              pendingPurchaseKind == PurchaseKind.Blueprints)) ||
                          (gemsChanged && pendingPurchaseKind == PurchaseKind.Customization))
                     RefreshOpenPurchaseAffordability();
             }
@@ -1619,6 +1774,22 @@ namespace AnimeHillRacing.UI
 
         private void RefreshOpenPurchaseAffordability()
         {
+            if (pendingPurchaseKind == PurchaseKind.Vehicle)
+            {
+                VehicleDefinition vehicle = CurrentVehicle;
+                bool stateMatches = vehicle != null && vehicle.vehicleId == pendingVehicleId &&
+                    !IsVehicleUnlocked(vehicle) && vehicle.coinPrice > 0;
+                bool affordable = stateMatches && SaveManager.TotalCoins >= vehicle.coinPrice;
+                ConfigureNonTuneConfirmation(true, affordable);
+                if (confirmationCost != null && vehicle != null)
+                    confirmationCost.text = confirmationCoinIcon != null ? vehicle.coinPrice.ToString("N0") :
+                        $"COST  {vehicle.coinPrice:N0} COINS";
+                if (confirmationStatus != null)
+                    confirmationStatus.text = !stateMatches ? "UNAVAILABLE" :
+                        affordable ? string.Empty : "NOT ENOUGH COINS";
+                if (confirmationYes != null) confirmationYes.interactable = !purchaseInFlight && affordable;
+                return;
+            }
             if (pendingPurchaseKind == PurchaseKind.Blueprints)
             {
                 int price = BlueprintPackCatalog.GetCoinPrice(pendingBlueprintTier);

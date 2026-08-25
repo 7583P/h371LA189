@@ -63,8 +63,8 @@ namespace AnimeHillRacing.UI
                 GarageUI garage = Object.FindFirstObjectByType<GarageUI>();
                 if (garage != null)
                 {
-                    if (GameSession.RequestedGarageSection != GarageSection.Settings)
-                        GameSession.RequestDirectGarage(GarageSection.Settings);
+                    // GarageUI preserves and restores the current section. Do not call
+                    // RequestDirectGarage here because it also clears a pending Adventure track.
                     garage.ShowSettings();
                     return;
                 }

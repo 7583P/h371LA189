@@ -180,7 +180,7 @@ MonoBehaviour:
     accessoryOverrides:
     - accessoryId: fire-glasses
       pose:
-        position: {x: -0.09994459, y: 0.27994502}
+        position: {x: -0.12133464, y: 0.28529254}
         rotation: -3
         scale: {x: 1, y: 1}
         visible: 1
@@ -204,7 +204,7 @@ MonoBehaviour:
         vehicleLayer: 1
     - accessoryId: baseball-cap-rainbow
       pose:
-        position: {x: 0.14593577, y: 0.4137431}
+        position: {x: 0.21545447, y: 0.3923527}
         rotation: -3
         scale: {x: 1, y: 1}
         visible: 1
@@ -236,7 +236,7 @@ MonoBehaviour:
         vehicleLayer: 1
     - accessoryId: baseball-cap
       pose:
-        position: {x: 0.23684491, y: 0.42443863}
+        position: {x: 0.23684491, y: 0.41374338}
         rotation: -3
         scale: {x: 1, y: 1}
         visible: 1

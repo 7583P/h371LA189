@@ -93,14 +93,21 @@ namespace AnimeHillRacing.Editor
                 economy.sportBikeFinalUpgradeCost != 200000 || economy.roundingStep != 250)
                 throw new InvalidOperationException("All vehicle tune prices must use the x10 economy.");
             var distanceBonuses = new DistanceBonusTracker();
-            if (SaveManager.DistanceBonusMinimum != 100 || SaveManager.DistanceBonusMaximum != 3000 ||
-                SaveManager.DistanceBonusIncrement != 100 ||
+            if (SaveManager.DistanceBonusMinimum != 25 || SaveManager.DistanceBonusMaximum != 500 ||
+                SaveManager.DistanceBonusIncrement != 25 ||
                 Mathf.Abs(SaveManager.DistanceBonusIntervalMeters - 500f) > .001f ||
                 !distanceBonuses.TryClaimThrough(500f, out int firstDistanceAward, out float firstMilestone) ||
-                firstDistanceAward != 100 || Mathf.Abs(firstMilestone - 500f) > .001f ||
-                DistanceBonusTracker.GetAwardAtDistance(15000f) != 3000 ||
-                DistanceBonusTracker.GetAwardAtDistance(15500f) != 3000)
-                throw new InvalidOperationException("Distance bonus must be +100..+3000 every 500 meters.");
+                firstDistanceAward != 25 || Mathf.Abs(firstMilestone - 500f) > .001f ||
+                DistanceBonusTracker.GetAwardAtDistance(9500f) != 475 ||
+                DistanceBonusTracker.GetAwardAtDistance(10000f) != 500 ||
+                DistanceBonusTracker.GetAwardAtDistance(10500f) != 500)
+                throw new InvalidOperationException("Distance bonus must progress +25..+500 and cap at 10000 meters.");
+            distanceBonuses.Reset(2750f);
+            if (distanceBonuses.NextDistance != 3000f || distanceBonuses.NextAward != 150 ||
+                distanceBonuses.TryClaimThrough(2999f, out _, out _) ||
+                !distanceBonuses.TryClaimThrough(3000f, out int newBestAward, out _) ||
+                newBestAward != 150)
+                throw new InvalidOperationException("Distance bonus must skip milestones at or below the personal best.");
 
             List<BundleDefinition> bundles = PremiumBundleCatalog.GetAll(gameCatalog);
             for (int i = 0; i < bundles.Count; i++)
@@ -148,7 +155,7 @@ namespace AnimeHillRacing.Editor
             }
             Debug.Log($"CHEST_BLUEPRINT_AUDIT_PASS: milestone 29:59/30:00, remainder 15s, UTC offline, " +
                 $"coin ranges, Master +5, Legendary +10, normal 100, vehicle 150, " +
-                $"Shop 10K:+1/50K:+5/100K:+10/1M:+100, tune prices x10, distance bonus 500m/+100..+3000 validated; " +
+                $"Shop 10K:+1/50K:+5/100K:+10/1M:+100, tune prices x10, distance bonus PB-only 500m/+25..+500 validated; " +
                 $"Monte Carlo B/S/G/M/L={counts[0]/(float)samples:P2}/{counts[1]/(float)samples:P2}/" +
                 $"{counts[2]/(float)samples:P2}/{counts[3]/(float)samples:P2}/{counts[4]/(float)samples:P2}.");
         }

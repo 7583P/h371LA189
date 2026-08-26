@@ -77,7 +77,9 @@ namespace AnimeHillRacing.Pickups
         private void Update()
         {
             if (manager == null) manager = GameManager.Instance;
-            if (manager != null && manager.Distance + .001f >= progressPosition)
+            if (manager != null &&
+                (progressPosition <= manager.BestDistance + .001f ||
+                 manager.Distance + .001f >= progressPosition))
             {
                 gameObject.SetActive(false);
                 return;

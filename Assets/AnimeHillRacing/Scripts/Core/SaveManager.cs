@@ -464,6 +464,15 @@ namespace AnimeHillRacing.Core
             return PlayerPrefs.GetFloat(BestKey(mode, mapId), 0f);
         }
 
+        public static float SaveBestDistance(float distance, GameModeType mode, string mapId)
+        {
+            string key = BestKey(mode, mapId);
+            float best = Mathf.Max(PlayerPrefs.GetFloat(key, 0f), Mathf.Max(0f, distance));
+            PlayerPrefs.SetFloat(key, best);
+            PlayerPrefs.Save();
+            return best;
+        }
+
         public static float SaveRun(float distance, int runCoins, GameModeType mode, string mapId)
         {
             string key = BestKey(mode, mapId);

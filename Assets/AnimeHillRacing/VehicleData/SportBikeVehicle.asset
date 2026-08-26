@@ -204,7 +204,7 @@ MonoBehaviour:
         vehicleLayer: 0
     - accessoryId: baseball-cap-rainbow
       pose:
-        position: {x: 0.6288234, y: 0.56294155}
+        position: {x: 0.7558818, y: 0.657059}
         rotation: -24
         scale: {x: 1, y: 1}
         visible: 1
@@ -212,7 +212,7 @@ MonoBehaviour:
         vehicleLayer: 0
     - accessoryId: baseball-cap
       pose:
-        position: {x: 0.63823587, y: 0.56294215}
+        position: {x: 0.7605886, y: 0.6429421}
         rotation: -24
         scale: {x: 1, y: 1}
         visible: 1
@@ -236,7 +236,7 @@ MonoBehaviour:
         vehicleLayer: 0
     - accessoryId: santa-hat
       pose:
-        position: {x: 0.68058896, y: 0.807647}
+        position: {x: 0.671177, y: 0.7888235}
         rotation: -24
         scale: {x: 0.80999994, y: 0.80999994}
         visible: 1

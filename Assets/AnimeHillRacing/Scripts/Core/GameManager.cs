@@ -182,7 +182,7 @@ namespace AnimeHillRacing.Core
             vehicle?.SetTransmissionMode(GameSession.SelectedTransmission);
             liquidExposure.Reset(LiquidExposureLimit);
             gemMilestones.Reset();
-            distanceBonuses.Reset();
+            distanceBonuses.Reset(BestDistance);
         }
 
         private void Start()
@@ -285,9 +285,13 @@ namespace AnimeHillRacing.Core
                     RequestGameOver(RunEndReason.Crashed);
                 }
             }
-            while (distanceBonuses.TryClaimThrough(Distance, out int distanceAward, out _))
+            while (distanceBonuses.TryClaimThrough(Distance, out int distanceAward,
+                       out float distanceMilestone))
             {
                 SaveManager.AddCoins(distanceAward, false);
+                // Persist the reached record with the reward. A retry or scene exit before the
+                // results screen therefore cannot collect this milestone a second time.
+                BestDistance = SaveManager.SaveBestDistance(distanceMilestone, Mode, MapId);
                 lastDistanceBonus = distanceAward;
                 distanceBonusMessageUntil = Time.unscaledTime + 2.5f;
                 // At every 1000 m a gem and a distance bonus arrive together. Show the requested

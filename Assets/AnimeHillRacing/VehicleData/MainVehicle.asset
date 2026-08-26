@@ -208,7 +208,7 @@ MonoBehaviour:
         vehicleLayer: 0
     - accessoryId: baseball-cap
       pose:
-        position: {x: 0.024145305, y: 0.77840394}
+        position: {x: 0.10257697, y: 0.7882079}
         rotation: -3
         scale: {x: 1, y: 1}
         visible: 1
@@ -216,7 +216,7 @@ MonoBehaviour:
         vehicleLayer: 0
     - accessoryId: baseball-cap-rainbow
       pose:
-        position: {x: 0.029047577, y: 0.7735017}
+        position: {x: 0.11238113, y: 0.78330564}
         rotation: -3
         scale: {x: 1, y: 1}
         visible: 1

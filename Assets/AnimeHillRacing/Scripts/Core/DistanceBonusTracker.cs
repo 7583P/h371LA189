@@ -3,15 +3,15 @@ using System;
 namespace AnimeHillRacing.Core
 {
     /// <summary>
-    /// Run-local distance reward sequence. It deliberately depends only on the maximum forward
-    /// distance, so passing a marker above or below it awards the bonus without any collision.
+    /// Distance reward sequence. A run starts after the saved personal best, so only new distance
+    /// milestones can be rewarded. Passing a marker above or below it awards without any collision.
     /// </summary>
     public sealed class DistanceBonusTracker
     {
         public const float IntervalMeters = 500f;
-        public const int StartingCoins = 100;
-        public const int MaximumCoins = 3000;
-        public const int IncrementCoins = 100;
+        public const int StartingCoins = 25;
+        public const int MaximumCoins = 500;
+        public const int IncrementCoins = 25;
 
         private int claimedMilestones;
 
@@ -19,7 +19,12 @@ namespace AnimeHillRacing.Core
         public float NextDistance => (claimedMilestones + 1) * IntervalMeters;
         public int NextAward => GetAwardForMilestone(claimedMilestones + 1);
 
-        public void Reset() => claimedMilestones = 0;
+        public void Reset(float personalBestDistance = 0f)
+        {
+            double safeBestDistance = Math.Max(0d, personalBestDistance);
+            claimedMilestones = Math.Max(0,
+                (int)Math.Floor((safeBestDistance + .001d) / IntervalMeters));
+        }
 
         public bool TryClaimThrough(float maximumRunDistance, out int award, out float milestoneDistance)
         {

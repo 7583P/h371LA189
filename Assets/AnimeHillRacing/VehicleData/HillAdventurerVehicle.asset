@@ -148,15 +148,15 @@ MonoBehaviour:
         vehicleLayer: 1
     - accessoryId: fire-glasses
       pose:
-        position: {x: 0.48109132, y: 0.58166826}
+        position: {x: 0.49297136, y: 0.6410694}
         rotation: -3
         scale: {x: 1, y: 1}
-        visible: 0
+        visible: 1
         sortingOrder: 6
-        vehicleLayer: 0
+        vehicleLayer: 1
     - accessoryId: baseball-cap-rainbow
       pose:
-        position: {x: 0.80161566, y: 0.61999965}
+        position: {x: 0.87289715, y: 0.61405945}
         rotation: -3
         scale: {x: 1, y: 1}
         visible: 1
@@ -172,15 +172,31 @@ MonoBehaviour:
         vehicleLayer: 0
     - accessoryId: neon-glasses
       pose:
-        position: {x: 0.647172, y: 0.5784191}
+        position: {x: 0.59371096, y: 0.65564054}
         rotation: -3
         scale: {x: 0.80999994, y: 0.80999994}
         visible: 1
         sortingOrder: 6
-        vehicleLayer: 0
+        vehicleLayer: 1
     - accessoryId: baseball-cap
       pose:
-        position: {x: 0.9144766, y: 0.6140597}
+        position: {x: 0.88477606, y: 0.6140597}
+        rotation: -3
+        scale: {x: 1, y: 1}
+        visible: 1
+        sortingOrder: 6
+        vehicleLayer: 1
+    - accessoryId: santa-hat
+      pose:
+        position: {x: 0.73627424, y: 0.7566232}
+        rotation: -3
+        scale: {x: 0.80999994, y: 0.80999994}
+        visible: 1
+        sortingOrder: 6
+        vehicleLayer: 1
+    - accessoryId: glasses
+      pose:
+        position: {x: 0.54024994, y: 0.6437607}
         rotation: -3
         scale: {x: 1, y: 1}
         visible: 1

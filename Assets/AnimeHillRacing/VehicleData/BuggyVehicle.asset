@@ -166,7 +166,7 @@ MonoBehaviour:
         vehicleLayer: 0
     - accessoryId: baseball-cap-rainbow
       pose:
-        position: {x: -0.3064707, y: 1.1905885}
+        position: {x: -0.33588248, y: 1.1788237}
         rotation: -3
         scale: {x: 1, y: 1}
         visible: 1

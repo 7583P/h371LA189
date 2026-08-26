@@ -196,11 +196,11 @@ MonoBehaviour:
         vehicleLayer: 0
     - accessoryId: scarf
       pose:
-        position: {x: -0.1418981, y: 0.4989157}
+        position: {x: -0.23250912, y: 0.52480465}
         rotation: 180
         scale: {x: 1, y: 1}
         visible: 1
-        sortingOrder: 16
+        sortingOrder: 9
         vehicleLayer: 0
     - accessoryId: baseball-cap-rainbow
       pose:

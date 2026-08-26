@@ -92,10 +92,15 @@ namespace AnimeHillRacing.Editor
                 economy.formulaFinalUpgradeCost != 150000 || economy.rallyFinalUpgradeCost != 100000 ||
                 economy.sportBikeFinalUpgradeCost != 200000 || economy.roundingStep != 250)
                 throw new InvalidOperationException("All vehicle tune prices must use the x10 economy.");
-            if (SaveManager.DistanceBonusMinimum != 200 || SaveManager.DistanceBonusMaximum != 2500 ||
-                SaveManager.DistanceBonusIncrement != 100 || SaveManager.ScaleLegacyDistanceBonus(20) != 200 ||
-                SaveManager.ScaleLegacyDistanceBonus(250) != 2500)
-                throw new InvalidOperationException("Distance bonus x10 migration contract failed.");
+            var distanceBonuses = new DistanceBonusTracker();
+            if (SaveManager.DistanceBonusMinimum != 100 || SaveManager.DistanceBonusMaximum != 3000 ||
+                SaveManager.DistanceBonusIncrement != 100 ||
+                Mathf.Abs(SaveManager.DistanceBonusIntervalMeters - 500f) > .001f ||
+                !distanceBonuses.TryClaimThrough(500f, out int firstDistanceAward, out float firstMilestone) ||
+                firstDistanceAward != 100 || Mathf.Abs(firstMilestone - 500f) > .001f ||
+                DistanceBonusTracker.GetAwardAtDistance(15000f) != 3000 ||
+                DistanceBonusTracker.GetAwardAtDistance(15500f) != 3000)
+                throw new InvalidOperationException("Distance bonus must be +100..+3000 every 500 meters.");
 
             List<BundleDefinition> bundles = PremiumBundleCatalog.GetAll(gameCatalog);
             for (int i = 0; i < bundles.Count; i++)
@@ -143,7 +148,7 @@ namespace AnimeHillRacing.Editor
             }
             Debug.Log($"CHEST_BLUEPRINT_AUDIT_PASS: milestone 29:59/30:00, remainder 15s, UTC offline, " +
                 $"coin ranges, Master +5, Legendary +10, normal 100, vehicle 150, " +
-                $"Shop 10K:+1/50K:+5/100K:+10/1M:+100, tune prices x10, distance bonus x10 validated; " +
+                $"Shop 10K:+1/50K:+5/100K:+10/1M:+100, tune prices x10, distance bonus 500m/+100..+3000 validated; " +
                 $"Monte Carlo B/S/G/M/L={counts[0]/(float)samples:P2}/{counts[1]/(float)samples:P2}/" +
                 $"{counts[2]/(float)samples:P2}/{counts[3]/(float)samples:P2}/{counts[4]/(float)samples:P2}.");
         }

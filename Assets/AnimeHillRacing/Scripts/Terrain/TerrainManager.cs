@@ -366,6 +366,7 @@ namespace AnimeHillRacing.Terrain
             // Physics uses the single welded collider assembled from every rendered surface knot. Enabling
             // this chunk collider too would create duplicate, partially overlapping edges at every seam.
             chunk.SetChunkColliderEnabled(false);
+            SpawnDistanceBonusMarkers(chunk, index);
             SpawnCoins(chunk, index);
             SpawnProgressiveFuel(chunk, index);
         }
@@ -600,6 +601,26 @@ namespace AnimeHillRacing.Terrain
                         route.GetStableCoinId(group, pointIndex));
                     chunk.TrackPickup(pickup);
                 }
+            }
+        }
+
+        private void SpawnDistanceBonusMarkers(TerrainChunk chunk, int index)
+        {
+            if (chunk == null || index < 0) return;
+            float start = index * chunkLength;
+            float end = start + chunkLength;
+            int firstMilestone = Mathf.Max(1,
+                Mathf.CeilToInt(Mathf.Max(start, DistanceBonusTracker.IntervalMeters) /
+                                DistanceBonusTracker.IntervalMeters));
+            for (int milestone = firstMilestone; ; milestone++)
+            {
+                float distance = milestone * DistanceBonusTracker.IntervalMeters;
+                if (distance >= end) break;
+                if (distance < start || !chunk.TrySampleSurface(distance, out float surfaceY, out _)) continue;
+
+                DistanceBonusMarker marker = DistanceBonusMarker.Create(chunk.transform,
+                    new Vector3(distance, surfaceY + 1.7f, -.35f), distance, false);
+                chunk.TrackBonusMarker(marker);
             }
         }
 

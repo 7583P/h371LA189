@@ -2869,6 +2869,35 @@ namespace AnimeHillRacing.Editor
                 lateDensity > route.MaximumGroupsPer100Meters * route.MaximumCoinsPerGroup + .01f)
                 throw new System.InvalidOperationException($"Coin density progression invalid: " +
                     $"early={earlyDensity:0.0}, middle={middleDensity:0.0}, late={lateDensity:0.0} coins/100m.");
+            bool foundSingleRow = false;
+            bool foundGrowingSecondRow = false;
+            bool foundFullSecondRow = false;
+            int rowLastCell = route.LastCellForDistance(route.variedEndDistance + route.cellLength * 4f);
+            for (int cell = 0; cell <= rowLastCell; cell++)
+            {
+                if (!route.TryGetGroup(cell, out CoinRouteGroup rowGroup)) continue;
+                if (rowGroup.lowerRowCoinCount + rowGroup.upperRowCoinCount != rowGroup.coinCount)
+                    throw new System.InvalidOperationException("Coin Route row counts do not match the group total.");
+
+                if (rowGroup.densityTier == 0)
+                    foundSingleRow |= rowGroup.lowerRowCoinCount > 0 && rowGroup.upperRowCoinCount == 0;
+                else if (rowGroup.densityTier == 1 || rowGroup.densityTier == 2)
+                    foundGrowingSecondRow |= rowGroup.upperRowCoinCount > 0 &&
+                                             rowGroup.upperRowCoinCount < rowGroup.lowerRowCoinCount;
+                else
+                    foundFullSecondRow |= rowGroup.upperRowCoinCount == rowGroup.lowerRowCoinCount;
+
+                for (int point = 0; point < rowGroup.coinCount; point++)
+                {
+                    CoinRoutePoint routePoint = route.GetPoint(rowGroup, point);
+                    float expectedHeight = point < rowGroup.lowerRowCoinCount ? 0f : route.rowVerticalSpacing;
+                    if (Mathf.Abs(routePoint.heightOffset - expectedHeight) > .001f)
+                        throw new System.InvalidOperationException("Coins must remain in two terrain-hugging rows.");
+                }
+            }
+            if (!foundSingleRow || !foundGrowingSecondRow || !foundFullSecondRow)
+                throw new System.InvalidOperationException(
+                    "Coin Route must progress from one row to a partial second row and finally two full rows.");
             bool foundMixedGroup = false;
             int firstMixedCell = route.FirstCellForDistance(route.sparseEndDistance);
             int lastMixedCell = route.LastCellForDistance(route.allFiveStartDistance - 1f);
@@ -2902,7 +2931,8 @@ namespace AnimeHillRacing.Editor
                 throw new System.InvalidOperationException("Coin Route has no all-Coin-05 final phase.");
             Debug.Log($"Countryside Coin Route validation | snapshot={deterministicHashA}, " +
                       $"density={earlyDensity:0.0}->{middleDensity:0.0}->{lateDensity:0.0} coins/100m, " +
-                      $"maxGroups={route.MaximumGroupsPer100Meters:0.00}/100m, mixed-final=05, final-phase=all-05, deterministic=OK.");
+                      $"rows=1->1+partial->2, maxGroups={route.MaximumGroupsPer100Meters:0.00}/100m, " +
+                      $"mixed-final=05, final-phase=all-05, deterministic=OK.");
         }
 
         private static int RouteSnapshotHash(CoinRouteDefinition route, int firstCell, int lastCell)
@@ -5633,6 +5663,8 @@ namespace AnimeHillRacing.Editor
             assets.countrysideCoinRoute.firstCoinDistance = 20f;
             assets.countrysideCoinRoute.anchorJitter = 5f;
             assets.countrysideCoinRoute.surfaceOffset = 1.05f;
+            assets.countrysideCoinRoute.rowVerticalSpacing = .9f;
+            assets.countrysideCoinRoute.coinHorizontalSpacing = 1.75f;
             assets.countrysideCoinRoute.sparseEndDistance = 300f;
             assets.countrysideCoinRoute.growingEndDistance = 600f;
             assets.countrysideCoinRoute.variedEndDistance = 1200f;

@@ -36,9 +36,10 @@ namespace AnimeHillRacing.Core
         public const string DefaultMenuBackgroundId = "default";
         public const string DefaultGarageBackgroundId = "default";
 
-        public const int DistanceBonusMinimum = 200;
-        public const int DistanceBonusMaximum = 2500;
-        public const int DistanceBonusIncrement = 100;
+        public const int DistanceBonusMinimum = DistanceBonusTracker.StartingCoins;
+        public const int DistanceBonusMaximum = DistanceBonusTracker.MaximumCoins;
+        public const int DistanceBonusIncrement = DistanceBonusTracker.IncrementCoins;
+        public const float DistanceBonusIntervalMeters = DistanceBonusTracker.IntervalMeters;
 
         private const string TotalCoinsKey = "AHR.TotalCoins";
         private const string TotalGemsKey = "AHR.TotalGems";
@@ -53,9 +54,6 @@ namespace AnimeHillRacing.Core
         private const string SelectedMenuBackgroundKey = "AHR.Menu.Background";
         private const string SelectedGarageBackgroundKey = "AHR.Garage.Background";
         private const string MasterAudioEnabledKey = "AHR.Settings.MasterAudioEnabled";
-        private const string DistanceBonusValueKey = "AHR.DistanceBonus.CurrentValue";
-        private const string DistanceBonusThresholdKey = "AHR.DistanceBonus.NextThreshold";
-        private const string DistanceBonusX10MigrationKey = "AHR.Migration.DistanceBonusX10.V1";
         private const string FormulaWheelMigrationKey = "AHR.Migration.FormulaDefaultWheel02.V1";
         private const string PurchasableContentMigrationKey = "AHR.Migration.PurchasableContent.V1";
         private const string FormulaLegacyWheelId = "formula-wheel-rainbow";
@@ -67,29 +65,6 @@ namespace AnimeHillRacing.Core
             ? UnlimitedCurrencyDisplayAmount : StoredTotalCoins;
         public static int TotalGems => TemporaryUnlimitedCurrencyEnabled
             ? UnlimitedCurrencyDisplayAmount : StoredTotalGems;
-        public static int CurrentDistanceBonusValue
-        {
-            get
-            {
-                EnsureDistanceBonusX10Migration();
-                return Mathf.Clamp(PlayerPrefs.GetInt(DistanceBonusValueKey, DistanceBonusMinimum),
-                    DistanceBonusMinimum, DistanceBonusMaximum);
-            }
-        }
-        public static float NextDistanceBonusThreshold => Mathf.Max(300f,
-            PlayerPrefs.GetFloat(DistanceBonusThresholdKey, 300f));
-
-        public static int ClaimDistanceBonus()
-        {
-            int award = CurrentDistanceBonusValue;
-            AddCoins(award, false);
-            PlayerPrefs.SetInt(DistanceBonusValueKey, Mathf.Min(DistanceBonusMaximum,
-                award + DistanceBonusIncrement));
-            PlayerPrefs.SetFloat(DistanceBonusThresholdKey, NextDistanceBonusThreshold + 300f);
-            PlayerPrefs.Save();
-            return award;
-        }
-
         public static GameModeType SelectedGameMode
         {
             get => (GameModeType)Mathf.Clamp(PlayerPrefs.GetInt(SelectedModeKey, 0), 0, 2);
@@ -825,18 +800,6 @@ namespace AnimeHillRacing.Core
             PlayerPrefs.SetInt(PurchasableContentMigrationKey, 1);
             PlayerPrefs.Save();
         }
-
-        private static void EnsureDistanceBonusX10Migration()
-        {
-            if (PlayerPrefs.GetInt(DistanceBonusX10MigrationKey, 0) != 0) return;
-            int legacyValue = PlayerPrefs.GetInt(DistanceBonusValueKey, 20);
-            PlayerPrefs.SetInt(DistanceBonusValueKey, ScaleLegacyDistanceBonus(legacyValue));
-            PlayerPrefs.SetInt(DistanceBonusX10MigrationKey, 1);
-            PlayerPrefs.Save();
-        }
-
-        public static int ScaleLegacyDistanceBonus(int legacyValue) =>
-            Mathf.Clamp(legacyValue, 20, 250) * 10;
 
         private static void UnlockBundleWithoutSave(BundleDefinition bundle)
         {

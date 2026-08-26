@@ -255,38 +255,36 @@ namespace AnimeHillRacing.Editor
             {
                 chestPanel.SelectSlot0,
                 chestPanel.SelectSlot1,
-                chestPanel.SelectSlot2,
-                chestPanel.SelectSlot3
+                chestPanel.SelectSlot2
             };
             Vector2[] slotPositions =
             {
-                new Vector2(-570f, 0f),
-                new Vector2(-260f, 0f),
-                new Vector2(50f, 0f),
-                new Vector2(360f, 0f)
+                new Vector2(-400f, 8f),
+                new Vector2(0f, 8f),
+                new Vector2(400f, 8f)
             };
             for (int i = 0; i < chestButtons.Length; i++)
             {
                 chestButtons[i] = CreateButton("Chest Slot " + (i + 1), chestRoot.transform,
-                    string.Empty, slotPositions[i], new Vector2(292f, 110f));
+                    string.Empty, slotPositions[i], new Vector2(370f, 145f));
                 chestButtons[i].image.sprite = chestSlotFrame;
                 chestButtons[i].image.type = Image.Type.Simple;
                 chestButtons[i].image.preserveAspect = true;
                 chestButtons[i].image.color = Color.white;
                 chestImages[i] = CreateImage("Chest", chestButtons[i].transform, Color.white,
-                    new Vector2(.27f, .19f), new Vector2(.73f, .94f),
+                    new Vector2(.20f, .12f), new Vector2(.80f, .98f),
                     Vector2.zero, Vector2.zero).GetComponent<Image>();
                 chestImages[i].raycastTarget = false;
                 chestImages[i].preserveAspect = true;
                 chestLabels[i] = CreateText("Status", chestButtons[i].transform, "EMPTY", 12,
-                    TextAnchor.LowerCenter, new Vector2(.02f, .01f), new Vector2(.98f, .30f),
+                    TextAnchor.UpperCenter, new Vector2(.02f, -.40f), new Vector2(.98f, -.02f),
                     Vector2.zero, Vector2.zero);
                 Bind(chestButtons[i], slotActions[i]);
             }
             Button previousChestPage = CreateGrayNavButton("Previous Chest Page", chestRoot.transform,
-                "<", new Vector2(-790f, 0f), new Vector2(64f, 92f));
+                "<", new Vector2(-650f, 8f), new Vector2(64f, 92f));
             Button nextChestPage = CreateGrayNavButton("Next Chest Page", chestRoot.transform,
-                ">", new Vector2(540f, -30f), new Vector2(64f, 92f));
+                ">", new Vector2(650f, 8f), new Vector2(64f, 92f));
             Bind(previousChestPage, chestPanel.PreviousPage);
             Bind(nextChestPage, chestPanel.NextPage);
 
@@ -1017,7 +1015,7 @@ namespace AnimeHillRacing.Editor
                     if (slots == null || slots.arraySize != ChestPanelUI.SlotsPerPage ||
                         previous?.objectReferenceValue == null || next?.objectReferenceValue == null)
                     {
-                        Debug.LogError("PreStart: four Chest Slots plus previous/next navigation are required.");
+                        Debug.LogError("PreStart: three Chest Slots plus previous/next navigation are required.");
                         valid = false;
                     }
                 }
@@ -1029,7 +1027,7 @@ namespace AnimeHillRacing.Editor
                         suppliedFrameCount++;
                 if (suppliedFrameCount != ChestPanelUI.SlotsPerPage)
                 {
-                    Debug.LogError("PreStart: exactly four visual frames sliced from the supplied ChestSlots artwork are required.");
+                    Debug.LogError("PreStart: exactly three visual frames sliced from the supplied ChestSlots artwork are required.");
                     valid = false;
                 }
             }

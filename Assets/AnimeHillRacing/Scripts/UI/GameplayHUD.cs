@@ -443,10 +443,10 @@ namespace AnimeHillRacing.UI
                         ? "DRIVER DOWN\nOUT OF FUEL" : "OUT OF FUEL";
                     showingCountdown = true;
                 }
+                else if (gameManager.ShowDistanceBonus)
+                    statusText.text = $"Distance Bonus +{gameManager.LastDistanceBonus}";
                 else if (gameManager.ShowGemAward)
                     statusText.text = gameManager.LastGemAward == 1 ? "+1 GEM" : $"+{gameManager.LastGemAward} GEMS";
-                else if (gameManager.ShowDistanceBonus)
-                    statusText.text = $"DISTANCE BONUS  +{gameManager.LastDistanceBonus}  |  NEXT {gameManager.NextDistanceBonusThreshold:0} m";
                 else
                     statusText.text = transmission.ShiftStatus;
 

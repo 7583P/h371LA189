@@ -8,7 +8,7 @@ namespace AnimeHillRacing.UI
 {
     public sealed class ChestPanelUI : MonoBehaviour
     {
-        public const int SlotsPerPage = 4;
+        public const int SlotsPerPage = 3;
 
         [SerializeField] private GameCatalog catalog;
         [SerializeField] private Button[] slotButtons;
@@ -48,6 +48,8 @@ namespace AnimeHillRacing.UI
             if (progressFill != null)
                 progressFill.color = GreenProgressColor;
 
+            ConfigurePagedSlotLayout();
+
             if (!outlineConfigured && progressText != null)
             {
                 outlineConfigured = true;
@@ -60,6 +62,61 @@ namespace AnimeHillRacing.UI
             }
         }
 
+        private void ConfigurePagedSlotLayout()
+        {
+            // The track-selection chest shelf is paged. Normalize legacy scenes that still serialize
+            // four small slots into the current three large-slot layout at runtime.
+            if (previousPageButton == null && nextPageButton == null) return;
+
+            float[] slotX = { -400f, 0f, 400f };
+            int count = slotButtons?.Length ?? 0;
+            for (int i = 0; i < count; i++)
+            {
+                Button slot = slotButtons[i];
+                if (slot == null) continue;
+                bool used = i < SlotsPerPage;
+                slot.gameObject.SetActive(used);
+                if (!used) continue;
+
+                RectTransform slotRect = slot.GetComponent<RectTransform>();
+                if (slotRect != null)
+                {
+                    slotRect.anchoredPosition = new Vector2(slotX[i], 8f);
+                    slotRect.sizeDelta = new Vector2(370f, 145f);
+                }
+
+                if (slotImages != null && i < slotImages.Length && slotImages[i] != null)
+                {
+                    RectTransform imageRect = slotImages[i].rectTransform;
+                    imageRect.anchorMin = new Vector2(.20f, .12f);
+                    imageRect.anchorMax = new Vector2(.80f, .98f);
+                    imageRect.offsetMin = Vector2.zero;
+                    imageRect.offsetMax = Vector2.zero;
+                }
+
+                if (slotLabels != null && i < slotLabels.Length && slotLabels[i] != null)
+                {
+                    Text label = slotLabels[i];
+                    RectTransform labelRect = label.rectTransform;
+                    labelRect.anchorMin = new Vector2(0f, 0f);
+                    labelRect.anchorMax = new Vector2(1f, 0f);
+                    labelRect.pivot = new Vector2(.5f, 1f);
+                    labelRect.offsetMin = new Vector2(8f, -62f);
+                    labelRect.offsetMax = new Vector2(-8f, -4f);
+                    label.alignment = TextAnchor.UpperCenter;
+                    label.fontSize = 15;
+                    label.resizeTextForBestFit = true;
+                    label.resizeTextMinSize = 11;
+                    label.resizeTextMaxSize = 15;
+                }
+            }
+
+            if (previousPageButton != null)
+                previousPageButton.GetComponent<RectTransform>().anchoredPosition = new Vector2(-650f, 8f);
+            if (nextPageButton != null)
+                nextPageButton.GetComponent<RectTransform>().anchoredPosition = new Vector2(650f, 8f);
+        }
+
         private void Update()
         {
             if (Time.unscaledTime < nextRefresh) return;
@@ -70,6 +127,7 @@ namespace AnimeHillRacing.UI
         public void SelectSlot0() => SelectSlot(0);
         public void SelectSlot1() => SelectSlot(1);
         public void SelectSlot2() => SelectSlot(2);
+        // Kept only so legacy serialized Button events remain resolvable; slot four is always hidden.
         public void SelectSlot3() => SelectSlot(3);
 
         public void PreviousPage() => SetPage(currentPage - 1);
@@ -242,6 +300,7 @@ namespace AnimeHillRacing.UI
             feedbackBundleImage = bundleImage;
             previousPageButton = previousPage;
             nextPageButton = nextPage;
+            ConfigureVisualStyles();
             if (Application.isPlaying) Refresh();
         }
     }

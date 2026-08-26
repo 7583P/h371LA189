@@ -18,6 +18,8 @@ namespace AnimeHillRacing.Pickups
         public float anchorDistance;
         public CoinPatternKind pattern;
         public int coinCount;
+        public int lowerRowCoinCount;
+        public int upperRowCoinCount;
         public int densityTier;
     }
 
@@ -38,6 +40,8 @@ namespace AnimeHillRacing.Pickups
         [Min(0f)] public float firstCoinDistance = 20f;
         [Range(0f, 12f)] public float anchorJitter = 5f;
         [Min(.2f)] public float surfaceOffset = 1.05f;
+        [Min(.2f)] public float rowVerticalSpacing = .9f;
+        [Min(.5f)] public float coinHorizontalSpacing = 1.75f;
 
         [Header("Progression bands")]
         [Min(1f)] public float sparseEndDistance = 300f;
@@ -46,7 +50,7 @@ namespace AnimeHillRacing.Pickups
         [Min(1f)] public float allFiveStartDistance = 2600f;
 
         public float MaximumGroupsPer100Meters => 100f / Mathf.Max(1f, cellLength);
-        public int MaximumCoinsPerGroup => 7;
+        public int MaximumCoinsPerGroup => 12;
 
         public bool TryGetGroup(int cellIndex, out CoinRouteGroup group)
         {
@@ -67,35 +71,30 @@ namespace AnimeHillRacing.Pickups
             };
             if (!enabled) return false;
 
-            uint patternHash = Hash((uint)(cellIndex ^ routeSeed ^ unchecked((int)0x6D2B79F5)));
-            CoinPatternKind pattern;
-            int coinCount;
-            if (tier == 0)
+            // Coin groups always hug the sampled surface in two clean rows. The lower row grows first;
+            // the upper row is introduced progressively as distance (and total coin density) increases.
+            int lowerRowCount = tier switch
             {
-                pattern = (patternHash & 1u) == 0u ? CoinPatternKind.Line : CoinPatternKind.SpecialCenter;
-                coinCount = pattern == CoinPatternKind.Line ? 3 : 5;
-            }
-            else if (tier == 1)
+                0 => 3,
+                1 => 4,
+                2 => 5,
+                _ => 6
+            };
+            int upperRowCount = tier switch
             {
-                pattern = (CoinPatternKind)(patternHash % 3u);
-                coinCount = 5;
-            }
-            else if (tier == 2)
-            {
-                pattern = (CoinPatternKind)(1 + patternHash % 4u);
-                coinCount = 5;
-            }
-            else
-            {
-                pattern = (CoinPatternKind)(patternHash % 6u);
-                coinCount = pattern == CoinPatternKind.JumpArc ? 7 : 5;
-            }
+                0 => 0,
+                1 => 2,
+                2 => 3,
+                _ => 6
+            };
             group = new CoinRouteGroup
             {
                 cellIndex = cellIndex,
                 anchorDistance = anchor,
-                pattern = pattern,
-                coinCount = coinCount,
+                pattern = CoinPatternKind.Line,
+                coinCount = lowerRowCount + upperRowCount,
+                lowerRowCoinCount = lowerRowCount,
+                upperRowCoinCount = upperRowCount,
                 densityTier = tier
             };
             return true;
@@ -105,40 +104,16 @@ namespace AnimeHillRacing.Pickups
         {
             int count = Mathf.Max(1, group.coinCount);
             int index = Mathf.Clamp(pointIndex, 0, count - 1);
-            float centered = index - (count - 1) * .5f;
-            float distance = centered * 2.15f;
-            float height = 0f;
+            int lowerCount = Mathf.Clamp(group.lowerRowCoinCount, 1, count);
+            bool upperRow = index >= lowerCount;
+            int rowIndex = upperRow ? index - lowerCount : index;
+            int rowCount = upperRow ? Mathf.Max(1, group.upperRowCoinCount) : lowerCount;
+            float centered = rowIndex - (rowCount - 1) * .5f;
+            float distance = centered * Mathf.Max(.5f, coinHorizontalSpacing);
+            float height = upperRow ? Mathf.Max(.2f, rowVerticalSpacing) : 0f;
             float lateral = 0f;
             bool allFive = group.anchorDistance >= allFiveStartDistance;
             int value = allFive ? 5 : 1;
-            switch (group.pattern)
-            {
-                case CoinPatternKind.SpecialCenter:
-                    height = index % 2 == 0 ? 0f : .32f;
-                    break;
-                case CoinPatternKind.Arc:
-                {
-                    float normalized = count <= 1 ? 0f : index / (count - 1f);
-                    height = Mathf.Sin(normalized * Mathf.PI) * 1.35f;
-                    lateral = Mathf.Sin((normalized - .5f) * Mathf.PI) * .28f;
-                    break;
-                }
-                case CoinPatternKind.Ascent:
-                    height = index * .38f;
-                    break;
-                case CoinPatternKind.Descent:
-                    height = (count - 1 - index) * .38f;
-                    break;
-                case CoinPatternKind.JumpArc:
-                {
-                    float normalized = count <= 1 ? 0f : index / (count - 1f);
-                    height = .45f + Mathf.Sin(normalized * Mathf.PI) * 2.15f;
-                    lateral = Mathf.Sin(normalized * Mathf.PI * 2f) * .22f;
-                    break;
-                }
-            }
-            if (group.densityTier >= 2 && !allFive && (index & 1) == 1)
-                height += group.densityTier == 2 ? .55f : .9f;
             if (!allFive && group.densityTier >= 1 && index == count - 1)
                 value = 5;
             return new CoinRoutePoint
@@ -202,6 +177,8 @@ namespace AnimeHillRacing.Pickups
         {
             cellLength = Mathf.Max(24f, cellLength);
             anchorJitter = Mathf.Min(anchorJitter, cellLength * .2f);
+            rowVerticalSpacing = Mathf.Max(.2f, rowVerticalSpacing);
+            coinHorizontalSpacing = Mathf.Max(.5f, coinHorizontalSpacing);
             sparseEndDistance = Mathf.Max(firstCoinDistance + cellLength, sparseEndDistance);
             growingEndDistance = Mathf.Max(sparseEndDistance + cellLength, growingEndDistance);
             variedEndDistance = Mathf.Max(growingEndDistance + cellLength, variedEndDistance);

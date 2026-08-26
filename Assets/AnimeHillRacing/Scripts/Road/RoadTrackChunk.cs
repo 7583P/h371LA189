@@ -13,6 +13,7 @@ namespace AnimeHillRacing.Road
         }
 
         private readonly List<TrackedPickup> pickups = new List<TrackedPickup>(16);
+        private readonly List<DistanceBonusMarker> bonusMarkers = new List<DistanceBonusMarker>(2);
         private Mesh groundMesh;
         private Mesh roadMesh;
         private MeshCollider groundCollider;
@@ -46,6 +47,7 @@ namespace AnimeHillRacing.Road
         {
             EnsureObjects();
             ReleasePickups();
+            ReleaseBonusMarkers();
             Index = index;
             IsGenerated = true;
             pool = pickupPool;
@@ -104,6 +106,11 @@ namespace AnimeHillRacing.Road
                 pickups.Add(new TrackedPickup { pickup = pickup, spawnVersion = pickup.SpawnVersion });
         }
 
+        public void TrackBonusMarker(DistanceBonusMarker marker)
+        {
+            if (marker != null) bonusMarkers.Add(marker);
+        }
+
         private void ReleasePickups()
         {
             if (pool != null)
@@ -114,8 +121,17 @@ namespace AnimeHillRacing.Road
             pickups.Clear();
         }
 
+        private void ReleaseBonusMarkers()
+        {
+            for (int i = 0; i < bonusMarkers.Count; i++)
+                if (bonusMarkers[i] != null)
+                    Destroy(bonusMarkers[i].gameObject);
+            bonusMarkers.Clear();
+        }
+
         private void OnDestroy()
         {
+            ReleaseBonusMarkers();
             if (groundMesh != null) Destroy(groundMesh);
             if (roadMesh != null) Destroy(roadMesh);
         }

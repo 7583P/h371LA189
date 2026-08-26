@@ -17,6 +17,8 @@ MonoBehaviour:
   firstCoinDistance: 20
   anchorJitter: 5
   surfaceOffset: 1.05
+  rowVerticalSpacing: 0.9
+  coinHorizontalSpacing: 1.75
   sparseEndDistance: 300
   growingEndDistance: 600
   variedEndDistance: 1200

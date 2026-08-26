@@ -1,3 +1,4 @@
+using AnimeHillRacing.Core;
 using AnimeHillRacing.Pickups;
 using AnimeHillRacing.Vehicle;
 using UnityEngine;
@@ -74,6 +75,7 @@ namespace AnimeHillRacing.Road
             if (pickupPool == null || index < 0) return;
             float start = index * profile.chunkLength;
             float end = start + profile.chunkLength;
+            SpawnDistanceBonusMarkers(chunk, start, end);
             SpawnCoins(chunk, start, end);
             SpawnFuel(chunk, start, end);
         }
@@ -98,6 +100,24 @@ namespace AnimeHillRacing.Road
                         route.GetStableCoinId(group, pointIndex));
                     chunk.Track(pickup);
                 }
+            }
+        }
+
+        private void SpawnDistanceBonusMarkers(RoadTrackChunk chunk, float start, float end)
+        {
+            int firstMilestone = Mathf.Max(1,
+                Mathf.CeilToInt(Mathf.Max(start, DistanceBonusTracker.IntervalMeters) /
+                                DistanceBonusTracker.IntervalMeters));
+            for (int milestone = firstMilestone; ; milestone++)
+            {
+                float distance = milestone * DistanceBonusTracker.IntervalMeters;
+                if (distance >= end) break;
+                if (distance < start) continue;
+                float x = SampleCenterX(profile, distance);
+                float y = SampleHeight(profile, distance) + 1.7f;
+                DistanceBonusMarker marker = DistanceBonusMarker.Create(chunk.transform,
+                    new Vector3(x, y, distance), distance, true);
+                chunk.TrackBonusMarker(marker);
             }
         }
 

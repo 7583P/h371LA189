@@ -79,6 +79,7 @@ namespace AnimeHillRacing.Core
         private float distanceBonusMessageUntil;
         private readonly LiquidExposureTracker liquidExposure = new LiquidExposureTracker();
         private readonly GemMilestoneTracker gemMilestones = new GemMilestoneTracker();
+        private readonly DistanceBonusTracker distanceBonuses = new DistanceBonusTracker();
         private bool liquidCrashRequested;
         private int lastGemAward;
         private float gemMessageUntil;
@@ -108,8 +109,8 @@ namespace AnimeHillRacing.Core
         public int SavedTotalCoins => resultSnapshotFinalized
             ? finalizedSavedTotalCoins : SaveManager.TotalCoins;
         public int TotalGems => SaveManager.TotalGems;
-        public int CurrentDistanceBonusValue => SaveManager.CurrentDistanceBonusValue;
-        public float NextDistanceBonusThreshold => SaveManager.NextDistanceBonusThreshold;
+        public int CurrentDistanceBonusValue => distanceBonuses.NextAward;
+        public float NextDistanceBonusThreshold => distanceBonuses.NextDistance;
         public int LastDistanceBonus => lastDistanceBonus;
         public bool ShowDistanceBonus => Time.unscaledTime < distanceBonusMessageUntil;
         public int LastGemAward => lastGemAward;
@@ -181,6 +182,7 @@ namespace AnimeHillRacing.Core
             vehicle?.SetTransmissionMode(GameSession.SelectedTransmission);
             liquidExposure.Reset(LiquidExposureLimit);
             gemMilestones.Reset();
+            distanceBonuses.Reset();
         }
 
         private void Start()
@@ -283,10 +285,15 @@ namespace AnimeHillRacing.Core
                     RequestGameOver(RunEndReason.Crashed);
                 }
             }
-            while (Distance >= SaveManager.NextDistanceBonusThreshold)
+            while (distanceBonuses.TryClaimThrough(Distance, out int distanceAward, out _))
             {
-                lastDistanceBonus = SaveManager.ClaimDistanceBonus();
+                SaveManager.AddCoins(distanceAward, false);
+                lastDistanceBonus = distanceAward;
                 distanceBonusMessageUntil = Time.unscaledTime + 2.5f;
+                // At every 1000 m a gem and a distance bonus arrive together. Show the requested
+                // distance message first, then keep the gem notification alive for its own turn.
+                if (gemMessageUntil > Time.unscaledTime)
+                    gemMessageUntil = Mathf.Max(gemMessageUntil, distanceBonusMessageUntil + 2.5f);
             }
             if (input != null && input.RetryPressedThisFrame)
                 Retry();

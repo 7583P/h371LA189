@@ -15,6 +15,7 @@ namespace AnimeHillRacing.Terrain
         }
 
         private readonly List<TrackedPickup> pickups = new List<TrackedPickup>(24);
+        private readonly List<DistanceBonusMarker> bonusMarkers = new List<DistanceBonusMarker>(2);
         private Mesh mesh;
         private Mesh surfaceColliderMesh;
         private MeshFilter meshFilter;
@@ -116,7 +117,11 @@ namespace AnimeHillRacing.Terrain
             bool preservePickups)
         {
             EnsureComponents();
-            if (!preservePickups) ReleasePickups();
+            if (!preservePickups)
+            {
+                ReleasePickups();
+                ReleaseBonusMarkers();
+            }
             Index = index;
             chunkLength = targetChunkLength;
             surfaceWidth = width;
@@ -270,6 +275,11 @@ namespace AnimeHillRacing.Terrain
             }
         }
 
+        public void TrackBonusMarker(DistanceBonusMarker marker)
+        {
+            if (marker != null) bonusMarkers.Add(marker);
+        }
+
         private void RepositionTrackedPickups()
         {
             for (int i = 0; i < pickups.Count; i++)
@@ -297,8 +307,17 @@ namespace AnimeHillRacing.Terrain
             pickups.Clear();
         }
 
+        private void ReleaseBonusMarkers()
+        {
+            for (int i = 0; i < bonusMarkers.Count; i++)
+                if (bonusMarkers[i] != null)
+                    Destroy(bonusMarkers[i].gameObject);
+            bonusMarkers.Clear();
+        }
+
         private void OnDestroy()
         {
+            ReleaseBonusMarkers();
             if (mesh != null)
                 Destroy(mesh);
             if (surfaceColliderMesh != null)

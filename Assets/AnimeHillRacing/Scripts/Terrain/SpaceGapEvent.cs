@@ -14,16 +14,14 @@ namespace AnimeHillRacing.Terrain
         private SpriteRenderer warningRenderer;
         private SpriteRenderer outerRenderer;
         private SpriteRenderer innerRenderer;
-        private SphereCollider hazard3D;
-        private CircleCollider2D hazard2D;
+        private BoxCollider hazard3D;
+        private BoxCollider2D hazard2D;
         private SpriteRenderer planetRenderer;
         private SphereCollider planetCollider3D;
         private EdgeCollider2D planetCollider2D;
         private Mesh rampMesh;
         private GameManager gameManager;
         private static PhysicsMaterial2D fallbackPlanetMaterial2D;
-        private Vector3 innerBaseScale;
-        private float pulsePhase;
         private bool triggered;
 
         public int Phase { get; private set; }
@@ -74,12 +72,16 @@ namespace AnimeHillRacing.Terrain
             if (innerRenderer == null) innerRenderer = inner.GetComponent<SpriteRenderer>();
             if (innerRenderer == null) innerRenderer = inner.gameObject.AddComponent<SpriteRenderer>();
 
-            if (hazard3D == null) hazard3D = GetComponent<SphereCollider>();
-            if (hazard3D == null) hazard3D = gameObject.AddComponent<SphereCollider>();
+            SphereCollider obsoleteSphere = GetComponent<SphereCollider>();
+            if (obsoleteSphere != null) obsoleteSphere.enabled = false;
+            if (hazard3D == null) hazard3D = GetComponent<BoxCollider>();
+            if (hazard3D == null) hazard3D = gameObject.AddComponent<BoxCollider>();
             hazard3D.isTrigger = true;
             Transform trigger2D = GetOrCreate("Black Hole Hazard Trigger 2D");
-            if (hazard2D == null) hazard2D = trigger2D.GetComponent<CircleCollider2D>();
-            if (hazard2D == null) hazard2D = trigger2D.gameObject.AddComponent<CircleCollider2D>();
+            CircleCollider2D obsoleteHazardCircle = trigger2D.GetComponent<CircleCollider2D>();
+            if (obsoleteHazardCircle != null) obsoleteHazardCircle.enabled = false;
+            if (hazard2D == null) hazard2D = trigger2D.GetComponent<BoxCollider2D>();
+            if (hazard2D == null) hazard2D = trigger2D.gameObject.AddComponent<BoxCollider2D>();
             hazard2D.isTrigger = true;
             SpaceGapEvent2DForwarder forwarder = trigger2D.GetComponent<SpaceGapEvent2DForwarder>();
             if (forwarder == null) forwarder = trigger2D.gameObject.AddComponent<SpaceGapEvent2DForwarder>();
@@ -93,8 +95,12 @@ namespace AnimeHillRacing.Terrain
             if (planetCollider3D == null) planetCollider3D = planetPhysics.gameObject.AddComponent<SphereCollider>();
             CircleCollider2D obsoleteCircle = planetPhysics.GetComponent<CircleCollider2D>();
             if (obsoleteCircle != null) obsoleteCircle.enabled = false;
-            if (planetCollider2D == null) planetCollider2D = planetPhysics.GetComponent<EdgeCollider2D>();
-            if (planetCollider2D == null) planetCollider2D = planetPhysics.gameObject.AddComponent<EdgeCollider2D>();
+            // Collider2D types cannot coexist reliably on the legacy planet object. Keep the
+            // driveable 2D arc on its own child so AddComponent cannot return null.
+            Transform planetPhysics2D = GetOrCreate("Physical Circular Planet Surface 2D");
+            if (planetCollider2D == null) planetCollider2D = planetPhysics2D.GetComponent<EdgeCollider2D>();
+            if (planetCollider2D == null)
+                planetCollider2D = planetPhysics2D.gameObject.AddComponent<EdgeCollider2D>();
             planetCollider3D.isTrigger = false;
             planetCollider2D.isTrigger = false;
         }
@@ -110,7 +116,6 @@ namespace AnimeHillRacing.Terrain
             GapEnd = layout.gapEnd;
             gameManager = manager;
             triggered = false;
-            pulsePhase = layout.phase * 1.713f;
             transform.position = new Vector3(layout.rampStart, layout.baselineHeight, 0f);
 
             BuildRamp(settings, layout, trackWidth);
@@ -147,7 +152,7 @@ namespace AnimeHillRacing.Terrain
             planetCollider3D.enabled = false;
             planetCollider2D.enabled = false;
             outerRenderer.enabled = true;
-            innerRenderer.enabled = true;
+            innerRenderer.enabled = false;
             hazard3D.enabled = true;
             hazard2D.enabled = true;
             float blackHoleX = (layout.gapStart + layout.gapEnd) * .5f - layout.rampStart;
@@ -157,21 +162,21 @@ namespace AnimeHillRacing.Terrain
             ConfigureBlackHoleRenderer(outerRenderer, settings.blackHoleSprite,
                 blackHoleWidth, blackHoleHeight,
                 blackHoleX, blackHoleY, -trackWidth * .5f - .18f, 5);
-            ConfigureBlackHoleRenderer(innerRenderer, settings.blackHoleSprite,
-                blackHoleWidth * .68f, blackHoleHeight * .68f,
-                blackHoleX, blackHoleY, -trackWidth * .5f - .19f, 6);
             outerRenderer.color = Color.white;
-            innerRenderer.color = new Color(1f, .62f, .16f, .62f);
-            innerBaseScale = innerRenderer.transform.localScale;
 
-            float requestedRadius = Mathf.Max(.35f,
-                layout.blackHoleDiameter * settings.hazardRadiusFactor);
-            float maximumRadiusBelowRamp = Mathf.Max(.35f, -blackHoleY - .25f);
-            float radius = Mathf.Min(requestedRadius, maximumRadiusBelowRamp);
-            hazard3D.center = new Vector3(blackHoleX, blackHoleY, 0f);
-            hazard3D.radius = radius;
-            hazard2D.offset = new Vector2(blackHoleX, blackHoleY);
-            hazard2D.radius = radius;
+            // Only the lower half is lethal. Measure the trigger from the sprite's actual
+            // vertical midpoint so its top edge stays at half of the PNG even if its pivot
+            // or imported bounds change.
+            // Extend far below the artwork so a fast-falling wheel cannot tunnel through the
+            // trigger; its upper edge remains exactly on the requested midpoint.
+            float pngMidpointY = CalculateSpriteVerticalMidpoint(outerRenderer, blackHoleY);
+            float lethalHeight = Mathf.Max(blackHoleHeight * .5f, 200f);
+            float lethalCenterY = pngMidpointY - lethalHeight * .5f;
+            hazard3D.center = new Vector3(blackHoleX, lethalCenterY, 0f);
+            hazard3D.size = new Vector3(blackHoleWidth, lethalHeight,
+                Mathf.Max(2f, trackWidth + 1f));
+            hazard2D.offset = new Vector2(blackHoleX, lethalCenterY);
+            hazard2D.size = new Vector2(blackHoleWidth, lethalHeight);
 
             gameObject.name = $"Space Void Phase {layout.phase} - Pooled";
             gameObject.SetActive(true);
@@ -189,10 +194,14 @@ namespace AnimeHillRacing.Terrain
             planetRenderer.transform.localRotation = Quaternion.identity;
             planetRenderer.transform.localScale = Vector3.one * layout.planetRadius;
 
-            Transform physics = planetCollider2D.transform;
-            physics.localPosition = new Vector3(localX, localY, 0f);
-            physics.localRotation = Quaternion.identity;
-            physics.localScale = Vector3.one;
+            Transform physics2D = planetCollider2D.transform;
+            physics2D.localPosition = new Vector3(localX, localY, 0f);
+            physics2D.localRotation = Quaternion.identity;
+            physics2D.localScale = Vector3.one;
+            Transform physics3D = planetCollider3D.transform;
+            physics3D.localPosition = new Vector3(localX, localY, 0f);
+            physics3D.localRotation = Quaternion.identity;
+            physics3D.localScale = Vector3.one;
             planetCollider3D.radius = layout.planetRadius;
             const int arcSegments = 28;
             var arc = new Vector2[arcSegments + 1];
@@ -229,8 +238,7 @@ namespace AnimeHillRacing.Terrain
             planetCollider2D.enabled = true;
         }
 
-        public static float CalculateBlackHoleVisualHeight(float width) =>
-            Mathf.Clamp(Mathf.Max(1f, width) * .62f, 9f, 18f);
+        public static float CalculateBlackHoleVisualHeight(float width) => 9f;
 
         public static float CalculateBlackHoleCenterY(float authoredCenterY, float width)
         {
@@ -251,6 +259,13 @@ namespace AnimeHillRacing.Terrain
             renderer.transform.localScale = new Vector3(
                 width / Mathf.Max(.001f, sourceWidth),
                 height / Mathf.Max(.001f, sourceHeight), 1f);
+        }
+
+        private static float CalculateSpriteVerticalMidpoint(SpriteRenderer renderer, float fallbackY)
+        {
+            if (renderer == null || renderer.sprite == null) return fallbackY;
+            return renderer.transform.localPosition.y +
+                   renderer.sprite.bounds.center.y * renderer.transform.localScale.y;
         }
 
         private void BuildRamp(SpaceChallengeSettings settings, SpaceChallengeLayout layout, float trackWidth)
@@ -301,43 +316,31 @@ namespace AnimeHillRacing.Terrain
             rampCollider2D.points = edge;
         }
 
-        private void Update()
-        {
-            if (outerRenderer == null || innerRenderer == null || !outerRenderer.enabled) return;
-            // The hole and its horizontal silhouette remain perfectly fixed beneath the ramp. Only the
-            // orange overlay flickers and breathes, like fire moving around an immobile event horizon.
-            outerRenderer.transform.localRotation = Quaternion.identity;
-            innerRenderer.transform.localRotation = Quaternion.identity;
-            float slowFlame = Mathf.Sin(Time.time * 2.35f + pulsePhase);
-            float fastFlame = Mathf.Sin(Time.time * 6.7f + pulsePhase * 1.91f);
-            float flame = Mathf.Clamp01(.5f + slowFlame * .34f + fastFlame * .16f);
-            innerRenderer.transform.localScale = new Vector3(
-                innerBaseScale.x * Mathf.Lerp(.985f, 1.018f, flame),
-                innerBaseScale.y * Mathf.Lerp(.97f, 1.035f, 1f - flame),
-                innerBaseScale.z);
-            innerRenderer.color = new Color(1f, Mathf.Lerp(.48f, .73f, flame),
-                Mathf.Lerp(.08f, .22f, flame), Mathf.Lerp(.48f, .72f, flame));
-        }
-
         private void OnTriggerEnter(Collider other)
         {
             VehicleRuntimeBase candidate = other != null ? other.GetComponentInParent<VehicleRuntimeBase>() : null;
-            if (candidate != null && candidate.Body != null && other.attachedRigidbody == candidate.Body) TriggerCrash();
+            if (candidate != null && candidate.Body != null && other.attachedRigidbody == candidate.Body)
+                TriggerDriverDown();
         }
+
+        private void OnTriggerStay(Collider other) => OnTriggerEnter(other);
 
         internal void Trigger2D(Collider2D other)
         {
-            VehicleRuntimeBase candidate = other != null ? other.GetComponentInParent<VehicleRuntimeBase>() : null;
-            if (candidate != null && candidate.Body2D != null && other.attachedRigidbody == candidate.Body2D)
-                TriggerCrash();
+            if (other == null) return;
+            Suspension2DController wheel = other.GetComponent<Suspension2DController>() ??
+                                           other.GetComponentInParent<Suspension2DController>();
+            if (wheel == null || wheel.WheelCollider != other ||
+                other.attachedRigidbody != wheel.WheelBody || wheel.OwnerVehicle == null) return;
+            TriggerDriverDown();
         }
 
-        private void TriggerCrash()
+        private void TriggerDriverDown()
         {
             if (triggered) return;
             triggered = true;
             if (gameManager == null) gameManager = FindFirstObjectByType<GameManager>();
-            gameManager?.RequestGameOver(RunEndReason.Crashed);
+            gameManager?.RequestGameOver(RunEndReason.DriverDown);
         }
 
         public void Deactivate()

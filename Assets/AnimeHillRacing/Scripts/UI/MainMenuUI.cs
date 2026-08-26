@@ -89,11 +89,11 @@ namespace AnimeHillRacing.UI
             {
                 index = (index + direction + count) % count;
                 VehicleDefinition candidate = catalog.vehicles[index];
-                if (candidate == null) continue;
+                if (candidate == null || !SaveManager.IsVehicleUnlocked(candidate.vehicleId,
+                        candidate.unlockedByDefault)) continue;
 
                 vehicleIndex = index;
-                if (SaveManager.IsVehicleUnlocked(candidate.vehicleId, candidate.unlockedByDefault))
-                    SaveManager.SelectedVehicleId = candidate.vehicleId;
+                SaveManager.SelectedVehicleId = candidate.vehicleId;
                 Refresh();
                 return;
             }

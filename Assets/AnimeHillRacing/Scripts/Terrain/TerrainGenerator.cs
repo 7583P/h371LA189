@@ -1306,17 +1306,13 @@ namespace AnimeHillRacing.Terrain
             int safePhase = Mathf.Max(1, phase);
             float interval = settings != null ? Mathf.Max(250f, settings.eventInterval) : 2000f;
             float eventDistance = safePhase * interval;
-            int eventOffset = (safePhase - 1) % 3;
-            SpaceEventType eventType = eventOffset == 0 ? SpaceEventType.Void : SpaceEventType.Planet;
-            int planetPair = (safePhase - 1) / 3;
-            int planetIndex = (planetPair * 2 + Mathf.Max(0, eventOffset - 1)) % 8;
-            SpacePlanetType planetType = (SpacePlanetType)planetIndex;
+            SpaceEventType eventType = SpaceEventType.Void;
+            SpacePlanetType planetType = default;
             float logicalDistance = eventDistance * Core.GameManager.LogicalDistanceScale;
-            float growthDistance = settings != null ? Mathf.Max(100f, settings.gapGrowthDistance) : 5000f;
-            int gapTier = Mathf.Max(0, Mathf.FloorToInt(logicalDistance / growthDistance));
+            int spaceCycle = safePhase - 1;
             float voidLength = settings != null
-                ? settings.initialGapLength + gapTier * settings.gapIncreasePerTier
-                : 15f * (gapTier + 1);
+                ? settings.initialGapLength + spaceCycle * settings.gapIncreasePerCycle
+                : 15f + spaceCycle * 5f;
             float planetRadius = eventType == SpaceEventType.Planet
                 ? GetSpacePlanetRadius(settings, planetType) : 0f;
             float launchClearance = settings != null ? Mathf.Max(2f, settings.planetLaunchClearance) : 4.5f;

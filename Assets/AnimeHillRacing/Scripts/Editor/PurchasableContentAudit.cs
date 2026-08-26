@@ -89,6 +89,32 @@ namespace AnimeHillRacing.EditorTools
                 Require(vehicle.unlockedByDefault == (expected.Value == 0),
                     $"Vehicle {expected.Key} has the wrong default lock state.");
             }
+
+            int previousMapPrice = -1;
+            for (int i = 0; i < (catalog.maps?.Length ?? 0); i++)
+            {
+                MapDefinition map = catalog.maps[i];
+                if (map == null) continue;
+                Require(map.coinPrice >= previousMapPrice,
+                    $"Track order is not cheapest-to-most-expensive at {map.displayName}.");
+                previousMapPrice = map.coinPrice;
+            }
+
+            int previousVehiclePrice = -1;
+            bool foundFirstVehicle = false;
+            for (int i = 0; i < (catalog.vehicles?.Length ?? 0); i++)
+            {
+                VehicleDefinition vehicle = catalog.vehicles[i];
+                if (vehicle == null) continue;
+                if (!foundFirstVehicle)
+                {
+                    Require(vehicle.vehicleId == "car-01", "Jeep must be the first vehicle.");
+                    foundFirstVehicle = true;
+                }
+                Require(vehicle.coinPrice >= previousVehiclePrice,
+                    $"Vehicle order is not cheapest-to-most-expensive at {vehicle.displayName}.");
+                previousVehiclePrice = vehicle.coinPrice;
+            }
         }
 
         private static void ValidatePurchasesWithoutChangingTheSave()

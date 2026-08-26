@@ -163,6 +163,7 @@ namespace AnimeHillRacing.Editor
                 insertAt++;
             maps.Insert(insertAt, profile);
             catalog.maps = maps.ToArray();
+            catalog.SortPurchasableContent();
             EditorUtility.SetDirty(catalog);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);

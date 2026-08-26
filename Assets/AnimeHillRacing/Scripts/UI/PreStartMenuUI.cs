@@ -720,7 +720,8 @@ namespace AnimeHillRacing.UI
             }
             MapDefinition map = CurrentMap;
             VehicleDefinition vehicle = CurrentVehicle;
-            if (map == null || vehicle == null) return;
+            if (map == null || vehicle == null || !SaveManager.IsVehicleUnlocked(vehicle.vehicleId,
+                    vehicle.unlockedByDefault)) return;
             GameSession.SelectedGameMode = mode;
             GameSession.SelectedMapId = map.mapId;
             if (mode == GameModeType.TimeTrial3D) GameSession.SelectedCircuitId = map.mapId;
@@ -757,8 +758,21 @@ namespace AnimeHillRacing.UI
         private void CycleVehicle(int direction)
         {
             int count = catalog != null && catalog.vehicles != null ? catalog.vehicles.Length : 0;
-            if (count > 0) vehicleIndex = PositiveModulo(vehicleIndex + direction, count);
-            if (CurrentVehicle != null) GameSession.SelectedVehicleId = CurrentVehicle.vehicleId;
+            if (count <= 0) return;
+
+            int stepDirection = direction < 0 ? -1 : 1;
+            int candidateIndex = vehicleIndex;
+            for (int inspected = 0; inspected < count; inspected++)
+            {
+                candidateIndex = PositiveModulo(candidateIndex + stepDirection, count);
+                VehicleDefinition candidate = catalog.vehicles[candidateIndex];
+                if (candidate == null || !SaveManager.IsVehicleUnlocked(candidate.vehicleId,
+                        candidate.unlockedByDefault)) continue;
+                vehicleIndex = candidateIndex;
+                GameSession.SelectedVehicleId = candidate.vehicleId;
+                Refresh();
+                return;
+            }
             Refresh();
         }
 
@@ -1101,9 +1115,24 @@ namespace AnimeHillRacing.UI
         {
             vehicleIndex = 0;
             if (catalog == null || catalog.vehicles == null) return;
+            int firstUnlocked = -1;
             for (int i = 0; i < catalog.vehicles.Length; i++)
-                if (catalog.vehicles[i] != null && catalog.vehicles[i].vehicleId == GameSession.SelectedVehicleId)
+            {
+                VehicleDefinition candidate = catalog.vehicles[i];
+                if (candidate == null || !SaveManager.IsVehicleUnlocked(candidate.vehicleId,
+                        candidate.unlockedByDefault)) continue;
+                if (firstUnlocked < 0) firstUnlocked = i;
+                if (candidate.vehicleId == GameSession.SelectedVehicleId)
+                {
                     vehicleIndex = i;
+                    return;
+                }
+            }
+            if (firstUnlocked >= 0)
+            {
+                vehicleIndex = firstUnlocked;
+                GameSession.SelectedVehicleId = catalog.vehicles[firstUnlocked].vehicleId;
+            }
         }
 
         private void FindSavedMap()

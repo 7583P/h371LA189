@@ -1710,21 +1710,14 @@ namespace AnimeHillRacing.Editor
             SpaceChallengeLayout second = TerrainGenerator.GetSpaceChallenge(profile, 2);
             SpaceChallengeLayout third = TerrainGenerator.GetSpaceChallenge(profile, 3);
             SpaceChallengeLayout fourth = TerrainGenerator.GetSpaceChallenge(profile, 4);
-            SpaceChallengeLayout jupiter = TerrainGenerator.GetSpaceChallenge(profile, 8);
-            SpaceChallengeLayout saturn = TerrainGenerator.GetSpaceChallenge(profile, 9);
-            SpaceChallengeLayout uranus = TerrainGenerator.GetSpaceChallenge(profile, 11);
-            SpaceChallengeLayout neptune = TerrainGenerator.GetSpaceChallenge(profile, 12);
             if (Mathf.Abs(first.eventDistance - 2000f) > .01f ||
+                Mathf.Abs(second.eventDistance - 4000f) > .01f ||
+                Mathf.Abs(third.eventDistance - 6000f) > .01f ||
+                Mathf.Abs(fourth.eventDistance - 8000f) > .01f ||
                 Mathf.Abs(first.warningX - 1900f) > .01f ||
-                first.eventType != SpaceEventType.Void ||
-                second.eventType != SpaceEventType.Planet || second.planetType != SpacePlanetType.Mercury ||
-                third.eventType != SpaceEventType.Planet || third.planetType != SpacePlanetType.Venus ||
-                fourth.eventType != SpaceEventType.Void ||
-                TerrainGenerator.GetSpaceChallenge(profile, 5).planetType != SpacePlanetType.Earth ||
-                TerrainGenerator.GetSpaceChallenge(profile, 6).planetType != SpacePlanetType.Mars ||
-                jupiter.planetType != SpacePlanetType.Jupiter || saturn.planetType != SpacePlanetType.Saturn ||
-                uranus.planetType != SpacePlanetType.Uranus || neptune.planetType != SpacePlanetType.Neptune ||
-                TerrainGenerator.GetSpaceChallenge(profile, 14).planetType != SpacePlanetType.Mercury ||
+                !first.IsVoid || !second.IsVoid || !third.IsVoid || !fourth.IsVoid ||
+                Mathf.Abs(settings.eventInterval - 2000f) > .01f ||
+                Mathf.Abs(settings.gapIncreasePerCycle - 5f) > .01f ||
                 Mathf.Abs(settings.approachLength - 200f) > .01f ||
                 Mathf.Abs(TerrainGenerator.SampleHeight(profile, first.rampStart - 199f) -
                           first.baselineHeight) > .001f ||
@@ -1732,14 +1725,17 @@ namespace AnimeHillRacing.Editor
                           first.baselineHeight) > .001f ||
                 TerrainGenerator.IsTerrainGap(profile, first.rampStart + 1f) ||
                 TerrainGenerator.SampleHeight(profile, first.gapStart - 1f) <= first.baselineHeight + 1f ||
-                Mathf.Abs(first.gapLength - 15f) > .01f || Mathf.Abs(fourth.gapLength - 30f) > .01f ||
+                Mathf.Abs(first.gapLength - 15f) > .01f || Mathf.Abs(second.gapLength - 20f) > .01f ||
+                Mathf.Abs(third.gapLength - 25f) > .01f || Mathf.Abs(fourth.gapLength - 30f) > .01f ||
                 !TerrainGenerator.IsTerrainGap(profile, (first.gapStart + first.gapEnd) * .5f) ||
-                !TerrainGenerator.IsTerrainGap(profile, second.planetCenterX) ||
+                !TerrainGenerator.IsTerrainGap(profile, (second.gapStart + second.gapEnd) * .5f) ||
                 TerrainGenerator.IsTerrainGap(profile, first.gapEnd - .25f) ||
                 TerrainGenerator.IsTerrainGap(profile, first.gapEnd + 1f) ||
-                Mathf.Abs(TerrainGenerator.GetSpaceChallenge(profile, 10).gapLength - 75f) > .01f ||
+                Mathf.Abs(TerrainGenerator.GetSpaceChallenge(profile, 10).gapLength - 60f) > .01f ||
                 Mathf.Abs(first.blackHoleDiameter - first.gapLength) > .01f ||
-                second.blackHoleDiameter > .01f || jupiter.planetRadius <= second.planetRadius ||
+                Mathf.Abs(second.blackHoleDiameter - second.gapLength) > .01f ||
+                Mathf.Abs(SpaceGapEvent.CalculateBlackHoleVisualHeight(first.gapLength) -
+                          SpaceGapEvent.CalculateBlackHoleVisualHeight(fourth.gapLength)) > .01f ||
                 profile.hardEndDistance != 10000f ||
                 !profile.terrainMaterial.HasProperty("_SurfaceMode") ||
                 !profile.terrainEdgeMaterial.HasProperty("_SurfaceMode") ||
@@ -1748,7 +1744,7 @@ namespace AnimeHillRacing.Editor
                 settings.rampRise < 5f ||
                 settings.rampFlatFraction > .1f)
                 throw new System.InvalidOperationException(
-                    "Space event cadence, solar order, 15m/5000m gap growth, physical-planet void or peak difficulty is invalid.");
+                    "Space requires a black-hole void every 2000m with 5m horizontal growth per event.");
 
             EnvironmentDefinition environment = profile.environment;
             if (!environment.overrideCameraBackground || environment.sky == null ||
@@ -1947,16 +1943,17 @@ namespace AnimeHillRacing.Editor
                     "Neon City background must remain vertically locked to the camera with horizontal parallax enabled.");
             if (assets.catalog.CountMaps(GameModeType.Adventure2_5D) != 7 ||
                 assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 0)?.mapId != "countryside" ||
-                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 1)?.mapId != "north-pole" ||
-                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 2)?.mapId != "space" ||
-                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 3)?.mapId != "neon-city" ||
-                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 4)?.mapId != "city" ||
-                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 5)?.mapId != "rainyer" ||
-                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 6)?.mapId != "mountains" ||
+                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 1)?.mapId != "city" ||
+                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 2)?.mapId != "neon-city" ||
+                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 3)?.mapId != "mountains" ||
+                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 4)?.mapId != "rainyer" ||
+                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 5)?.mapId != "space" ||
+                assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 6)?.mapId != "north-pole" ||
                 rainyer == null || assets.catalog.FindMap("rainyer", GameModeType.Adventure2_5D) != rainyer ||
                 mountains == null || assets.catalog.FindMap("mountains", GameModeType.Adventure2_5D) != mountains)
                 throw new System.InvalidOperationException(
-                    "Adventure track selector requires Countryside, North Pole, Space, Neon City, City, Rainyer and Mountains profiles.");
+                    "Adventure track selector requires all seven profiles in ascending coin-price order: " +
+                    "Countryside, City, Neon City, Mountains, Rainyer, Space and North Pole.");
             if (profile == null || !profile.supportsLiquidExposure || profile.liquidChallenges == null ||
                 profile.liquidChallenges.cycleLength != 6000f ||
                 profile.liquidChallenges.challengesPerCycle != 8 ||
@@ -6105,6 +6102,7 @@ namespace AnimeHillRacing.Editor
             if (buggy != null) vehicles.Add(buggy);
             if (aerialSatelite != null) vehicles.Add(aerialSatelite);
             assets.catalog.vehicles = vehicles.ToArray();
+            assets.catalog.SortPurchasableContent();
             assets.catalog.drivers = new[] { assets.stickmanBlack, assets.stickmanWhite };
             assets.catalog.upgradeEconomy = assets.economy;
             assets.catalog.chestCatalog = assets.chestCatalog;

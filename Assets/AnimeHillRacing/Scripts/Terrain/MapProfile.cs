@@ -246,11 +246,9 @@ namespace AnimeHillRacing.Terrain
         [Min(15f)] public float recoveryLength = 86f;
         [Min(1f), Tooltip("Base gap width in logical metres.")]
         public float initialGapLength = 15f;
-        [FormerlySerializedAs("gapIncreasePerPhase"), Min(0f),
-         Tooltip("Additional width applied at every distance tier.")]
-        public float gapIncreasePerTier = 15f;
-        [Min(100f), Tooltip("Logical metres between gap-width increases.")]
-        public float gapGrowthDistance = 5000f;
+        [FormerlySerializedAs("gapIncreasePerPhase"), FormerlySerializedAs("gapIncreasePerTier"), Min(0f),
+         Tooltip("Horizontal metres added to the void and black hole at every 2000-metre Space event.")]
+        public float gapIncreasePerCycle = 5f;
         [Min(0f)] public float landingDrop = .35f;
 
         [Header("Driveable Planets")]
@@ -447,8 +445,7 @@ namespace AnimeHillRacing.Terrain
                 spaceChallenges.approachBlendLength = Mathf.Max(10f, spaceChallenges.approachBlendLength);
                 spaceChallenges.rampFlatFraction = Mathf.Clamp(spaceChallenges.rampFlatFraction, .05f, .5f);
                 spaceChallenges.initialGapLength = Mathf.Max(1f, spaceChallenges.initialGapLength);
-                spaceChallenges.gapIncreasePerTier = Mathf.Max(0f, spaceChallenges.gapIncreasePerTier);
-                spaceChallenges.gapGrowthDistance = Mathf.Max(100f, spaceChallenges.gapGrowthDistance);
+                spaceChallenges.gapIncreasePerCycle = Mathf.Max(0f, spaceChallenges.gapIncreasePerCycle);
                 spaceChallenges.maximumPlanetRadius = Mathf.Max(spaceChallenges.minimumPlanetRadius,
                     spaceChallenges.maximumPlanetRadius);
                 spaceChallenges.planetLaunchClearance = Mathf.Max(2f, spaceChallenges.planetLaunchClearance);

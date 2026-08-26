@@ -81,6 +81,18 @@ MonoBehaviour:
   pointedPeakMiniFeatureCount: 8
   pointedExtremeShapeChance: 0.55
   pointedExtremeShapeStrength: 0.32
+  useCountrysideSpecialFeatures: 0
+  countrysideSpecialFeatures:
+    eventInterval: 500
+    firstEventDistance: 260
+    eventChance: 0.88
+    longFlatChance: 0.58
+    transitionLength: 45
+    longFlatLengths: {x: 150, y: 200}
+    slashFlatLead: 18
+    slashLength: 96
+    slashHeight: 18
+    maximumStartJitter: 70
   maxSlopeAngle: 45
   maxHeightDeltaPerSample: 1.55
   minimumValleyWidth: 38
@@ -167,8 +179,7 @@ MonoBehaviour:
     landingLength: 42
     recoveryLength: 86
     initialGapLength: 15
-    gapIncreasePerTier: 15
-    gapGrowthDistance: 5000
+    gapIncreasePerCycle: 5
     landingDrop: 0.35
     planetLaunchClearance: 4.5
     planetExitClearance: 4

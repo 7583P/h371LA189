@@ -154,6 +154,7 @@ namespace AnimeHillRacing.Editor
             int cityIndex = maps.FindIndex(map => map != null && map.mapId == "city");
             maps.Insert(cityIndex >= 0 ? cityIndex + 1 : Mathf.Min(3, maps.Count), profile);
             catalog.maps = maps.ToArray();
+            catalog.SortPurchasableContent();
             EditorUtility.SetDirty(catalog);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);

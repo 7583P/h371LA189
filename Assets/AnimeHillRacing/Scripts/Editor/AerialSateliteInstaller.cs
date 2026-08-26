@@ -383,6 +383,7 @@ namespace AnimeHillRacing.Editor
             vehicles.RemoveAll(item => item == null || item.vehicleId == definition.vehicleId);
             vehicles.Add(definition);
             catalog.vehicles = vehicles.ToArray();
+            catalog.SortPurchasableContent();
             if (catalog.upgradeEconomy != null)
             {
                 catalog.upgradeEconomy.aerialSateliteFirstUpgradeCost = 2000;

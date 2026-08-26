@@ -517,6 +517,7 @@ namespace AnimeHillRacing.Editor
             int roadIndex = maps.FindIndex(item => item != null && item.supportedGameMode != GameModeType.Adventure2_5D);
             if (roadIndex < 0) maps.Add(mountains); else maps.Insert(roadIndex, mountains);
             catalog.maps = maps.ToArray();
+            catalog.SortPurchasableContent();
             EditorUtility.SetDirty(catalog);
         }
 
@@ -681,7 +682,7 @@ namespace AnimeHillRacing.Editor
             GameCatalog catalog = AssetDatabase.LoadAssetAtPath<GameCatalog>(Root + "/VehicleData/GameCatalog.asset");
             string[] expected =
             {
-                "countryside", "north-pole", "space", "neon-city", "city", "rainyer", "mountains"
+                "countryside", "city", "neon-city", "mountains", "rainyer", "space", "north-pole"
             };
             if (catalog == null || catalog.CountMaps(GameModeType.Adventure2_5D) != expected.Length)
                 throw new InvalidOperationException("Adventure catalog does not contain all seven tracks.");
@@ -689,7 +690,7 @@ namespace AnimeHillRacing.Editor
                 if (catalog.GetCompatibleMap(GameModeType.Adventure2_5D, i)?.mapId != expected[i])
                     throw new InvalidOperationException(
                         $"Adventure track {i} is not {expected[i]} in the selector catalog.");
-            Debug.Log("ADVENTURE_TRACK_SELECTOR_OK|countryside|north-pole|space|neon-city|city|rainyer|mountains");
+            Debug.Log("ADVENTURE_TRACK_SELECTOR_OK|countryside|city|neon-city|mountains|rainyer|space|north-pole");
         }
 
         private static Material LoadOrCreateMaterial(string path, Texture texture, Color color)

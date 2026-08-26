@@ -103,6 +103,7 @@ namespace AnimeHillRacing.Editor
                     var list = new System.Collections.Generic.List<VehicleDefinition>(catalog.vehicles ?? new VehicleDefinition[0]);
                     list.Add(hillVehicle);
                     catalog.vehicles = list.ToArray();
+                    catalog.SortPurchasableContent();
                     EditorUtility.SetDirty(catalog);
                 }
             }

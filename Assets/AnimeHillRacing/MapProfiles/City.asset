@@ -180,8 +180,7 @@ MonoBehaviour:
     landingLength: 42
     recoveryLength: 86
     initialGapLength: 10
-    gapIncreasePerTier: 5
-    gapGrowthDistance: 5000
+    gapIncreasePerCycle: 5
     landingDrop: 0.35
     planetLaunchClearance: 4.5
     planetExitClearance: 4

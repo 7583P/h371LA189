@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using AnimeHillRacing.Core;
+using AnimeHillRacing.Terrain;
 using UnityEngine;
 
 namespace AnimeHillRacing.Vehicle
@@ -10,6 +12,10 @@ namespace AnimeHillRacing.Vehicle
         // Adventure 2.5D terrain fronts render at Z=-5. The vehicle must remain closer to the camera
         // so the complete road, including its yellow stripe, is visible without covering the tires.
         public const float VehicleForegroundZ = -6f;
+        private const float SurfaceMaskWidth = 48f;
+        private const float SurfaceMaskHeight = 96f;
+
+        private static Sprite sharedSurfaceMaskSprite;
 
         [SerializeField] private VehicleRuntimeBase vehicle;
         [SerializeField] private VehicleDefinition definition;
@@ -24,6 +30,11 @@ namespace AnimeHillRacing.Vehicle
         [SerializeField] private DriverDefinition fallbackDriver;
         [SerializeField, Min(0.05f)] private float wheelRadius = 0.43f;
 
+        private SpriteMask surfaceClipMask;
+        private SpriteRenderer[] surfaceMaskedRenderers;
+        private readonly Dictionary<SpriteRenderer, SpriteMaskInteraction> originalMaskInteractions =
+            new Dictionary<SpriteRenderer, SpriteMaskInteraction>();
+
         public Transform FrontWheelSprite => frontWheelSprite;
         public Transform RearWheelSprite => rearWheelSprite;
         public Transform DriverAnchor => driverAnchor;
@@ -32,6 +43,37 @@ namespace AnimeHillRacing.Vehicle
         public SpriteRenderer RearWheelRenderer => rearWheelRenderer;
 
         private void OnEnable() => ApplySavedCustomization();
+
+        private void OnDisable()
+        {
+            DisableSurfaceClipMask();
+        }
+
+        private void LateUpdate()
+        {
+            TerrainManager terrain = TerrainManager.Instance;
+            MapProfile profile = terrain != null ? terrain.ActiveProfile : null;
+            bool usesContactLineOcclusion = profile != null &&
+                                             (profile.mapId == "city" || profile.mapId == "north-pole");
+            if (!usesContactLineOcclusion)
+            {
+                DisableSurfaceClipMask();
+                EnforceVehicleForegroundDepth();
+                return;
+            }
+
+            Transform reference = vehicle != null ? vehicle.transform : transform;
+            if (!terrain.TrySampleAuthoritativeSurface(reference.position.x,
+                    out float surfaceY, out float slopeDegrees))
+            {
+                DisableSurfaceClipMask();
+                EnforceVehicleForegroundDepth();
+                return;
+            }
+
+            EnforceVehicleForegroundDepth();
+            EnableSurfaceClipMask(reference.position.x, surfaceY, slopeDegrees);
+        }
 
         public void ApplySavedCustomization()
         {
@@ -61,6 +103,7 @@ namespace AnimeHillRacing.Vehicle
                 if (fallbackDriver != null) ApplyDriverPhysicsBody();
                 else articulatedDriver.EnforceRenderingRelativeToVehicle(bodyRenderer);
             }
+            CacheSurfaceMaskedRenderers();
         }
 
         public void ApplyCustomization(DriverDefinition driver)
@@ -99,6 +142,7 @@ namespace AnimeHillRacing.Vehicle
                 if (fallbackDriver != null) ApplyDriverPhysicsBody();
                 else articulatedDriver.EnforceRenderingRelativeToVehicle(bodyRenderer);
             }
+            CacheSurfaceMaskedRenderers();
         }
 
         public void Assign(VehicleRuntimeBase vehicleController, Transform bodyTransform,
@@ -123,6 +167,7 @@ namespace AnimeHillRacing.Vehicle
             rearWheelRenderer = rearWheelImage;
             articulatedDriver = driver;
             fallbackDriver = defaultDriver;
+            CacheSurfaceMaskedRenderers();
             ApplySavedCustomization();
         }
 
@@ -136,6 +181,7 @@ namespace AnimeHillRacing.Vehicle
             rearWheelRenderer = rearWheelImage;
             articulatedDriver = driver;
             fallbackDriver = defaultDriver;
+            CacheSurfaceMaskedRenderers();
             ApplySavedCustomization();
         }
 
@@ -156,11 +202,82 @@ namespace AnimeHillRacing.Vehicle
             SetWorldDepth(articulatedDriver != null ? articulatedDriver.transform : driverAnchor);
         }
 
-        private static void SetWorldDepth(Transform target)
+        private void CacheSurfaceMaskedRenderers()
+        {
+            surfaceMaskedRenderers = GetComponentsInChildren<SpriteRenderer>(true);
+            for (int i = 0; i < surfaceMaskedRenderers.Length; i++)
+            {
+                SpriteRenderer renderer = surfaceMaskedRenderers[i];
+                if (renderer != null && !originalMaskInteractions.ContainsKey(renderer))
+                    originalMaskInteractions.Add(renderer, renderer.maskInteraction);
+            }
+        }
+
+        private void EnableSurfaceClipMask(float worldX, float surfaceY, float slopeDegrees)
+        {
+            EnsureSurfaceClipMask();
+            if (surfaceClipMask == null) return;
+            if (surfaceMaskedRenderers == null) CacheSurfaceMaskedRenderers();
+            for (int i = 0; i < surfaceMaskedRenderers.Length; i++)
+            {
+                SpriteRenderer renderer = surfaceMaskedRenderers[i];
+                if (renderer != null) renderer.maskInteraction = SpriteMaskInteraction.VisibleInsideMask;
+            }
+
+            int sortingLayerId = bodyRenderer != null ? bodyRenderer.sortingLayerID : 0;
+            surfaceClipMask.backSortingLayerID = sortingLayerId;
+            surfaceClipMask.frontSortingLayerID = sortingLayerId;
+            surfaceClipMask.backSortingOrder = short.MinValue;
+            surfaceClipMask.frontSortingOrder = short.MaxValue;
+            Transform maskTransform = surfaceClipMask.transform;
+            maskTransform.position = new Vector3(worldX, surfaceY, VehicleForegroundZ - .1f);
+            maskTransform.rotation = Quaternion.Euler(0f, 0f, slopeDegrees);
+            maskTransform.localScale = new Vector3(SurfaceMaskWidth, SurfaceMaskHeight, 1f);
+            surfaceClipMask.enabled = true;
+        }
+
+        private void EnsureSurfaceClipMask()
+        {
+            if (surfaceClipMask != null) return;
+            if (sharedSurfaceMaskSprite == null)
+            {
+                Texture2D texture = new Texture2D(1, 1, TextureFormat.RGBA32, false)
+                {
+                    name = "Adventure Surface Clip Mask Texture",
+                    hideFlags = HideFlags.HideAndDontSave,
+                    filterMode = FilterMode.Point,
+                    wrapMode = TextureWrapMode.Clamp
+                };
+                texture.SetPixel(0, 0, Color.white);
+                texture.Apply(false, true);
+                sharedSurfaceMaskSprite = Sprite.Create(texture, new Rect(0f, 0f, 1f, 1f),
+                    new Vector2(.5f, 0f), 1f, 0, SpriteMeshType.FullRect);
+                sharedSurfaceMaskSprite.name = "Adventure Surface Clip Mask Sprite";
+                sharedSurfaceMaskSprite.hideFlags = HideFlags.HideAndDontSave;
+            }
+
+            GameObject maskObject = new GameObject("Progressive Terrain Surface Mask");
+            maskObject.transform.SetParent(transform, true);
+            surfaceClipMask = maskObject.AddComponent<SpriteMask>();
+            surfaceClipMask.sprite = sharedSurfaceMaskSprite;
+            surfaceClipMask.alphaCutoff = .01f;
+            surfaceClipMask.isCustomRangeActive = true;
+        }
+
+        private void DisableSurfaceClipMask()
+        {
+            if (surfaceClipMask != null) surfaceClipMask.enabled = false;
+            foreach (KeyValuePair<SpriteRenderer, SpriteMaskInteraction> pair in originalMaskInteractions)
+                if (pair.Key != null) pair.Key.maskInteraction = pair.Value;
+        }
+
+        private static void SetWorldDepth(Transform target) => SetWorldDepth(target, VehicleForegroundZ);
+
+        private static void SetWorldDepth(Transform target, float depth)
         {
             if (target == null) return;
             Vector3 position = target.position;
-            position.z = VehicleForegroundZ;
+            position.z = depth;
             target.position = position;
         }
 

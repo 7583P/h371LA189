@@ -50,10 +50,15 @@ MonoBehaviour:
     progressiveGrowthPerCycle: 10
     waterVisualDepth: 8
     waterSurfaceOffset: -0.45
+    waterVisualAlpha: 0.5
     waterBedThickness: 22
     waterEndBankWidth: 3
     waterSpeedRetainedPerSecond: 0.4
     waterAngularSpeedRetainedPerSecond: 0.3
+    waterBuoyancySpring: 4
+    waterVerticalDamping: 3
+    waterMaximumSinkAcceleration: 8
+    waterDriverDownClearance: 5
     bridgeColliderThickness: 0.45
     bridgeGroundOverlap: 1
     closedAngleDegrees: 0

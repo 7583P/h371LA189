@@ -5884,12 +5884,15 @@ namespace AnimeHillRacing.Editor
             assets.northPole.terrainEdgeMaterial = assets.northPoleEdgeMaterial;
             assets.northPole.useSeparateTerrainMaterials = true;
             assets.northPole.fitAuthoredTerrainTexture = true;
-            assets.northPole.terrainTextureRepeatWidth = assets.northPoleGround != null
-                ? assets.northPoleGround.rect.width / assets.northPoleGround.pixelsPerUnit : 17.74f;
+            // Ground.png contains one 1,100 px authored long tile followed by optional short pieces.
+            // Repeat only the long tile at its native 100 PPU scale.
+            assets.northPole.terrainTextureRepeatWidth = 11f;
             assets.northPole.terrainWallUvRange = new Vector2(0f, 1f);
-            assets.northPole.terrainSurfaceUvRange = new Vector2(.40f, .50f);
-            assets.northPole.terrainSurfaceContactV = .50f;
-            assets.northPole.terrainFillStartV = .43f;
+            // Preserve the entire vertical artwork of the requested snow platform. Its central blue line
+            // is the physical contact row, exactly like City's yellow line.
+            assets.northPole.terrainSurfaceUvRange = new Vector2(.36f, .63f);
+            assets.northPole.terrainSurfaceContactV = .519f;
+            assets.northPole.terrainFillStartV = .519f;
             assets.northPole.groundPhysicsMaterial = assets.groundPhysics;
             assets.northPole.terrainEdgeWidth = .18f;
             assets.northPole.terrainVisualDepth = 30f;
@@ -7788,15 +7791,20 @@ namespace AnimeHillRacing.Editor
             material.mainTexture = texture;
             material.color = Color.white;
             bool useSeamlessTerrainTiling = name == "CityTerrain" || name == "CityGround" ||
-                                             name == "CountrysideTerrain" || name == "CountrysideGround";
+                                             name == "CountrysideTerrain" || name == "CountrysideGround" ||
+                                             name == "NorthPoleTerrain" || name == "NorthPoleGround";
             if (material.HasProperty("_SeamlessHorizontalTiling"))
                 material.SetFloat("_SeamlessHorizontalTiling", useSeamlessTerrainTiling ? 1f : 0f);
             if (material.HasProperty("_HorizontalInset"))
                 material.SetFloat("_HorizontalInset", name == "CityGround" ? .008f :
+                    name == "NorthPoleGround" ? .004f :
                     useSeamlessTerrainTiling ? .012f : 0f);
             if (material.HasProperty("_HorizontalUvRange"))
                 material.SetVector("_HorizontalUvRange", name == "CityGround"
-                    ? new Vector4(.004f, .688f, 0f, 0f) : new Vector4(0f, 1f, 0f, 0f));
+                    ? new Vector4(.004f, .688f, 0f, 0f)
+                    : name == "NorthPoleGround"
+                        ? new Vector4(0f, .714f, 0f, 0f)
+                        : new Vector4(0f, 1f, 0f, 0f));
             if (material.HasProperty("_DepthWrite"))
                 // CityGround extends above its physical yellow contact line. Depth writing keeps
                 // the transparent background sprites from covering that authored upper section.

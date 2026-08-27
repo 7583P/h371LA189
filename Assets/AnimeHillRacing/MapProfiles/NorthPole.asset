@@ -50,10 +50,15 @@ MonoBehaviour:
     progressiveGrowthPerCycle: 10
     waterVisualDepth: 8
     waterSurfaceOffset: -0.45
+    waterVisualAlpha: 0.5
     waterBedThickness: 22
     waterEndBankWidth: 3
     waterSpeedRetainedPerSecond: 0.4
     waterAngularSpeedRetainedPerSecond: 0.3
+    waterBuoyancySpring: 4
+    waterVerticalDamping: 3
+    waterMaximumSinkAcceleration: 8
+    waterDriverDownClearance: 5
     bridgeColliderThickness: 0.45
     bridgeGroundOverlap: 1
     closedAngleDegrees: 0
@@ -164,11 +169,11 @@ MonoBehaviour:
   terrainEdgeMaterial: {fileID: 2100000, guid: a24e83bdab6f43b5899a0fb747ddc114, type: 2}
   useSeparateTerrainMaterials: 1
   fitAuthoredTerrainTexture: 1
-  terrainTextureRepeatWidth: 17.74
+  terrainTextureRepeatWidth: 11
   terrainWallUvRange: {x: 0, y: 1}
-  terrainSurfaceUvRange: {x: 0.4, y: 0.5}
-  terrainSurfaceContactV: 0.5
-  terrainFillStartV: 0.43
+  terrainSurfaceUvRange: {x: 0.36, y: 0.63}
+  terrainSurfaceContactV: 0.519
+  terrainFillStartV: 0.519
   groundPhysicsMaterial: {fileID: 13400000, guid: 4dfb87f232532b24aafe44e9c5c97f50, type: 2}
   groundPhysicsMaterial2D: {fileID: 0}
   terrainEdgeWidth: 0.18

@@ -208,12 +208,14 @@ namespace AnimeHillRacing.CameraSystem
 
         private void EnsureCelestials()
         {
-            sunRenderer = EnsureCelestialRenderer(sunRenderer, "Space Sun - Pooled", -46);
+            int sunOrder = environment != null && environment.environmentId == "space" ? -46 : -55;
+            sunRenderer = EnsureCelestialRenderer(sunRenderer, "Space Sun - Pooled", sunOrder);
             earthRenderer = EnsureCelestialRenderer(earthRenderer, "Space Earth - Pooled", -45);
             ConfigureCelestial(sunRenderer, environment.sun, environment.sunVisualWidth);
             ConfigureCelestial(earthRenderer, environment.earth, environment.earthVisualWidth);
             if (sunRenderer != null)
             {
+                sunRenderer.sortingOrder = sunOrder;
                 sunRenderer.color = Color.white;
             }
             if (earthRenderer != null) earthRenderer.color = Color.white;

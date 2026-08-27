@@ -134,6 +134,7 @@ namespace AnimeHillRacing.Editor
         private const string CountrysideRoot = "Assets/Art/Backgrounds/Countryside";
         private const string CountrysideSkyPath = CountrysideRoot + "/Countryside_Sky.png";
         private const string CountrysideMountainsPath = CountrysideRoot + "/Countryside_Mountains.png";
+        private const string CountrysideSunPath = CountrysideRoot + "/Countryside_Sun.png";
         private const string CountrysideTerrainPath = CountrysideRoot + "/Terrain.png";
         private const string CountrysideGroundPath = CountrysideRoot + "/Ground.png";
         private const string NorthPoleRoot = "Assets/Art/Backgrounds/NorthPole";
@@ -4972,7 +4973,7 @@ namespace AnimeHillRacing.Editor
                 DriverUpperArmPath, DriverForearmPath, DriverThighPath, DriverLowerLegPath,
                 DriverGlassesPath, DriverFireGlassesPath, DriverScarfPath, DriverSantaHatPath,
                 DriverNeonGlassesPath, DriverTireAccessoryPath, DriverBaseballCapPath,
-                 CountrysideSkyPath, CountrysideMountainsPath, CountrysideTerrainPath, CountrysideGroundPath,
+                 CountrysideSkyPath, CountrysideMountainsPath, CountrysideSunPath, CountrysideTerrainPath, CountrysideGroundPath,
                  NorthPoleSkyPath, NorthPolePanoramaPath, NorthPoleNearPinesPath,
                  NorthPoleTerrainPath, NorthPoleGroundPath,
                  CitySkyPath, CityBackgroundPath,
@@ -5792,6 +5793,7 @@ namespace AnimeHillRacing.Editor
             assets.countrysideEnvironment.environmentId = "countryside";
             assets.countrysideEnvironment.sky = AssetDatabase.LoadAssetAtPath<Sprite>(CountrysideSkyPath);
             assets.countrysideEnvironment.mountains = AssetDatabase.LoadAssetAtPath<Sprite>(CountrysideMountainsPath);
+            assets.countrysideEnvironment.sun = null;
             assets.countrysideEnvironment.mountainParallaxX = .18f;
             assets.countrysideEnvironment.mountainParallaxY = .04f;
             assets.countrysideEnvironment.lockVerticalToCamera = true;

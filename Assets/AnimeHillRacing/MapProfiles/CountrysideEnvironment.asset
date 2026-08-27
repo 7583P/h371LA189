@@ -59,11 +59,11 @@ MonoBehaviour:
   mirrorAlternatingNearMountainTiles: 1
   sun: {fileID: 0}
   earth: {fileID: 0}
-  sunCameraOffset: {x: -1, y: 3.5}
+  sunCameraOffset: {x: -3, y: 3.8}
   earthCameraOffset: {x: 7, y: 2.2}
   sunRelativeParallax: 0.003
   earthRelativeParallax: 0.009
-  sunVisualWidth: 6.5
+  sunVisualWidth: 3.5
   earthVisualWidth: 5.2
   celestialRepeatSpan: 72
   starTwinkleSpeed: 2.15

@@ -12,6 +12,7 @@ namespace AnimeHillRacing.Vehicle
         [SerializeField, Range(-.25f, .65f)] private float fatalSurfaceUpDot = .35f;
         private CrashDetector crashDetector;
         private RallyRoofDamage rallyRoofDamage;
+        private VehicleRuntimeBase vehicle;
         private Collider headCollider;
         private Collider2D headCollider2D;
         private float nextAllowedImpact;
@@ -28,6 +29,7 @@ namespace AnimeHillRacing.Vehicle
         {
             if (vehicleBody == null) vehicleBody = GetComponentInParent<Rigidbody>();
             if (vehicleBody2D == null) vehicleBody2D = GetComponentInParent<Rigidbody2D>();
+            if (vehicle == null) vehicle = GetComponentInParent<VehicleRuntimeBase>();
             if (crashDetector == null) crashDetector = GetComponentInParent<CrashDetector>() ?? FindFirstObjectByType<CrashDetector>();
             if (rallyRoofDamage == null)
             {
@@ -130,27 +132,23 @@ namespace AnimeHillRacing.Vehicle
             else
                 return;
 
-            if (!terrain.TrySampleAuthoritativeSurface(bounds.center.x, out float surfaceY,
-                    out float slopeDegrees))
+            if (!terrain.TrySampleAuthoritativeSurface(bounds.center.x, out float surfaceY, out _))
                 return;
 
-            Vector2 surfaceNormal = Quaternion.Euler(0f, 0f, slopeDegrees) * Vector2.up;
-            Vector2 surfacePoint = new Vector2(bounds.center.x, surfaceY);
-            float centerDistance = Vector2.Dot((Vector2)bounds.center - surfacePoint, surfaceNormal);
-            float projectedExtent = Mathf.Abs(surfaceNormal.x) * bounds.extents.x +
-                                    Mathf.Abs(surfaceNormal.y) * bounds.extents.y;
             float tolerance = Mathf.Max(.04f, Physics2D.defaultContactOffset * 2f);
-            if (centerDistance > projectedExtent + tolerance) return;
+            float wheelRadius = vehicle != null && vehicle.Definition != null
+                ? Mathf.Max(.1f, vehicle.Definition.wheelRadius) : .45f;
+            float verticalDistance = bounds.min.y - surfaceY;
+            if (verticalDistance > wheelRadius + tolerance) return;
 
             nextAllowedImpact = Time.time + .10f;
             float speed = vehicleBody2D != null
                 ? vehicleBody2D.GetPointVelocity(bounds.center).magnitude
                 : vehicleBody != null ? vehicleBody.GetPointVelocity(bounds.center).magnitude : 0f;
             driver?.TriggerHeadImpact(speed);
-            if (rallyRoofDamage != null && !rallyRoofDamage.RoofDetached) return;
 
             Debug.Log($"[DriverHeadImpact] Fatal authoritative-surface proximity | " +
-                      $"Distance: {centerDistance:0.000} | Radius: {projectedExtent:0.000} | " +
+                      $"Vertical distance: {verticalDistance:0.000} | Wheel radius: {wheelRadius:0.000} | " +
                       $"Speed: {speed:0.0}m/s", this);
             TriggerDriverDown();
         }

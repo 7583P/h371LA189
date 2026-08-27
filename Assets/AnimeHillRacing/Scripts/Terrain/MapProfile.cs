@@ -216,8 +216,8 @@ namespace AnimeHillRacing.Terrain
         [Min(100f)] public float cycleStartMargin = 320f;
         [Min(100f)] public float cycleEndMargin = 320f;
         [Min(50f)] public float minimumZoneSpacing = 300f;
-        [Min(5f)] public float approachBlendLength = 30f;
-        [Min(5f)] public float recoveryBlendLength = 30f;
+        [Min(5f)] public float approachBlendLength = 50f;
+        [Min(5f)] public float recoveryBlendLength = 50f;
 
         [Header("Bridge / Water Geometry")]
         [Min(4f)] public float bridgeLength = 14f;
@@ -226,7 +226,14 @@ namespace AnimeHillRacing.Terrain
         [Min(0f)] public float progressiveGrowthPerCycle = RequiredProgressiveGrowth;
         [Min(.5f)] public float waterVisualDepth = 8f;
         public float waterSurfaceOffset = -.45f;
-        [Min(.5f)] public float waterBedThickness = 3f;
+        [Min(.5f)] public float waterBedThickness = 22f;
+        [Min(1f)] public float waterEndBankWidth = 3f;
+        [Range(.05f, 1f)] public float waterSpeedRetainedPerSecond = .4f;
+        [Range(.05f, 1f)] public float waterAngularSpeedRetainedPerSecond = .3f;
+        [Min(.1f)] public float waterBuoyancySpring = 4f;
+        [Min(.1f)] public float waterVerticalDamping = 3f;
+        [Min(.1f)] public float waterMaximumSinkAcceleration = 8f;
+        [Min(.1f)] public float waterDriverDownClearance = 5f;
         [Min(.08f)] public float bridgeColliderThickness = .45f;
         [Range(0f, 2f)] public float bridgeGroundOverlap = 1f;
 
@@ -243,7 +250,7 @@ namespace AnimeHillRacing.Terrain
         [Tooltip("Slope already painted into Bridge.png; the visual child compensates it while physics stays horizontal at 0 degrees.")]
         public float bridgeArtSlopeDegrees = 16.1f;
         [Tooltip("Moves the compensated bridge art so its painted road surface matches the collider top.")]
-        public float bridgeArtSurfaceOffset = -1.1f;
+        public float bridgeArtSurfaceOffset = -.61f;
         public int waterSortingOrder = 1;
         public int waterBedSortingOrder;
         public int bridgeSortingOrder = 5;
@@ -476,6 +483,17 @@ namespace AnimeHillRacing.Terrain
                     cityBridges.progressiveBaseWaterLength);
                 cityBridges.waterVisualDepth = Mathf.Max(.5f, cityBridges.waterVisualDepth);
                 cityBridges.waterBedThickness = Mathf.Max(.5f, cityBridges.waterBedThickness);
+                cityBridges.waterEndBankWidth = Mathf.Max(1f, cityBridges.waterEndBankWidth);
+                cityBridges.waterSpeedRetainedPerSecond = Mathf.Clamp(
+                    cityBridges.waterSpeedRetainedPerSecond, .05f, 1f);
+                cityBridges.waterAngularSpeedRetainedPerSecond = Mathf.Clamp(
+                    cityBridges.waterAngularSpeedRetainedPerSecond, .05f, 1f);
+                cityBridges.waterBuoyancySpring = Mathf.Max(.1f, cityBridges.waterBuoyancySpring);
+                cityBridges.waterVerticalDamping = Mathf.Max(.1f, cityBridges.waterVerticalDamping);
+                cityBridges.waterMaximumSinkAcceleration = Mathf.Max(.1f,
+                    cityBridges.waterMaximumSinkAcceleration);
+                cityBridges.waterDriverDownClearance = Mathf.Max(.1f,
+                    cityBridges.waterDriverDownClearance);
                 cityBridges.minimumZoneSpacing = Mathf.Max(50f, cityBridges.minimumZoneSpacing);
                 cityBridges.approachBlendLength = Mathf.Max(5f, cityBridges.approachBlendLength);
                 cityBridges.recoveryBlendLength = Mathf.Max(5f, cityBridges.recoveryBlendLength);

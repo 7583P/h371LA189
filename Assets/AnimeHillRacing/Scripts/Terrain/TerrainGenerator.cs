@@ -2213,6 +2213,11 @@ namespace AnimeHillRacing.Terrain
                 (Mathf.Max(1f, profile.maximumDifficulty) + 0.5f) - profile.terrainVisualDepth;
             CalculateGroundVisualExtents(profile, out float groundVisualDepth, out float groundVisualRise);
             float terrainFillDepth = CalculateTerrainFillDepth(profile);
+            float groundContactV = profile.terrainSurfaceContactV >=
+                                   Mathf.Min(profile.terrainSurfaceUvRange.x, profile.terrainSurfaceUvRange.y) &&
+                                   profile.terrainSurfaceContactV <=
+                                   Mathf.Max(profile.terrainSurfaceUvRange.x, profile.terrainSurfaceUvRange.y)
+                ? profile.terrainSurfaceContactV : profile.terrainSurfaceUvRange.y;
             // Six independent vertices keep the three responsibilities separate: deep Terrain wall,
             // visible Ground ribbon and the horizontal driveable surface. Their top Y still comes from
             // the same surfaceHeights array used by the authoritative physics collider.
@@ -2245,12 +2250,15 @@ namespace AnimeHillRacing.Terrain
                 float groundTopY = EvaluateFloat32Precision(surfaceY + groundVisualRise, worldX);
                 float terrainTopY = EvaluateFloat32Precision(surfaceY - terrainFillDepth, worldX);
                 float skirtY = EvaluateFloat32Precision(skirtBottom, worldX);
+                // Ground is a visual overlay. Keep it slightly in front of the deep Terrain wall so
+                // both textured submeshes can never become coplanar and hide the authored road.
+                float groundVisualZ = -width * .5f - .03f;
 
                 int vertex = i * 6;
                 vertices[vertex] = new Vector3(localX, terrainTopY, -width * .5f);        // Terrain fill top
                 vertices[vertex + 1] = new Vector3(localX, skirtY, -width * .5f);          // Terrain bottom
-                vertices[vertex + 2] = new Vector3(localX, groundTopY, -width * .5f);     // Ground art top
-                vertices[vertex + 3] = new Vector3(localX, groundBottomY, -width * .5f);  // Ground bottom
+                vertices[vertex + 2] = new Vector3(localX, groundTopY, groundVisualZ);     // Ground art top
+                vertices[vertex + 3] = new Vector3(localX, groundBottomY, groundVisualZ);  // Ground bottom
                 vertices[vertex + 4] = new Vector3(localX, surfaceY, -width * .5f);       // Physical surface front
                 vertices[vertex + 5] = new Vector3(localX, surfaceY, width * .5f);         // Surface back
                 if (profile.fitAuthoredTerrainTexture || profile.useSpaceTerrain)
@@ -2263,8 +2271,13 @@ namespace AnimeHillRacing.Terrain
                     uvs[vertex + 1] = new Vector2(textureU, profile.terrainWallUvRange.x);
                     uvs[vertex + 2] = new Vector2(textureU, profile.terrainSurfaceUvRange.y);
                     uvs[vertex + 3] = new Vector2(textureU, profile.terrainSurfaceUvRange.x);
-                    uvs[vertex + 4] = new Vector2(textureU, profile.terrainSurfaceUvRange.y);
-                    uvs[vertex + 5] = new Vector2(textureU, profile.terrainSurfaceUvRange.x);
+                    // The City top cap is viewed edge-on by the 2.5D camera. Sampling the authored
+                    // contact row here prevents that cap from painting the white border over the
+                    // yellow stripe where the tires physically touch the road.
+                    uvs[vertex + 4] = new Vector2(textureU, profile.useCityHighwayTerrain
+                        ? groundContactV : profile.terrainSurfaceUvRange.y);
+                    uvs[vertex + 5] = new Vector2(textureU, profile.useCityHighwayTerrain
+                        ? groundContactV : profile.terrainSurfaceUvRange.x);
                 }
                 else
                 {
@@ -2360,8 +2373,19 @@ namespace AnimeHillRacing.Terrain
                 ? profile.terrainSurfaceContactV : topV;
             float metresPerV = profile.terrainTextureRepeatWidth * texture.height / texture.width;
             // Both extents come from the source pixels and PPU-derived repeat width; there is no visual offset.
-            depthBelowSurface = Mathf.Clamp(Mathf.Abs(contactV - bottomV) * metresPerV, .05f, 3f);
-            riseAboveSurface = Mathf.Clamp(Mathf.Abs(topV - contactV) * metresPerV, 0f, 3f);
+            float rawDepth = Mathf.Abs(contactV - bottomV) * metresPerV;
+            float rawRise = Mathf.Abs(topV - contactV) * metresPerV;
+            if (profile.useCityHighwayTerrain)
+            {
+                // Scale both sides uniformly. Independent clamping moved the painted yellow row away
+                // from the collider even though contactV was correct.
+                float uniformScale = Mathf.Min(1f, 3f / Mathf.Max(.001f, Mathf.Max(rawDepth, rawRise)));
+                depthBelowSurface = Mathf.Max(.05f, rawDepth * uniformScale);
+                riseAboveSurface = rawRise * uniformScale;
+                return;
+            }
+            depthBelowSurface = Mathf.Clamp(rawDepth, .05f, 3f);
+            riseAboveSurface = Mathf.Clamp(rawRise, 0f, 3f);
         }
 
         public static float CalculateTerrainFillDepth(MapProfile profile)

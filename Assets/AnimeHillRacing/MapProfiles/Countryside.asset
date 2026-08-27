@@ -32,6 +32,42 @@ MonoBehaviour:
   useCityHighwayTerrain: 0
   cityFeatureLength: 120
   cityMiniRhythmStrength: 0.18
+  useCityBridges: 0
+  cityBridges:
+    cycleLength: 10000
+    minimumZonesPerCycle: 7
+    maximumZonesPerCycle: 10
+    minimumProgressiveZones: 5
+    maximumProgressiveZones: 7
+    cycleStartMargin: 320
+    cycleEndMargin: 320
+    minimumZoneSpacing: 300
+    approachBlendLength: 30
+    recoveryBlendLength: 30
+    bridgeLength: 14
+    normalWaterLength: 22
+    progressiveBaseWaterLength: 22
+    progressiveGrowthPerCycle: 10
+    waterVisualDepth: 8
+    waterSurfaceOffset: -0.45
+    waterBedThickness: 22
+    waterEndBankWidth: 3
+    waterSpeedRetainedPerSecond: 0.4
+    waterAngularSpeedRetainedPerSecond: 0.3
+    bridgeColliderThickness: 0.45
+    bridgeGroundOverlap: 1
+    closedAngleDegrees: 0
+    openAngleDegrees: 45
+    transitionSeconds: 3
+    closedHoldSeconds: 4
+    openHoldSeconds: 4
+    bridgeSprite: {fileID: 0}
+    waterSprite: {fileID: 0}
+    bridgeArtSlopeDegrees: 16.1
+    bridgeArtSurfaceOffset: -0.61
+    waterSortingOrder: 1
+    waterBedSortingOrder: 0
+    bridgeSortingOrder: 5
   difficultyCurve:
     serializedVersion: 2
     m_Curve:

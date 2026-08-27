@@ -179,8 +179,8 @@ namespace AnimeHillRacing.Terrain
                 meshRenderer.sharedMaterials = new[] { profile.terrainMaterial, profile.terrainEdgeMaterial };
                 groundProperties ??= new MaterialPropertyBlock();
                 groundProperties.Clear();
-                // Keep the full horizontal artwork in use. CityGround.mat restricts sampling to the long
-                // road strip in its sprite sheet, preserving the authored yellow lane markings as it tiles.
+                // CityGround.mat restricts sampling to the long road strip and skips only its transparent
+                // antialiased end gutter, preserving the authored lane markings without repeat hairlines.
                 groundProperties.SetFloat(HorizontalSampleId, -1f);
                 meshRenderer.SetPropertyBlock(groundProperties, 1);
             }

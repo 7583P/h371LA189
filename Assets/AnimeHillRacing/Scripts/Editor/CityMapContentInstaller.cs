@@ -124,15 +124,22 @@ namespace AnimeHillRacing.Editor
             profile.cityBridges.cycleStartMargin = 320f;
             profile.cityBridges.cycleEndMargin = 320f;
             profile.cityBridges.minimumZoneSpacing = 300f;
-            profile.cityBridges.approachBlendLength = 30f;
-            profile.cityBridges.recoveryBlendLength = 30f;
+            profile.cityBridges.approachBlendLength = 50f;
+            profile.cityBridges.recoveryBlendLength = 50f;
             profile.cityBridges.bridgeLength = 14f;
             profile.cityBridges.normalWaterLength = 22f;
             profile.cityBridges.progressiveBaseWaterLength = 22f;
             profile.cityBridges.progressiveGrowthPerCycle = CityBridgeSettings.RequiredProgressiveGrowth;
             profile.cityBridges.waterVisualDepth = 8f;
             profile.cityBridges.waterSurfaceOffset = -.45f;
-            profile.cityBridges.waterBedThickness = 3f;
+            profile.cityBridges.waterBedThickness = 22f;
+            profile.cityBridges.waterEndBankWidth = 3f;
+            profile.cityBridges.waterSpeedRetainedPerSecond = .4f;
+            profile.cityBridges.waterAngularSpeedRetainedPerSecond = .3f;
+            profile.cityBridges.waterBuoyancySpring = 4f;
+            profile.cityBridges.waterVerticalDamping = 3f;
+            profile.cityBridges.waterMaximumSinkAcceleration = 8f;
+            profile.cityBridges.waterDriverDownClearance = 5f;
             profile.cityBridges.bridgeColliderThickness = .45f;
             profile.cityBridges.bridgeGroundOverlap = 1f;
             profile.cityBridges.closedAngleDegrees = 0f;
@@ -143,7 +150,7 @@ namespace AnimeHillRacing.Editor
             profile.cityBridges.bridgeSprite = bridge;
             profile.cityBridges.waterSprite = water;
             profile.cityBridges.bridgeArtSlopeDegrees = 16.1f;
-            profile.cityBridges.bridgeArtSurfaceOffset = -1.1f;
+            profile.cityBridges.bridgeArtSurfaceOffset = -.61f;
             profile.cityBridges.waterSortingOrder = 1;
             profile.cityBridges.waterBedSortingOrder = 0;
             profile.cityBridges.bridgeSortingOrder = 5;
@@ -182,9 +189,11 @@ namespace AnimeHillRacing.Editor
             profile.fitAuthoredTerrainTexture = true;
             profile.terrainTextureRepeatWidth = 45f;
             profile.terrainWallUvRange = new Vector2(.171f, .82f);
-            profile.terrainSurfaceUvRange = new Vector2(.318f, .695f);
-            profile.terrainSurfaceContactV = .695f;
-            profile.terrainFillStartV = .695f;
+            // Complete visible bounds of the long road tile in Ground.png. This removes only the
+            // transparent canvas and alternate short tiles; no visible road pixel is cropped.
+            profile.terrainSurfaceUvRange = new Vector2(.313f, .701f);
+            profile.terrainSurfaceContactV = .579f;
+            profile.terrainFillStartV = .579f;
             profile.groundPhysicsMaterial = AssetDatabase.LoadAssetAtPath<PhysicsMaterial>(GroundPhysicsPath);
             profile.terrainEdgeWidth = .18f;
             profile.terrainVisualDepth = 22f;
@@ -219,6 +228,11 @@ namespace AnimeHillRacing.Editor
             float d12000 = profile.EvaluateDifficulty(12000f);
             if (!profile.useCityHighwayTerrain || profile.supportsLiquidExposure ||
                 Mathf.Abs(profile.terrainFillStartV - profile.terrainSurfaceContactV) > .0001f ||
+                profile.terrainEdgeMaterial == null ||
+                !profile.terrainEdgeMaterial.HasProperty("_DepthWrite") ||
+                profile.terrainEdgeMaterial.GetFloat("_DepthWrite") < .5f ||
+                !profile.terrainEdgeMaterial.HasProperty("_HorizontalInset") ||
+                Mathf.Abs(profile.terrainEdgeMaterial.GetFloat("_HorizontalInset") - .008f) > .0001f ||
                 !(d0 < d3750 && d3750 < d7500) || !Mathf.Approximately(d7500, d12000) ||
                 environment.clouds == null || environment.clouds.Length != 15 ||
                 !profile.useCityBridges || profile.cityBridges == null ||
@@ -252,7 +266,19 @@ namespace AnimeHillRacing.Editor
             CityBridgeSettings settings = profile.cityBridges;
             if (AssetDatabase.GetAssetPath(settings.bridgeSprite) != CityRoot + "/Bridge.png" ||
                 AssetDatabase.GetAssetPath(settings.waterSprite) != CityRoot + "/Water.png" ||
-                settings.waterVisualDepth < .5f || settings.waterBedThickness < .5f)
+                settings.waterVisualDepth < .5f ||
+                settings.waterBedThickness + .01f < profile.terrainVisualDepth ||
+                settings.waterEndBankWidth < 1f ||
+                settings.waterSpeedRetainedPerSecond <= 0f ||
+                settings.waterSpeedRetainedPerSecond >= 1f ||
+                settings.waterAngularSpeedRetainedPerSecond <= 0f ||
+                settings.waterAngularSpeedRetainedPerSecond >= 1f ||
+                settings.waterBuoyancySpring <= 0f ||
+                settings.waterVerticalDamping <= 0f ||
+                settings.waterMaximumSinkAcceleration <= 0f ||
+                Mathf.Abs(settings.waterDriverDownClearance - 5f) > .001f ||
+                Vector2.Distance(profile.terrainSurfaceUvRange, new Vector2(.313f, .701f)) > .001f ||
+                Mathf.Abs(profile.terrainSurfaceContactV - .579f) > .001f)
                 throw new System.InvalidOperationException(
                     "City bridge visual references or water-bed geometry are invalid.");
             float normalLength = -1f;
@@ -344,12 +370,16 @@ namespace AnimeHillRacing.Editor
             if (material.HasProperty("_SeamlessHorizontalTiling"))
                 material.SetFloat("_SeamlessHorizontalTiling", 1f);
             if (material.HasProperty("_HorizontalInset"))
-                material.SetFloat("_HorizontalInset", .012f);
+                // Ground.png has a transparent antialiased gutter at both ends of the long road tile.
+                // Sampling eleven pixels inward removes the repeating hairline without cropping road art.
+                material.SetFloat("_HorizontalInset", path == GroundMaterialPath ? .008f : .012f);
             if (material.HasProperty("_HorizontalUvRange"))
                 material.SetVector("_HorizontalUvRange", path == GroundMaterialPath
-                    ? new Vector4(.02f, .67f, 0f, 0f) : new Vector4(0f, 1f, 0f, 0f));
+                    ? new Vector4(.004f, .688f, 0f, 0f) : new Vector4(0f, 1f, 0f, 0f));
             if (material.HasProperty("_DepthWrite"))
-                material.SetFloat("_DepthWrite", path == GroundMaterialPath ? 0f : 1f);
+                // Ground contains opaque artwork above the physical yellow contact line. It must
+                // write depth so the later transparent skyline cannot paint over that upper band.
+                material.SetFloat("_DepthWrite", 1f);
             material.renderQueue = path == GroundMaterialPath ? 2451 : 2450;
             EditorUtility.SetDirty(material);
             return material;

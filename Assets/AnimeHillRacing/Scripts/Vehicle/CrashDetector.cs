@@ -63,6 +63,11 @@ namespace AnimeHillRacing.Vehicle
 
         public bool NotifyDriverHeadGroundImpact()
         {
+            return NotifyDriverDown();
+        }
+
+        public bool NotifyDriverDown()
+        {
             if (gameManager == null) gameManager = FindFirstObjectByType<GameManager>();
             if (gameManager == null) return false;
             gameManager.RequestGameOver(RunEndReason.DriverDown);

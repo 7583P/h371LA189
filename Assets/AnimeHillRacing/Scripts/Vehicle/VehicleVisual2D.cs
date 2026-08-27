@@ -7,6 +7,9 @@ namespace AnimeHillRacing.Vehicle
     {
         public const int BodySortingOrder = 10;
         public const int MinimumWheelSortingOrder = 30;
+        // Adventure 2.5D terrain fronts render at Z=-5. The vehicle must remain closer to the camera
+        // so the complete road, including its yellow stripe, is visible without covering the tires.
+        public const float VehicleForegroundZ = -6f;
 
         [SerializeField] private VehicleRuntimeBase vehicle;
         [SerializeField] private VehicleDefinition definition;
@@ -40,7 +43,9 @@ namespace AnimeHillRacing.Vehicle
                 bodyRenderer.sprite = skin.sprite;
                 bodyRenderer.flipX = definition.flipBodyX;
                 bodyRenderer.sortingOrder = BodySortingOrder;
-                bodyRenderer.transform.localPosition = definition.BodyCustomizationOffset(skin);
+                Vector3 bodyOffset = definition.BodyCustomizationOffset(skin);
+                bodyOffset.z = VehicleForegroundZ;
+                bodyRenderer.transform.localPosition = bodyOffset;
                 bodyRenderer.transform.localScale = definition.BodyCustomizationScale(skin);
             }
             FormulaElectricSkinEffect.Apply(bodyRenderer, definition, skin);
@@ -75,7 +80,9 @@ namespace AnimeHillRacing.Vehicle
                 bodyRenderer.sprite = skin.sprite;
                 bodyRenderer.flipX = definition.flipBodyX;
                 bodyRenderer.sortingOrder = BodySortingOrder;
-                bodyRenderer.transform.localPosition = definition.BodyCustomizationOffset(skin);
+                Vector3 bodyOffset = definition.BodyCustomizationOffset(skin);
+                bodyOffset.z = VehicleForegroundZ;
+                bodyRenderer.transform.localPosition = bodyOffset;
                 bodyRenderer.transform.localScale = definition.BodyCustomizationScale(skin);
             }
             FormulaElectricSkinEffect.Apply(bodyRenderer, definition, skin);

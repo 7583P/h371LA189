@@ -42,15 +42,22 @@ MonoBehaviour:
     cycleStartMargin: 320
     cycleEndMargin: 320
     minimumZoneSpacing: 300
-    approachBlendLength: 30
-    recoveryBlendLength: 30
+    approachBlendLength: 50
+    recoveryBlendLength: 50
     bridgeLength: 14
     normalWaterLength: 22
     progressiveBaseWaterLength: 22
     progressiveGrowthPerCycle: 10
     waterVisualDepth: 8
     waterSurfaceOffset: -0.45
-    waterBedThickness: 3
+    waterBedThickness: 22
+    waterEndBankWidth: 3
+    waterSpeedRetainedPerSecond: 0.4
+    waterAngularSpeedRetainedPerSecond: 0.3
+    waterBuoyancySpring: 4
+    waterVerticalDamping: 3
+    waterMaximumSinkAcceleration: 8
+    waterDriverDownClearance: 5
     bridgeColliderThickness: 0.45
     bridgeGroundOverlap: 1
     closedAngleDegrees: 0
@@ -61,7 +68,7 @@ MonoBehaviour:
     bridgeSprite: {fileID: 21300000, guid: 0e36158ade9b6ff479dc3e45e5ced674, type: 3}
     waterSprite: {fileID: 21300000, guid: b1000000000000000000000000000002, type: 3}
     bridgeArtSlopeDegrees: 16.1
-    bridgeArtSurfaceOffset: -1.1
+    bridgeArtSurfaceOffset: -0.61
     waterSortingOrder: 1
     waterBedSortingOrder: 0
     bridgeSortingOrder: 5
@@ -154,9 +161,9 @@ MonoBehaviour:
   fitAuthoredTerrainTexture: 1
   terrainTextureRepeatWidth: 45
   terrainWallUvRange: {x: 0.171, y: 0.82}
-  terrainSurfaceUvRange: {x: 0.318, y: 0.695}
-  terrainSurfaceContactV: 0.695
-  terrainFillStartV: 0.695
+  terrainSurfaceUvRange: {x: 0.313, y: 0.701}
+  terrainSurfaceContactV: 0.579
+  terrainFillStartV: 0.579
   groundPhysicsMaterial: {fileID: 13400000, guid: 4dfb87f232532b24aafe44e9c5c97f50, type: 2}
   groundPhysicsMaterial2D: {fileID: 0}
   terrainEdgeWidth: 0.18

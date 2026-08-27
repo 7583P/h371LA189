@@ -2388,10 +2388,13 @@ namespace AnimeHillRacing.Editor
                 {
                     float groundTop = visual[i * 6 + 2].y;
                     float groundBottom = visual[i * 6 + 3].y;
+                    float contactT = Mathf.InverseLerp(profile.terrainSurfaceUvRange.x,
+                        profile.terrainSurfaceUvRange.y, profile.terrainSurfaceContactV);
+                    float groundContact = Mathf.Lerp(groundBottom, groundTop, contactT);
                     float terrainTop = visual[i * 6].y;
                     float colliderTop = physical[i * 2].y;
                     maximumAlignmentError = Mathf.Max(maximumAlignmentError,
-                        Mathf.Abs(groundTop - heights[i]), Mathf.Abs(colliderTop - heights[i]),
+                        Mathf.Abs(groundContact - heights[i]), Mathf.Abs(colliderTop - heights[i]),
                         Mathf.Abs(terrainTop - (heights[i] - TerrainGenerator.CalculateTerrainFillDepth(profile))),
                         Mathf.Max(0f, groundBottom - terrainTop));
                     minimumGroundDepth = Mathf.Min(minimumGroundDepth, groundTop - groundBottom);
@@ -2409,7 +2412,7 @@ namespace AnimeHillRacing.Editor
                 throw new System.InvalidOperationException(
                     $"City surface contract failed: alignment={maximumAlignmentError:0.000000}m, " +
                     $"Ground depth={minimumGroundDepth:0.000}m, slope={maximumFinalSlope:0.00} degrees.");
-            Debug.Log($"CITY_SURFACE_ALIGNMENT_PASS: Ground top = generated height = collider, " +
+            Debug.Log($"CITY_SURFACE_ALIGNMENT_PASS: Ground yellow stripe = generated height = collider, " +
                        $"max error {maximumAlignmentError:0.000000}m over 0-8000m; " +
                        $"Ground depth {minimumGroundDepth:0.000}m; max final slope {maximumFinalSlope:0.00} degrees; " +
                        $"raw peak {maximumRawSlope:0.00} degrees near {maximumRawSlopeDistance:0}m is constrained " +
@@ -5977,9 +5980,11 @@ namespace AnimeHillRacing.Editor
             assets.city.fitAuthoredTerrainTexture = true;
             assets.city.terrainTextureRepeatWidth = 45f;
             assets.city.terrainWallUvRange = new Vector2(.171f, .82f);
-            assets.city.terrainSurfaceUvRange = new Vector2(.293f, .45f);
-            assets.city.terrainSurfaceContactV = .45f;
-            assets.city.terrainFillStartV = .45f;
+            // Preserve the complete visible long road tile from Ground.png. The yellow stripe is the
+            // physical contact line; these values must match CityMapContentInstaller.
+            assets.city.terrainSurfaceUvRange = new Vector2(.313f, .701f);
+            assets.city.terrainSurfaceContactV = .579f;
+            assets.city.terrainFillStartV = .579f;
             assets.city.groundPhysicsMaterial = assets.groundPhysics;
             assets.city.terrainEdgeWidth = .18f;
             assets.city.terrainVisualDepth = 22f;
@@ -7787,7 +7792,15 @@ namespace AnimeHillRacing.Editor
             if (material.HasProperty("_SeamlessHorizontalTiling"))
                 material.SetFloat("_SeamlessHorizontalTiling", useSeamlessTerrainTiling ? 1f : 0f);
             if (material.HasProperty("_HorizontalInset"))
-                material.SetFloat("_HorizontalInset", useSeamlessTerrainTiling ? .012f : 0f);
+                material.SetFloat("_HorizontalInset", name == "CityGround" ? .008f :
+                    useSeamlessTerrainTiling ? .012f : 0f);
+            if (material.HasProperty("_HorizontalUvRange"))
+                material.SetVector("_HorizontalUvRange", name == "CityGround"
+                    ? new Vector4(.004f, .688f, 0f, 0f) : new Vector4(0f, 1f, 0f, 0f));
+            if (material.HasProperty("_DepthWrite"))
+                // CityGround extends above its physical yellow contact line. Depth writing keeps
+                // the transparent background sprites from covering that authored upper section.
+                material.SetFloat("_DepthWrite", 1f);
             if (name == "CityTerrain" || name == "CountrysideTerrain" || name == "NorthPoleTerrain")
                 material.renderQueue = 2450;
             else if (name == "CityGround" || name == "CountrysideGround" || name == "NorthPoleGround")

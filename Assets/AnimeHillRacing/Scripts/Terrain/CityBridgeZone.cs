@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using AnimeHillRacing.Vehicle;
 using UnityEngine;
 
 namespace AnimeHillRacing.Terrain
@@ -14,6 +16,7 @@ namespace AnimeHillRacing.Terrain
         private CityBridgeDeck entryBridge;
         private CityBridgeDeck exitBridge;
         private CityWaterBed waterBed;
+        private CityWaterResistance waterResistance;
         private SpriteRenderer waterRenderer;
         private CityBridgeSettings settings;
         private float animationPhaseOffset;
@@ -42,6 +45,18 @@ namespace AnimeHillRacing.Terrain
                 }
                 waterBed = child.GetComponent<CityWaterBed>();
                 if (waterBed == null) waterBed = child.gameObject.AddComponent<CityWaterBed>();
+            }
+            if (waterResistance == null)
+            {
+                Transform child = transform.Find("City Water Resistance");
+                if (child == null)
+                {
+                    child = new GameObject("City Water Resistance").transform;
+                    child.SetParent(transform, false);
+                }
+                waterResistance = child.GetComponent<CityWaterResistance>();
+                if (waterResistance == null)
+                    waterResistance = child.gameObject.AddComponent<CityWaterResistance>();
             }
             if (waterRenderer == null)
             {
@@ -115,13 +130,15 @@ namespace AnimeHillRacing.Terrain
 
             float waterSurfaceY = layout.baselineHeight + settings.waterSurfaceOffset;
             float bedSurfaceY = waterSurfaceY - Mathf.Max(.5f, settings.waterVisualDepth);
-            waterBed.Configure(profile, settings, layout.waterStart, layout.waterEnd,
-                bedSurfaceY, trackWidth);
+            waterBed.Configure(profile, settings, layout.gapStart, layout.gapEnd,
+                bedSurfaceY, layout.baselineHeight, trackWidth);
+            waterResistance.Configure(settings, layout.waterStart, layout.waterEnd,
+                waterSurfaceY, bedSurfaceY, trackWidth);
 
             float period = AnimationPeriod;
             animationPhaseOffset = period > .001f
                 ? Mathf.Repeat(layout.cycleIndex * 2.173f + layout.zoneIndex * 1.317f, period) : 0f;
-            ApplyAngle(EvaluateAnimationAngle(Time.time + animationPhaseOffset), true);
+            ApplyAngle(EvaluateAnimationAngle(Time.fixedTime + animationPhaseOffset), true);
             gameObject.name = $"City {(layout.isProgressive ? "Progressive" : "Normal")} Bridge " +
                               $"C{CycleIndex} #{ZoneIndex + 1} - Pooled";
             gameObject.SetActive(true);
@@ -133,7 +150,7 @@ namespace AnimeHillRacing.Terrain
         private void FixedUpdate()
         {
             if (settings == null) return;
-            ApplyAngle(EvaluateAnimationAngle(Time.time + animationPhaseOffset), false);
+            ApplyAngle(EvaluateAnimationAngle(Time.fixedTime + animationPhaseOffset), false);
         }
 
         private float EvaluateAnimationAngle(float time)
@@ -147,13 +164,13 @@ namespace AnimeHillRacing.Terrain
             phase -= closedHold;
             if (phase < transition)
             {
-                float t = Mathf.SmoothStep(0f, 1f, phase / transition);
+                float t = Mathf.Clamp01(phase / transition);
                 return Mathf.Lerp(settings.closedAngleDegrees, settings.openAngleDegrees, t);
             }
             phase -= transition;
             if (phase < openHold) return settings.openAngleDegrees;
             phase -= openHold;
-            float closingT = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(phase / transition));
+            float closingT = Mathf.Clamp01(phase / transition);
             return Mathf.Lerp(settings.openAngleDegrees, settings.closedAngleDegrees, closingT);
         }
 
@@ -270,6 +287,9 @@ namespace AnimeHillRacing.Terrain
         private MeshRenderer meshRenderer;
         private BoxCollider2D bedCollider2D;
         private BoxCollider bedCollider3D;
+        private Transform endBankTransform;
+        private BoxCollider2D endBankCollider2D;
+        private BoxCollider endBankCollider3D;
         private Mesh bedMesh;
 
         private void Awake() => EnsureComponents();
@@ -293,6 +313,27 @@ namespace AnimeHillRacing.Terrain
             if (bedCollider3D == null)
                 bedCollider3D = collider3DTransform.gameObject.AddComponent<BoxCollider>();
 
+            if (endBankTransform == null) endBankTransform = transform.Find("Solid End Bank");
+            if (endBankTransform == null)
+            {
+                endBankTransform = new GameObject("Solid End Bank").transform;
+                endBankTransform.SetParent(transform, false);
+            }
+            if (endBankCollider2D == null)
+                endBankCollider2D = endBankTransform.GetComponent<BoxCollider2D>();
+            if (endBankCollider2D == null)
+                endBankCollider2D = endBankTransform.gameObject.AddComponent<BoxCollider2D>();
+            Transform endBank3DTransform = endBankTransform.Find("End Bank Collider 3D");
+            if (endBank3DTransform == null)
+            {
+                endBank3DTransform = new GameObject("End Bank Collider 3D").transform;
+                endBank3DTransform.SetParent(endBankTransform, false);
+            }
+            if (endBankCollider3D == null)
+                endBankCollider3D = endBank3DTransform.GetComponent<BoxCollider>();
+            if (endBankCollider3D == null)
+                endBankCollider3D = endBank3DTransform.gameObject.AddComponent<BoxCollider>();
+
             if (bedMesh == null)
             {
                 bedMesh = new Mesh { name = "Pooled City Water Bed Mesh" };
@@ -301,15 +342,16 @@ namespace AnimeHillRacing.Terrain
             }
         }
 
-        public void Configure(MapProfile profile, CityBridgeSettings settings, float waterStart,
-            float waterEnd, float surfaceY, float trackWidth)
+        public void Configure(MapProfile profile, CityBridgeSettings settings, float floorStart,
+            float floorEnd, float floorSurfaceY, float terrainSurfaceY, float trackWidth)
         {
             EnsureComponents();
-            float width = Mathf.Max(.5f, waterEnd - waterStart);
+            float width = Mathf.Max(.5f, floorEnd - floorStart);
             float thickness = Mathf.Max(.5f, settings.waterBedThickness);
-            float centerX = (waterStart + waterEnd) * .5f;
+            if (profile != null) thickness = Mathf.Max(thickness, profile.terrainVisualDepth);
+            float centerX = (floorStart + floorEnd) * .5f;
             transform.SetPositionAndRotation(
-                new Vector3(centerX, surfaceY - thickness * .5f, .1f), Quaternion.identity);
+                new Vector3(centerX, floorSurfaceY - thickness * .5f, -.01f), Quaternion.identity);
 
             bedCollider2D.size = new Vector2(width, thickness);
             bedCollider2D.offset = Vector2.zero;
@@ -321,33 +363,87 @@ namespace AnimeHillRacing.Terrain
             bedCollider3D.isTrigger = false;
             bedCollider3D.sharedMaterial = profile != null ? profile.groundPhysicsMaterial : null;
 
+            float bankWidth = Mathf.Min(width, Mathf.Max(1f, settings.waterEndBankWidth));
+            float floorBottomY = floorSurfaceY - thickness;
+            float bankHeight = Mathf.Max(.5f, terrainSurfaceY - floorBottomY);
+            float bankCenterX = floorEnd + bankWidth * .5f;
+            float bankCenterY = floorBottomY + bankHeight * .5f;
+            endBankTransform.localPosition = new Vector3(bankCenterX - transform.position.x,
+                bankCenterY - transform.position.y, 0f);
+            endBankTransform.localRotation = Quaternion.identity;
+            endBankCollider2D.size = new Vector2(bankWidth, bankHeight);
+            endBankCollider2D.offset = Vector2.zero;
+            endBankCollider2D.isTrigger = false;
+            endBankCollider2D.sharedMaterial = profile != null ? profile.groundPhysicsMaterial2D : null;
+            endBankCollider3D.size = new Vector3(bankWidth, bankHeight, Mathf.Max(2f, trackWidth));
+            endBankCollider3D.center = Vector3.zero;
+            endBankCollider3D.isTrigger = false;
+            endBankCollider3D.sharedMaterial = profile != null ? profile.groundPhysicsMaterial : null;
+
             float halfWidth = width * .5f;
             float halfHeight = thickness * .5f;
             float repeatWidth = profile != null ? Mathf.Max(1f, profile.terrainTextureRepeatWidth) : 40f;
-            float u0 = waterStart / repeatWidth;
-            float u1 = waterEnd / repeatWidth;
+            float u0 = floorStart / repeatWidth;
+            float u1 = floorEnd / repeatWidth;
+            float bankU0 = floorEnd / repeatWidth;
+            float bankU1 = (floorEnd + bankWidth) / repeatWidth;
             float bottomV = profile != null ? profile.terrainWallUvRange.x : 0f;
             float topV = profile != null ? profile.terrainWallUvRange.y : 1f;
+            float surfaceBottomV = profile != null ? profile.terrainSurfaceUvRange.x : 0f;
+            float surfaceTopV = profile != null ? profile.terrainSurfaceUvRange.y : 1f;
+            TerrainGenerator.CalculateGroundVisualExtents(profile,
+                out float groundDepth, out float groundRise);
+            float floorTop = halfHeight;
+            float bankLeft = floorEnd - centerX;
+            float bankRight = floorEnd + bankWidth - centerX;
+            float bankTop = terrainSurfaceY - transform.position.y;
+            float bankBottom = floorBottomY - transform.position.y;
             bedMesh.Clear();
             bedMesh.vertices = new[]
             {
+                // Terrain below the water.
                 new Vector3(-halfWidth, halfHeight, 0f),
                 new Vector3(halfWidth, halfHeight, 0f),
                 new Vector3(-halfWidth, -halfHeight, 0f),
-                new Vector3(halfWidth, -halfHeight, 0f)
+                new Vector3(halfWidth, -halfHeight, 0f),
+                // Ground artwork whose yellow stripe is the physical floor surface.
+                new Vector3(-halfWidth, floorTop + groundRise, -.03f),
+                new Vector3(halfWidth, floorTop + groundRise, -.03f),
+                new Vector3(-halfWidth, floorTop - groundDepth, -.03f),
+                new Vector3(halfWidth, floorTop - groundDepth, -.03f),
+                // Solid terrain bank at the end of the water section.
+                new Vector3(bankLeft, bankTop, 0f),
+                new Vector3(bankRight, bankTop, 0f),
+                new Vector3(bankLeft, bankBottom, 0f),
+                new Vector3(bankRight, bankBottom, 0f),
+                // Matching Ground cap on the end bank.
+                new Vector3(bankLeft, bankTop + groundRise, -.03f),
+                new Vector3(bankRight, bankTop + groundRise, -.03f),
+                new Vector3(bankLeft, bankTop - groundDepth, -.03f),
+                new Vector3(bankRight, bankTop - groundDepth, -.03f)
             };
             bedMesh.uv = new[]
             {
                 new Vector2(u0, topV), new Vector2(u1, topV),
-                new Vector2(u0, bottomV), new Vector2(u1, bottomV)
+                new Vector2(u0, bottomV), new Vector2(u1, bottomV),
+                new Vector2(u0, surfaceTopV), new Vector2(u1, surfaceTopV),
+                new Vector2(u0, surfaceBottomV), new Vector2(u1, surfaceBottomV),
+                new Vector2(bankU0, topV), new Vector2(bankU1, topV),
+                new Vector2(bankU0, bottomV), new Vector2(bankU1, bottomV),
+                new Vector2(bankU0, surfaceTopV), new Vector2(bankU1, surfaceTopV),
+                new Vector2(bankU0, surfaceBottomV), new Vector2(bankU1, surfaceBottomV)
             };
-            bedMesh.triangles = new[] { 0, 1, 2, 1, 3, 2 };
+            bedMesh.subMeshCount = 2;
+            bedMesh.SetTriangles(new[] { 0, 1, 2, 1, 3, 2, 8, 9, 10, 9, 11, 10 }, 0);
+            bedMesh.SetTriangles(new[] { 4, 5, 6, 5, 7, 6, 12, 13, 14, 13, 15, 14 }, 1);
             bedMesh.RecalculateNormals();
             bedMesh.RecalculateBounds();
 
-            meshRenderer.sharedMaterial = profile != null ? profile.terrainMaterial : null;
+            meshRenderer.sharedMaterials = profile != null
+                ? new[] { profile.terrainMaterial, profile.terrainEdgeMaterial }
+                : new Material[] { null, null };
             meshRenderer.sortingOrder = settings.waterBedSortingOrder;
-            meshRenderer.enabled = meshRenderer.sharedMaterial != null;
+            meshRenderer.enabled = profile != null && profile.terrainMaterial != null;
             gameObject.SetActive(true);
         }
 
@@ -357,5 +453,205 @@ namespace AnimeHillRacing.Terrain
             if (Application.isPlaying) Destroy(bedMesh);
             else DestroyImmediate(bedMesh);
         }
+    }
+
+    [DisallowMultipleComponent]
+    public sealed class CityWaterResistance : MonoBehaviour
+    {
+        private readonly HashSet<Collider> contacts3D = new HashSet<Collider>();
+        private readonly HashSet<Collider2D> contacts2D = new HashSet<Collider2D>();
+        private readonly HashSet<VehicleRuntimeBase> driverDownVehicles = new HashSet<VehicleRuntimeBase>();
+        private readonly List<VehicleRuntimeBase> vehicleBuffer = new List<VehicleRuntimeBase>(2);
+        private BoxCollider volume3D;
+        private BoxCollider2D volume2D;
+        private CityWaterResistance2DForwarder forwarder2D;
+        private CityBridgeSettings settings;
+        private float floorY;
+
+        private void Awake() => EnsureComponents();
+
+        private void EnsureComponents()
+        {
+            if (volume3D == null) volume3D = GetComponent<BoxCollider>();
+            if (volume3D == null) volume3D = gameObject.AddComponent<BoxCollider>();
+            volume3D.isTrigger = true;
+
+            Transform child2D = transform.Find("Water Resistance Trigger 2D");
+            if (child2D == null)
+            {
+                child2D = new GameObject("Water Resistance Trigger 2D").transform;
+                child2D.SetParent(transform, false);
+            }
+            if (volume2D == null) volume2D = child2D.GetComponent<BoxCollider2D>();
+            if (volume2D == null) volume2D = child2D.gameObject.AddComponent<BoxCollider2D>();
+            volume2D.isTrigger = true;
+            if (forwarder2D == null) forwarder2D = child2D.GetComponent<CityWaterResistance2DForwarder>();
+            if (forwarder2D == null)
+                forwarder2D = child2D.gameObject.AddComponent<CityWaterResistance2DForwarder>();
+            forwarder2D.Assign(this);
+        }
+
+        public void Configure(CityBridgeSettings bridgeSettings, float waterStart, float waterEnd,
+            float surfaceY, float bottomY, float trackWidth)
+        {
+            EnsureComponents();
+            ClearContacts();
+            settings = bridgeSettings;
+            floorY = bottomY;
+            float width = Mathf.Max(.5f, waterEnd - waterStart);
+            float depth = Mathf.Max(.5f, surfaceY - bottomY);
+            transform.SetPositionAndRotation(new Vector3((waterStart + waterEnd) * .5f,
+                surfaceY - depth * .5f, 0f), Quaternion.identity);
+            volume3D.center = Vector3.zero;
+            volume3D.size = new Vector3(width, depth, Mathf.Max(2f, trackWidth));
+            volume2D.offset = Vector2.zero;
+            volume2D.size = new Vector2(width, depth);
+            gameObject.SetActive(true);
+        }
+
+        private void OnTriggerEnter(Collider other) => contacts3D.Add(other);
+        private void OnTriggerStay(Collider other) => contacts3D.Add(other);
+        private void OnTriggerExit(Collider other) => contacts3D.Remove(other);
+
+        internal void AddContact2D(Collider2D other) => contacts2D.Add(other);
+        internal void RemoveContact2D(Collider2D other) => contacts2D.Remove(other);
+
+        private void FixedUpdate()
+        {
+            if (settings == null || (contacts3D.Count == 0 && contacts2D.Count == 0)) return;
+            vehicleBuffer.Clear();
+            foreach (Collider2D contact in contacts2D)
+            {
+                VehicleRuntimeBase vehicle = ResolveVehicle(contact);
+                if (vehicle != null && !vehicleBuffer.Contains(vehicle)) vehicleBuffer.Add(vehicle);
+            }
+            foreach (Collider contact in contacts3D)
+            {
+                VehicleRuntimeBase vehicle = ResolveVehicle(contact);
+                if (vehicle != null && !vehicleBuffer.Contains(vehicle)) vehicleBuffer.Add(vehicle);
+            }
+
+            float linearFactor = Mathf.Pow(Mathf.Clamp(settings.waterSpeedRetainedPerSecond, .05f, 1f),
+                Time.fixedDeltaTime);
+            float angularFactor = Mathf.Pow(
+                Mathf.Clamp(settings.waterAngularSpeedRetainedPerSecond, .05f, 1f), Time.fixedDeltaTime);
+            for (int i = 0; i < vehicleBuffer.Count; i++)
+            {
+                VehicleRuntimeBase vehicle = vehicleBuffer[i];
+                if (vehicle.Body2D != null)
+                {
+                    Rigidbody2D body = vehicle.Body2D;
+                    body.linearVelocity *= linearFactor;
+                    body.angularVelocity *= angularFactor;
+                    float buoyancy = EvaluateWaterBuoyancy(Physics2D.gravity.magnitude,
+                        floorY + .75f - body.position.y, body.linearVelocity.y,
+                        settings.waterBuoyancySpring, settings.waterVerticalDamping,
+                        settings.waterMaximumSinkAcceleration);
+                    body.AddForce(Vector2.up * (body.mass * buoyancy), ForceMode2D.Force);
+                }
+                else if (vehicle.Body != null)
+                {
+                    Rigidbody body = vehicle.Body;
+                    body.linearVelocity *= linearFactor;
+                    body.angularVelocity *= angularFactor;
+                    float buoyancy = EvaluateWaterBuoyancy(Physics.gravity.magnitude,
+                        floorY + .75f - body.position.y, body.linearVelocity.y,
+                        settings.waterBuoyancySpring, settings.waterVerticalDamping,
+                        settings.waterMaximumSinkAcceleration);
+                    body.AddForce(Vector3.up * buoyancy, ForceMode.Acceleration);
+                }
+
+                if (!driverDownVehicles.Contains(vehicle) &&
+                    HasFatalWheelClearance(vehicle, floorY, settings.waterDriverDownClearance))
+                    TriggerDriverDown(vehicle);
+            }
+        }
+
+        public static float EvaluateWaterBuoyancy(float gravityMagnitude, float targetHeightDelta,
+            float verticalVelocity, float spring, float damping, float maximumSinkAcceleration)
+        {
+            float correction = targetHeightDelta * Mathf.Max(.1f, spring) -
+                               verticalVelocity * Mathf.Max(.1f, damping);
+            return Mathf.Max(0f, gravityMagnitude + Mathf.Clamp(correction,
+                -Mathf.Max(.1f, maximumSinkAcceleration), 8f));
+        }
+
+        public static bool HasFatalWheelClearance(VehicleRuntimeBase vehicle, float groundY,
+            float requiredClearance)
+        {
+            float threshold = Mathf.Max(.1f, requiredClearance);
+            if (vehicle is VehiclePhysics2DController vehicle2D)
+                return WheelClearance(vehicle2D.FrontSuspension, groundY) >= threshold ||
+                       WheelClearance(vehicle2D.RearSuspension, groundY) >= threshold;
+            if (vehicle is VehicleController vehicle3D)
+                return WheelClearance(vehicle3D.FrontSuspension, groundY) >= threshold ||
+                       WheelClearance(vehicle3D.RearSuspension, groundY) >= threshold;
+            return false;
+        }
+
+        private static float WheelClearance(Suspension2DController suspension, float groundY)
+        {
+            return suspension != null && suspension.WheelBody != null
+                ? suspension.WheelBody.position.y - suspension.WheelRadius - groundY
+                : float.NegativeInfinity;
+        }
+
+        private static float WheelClearance(SuspensionController suspension, float groundY)
+        {
+            return suspension != null && suspension.WheelBody != null
+                ? suspension.WheelBody.position.y - suspension.PhysicalWheelRadius - groundY
+                : float.NegativeInfinity;
+        }
+
+        private void TriggerDriverDown(VehicleRuntimeBase vehicle)
+        {
+            CrashDetector crashDetector = vehicle != null ? vehicle.GetComponent<CrashDetector>() : null;
+            if (crashDetector == null || !crashDetector.NotifyDriverDown()) return;
+            driverDownVehicles.Add(vehicle);
+            Debug.Log($"[CityWater] Driver Down: wheel clearance reached " +
+                      $"{settings.waterDriverDownClearance:0.0} m above the solid water bed.", vehicle);
+        }
+
+        private static VehicleRuntimeBase ResolveVehicle(Collider2D other)
+        {
+            VehicleRuntimeBase vehicle = other != null
+                ? other.GetComponentInParent<VehicleRuntimeBase>() : null;
+            return vehicle != null && vehicle.Body2D != null && other.attachedRigidbody == vehicle.Body2D
+                ? vehicle : null;
+        }
+
+        private static VehicleRuntimeBase ResolveVehicle(Collider other)
+        {
+            VehicleRuntimeBase vehicle = other != null
+                ? other.GetComponentInParent<VehicleRuntimeBase>() : null;
+            return vehicle != null && vehicle.Body != null && other.attachedRigidbody == vehicle.Body
+                ? vehicle : null;
+        }
+
+        private void OnDisable() => ClearContacts();
+
+        private void ClearContacts()
+        {
+            contacts3D.Clear();
+            contacts2D.Clear();
+            driverDownVehicles.Clear();
+            vehicleBuffer.Clear();
+        }
+    }
+
+    public sealed class CityWaterResistance2DForwarder : MonoBehaviour
+    {
+        private CityWaterResistance owner;
+
+        public void Assign(CityWaterResistance resistance) => owner = resistance;
+
+        private void Awake()
+        {
+            if (owner == null) owner = GetComponentInParent<CityWaterResistance>();
+        }
+
+        private void OnTriggerEnter2D(Collider2D other) => owner?.AddContact2D(other);
+        private void OnTriggerStay2D(Collider2D other) => owner?.AddContact2D(other);
+        private void OnTriggerExit2D(Collider2D other) => owner?.RemoveContact2D(other);
     }
 }

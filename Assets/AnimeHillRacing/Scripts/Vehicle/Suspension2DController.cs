@@ -621,7 +621,7 @@ namespace AnimeHillRacing.Vehicle
         {
             if (wheelVisual == null || wheelBody == null) return;
             Vector2 pos = wheelBody.position;
-            wheelVisual.position = new Vector3(pos.x, pos.y, -2.0f);
+            wheelVisual.position = new Vector3(pos.x, pos.y, VehicleVisual2D.VehicleForegroundZ);
             wheelVisual.rotation = Quaternion.Euler(0f, 0f, wheelBody.rotation);
         }
 
@@ -632,7 +632,8 @@ namespace AnimeHillRacing.Vehicle
             // Rigidbody2D.position is the latest fixed-step pose. The Transform contains Unity's
             // interpolated render pose, so following it here avoids a visible 50 Hz wheel judder.
             Vector3 renderPosition = wheelBody.transform.position;
-            wheelVisual.position = new Vector3(renderPosition.x, renderPosition.y, -2.0f);
+            wheelVisual.position = new Vector3(renderPosition.x, renderPosition.y,
+                VehicleVisual2D.VehicleForegroundZ);
             wheelVisual.rotation = wheelBody.transform.rotation;
         }
 

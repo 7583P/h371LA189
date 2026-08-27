@@ -51,6 +51,7 @@ namespace AnimeHillRacing.Road
                     bodyRenderers[i].transform.localScale = definition.BodyCustomizationScale(skin);
                     FormulaElectricSkinEffect.Apply(bodyRenderers[i], definition, skin);
                     HillAdventurerSkinEffect.Apply(bodyRenderers[i], definition, skin);
+                    SportBikeNeonFlowEffect.ApplySkin(bodyRenderers[i], definition, skin);
                 }
             ApplyAuthoredWheelPositions();
             int wheelSortingOrder = Mathf.Max(VehicleVisual2D.MinimumWheelSortingOrder,
@@ -67,6 +68,7 @@ namespace AnimeHillRacing.Road
                     float diameter = front ? definition.FrontWheelDiameter : definition.RearWheelDiameter;
                     renderer.transform.localScale = Vector3.one *
                         definition.WheelCustomizationScale(wheel, diameter);
+                    SportBikeNeonFlowEffect.ApplyWheel(renderer, definition, wheel);
                 }
             if (articulatedDriver != null)
             {

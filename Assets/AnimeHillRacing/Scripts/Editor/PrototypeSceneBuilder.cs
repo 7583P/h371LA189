@@ -61,13 +61,18 @@ namespace AnimeHillRacing.Editor
         private const string RallyGhostyWheelPath = "Assets/Art/Vehicles/Rally/Wheels/Rally_Wheel_Ghosty.png";
         private const string RallySkyBlueWheelPath = "Assets/Art/Vehicles/Rally/Wheels/SkyBlue_Wheel.png";
         private const string SportBikeBodyPath = "Assets/Art/Vehicles/Sport Bike/Vehicle/Bike_Skin_Default.png";
-        private const string SportBikeRetroPath = "Assets/Art/Vehicles/Sport Bike/Vehicle/Bike_Retro.png";
         private const string SportBikeSunRayPath = "Assets/Art/Vehicles/Sport Bike/Vehicle/Sun_Ray.png";
+        private const string SportBikeRetroLuxePath =
+            "Assets/Art/Vehicles/Sport Bike/Vehicle/Bike_Retro_Luxe.png";
+        private const string SportBikeNeonFlowSkinPath =
+            "Assets/Art/Vehicles/Sport Bike/Vehicle/Bike_Neon_Flow.png";
         private const string SportBikeWheel01Path = "Assets/Art/Vehicles/Sport Bike/Wheels/Bike_Wheel_01.png";
         private const string SportBikeWheel02Path = "Assets/Art/Vehicles/Sport Bike/Wheels/Bike_Wheel_02.png";
         private const string SportBikeGoldWheelPath = "Assets/Art/Vehicles/Sport Bike/Wheels/Gold_Wheel.png";
         private const string SportBikeGhostyWheelPath =
             "Assets/Art/Vehicles/Sport Bike/Wheels/SportBike_Wheel_Ghosty.png.png";
+        private const string SportBikeNeonFlowWheelPath =
+            "Assets/Art/Vehicles/Sport Bike/Wheels/Neon_Flow_Wheel.png";
         private const string NeonRoot = "Assets/Art/Backgrounds/Neon_CIty";
         private const string NeonSkyPath = NeonRoot + "/Sky.png";
         private const string NeonBackgroundPath = NeonRoot + "/Background.png";
@@ -179,12 +184,14 @@ namespace AnimeHillRacing.Editor
             public Sprite rallyGhostyWheel;
             public Sprite rallySkyBlueWheel;
             public Sprite sportBikeBody;
-            public Sprite sportBikeRetro;
             public Sprite sportBikeSunRay;
+            public Sprite sportBikeRetroLuxe;
+            public Sprite sportBikeNeonFlowSkin;
             public Sprite sportBikeWheel01;
             public Sprite sportBikeWheel02;
             public Sprite sportBikeGoldWheel;
             public Sprite sportBikeGhostyWheel;
+            public Sprite sportBikeNeonFlowWheel;
             public Sprite driverGlasses;
             public Sprite driverFireGlasses;
             public Sprite driverScarf;
@@ -1522,7 +1529,8 @@ namespace AnimeHillRacing.Editor
                 assets.formulaHillAdventurerSkin == null || assets.hillAdventurerPurpleSkin == null ||
                 assets.luxuryWheel == null ||
                 assets.rallyGhostyWheel == null || assets.rallySkyBlueWheel == null ||
-                assets.sportBikeGhostyWheel == null)
+                assets.sportBikeRetroLuxe == null || assets.sportBikeNeonFlowSkin == null ||
+                assets.sportBikeGhostyWheel == null || assets.sportBikeNeonFlowWheel == null)
                 throw new System.InvalidOperationException("One or more premium garage sprites are missing.");
             if (assets.jeep.skins == null || assets.jeep.skins.Length != 2 || assets.jeep.wheels == null ||
                 assets.jeep.wheels.Length != 3 || assets.jeep.skins[1].optionId != "jeep-skin-retro" ||
@@ -1570,13 +1578,44 @@ namespace AnimeHillRacing.Editor
                     wheel.optionId.IndexOf("rainbow", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
                     wheel.displayName.IndexOf("rainbow", System.StringComparison.OrdinalIgnoreCase) >= 0))
                 throw new System.InvalidOperationException("Rainbow wheels must not remain selectable.");
-            if (assets.sportBike == null || assets.sportBike.skins == null || assets.sportBike.skins.Length < 2 ||
-                assets.sportBike.wheels == null || assets.sportBike.wheels.Length != 4 ||
+            if (assets.sportBike == null || assets.sportBike.skins == null || assets.sportBike.skins.Length != 4 ||
+                assets.sportBike.wheels == null || assets.sportBike.wheels.Length != 5 ||
+                assets.sportBike.skins[0].optionId != "sport-bike-default" ||
+                assets.sportBike.skins[0].sprite != assets.sportBikeBody ||
+                assets.sportBike.skins[1].optionId != "sport-bike-sun-ray" ||
+                assets.sportBike.skins[1].sprite != assets.sportBikeSunRay ||
                 assets.sportBike.skins[1].unlockedByDefault || assets.sportBike.skins[1].gemPrice != 1000 ||
+                assets.sportBike.skins[2].optionId != "sport-bike-retro-luxe" ||
+                assets.sportBike.skins[2].sprite != assets.sportBikeRetroLuxe ||
+                assets.sportBike.skins[2].unlockedByDefault || assets.sportBike.skins[2].gemPrice != 1000 ||
+                assets.sportBike.skins[3].optionId != SportBikeNeonFlowEffect.SkinId ||
+                assets.sportBike.skins[3].sprite != assets.sportBikeNeonFlowSkin ||
+                assets.sportBike.skins[3].unlockedByDefault || assets.sportBike.skins[3].gemPrice != 1000 ||
+                !SportBikeNeonFlowEffect.IsNeonSkin(assets.sportBike, assets.sportBike.skins[3]) ||
                 assets.sportBike.wheels[2].unlockedByDefault || assets.sportBike.wheels[2].gemPrice != 500 ||
                 assets.sportBike.wheels[3].sprite != assets.sportBikeGhostyWheel ||
-                assets.sportBike.wheels[3].unlockedByDefault || assets.sportBike.wheels[3].gemPrice != 500)
-                throw new System.InvalidOperationException("Sport Bike Retro/Gold/Ghosty cosmetic contract is invalid.");
+                assets.sportBike.wheels[3].unlockedByDefault || assets.sportBike.wheels[3].gemPrice != 500 ||
+                assets.sportBike.wheels[4].optionId != SportBikeNeonFlowEffect.WheelId ||
+                assets.sportBike.wheels[4].sprite != assets.sportBikeNeonFlowWheel ||
+                assets.sportBike.wheels[4].unlockedByDefault || assets.sportBike.wheels[4].gemPrice != 500 ||
+                !SportBikeNeonFlowEffect.IsNeonWheel(assets.sportBike, assets.sportBike.wheels[4]))
+                throw new System.InvalidOperationException(
+                    "Sport Bike Default/Sun Ray/Retro Luxe/Neon Flow skin and wheel contract is invalid.");
+            Vector2 defaultBikeBodySize = VehicleDefinition.VisibleSize(assets.sportBike.skins[0]);
+            Vector3 defaultBikeBodyScale = assets.sportBike.BodyCustomizationScale(assets.sportBike.skins[0]);
+            for (int skinIndex = 2; skinIndex <= 3; skinIndex++)
+            {
+                Vector2 candidateBodySize = VehicleDefinition.VisibleSize(assets.sportBike.skins[skinIndex]);
+                Vector3 candidateBodyScale = assets.sportBike.BodyCustomizationScale(
+                    assets.sportBike.skins[skinIndex]);
+                if (Mathf.Abs(defaultBikeBodySize.x * defaultBikeBodyScale.x -
+                              candidateBodySize.x * candidateBodyScale.x) > .0001f ||
+                    Mathf.Abs(defaultBikeBodySize.y * defaultBikeBodyScale.y -
+                              candidateBodySize.y * candidateBodyScale.y) > .0001f)
+                    throw new System.InvalidOperationException(
+                        $"Sport Bike {assets.sportBike.skins[skinIndex].displayName} must match the " +
+                        "Default body's real visible width and height.");
+            }
             if (assets.stickmanBlack == null || assets.stickmanBlack.head == null || assets.stickmanBlack.torso == null ||
                 assets.stickmanBlack.upperArm == null || assets.stickmanBlack.forearm == null ||
                 assets.stickmanBlack.thigh == null || assets.stickmanBlack.lowerLeg == null)
@@ -3384,7 +3423,7 @@ namespace AnimeHillRacing.Editor
             float frontPercent = assets.sportBike.FrontWheelDiameter / Mathf.Max(.001f, bodyVisibleHeight);
             float rearPercent = assets.sportBike.RearWheelDiameter / Mathf.Max(.001f, bodyVisibleHeight);
             bool sportCompositionValid = body.sprite == assets.sportBikeBody &&
-                rear.sprite == assets.sportBikeWheel01 && front.sprite == assets.sportBikeWheel01 && body.flipX;
+                rear.sprite == assets.sportBikeWheel01 && front.sprite == assets.sportBikeWheel01 && !body.flipX;
             bool sportProportionsValid = frontPercent >= .40f && frontPercent <= .42f &&
                                          rearPercent >= .43f && rearPercent <= .45f;
             bool sportMountsValid = (Vector2)front.transform.localPosition ==
@@ -4921,8 +4960,10 @@ namespace AnimeHillRacing.Editor
                 FormulaReferencePath, HillAdventurerPurpleSkinPath,
                 RallyBodyPath, RallyHillAdventurerPath, RallyNeoPath, RallyNoRoofPath, RallyRoofPath, RallyWheelPath,
                 RallyGhostyWheelPath, RallySkyBlueWheelPath, SportBikeBodyPath,
-                SportBikeRetroPath, SportBikeSunRayPath, SportBikeWheel01Path, SportBikeWheel02Path, SportBikeGoldWheelPath,
-                SportBikeGhostyWheelPath, NeonSkyPath, NeonBackgroundPath, NeonTerrainPath, NeonGroundPath,
+                SportBikeSunRayPath, SportBikeRetroLuxePath, SportBikeNeonFlowSkinPath,
+                SportBikeWheel01Path, SportBikeWheel02Path, SportBikeGoldWheelPath,
+                SportBikeGhostyWheelPath, SportBikeNeonFlowWheelPath,
+                NeonSkyPath, NeonBackgroundPath, NeonTerrainPath, NeonGroundPath,
                 NeonLiquidPath, NeonCautionPath, MainMenuBackgroundPath, HomeButtonPath, RaceButtonPath, SettingsButtonPath,
                 SkinsButtonPath, StoreButtonPath, TuningButtonPath, UpgradeButtonPath, VehicleButtonPath,
                 BrakePedalPath, BrakePedalPressedPath, GasPedalPath, GasPedalPressedPath,
@@ -4973,12 +5014,14 @@ namespace AnimeHillRacing.Editor
             assets.rallyGhostyWheel = AssetDatabase.LoadAssetAtPath<Sprite>(RallyGhostyWheelPath);
             assets.rallySkyBlueWheel = AssetDatabase.LoadAssetAtPath<Sprite>(RallySkyBlueWheelPath);
             assets.sportBikeBody = AssetDatabase.LoadAssetAtPath<Sprite>(SportBikeBodyPath);
-            assets.sportBikeRetro = AssetDatabase.LoadAssetAtPath<Sprite>(SportBikeRetroPath);
             assets.sportBikeSunRay = AssetDatabase.LoadAssetAtPath<Sprite>(SportBikeSunRayPath);
+            assets.sportBikeRetroLuxe = AssetDatabase.LoadAssetAtPath<Sprite>(SportBikeRetroLuxePath);
+            assets.sportBikeNeonFlowSkin = AssetDatabase.LoadAssetAtPath<Sprite>(SportBikeNeonFlowSkinPath);
             assets.sportBikeWheel01 = AssetDatabase.LoadAssetAtPath<Sprite>(SportBikeWheel01Path);
             assets.sportBikeWheel02 = AssetDatabase.LoadAssetAtPath<Sprite>(SportBikeWheel02Path);
             assets.sportBikeGoldWheel = AssetDatabase.LoadAssetAtPath<Sprite>(SportBikeGoldWheelPath);
             assets.sportBikeGhostyWheel = AssetDatabase.LoadAssetAtPath<Sprite>(SportBikeGhostyWheelPath);
+            assets.sportBikeNeonFlowWheel = AssetDatabase.LoadAssetAtPath<Sprite>(SportBikeNeonFlowWheelPath);
             assets.hillAdventurerSkin = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Vehicles/Hill Adventurer 4x4/Skins/Default.png");
             assets.hillAdventurerPurpleSkin = AssetDatabase.LoadAssetAtPath<Sprite>(HillAdventurerPurpleSkinPath);
             assets.hillAdventurerWheel = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/Vehicles/Hill Adventurer 4x4/Wheels/Default.png");
@@ -5416,9 +5459,14 @@ namespace AnimeHillRacing.Editor
             assets.sportBike.fuel.referenceRunDurationSeconds = 45f;
             assets.sportBike.skins = new[]
             {
-                Customization("sport-bike-default", "SPORT BIKE DEFAULT", assets.sportBikeBody, true, 0, 0f, new Vector2(14.96f, 7.86f), new Vector2(0.015f, 0.075f)),
-                Customization("sport-bike-retro", "BIKE RETRO", assets.sportBikeRetro, false, 1000, 0f, new Vector2(15.12f, 8.45f), new Vector2(0.115f, 0.10f)),
-                Customization("sport-bike-sun-ray", "SUN RAY", assets.sportBikeSunRay, false, 1000, 0f, new Vector2(15.03f, 8.08f), new Vector2(0.05f, 0.235f))
+                Customization("sport-bike-default", "SPORT BIKE DEFAULT", assets.sportBikeBody, true, 0,
+                    0f, new Vector2(14.94f, 7.86f), new Vector2(-.02f, .075f)),
+                Customization("sport-bike-sun-ray", "SUN RAY", assets.sportBikeSunRay, false, 1000,
+                    0f, new Vector2(15.09f, 8.04f), new Vector2(.005f, .185f)),
+                Customization("sport-bike-retro-luxe", "RETRO LUXE", assets.sportBikeRetroLuxe, false, 1000,
+                    0f, new Vector2(15.01f, 7.93f), new Vector2(-.025f, .085f)),
+                Customization(SportBikeNeonFlowEffect.SkinId, "NEON FLOW", assets.sportBikeNeonFlowSkin,
+                    false, 1000, 0f, new Vector2(15.34f, 9.10f), new Vector2(.01f, .205f))
             };
             assets.sportBike.wheels = new[]
             {
@@ -5429,12 +5477,13 @@ namespace AnimeHillRacing.Editor
                 Customization("sport-bike-gold-wheel", "GOLD WHEEL", assets.sportBikeGoldWheel, false, 500,
                     VisibleSpriteDiameter(assets.sportBikeGoldWheel)),
                 Customization("sport-bike-wheel-ghosty", "SPORT BIKE GHOSTY WHEEL", assets.sportBikeGhostyWheel, false, 500,
-                    VisibleSpriteDiameter(assets.sportBikeGhostyWheel))
+                    VisibleSpriteDiameter(assets.sportBikeGhostyWheel)),
+                Customization(SportBikeNeonFlowEffect.WheelId, "NEON FLOW WHEEL",
+                    assets.sportBikeNeonFlowWheel, false, 500, 7.44f, new Vector2(7.36f, 7.44f))
             };
             assets.sportBike.visualWidth = 3.30f;
-            // Both raw bike skins point left. Flip only their renderer so the bike faces the
-            // rightward direction of travel while physics, wheel mounts and drivetrain stay unchanged.
-            assets.sportBike.flipBodyX = true;
+            // All authored bike skins already face the rightward direction of travel.
+            assets.sportBike.flipBodyX = false;
             assets.sportBike.bodyVisualOffset = new Vector2(0f, .10f);
             if (!assets.sportBike.preserveWheelVisualPositions)
             {

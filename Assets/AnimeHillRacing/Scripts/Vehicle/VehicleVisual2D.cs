@@ -45,6 +45,7 @@ namespace AnimeHillRacing.Vehicle
             }
             FormulaElectricSkinEffect.Apply(bodyRenderer, definition, skin);
             HillAdventurerSkinEffect.Apply(bodyRenderer, definition, skin);
+            SportBikeNeonFlowEffect.ApplySkin(bodyRenderer, definition, skin);
             int wheelSortingOrder = Mathf.Max(MinimumWheelSortingOrder,
                 FormulaElectricSkinEffect.ResolveWheelSortingOrder(definition, skin));
             ApplyWheel(frontWheelRenderer, wheel, definition.FrontWheelDiameter, wheelSortingOrder);
@@ -79,6 +80,7 @@ namespace AnimeHillRacing.Vehicle
             }
             FormulaElectricSkinEffect.Apply(bodyRenderer, definition, skin);
             HillAdventurerSkinEffect.Apply(bodyRenderer, definition, skin);
+            SportBikeNeonFlowEffect.ApplySkin(bodyRenderer, definition, skin);
             int wheelSortingOrder = Mathf.Max(MinimumWheelSortingOrder,
                 FormulaElectricSkinEffect.ResolveWheelSortingOrder(definition, skin));
             ApplyWheel(frontWheelRenderer, wheel, definition.FrontWheelDiameter, wheelSortingOrder);
@@ -145,6 +147,7 @@ namespace AnimeHillRacing.Vehicle
             renderer.sortingOrder = sortingOrder;
             renderer.transform.localScale = Vector3.one *
                                             definition.WheelCustomizationScale(option, diameter);
+            SportBikeNeonFlowEffect.ApplyWheel(renderer, definition, option);
         }
     }
 }

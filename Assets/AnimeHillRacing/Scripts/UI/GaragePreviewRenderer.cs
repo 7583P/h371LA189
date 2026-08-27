@@ -26,6 +26,7 @@ namespace AnimeHillRacing.UI
         private Vector2 lastTargetSize;
         private bool animateElectricSkin;
         private bool animateHillAdventurerSkin;
+        private bool animateSportBikeNeonFlow;
         private SpriteRenderer[] underbodyAttachments = new SpriteRenderer[0];
 
         public SpriteRenderer BodyRenderer => body;
@@ -72,6 +73,7 @@ namespace AnimeHillRacing.UI
             appliedDriver = null;
             appliedAccessoryId = null;
             appliedAccessoryFlipX = false;
+            animateSportBikeNeonFlow = false;
             lastTargetSize = Vector2.zero;
             warmUpFrames = 4;
         }
@@ -86,7 +88,7 @@ namespace AnimeHillRacing.UI
         private void LateUpdate()
         {
             if (targetImage == null) return;
-            if (animateElectricSkin || animateHillAdventurerSkin ||
+            if (animateElectricSkin || animateHillAdventurerSkin || animateSportBikeNeonFlow ||
                 (driver != null && driver.AnimatedAccessoryActive))
             {
                 RenderNow();
@@ -203,6 +205,7 @@ namespace AnimeHillRacing.UI
             }
             animateElectricSkin = FormulaElectricSkinEffect.Apply(body, vehicle, skin);
             HillAdventurerSkinEffect.Apply(body, vehicle, skin);
+            SportBikeNeonFlowEffect.ApplySkin(body, vehicle, skin);
             animateHillAdventurerSkin = HillAdventurerSkinEffect.IsHillAdventurer(vehicle, skin);
             int wheelSortingOrder = Mathf.Max(VehicleVisual2D.MinimumWheelSortingOrder,
                 FormulaElectricSkinEffect.ResolveWheelSortingOrder(vehicle, skin));
@@ -216,6 +219,7 @@ namespace AnimeHillRacing.UI
                 wheelSortingOrder);
             ApplyWheel(frontWheel, wheelOption, vehicle.frontWheelVisualPosition, vehicle.FrontWheelDiameter,
                 wheelSortingOrder);
+            animateSportBikeNeonFlow = SportBikeNeonFlowEffect.IsAnimated(vehicle, skin, wheelOption);
             ApplyUnderbodyAttachments(vehicle);
             CenterCompositeHorizontally();
             warmUpFrames = 3;
@@ -312,6 +316,7 @@ namespace AnimeHillRacing.UI
             renderer.sortingOrder = sortingOrder;
             renderer.transform.localScale = Vector3.one *
                                             appliedVehicle.WheelCustomizationScale(option, diameter);
+            SportBikeNeonFlowEffect.ApplyWheel(renderer, appliedVehicle, option);
         }
 
         private void ApplyUnderbodyAttachments(VehicleDefinition vehicle)

@@ -130,8 +130,9 @@ namespace AnimeHillRacing.Editor
             profile.cityBridges.normalWaterLength = 22f;
             profile.cityBridges.progressiveBaseWaterLength = 22f;
             profile.cityBridges.progressiveGrowthPerCycle = CityBridgeSettings.RequiredProgressiveGrowth;
-            profile.cityBridges.waterVisualDepth = 4f;
-            profile.cityBridges.waterSurfaceOffset = -.35f;
+            profile.cityBridges.waterVisualDepth = 8f;
+            profile.cityBridges.waterSurfaceOffset = -.45f;
+            profile.cityBridges.waterBedThickness = 3f;
             profile.cityBridges.bridgeColliderThickness = .45f;
             profile.cityBridges.bridgeGroundOverlap = 1f;
             profile.cityBridges.closedAngleDegrees = 0f;
@@ -144,6 +145,7 @@ namespace AnimeHillRacing.Editor
             profile.cityBridges.bridgeArtSlopeDegrees = 16.1f;
             profile.cityBridges.bridgeArtSurfaceOffset = -1.1f;
             profile.cityBridges.waterSortingOrder = 1;
+            profile.cityBridges.waterBedSortingOrder = 0;
             profile.cityBridges.bridgeSortingOrder = 5;
             profile.introductoryAmplitude = .38f;
             profile.introEndDistance = 525f;
@@ -248,6 +250,11 @@ namespace AnimeHillRacing.Editor
                 profile.cityBridges.bridgeSprite == null || profile.cityBridges.waterSprite == null)
                 throw new System.InvalidOperationException("City bridge assets or settings are missing.");
             CityBridgeSettings settings = profile.cityBridges;
+            if (AssetDatabase.GetAssetPath(settings.bridgeSprite) != CityRoot + "/Bridge.png" ||
+                AssetDatabase.GetAssetPath(settings.waterSprite) != CityRoot + "/Water.png" ||
+                settings.waterVisualDepth < .5f || settings.waterBedThickness < .5f)
+                throw new System.InvalidOperationException(
+                    "City bridge visual references or water-bed geometry are invalid.");
             float normalLength = -1f;
             for (int cycle = 0; cycle <= 3; cycle++)
             {
@@ -341,6 +348,8 @@ namespace AnimeHillRacing.Editor
             if (material.HasProperty("_HorizontalUvRange"))
                 material.SetVector("_HorizontalUvRange", path == GroundMaterialPath
                     ? new Vector4(.02f, .67f, 0f, 0f) : new Vector4(0f, 1f, 0f, 0f));
+            if (material.HasProperty("_DepthWrite"))
+                material.SetFloat("_DepthWrite", path == GroundMaterialPath ? 0f : 1f);
             material.renderQueue = path == GroundMaterialPath ? 2451 : 2450;
             EditorUtility.SetDirty(material);
             return material;

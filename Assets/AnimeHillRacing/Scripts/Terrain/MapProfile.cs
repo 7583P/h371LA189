@@ -224,8 +224,9 @@ namespace AnimeHillRacing.Terrain
         [Min(2f)] public float normalWaterLength = 22f;
         [Min(2f)] public float progressiveBaseWaterLength = 22f;
         [Min(0f)] public float progressiveGrowthPerCycle = RequiredProgressiveGrowth;
-        [Min(.5f)] public float waterVisualDepth = 4f;
-        public float waterSurfaceOffset = -.35f;
+        [Min(.5f)] public float waterVisualDepth = 8f;
+        public float waterSurfaceOffset = -.45f;
+        [Min(.5f)] public float waterBedThickness = 3f;
         [Min(.08f)] public float bridgeColliderThickness = .45f;
         [Range(0f, 2f)] public float bridgeGroundOverlap = 1f;
 
@@ -244,6 +245,7 @@ namespace AnimeHillRacing.Terrain
         [Tooltip("Moves the compensated bridge art so its painted road surface matches the collider top.")]
         public float bridgeArtSurfaceOffset = -1.1f;
         public int waterSortingOrder = 1;
+        public int waterBedSortingOrder;
         public int bridgeSortingOrder = 5;
     }
 
@@ -472,6 +474,8 @@ namespace AnimeHillRacing.Terrain
                 cityBridges.normalWaterLength = Mathf.Max(2f, cityBridges.normalWaterLength);
                 cityBridges.progressiveBaseWaterLength = Mathf.Max(2f,
                     cityBridges.progressiveBaseWaterLength);
+                cityBridges.waterVisualDepth = Mathf.Max(.5f, cityBridges.waterVisualDepth);
+                cityBridges.waterBedThickness = Mathf.Max(.5f, cityBridges.waterBedThickness);
                 cityBridges.minimumZoneSpacing = Mathf.Max(50f, cityBridges.minimumZoneSpacing);
                 cityBridges.approachBlendLength = Mathf.Max(5f, cityBridges.approachBlendLength);
                 cityBridges.recoveryBlendLength = Mathf.Max(5f, cityBridges.recoveryBlendLength);

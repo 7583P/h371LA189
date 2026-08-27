@@ -8,6 +8,7 @@ Shader "AnimeHillRacing/Transparent Texture"
         _SeamlessHorizontalTiling ("Seamless Mirrored Horizontal Tiling", Float) = 0
         _HorizontalInset ("Horizontal Transparent Edge Inset", Range(0,0.1)) = 0
         _HorizontalUvRange ("Horizontal UV Range", Vector) = (0,1,0,0)
+        [Toggle] _DepthWrite ("Depth Write", Float) = 1
     }
 
     SubShader
@@ -19,7 +20,7 @@ Shader "AnimeHillRacing/Transparent Texture"
         }
         Blend SrcAlpha OneMinusSrcAlpha
         Cull Off
-        ZWrite On
+        ZWrite [_DepthWrite]
 
         Pass
         {

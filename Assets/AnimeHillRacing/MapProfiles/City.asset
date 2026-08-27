@@ -48,8 +48,9 @@ MonoBehaviour:
     normalWaterLength: 22
     progressiveBaseWaterLength: 22
     progressiveGrowthPerCycle: 10
-    waterVisualDepth: 4
-    waterSurfaceOffset: -0.35
+    waterVisualDepth: 8
+    waterSurfaceOffset: -0.45
+    waterBedThickness: 3
     bridgeColliderThickness: 0.45
     bridgeGroundOverlap: 1
     closedAngleDegrees: 0
@@ -57,11 +58,12 @@ MonoBehaviour:
     transitionSeconds: 3
     closedHoldSeconds: 4
     openHoldSeconds: 4
-    bridgeSprite: {fileID: 21300000, guid: b1000000000000000000000000000001, type: 3}
+    bridgeSprite: {fileID: 21300000, guid: 0e36158ade9b6ff479dc3e45e5ced674, type: 3}
     waterSprite: {fileID: 21300000, guid: b1000000000000000000000000000002, type: 3}
     bridgeArtSlopeDegrees: 16.1
     bridgeArtSurfaceOffset: -1.1
     waterSortingOrder: 1
+    waterBedSortingOrder: 0
     bridgeSortingOrder: 5
   difficultyCurve:
     serializedVersion: 2

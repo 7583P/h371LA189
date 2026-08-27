@@ -29,6 +29,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _DepthWrite: 0
     - _HorizontalInset: 0.012
     - _HorizontalSample: -1
     - _SeamlessHorizontalTiling: 1

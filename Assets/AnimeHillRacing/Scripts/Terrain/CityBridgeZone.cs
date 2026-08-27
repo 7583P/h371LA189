@@ -9,9 +9,11 @@ namespace AnimeHillRacing.Terrain
         private const float WaterVisibleWidthFraction = .9591f;
         private const float WaterVisibleDepthFraction = .6212f;
         private const float WaterSurfaceFromPivotFraction = .1792f;
+        private const float WaterEdgeUnderlap = .35f;
 
         private CityBridgeDeck entryBridge;
         private CityBridgeDeck exitBridge;
+        private CityWaterBed waterBed;
         private SpriteRenderer waterRenderer;
         private CityBridgeSettings settings;
         private float animationPhaseOffset;
@@ -30,6 +32,17 @@ namespace AnimeHillRacing.Terrain
                 entryBridge = EnsureBridge("Entry Bridge");
             if (exitBridge == null)
                 exitBridge = EnsureBridge("Exit Bridge");
+            if (waterBed == null)
+            {
+                Transform child = transform.Find("Solid Water Bed");
+                if (child == null)
+                {
+                    child = new GameObject("Solid Water Bed").transform;
+                    child.SetParent(transform, false);
+                }
+                waterBed = child.GetComponent<CityWaterBed>();
+                if (waterBed == null) waterBed = child.gameObject.AddComponent<CityWaterBed>();
+            }
             if (waterRenderer == null)
             {
                 Transform child = transform.Find("Water Visual");
@@ -86,7 +99,7 @@ namespace AnimeHillRacing.Terrain
                 float visualDepth = Mathf.Max(.5f, settings.waterVisualDepth);
                 Vector2 sourceSize = settings.waterSprite != null
                     ? settings.waterSprite.bounds.size : Vector2.one;
-                float horizontalScale = layout.waterLength /
+                float horizontalScale = (layout.waterLength + WaterEdgeUnderlap * 2f) /
                                         Mathf.Max(.001f, sourceSize.x * WaterVisibleWidthFraction);
                 float verticalScale = visualDepth /
                                       Mathf.Max(.001f, sourceSize.y * WaterVisibleDepthFraction);
@@ -95,10 +108,15 @@ namespace AnimeHillRacing.Terrain
                 waterRenderer.transform.position = new Vector3(
                     (layout.waterStart + layout.waterEnd) * .5f,
                     layout.baselineHeight + settings.waterSurfaceOffset - surfaceFromPivot,
-                    0f);
+                    .05f);
                 waterRenderer.transform.rotation = Quaternion.identity;
                 waterRenderer.enabled = settings.waterSprite != null;
             }
+
+            float waterSurfaceY = layout.baselineHeight + settings.waterSurfaceOffset;
+            float bedSurfaceY = waterSurfaceY - Mathf.Max(.5f, settings.waterVisualDepth);
+            waterBed.Configure(profile, settings, layout.waterStart, layout.waterEnd,
+                bedSurfaceY, trackWidth);
 
             float period = AnimationPeriod;
             animationPhaseOffset = period > .001f
@@ -226,7 +244,7 @@ namespace AnimeHillRacing.Terrain
             float uniformScale = length / sourceWidth;
             bridgeRenderer.transform.localScale = Vector3.one * uniformScale;
             bridgeRenderer.transform.localPosition = new Vector3(direction * length * .5f,
-                settings.bridgeArtSurfaceOffset, 0f);
+                settings.bridgeArtSurfaceOffset, -.15f);
             bridgeRenderer.transform.localRotation = Quaternion.Euler(0f, 0f,
                 direction * -settings.bridgeArtSlopeDegrees);
             SetLiftAngle(settings.closedAngleDegrees, true);
@@ -242,6 +260,102 @@ namespace AnimeHillRacing.Terrain
                 return;
             }
             body2D.MoveRotation(signedAngle);
+        }
+    }
+
+    [DisallowMultipleComponent]
+    public sealed class CityWaterBed : MonoBehaviour
+    {
+        private MeshFilter meshFilter;
+        private MeshRenderer meshRenderer;
+        private BoxCollider2D bedCollider2D;
+        private BoxCollider bedCollider3D;
+        private Mesh bedMesh;
+
+        private void Awake() => EnsureComponents();
+
+        private void EnsureComponents()
+        {
+            if (meshFilter == null) meshFilter = GetComponent<MeshFilter>();
+            if (meshFilter == null) meshFilter = gameObject.AddComponent<MeshFilter>();
+            if (meshRenderer == null) meshRenderer = GetComponent<MeshRenderer>();
+            if (meshRenderer == null) meshRenderer = gameObject.AddComponent<MeshRenderer>();
+            if (bedCollider2D == null) bedCollider2D = GetComponent<BoxCollider2D>();
+            if (bedCollider2D == null) bedCollider2D = gameObject.AddComponent<BoxCollider2D>();
+
+            Transform collider3DTransform = transform.Find("Water Bed Collider 3D");
+            if (collider3DTransform == null)
+            {
+                collider3DTransform = new GameObject("Water Bed Collider 3D").transform;
+                collider3DTransform.SetParent(transform, false);
+            }
+            if (bedCollider3D == null) bedCollider3D = collider3DTransform.GetComponent<BoxCollider>();
+            if (bedCollider3D == null)
+                bedCollider3D = collider3DTransform.gameObject.AddComponent<BoxCollider>();
+
+            if (bedMesh == null)
+            {
+                bedMesh = new Mesh { name = "Pooled City Water Bed Mesh" };
+                bedMesh.MarkDynamic();
+                meshFilter.sharedMesh = bedMesh;
+            }
+        }
+
+        public void Configure(MapProfile profile, CityBridgeSettings settings, float waterStart,
+            float waterEnd, float surfaceY, float trackWidth)
+        {
+            EnsureComponents();
+            float width = Mathf.Max(.5f, waterEnd - waterStart);
+            float thickness = Mathf.Max(.5f, settings.waterBedThickness);
+            float centerX = (waterStart + waterEnd) * .5f;
+            transform.SetPositionAndRotation(
+                new Vector3(centerX, surfaceY - thickness * .5f, .1f), Quaternion.identity);
+
+            bedCollider2D.size = new Vector2(width, thickness);
+            bedCollider2D.offset = Vector2.zero;
+            bedCollider2D.isTrigger = false;
+            bedCollider2D.sharedMaterial = profile != null ? profile.groundPhysicsMaterial2D : null;
+
+            bedCollider3D.size = new Vector3(width, thickness, Mathf.Max(2f, trackWidth));
+            bedCollider3D.center = Vector3.zero;
+            bedCollider3D.isTrigger = false;
+            bedCollider3D.sharedMaterial = profile != null ? profile.groundPhysicsMaterial : null;
+
+            float halfWidth = width * .5f;
+            float halfHeight = thickness * .5f;
+            float repeatWidth = profile != null ? Mathf.Max(1f, profile.terrainTextureRepeatWidth) : 40f;
+            float u0 = waterStart / repeatWidth;
+            float u1 = waterEnd / repeatWidth;
+            float bottomV = profile != null ? profile.terrainWallUvRange.x : 0f;
+            float topV = profile != null ? profile.terrainWallUvRange.y : 1f;
+            bedMesh.Clear();
+            bedMesh.vertices = new[]
+            {
+                new Vector3(-halfWidth, halfHeight, 0f),
+                new Vector3(halfWidth, halfHeight, 0f),
+                new Vector3(-halfWidth, -halfHeight, 0f),
+                new Vector3(halfWidth, -halfHeight, 0f)
+            };
+            bedMesh.uv = new[]
+            {
+                new Vector2(u0, topV), new Vector2(u1, topV),
+                new Vector2(u0, bottomV), new Vector2(u1, bottomV)
+            };
+            bedMesh.triangles = new[] { 0, 1, 2, 1, 3, 2 };
+            bedMesh.RecalculateNormals();
+            bedMesh.RecalculateBounds();
+
+            meshRenderer.sharedMaterial = profile != null ? profile.terrainMaterial : null;
+            meshRenderer.sortingOrder = settings.waterBedSortingOrder;
+            meshRenderer.enabled = meshRenderer.sharedMaterial != null;
+            gameObject.SetActive(true);
+        }
+
+        private void OnDestroy()
+        {
+            if (bedMesh == null) return;
+            if (Application.isPlaying) Destroy(bedMesh);
+            else DestroyImmediate(bedMesh);
         }
     }
 }

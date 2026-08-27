@@ -1,3 +1,4 @@
+using AnimeHillRacing.Core;
 using AnimeHillRacing.Vehicle;
 using UnityEngine;
 
@@ -5,10 +6,16 @@ namespace AnimeHillRacing.Pickups
 {
     public abstract class PickupBase : MonoBehaviour
     {
+        // City terrain is rendered close to z=-5 while the vehicle is kept at z=-6. Keeping only the
+        // pickup artwork between both planes prevents the complete road sprite from hiding collectibles
+        // without moving their 2D/3D trigger volumes.
+        public const float AdventureForegroundVisualZ = -5.75f;
+
         private PickupPool pool;
         private Collider triggerCollider;
         private Collider2D triggerCollider2D;
         private Renderer[] renderers;
+        private float[] rendererBaseLocalZ;
         private bool collected;
         private bool feedbackActive;
         private bool scaleCached;
@@ -53,7 +60,16 @@ namespace AnimeHillRacing.Pickups
                 if (relay == null) relay = triggerTransform.gameObject.AddComponent<PickupTrigger2DRelay>();
                 relay.Assign(this);
             }
-            if (renderers == null) renderers = GetComponentsInChildren<Renderer>(true);
+            if (renderers == null)
+            {
+                renderers = GetComponentsInChildren<Renderer>(true);
+                rendererBaseLocalZ = new float[renderers.Length];
+                for (int i = 0; i < renderers.Length; i++)
+                {
+                    if (renderers[i] != null)
+                        rendererBaseLocalZ[i] = renderers[i].transform.localPosition.z;
+                }
+            }
             if (!scaleCached) { baseLocalScale = transform.localScale; scaleCached = true; }
             collected = false;
             feedbackActive = false;
@@ -75,7 +91,25 @@ namespace AnimeHillRacing.Pickups
             transform.position = position;
             transform.rotation = Quaternion.identity;
             transform.localScale = baseLocalScale;
+            EnforceAdventureForegroundVisualDepth();
             gameObject.SetActive(true);
+        }
+
+        private void EnforceAdventureForegroundVisualDepth()
+        {
+            if (GameSession.SelectedGameMode != GameModeType.Adventure2_5D || renderers == null)
+                return;
+
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                Renderer pickupRenderer = renderers[i];
+                // Generated pickup templates intentionally place artwork on a child. Never move a root
+                // renderer here because its Transform may also own a physical trigger in legacy scenes.
+                if (pickupRenderer == null || pickupRenderer.transform == transform) continue;
+                Vector3 visualPosition = pickupRenderer.transform.position;
+                visualPosition.z = AdventureForegroundVisualZ + rendererBaseLocalZ[i];
+                pickupRenderer.transform.position = visualPosition;
+            }
         }
 
         private void OnTriggerEnter(Collider other) => TryCollect(other.GetComponentInParent<VehicleRuntimeBase>());

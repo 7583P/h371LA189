@@ -470,6 +470,7 @@ namespace AnimeHillRacing.Terrain
         private CityWaterResistance2DForwarder forwarder2D;
         private CityBridgeSettings settings;
         private float floorY;
+        private float waterSurfaceY;
 
         private void Awake() => EnsureComponents();
 
@@ -501,6 +502,7 @@ namespace AnimeHillRacing.Terrain
             ClearContacts();
             settings = bridgeSettings;
             floorY = bottomY;
+            waterSurfaceY = surfaceY;
             float width = Mathf.Max(.5f, waterEnd - waterStart);
             float depth = Mathf.Max(.5f, surfaceY - bottomY);
             transform.SetPositionAndRotation(new Vector3((waterStart + waterEnd) * .5f,
@@ -565,7 +567,7 @@ namespace AnimeHillRacing.Terrain
                 }
 
                 if (!driverDownVehicles.Contains(vehicle) &&
-                    HasFatalWheelClearance(vehicle, floorY, settings.waterDriverDownClearance))
+                    HasFatalWheelSubmersion(vehicle, waterSurfaceY, settings.waterDriverDownClearance))
                     TriggerDriverDown(vehicle);
             }
         }
@@ -579,30 +581,30 @@ namespace AnimeHillRacing.Terrain
                 -Mathf.Max(.1f, maximumSinkAcceleration), 8f));
         }
 
-        public static bool HasFatalWheelClearance(VehicleRuntimeBase vehicle, float groundY,
-            float requiredClearance)
+        public static bool HasFatalWheelSubmersion(VehicleRuntimeBase vehicle, float surfaceY,
+            float requiredDepth)
         {
-            float threshold = Mathf.Max(.1f, requiredClearance);
+            float threshold = Mathf.Max(.1f, requiredDepth);
             if (vehicle is VehiclePhysics2DController vehicle2D)
-                return WheelClearance(vehicle2D.FrontSuspension, groundY) >= threshold ||
-                       WheelClearance(vehicle2D.RearSuspension, groundY) >= threshold;
+                return WheelSubmersion(vehicle2D.FrontSuspension, surfaceY) >= threshold ||
+                       WheelSubmersion(vehicle2D.RearSuspension, surfaceY) >= threshold;
             if (vehicle is VehicleController vehicle3D)
-                return WheelClearance(vehicle3D.FrontSuspension, groundY) >= threshold ||
-                       WheelClearance(vehicle3D.RearSuspension, groundY) >= threshold;
+                return WheelSubmersion(vehicle3D.FrontSuspension, surfaceY) >= threshold ||
+                       WheelSubmersion(vehicle3D.RearSuspension, surfaceY) >= threshold;
             return false;
         }
 
-        private static float WheelClearance(Suspension2DController suspension, float groundY)
+        private static float WheelSubmersion(Suspension2DController suspension, float surfaceY)
         {
             return suspension != null && suspension.WheelBody != null
-                ? suspension.WheelBody.position.y - suspension.WheelRadius - groundY
+                ? surfaceY - (suspension.WheelBody.position.y - suspension.WheelRadius)
                 : float.NegativeInfinity;
         }
 
-        private static float WheelClearance(SuspensionController suspension, float groundY)
+        private static float WheelSubmersion(SuspensionController suspension, float surfaceY)
         {
             return suspension != null && suspension.WheelBody != null
-                ? suspension.WheelBody.position.y - suspension.PhysicalWheelRadius - groundY
+                ? surfaceY - (suspension.WheelBody.position.y - suspension.PhysicalWheelRadius)
                 : float.NegativeInfinity;
         }
 
@@ -611,8 +613,8 @@ namespace AnimeHillRacing.Terrain
             CrashDetector crashDetector = vehicle != null ? vehicle.GetComponent<CrashDetector>() : null;
             if (crashDetector == null || !crashDetector.NotifyDriverDown()) return;
             driverDownVehicles.Add(vehicle);
-            Debug.Log($"[CityWater] Driver Down: wheel clearance reached " +
-                      $"{settings.waterDriverDownClearance:0.0} m above the solid water bed.", vehicle);
+            Debug.Log($"[CityWater] Driver Down: a wheel descended " +
+                      $"{settings.waterDriverDownClearance:0.0} m below the water surface.", vehicle);
         }
 
         private static VehicleRuntimeBase ResolveVehicle(Collider2D other)

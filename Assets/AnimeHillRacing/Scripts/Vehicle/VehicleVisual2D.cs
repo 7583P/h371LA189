@@ -55,6 +55,7 @@ namespace AnimeHillRacing.Vehicle
                 FormulaElectricSkinEffect.ResolveWheelSortingOrder(definition, skin));
             ApplyWheel(frontWheelRenderer, wheel, definition.FrontWheelDiameter, wheelSortingOrder);
             ApplyWheel(rearWheelRenderer, wheel, definition.RearWheelDiameter, wheelSortingOrder);
+            EnforceVehicleForegroundDepth();
             if (articulatedDriver != null)
             {
                 if (fallbackDriver != null) ApplyDriverPhysicsBody();
@@ -92,6 +93,7 @@ namespace AnimeHillRacing.Vehicle
                 FormulaElectricSkinEffect.ResolveWheelSortingOrder(definition, skin));
             ApplyWheel(frontWheelRenderer, wheel, definition.FrontWheelDiameter, wheelSortingOrder);
             ApplyWheel(rearWheelRenderer, wheel, definition.RearWheelDiameter, wheelSortingOrder);
+            EnforceVehicleForegroundDepth();
             if (articulatedDriver != null)
             {
                 if (fallbackDriver != null) ApplyDriverPhysicsBody();
@@ -142,7 +144,24 @@ namespace AnimeHillRacing.Vehicle
             Rigidbody body = vehicle != null ? vehicle.GetComponent<Rigidbody>() : GetComponentInParent<Rigidbody>();
             Rigidbody2D body2D = vehicle != null ? vehicle.GetComponent<Rigidbody2D>() : GetComponentInParent<Rigidbody2D>();
             articulatedDriver.Apply(fallbackDriver, definition.driverPose, body, body2D, true);
+            EnforceVehicleForegroundDepth();
             articulatedDriver.EnforceRenderingRelativeToVehicle(bodyRenderer);
+        }
+
+        private void EnforceVehicleForegroundDepth()
+        {
+            SetWorldDepth(bodyRenderer != null ? bodyRenderer.transform : bodySprite);
+            SetWorldDepth(frontWheelRenderer != null ? frontWheelRenderer.transform : frontWheelSprite);
+            SetWorldDepth(rearWheelRenderer != null ? rearWheelRenderer.transform : rearWheelSprite);
+            SetWorldDepth(articulatedDriver != null ? articulatedDriver.transform : driverAnchor);
+        }
+
+        private static void SetWorldDepth(Transform target)
+        {
+            if (target == null) return;
+            Vector3 position = target.position;
+            position.z = VehicleForegroundZ;
+            target.position = position;
         }
 
         private void ApplyWheel(SpriteRenderer renderer, VehicleDefinition.CustomizationOption option,

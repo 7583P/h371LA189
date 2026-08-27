@@ -42,6 +42,7 @@ namespace AnimeHillRacing.Pickups
             GameObject markerObject = new GameObject(
                 $"Distance Bonus {milestoneDistance:0}m (+{DistanceBonusTracker.GetAwardAtDistance(milestoneDistance)})");
             if (owner != null) markerObject.transform.SetParent(owner, true);
+            if (!faceCamera) worldPosition.z = PickupBase.AdventureForegroundVisualZ;
             markerObject.transform.position = worldPosition;
 
             SpriteRenderer renderer = markerObject.AddComponent<SpriteRenderer>();

@@ -2379,7 +2379,11 @@ namespace AnimeHillRacing.Terrain
             {
                 // Scale both sides uniformly. Independent clamping moved the painted yellow row away
                 // from the collider even though contactV was correct.
-                float uniformScale = Mathf.Min(1f, 3f / Mathf.Max(.001f, Mathf.Max(rawDepth, rawRise)));
+                // City uses a slightly slimmer road presentation while the authored yellow stripe remains
+                // fixed on the collider. Both halves scale together, so no portion shifts independently.
+                const float cityMaximumVisualExtent = 2.5f;
+                float uniformScale = Mathf.Min(1f, cityMaximumVisualExtent /
+                    Mathf.Max(.001f, Mathf.Max(rawDepth, rawRise)));
                 depthBelowSurface = Mathf.Max(.05f, rawDepth * uniformScale);
                 riseAboveSurface = rawRise * uniformScale;
                 return;

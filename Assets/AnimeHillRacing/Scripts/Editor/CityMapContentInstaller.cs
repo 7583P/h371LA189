@@ -130,8 +130,9 @@ namespace AnimeHillRacing.Editor
             profile.cityBridges.normalWaterLength = 22f;
             profile.cityBridges.progressiveBaseWaterLength = 22f;
             profile.cityBridges.progressiveGrowthPerCycle = CityBridgeSettings.RequiredProgressiveGrowth;
-            profile.cityBridges.waterVisualDepth = 8f;
+            profile.cityBridges.waterVisualDepth = 10f;
             profile.cityBridges.waterSurfaceOffset = -.45f;
+            profile.cityBridges.waterVisualAlpha = .5f;
             profile.cityBridges.waterBedThickness = 22f;
             profile.cityBridges.waterEndBankWidth = 3f;
             profile.cityBridges.waterSpeedRetainedPerSecond = .4f;
@@ -266,7 +267,8 @@ namespace AnimeHillRacing.Editor
             CityBridgeSettings settings = profile.cityBridges;
             if (AssetDatabase.GetAssetPath(settings.bridgeSprite) != CityRoot + "/Bridge.png" ||
                 AssetDatabase.GetAssetPath(settings.waterSprite) != CityRoot + "/Water.png" ||
-                settings.waterVisualDepth < .5f ||
+                Mathf.Abs(settings.waterVisualDepth - 10f) > .001f ||
+                Mathf.Abs(settings.waterVisualAlpha - .5f) > .001f ||
                 settings.waterBedThickness + .01f < profile.terrainVisualDepth ||
                 settings.waterEndBankWidth < 1f ||
                 settings.waterSpeedRetainedPerSecond <= 0f ||

@@ -224,8 +224,9 @@ namespace AnimeHillRacing.Terrain
         [Min(2f)] public float normalWaterLength = 22f;
         [Min(2f)] public float progressiveBaseWaterLength = 22f;
         [Min(0f)] public float progressiveGrowthPerCycle = RequiredProgressiveGrowth;
-        [Min(.5f)] public float waterVisualDepth = 8f;
+        [Min(.5f)] public float waterVisualDepth = 10f;
         public float waterSurfaceOffset = -.45f;
+        [Range(.05f, 1f)] public float waterVisualAlpha = .5f;
         [Min(.5f)] public float waterBedThickness = 22f;
         [Min(1f)] public float waterEndBankWidth = 3f;
         [Range(.05f, 1f)] public float waterSpeedRetainedPerSecond = .4f;
@@ -482,6 +483,7 @@ namespace AnimeHillRacing.Terrain
                 cityBridges.progressiveBaseWaterLength = Mathf.Max(2f,
                     cityBridges.progressiveBaseWaterLength);
                 cityBridges.waterVisualDepth = Mathf.Max(.5f, cityBridges.waterVisualDepth);
+                cityBridges.waterVisualAlpha = Mathf.Clamp(cityBridges.waterVisualAlpha, .05f, 1f);
                 cityBridges.waterBedThickness = Mathf.Max(.5f, cityBridges.waterBedThickness);
                 cityBridges.waterEndBankWidth = Mathf.Max(1f, cityBridges.waterEndBankWidth);
                 cityBridges.waterSpeedRetainedPerSecond = Mathf.Clamp(

@@ -48,8 +48,9 @@ MonoBehaviour:
     normalWaterLength: 22
     progressiveBaseWaterLength: 22
     progressiveGrowthPerCycle: 10
-    waterVisualDepth: 8
+    waterVisualDepth: 10
     waterSurfaceOffset: -0.45
+    waterVisualAlpha: 0.5
     waterBedThickness: 22
     waterEndBankWidth: 3
     waterSpeedRetainedPerSecond: 0.4

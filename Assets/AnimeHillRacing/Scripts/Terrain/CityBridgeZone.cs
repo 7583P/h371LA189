@@ -123,8 +123,11 @@ namespace AnimeHillRacing.Terrain
                 waterRenderer.transform.position = new Vector3(
                     (layout.waterStart + layout.waterEnd) * .5f,
                     layout.baselineHeight + settings.waterSurfaceOffset - surfaceFromPivot,
-                    .05f);
+                    -.10f);
                 waterRenderer.transform.rotation = Quaternion.identity;
+                Color waterColor = Color.white;
+                waterColor.a = Mathf.Clamp01(settings.waterVisualAlpha);
+                waterRenderer.color = waterColor;
                 waterRenderer.enabled = settings.waterSprite != null;
             }
 

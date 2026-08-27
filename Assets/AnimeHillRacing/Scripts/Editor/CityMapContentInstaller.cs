@@ -45,6 +45,8 @@ namespace AnimeHillRacing.Editor
             ConfigureSprite(CityRoot + "/Background.png", 4096, TextureWrapMode.Repeat);
             ConfigureSprite(CityRoot + "/Terrain.png", 4096, TextureWrapMode.Repeat);
             ConfigureSprite(CityRoot + "/Ground.png", 4096, TextureWrapMode.Repeat);
+            ConfigureSprite(CityRoot + "/Bridge.png", 4096, TextureWrapMode.Clamp);
+            ConfigureSprite(CityRoot + "/Water.png", 4096, TextureWrapMode.Clamp);
 
             var clouds = new List<Sprite>(15);
             for (int i = 1; i <= 15; i++)
@@ -59,10 +61,14 @@ namespace AnimeHillRacing.Editor
             Sprite background = AssetDatabase.LoadAssetAtPath<Sprite>(CityRoot + "/Background.png");
             Sprite terrain = AssetDatabase.LoadAssetAtPath<Sprite>(CityRoot + "/Terrain.png");
             Sprite ground = AssetDatabase.LoadAssetAtPath<Sprite>(CityRoot + "/Ground.png");
-            if (sky == null || background == null || terrain == null || ground == null || clouds.Count != 15)
+            Sprite bridge = AssetDatabase.LoadAssetAtPath<Sprite>(CityRoot + "/Bridge.png");
+            Sprite water = AssetDatabase.LoadAssetAtPath<Sprite>(CityRoot + "/Water.png");
+            if (sky == null || background == null || terrain == null || ground == null || bridge == null ||
+                water == null || clouds.Count != 15)
                 throw new System.InvalidOperationException(
                     $"City source import is incomplete: sky={sky != null}, background={background != null}, " +
-                    $"terrain={terrain != null}, ground={ground != null}, clouds={clouds.Count}/15.");
+                    $"terrain={terrain != null}, ground={ground != null}, bridge={bridge != null}, " +
+                    $"water={water != null}, clouds={clouds.Count}/15.");
 
             Material terrainMaterial = LoadOrCreateMaterial(TerrainMaterialPath, terrain.texture);
             Material groundMaterial = LoadOrCreateMaterial(GroundMaterialPath, ground.texture);
@@ -108,6 +114,37 @@ namespace AnimeHillRacing.Editor
             profile.useCityHighwayTerrain = true;
             profile.cityFeatureLength = 48f;
             profile.cityMiniRhythmStrength = .16f;
+            profile.useCityBridges = true;
+            profile.cityBridges ??= new CityBridgeSettings();
+            profile.cityBridges.cycleLength = CityBridgeSettings.RequiredCycleLength;
+            profile.cityBridges.minimumZonesPerCycle = CityBridgeSettings.RequiredMinimumZones;
+            profile.cityBridges.maximumZonesPerCycle = CityBridgeSettings.RequiredMaximumZones;
+            profile.cityBridges.minimumProgressiveZones = CityBridgeSettings.RequiredMinimumProgressiveZones;
+            profile.cityBridges.maximumProgressiveZones = CityBridgeSettings.RequiredMaximumProgressiveZones;
+            profile.cityBridges.cycleStartMargin = 320f;
+            profile.cityBridges.cycleEndMargin = 320f;
+            profile.cityBridges.minimumZoneSpacing = 300f;
+            profile.cityBridges.approachBlendLength = 30f;
+            profile.cityBridges.recoveryBlendLength = 30f;
+            profile.cityBridges.bridgeLength = 14f;
+            profile.cityBridges.normalWaterLength = 22f;
+            profile.cityBridges.progressiveBaseWaterLength = 22f;
+            profile.cityBridges.progressiveGrowthPerCycle = CityBridgeSettings.RequiredProgressiveGrowth;
+            profile.cityBridges.waterVisualDepth = 4f;
+            profile.cityBridges.waterSurfaceOffset = -.35f;
+            profile.cityBridges.bridgeColliderThickness = .45f;
+            profile.cityBridges.bridgeGroundOverlap = 1f;
+            profile.cityBridges.closedAngleDegrees = 0f;
+            profile.cityBridges.openAngleDegrees = CityBridgeSettings.RequiredBridgeAngle;
+            profile.cityBridges.transitionSeconds = CityBridgeSettings.RequiredTransitionSeconds;
+            profile.cityBridges.closedHoldSeconds = 4f;
+            profile.cityBridges.openHoldSeconds = 4f;
+            profile.cityBridges.bridgeSprite = bridge;
+            profile.cityBridges.waterSprite = water;
+            profile.cityBridges.bridgeArtSlopeDegrees = 16.1f;
+            profile.cityBridges.bridgeArtSurfaceOffset = -1.1f;
+            profile.cityBridges.waterSortingOrder = 1;
+            profile.cityBridges.bridgeSortingOrder = 5;
             profile.introductoryAmplitude = .38f;
             profile.introEndDistance = 525f;
             profile.easyEndDistance = 2250f;
@@ -143,9 +180,9 @@ namespace AnimeHillRacing.Editor
             profile.fitAuthoredTerrainTexture = true;
             profile.terrainTextureRepeatWidth = 45f;
             profile.terrainWallUvRange = new Vector2(.171f, .82f);
-            profile.terrainSurfaceUvRange = new Vector2(.293f, .45f);
-            profile.terrainSurfaceContactV = .45f;
-            profile.terrainFillStartV = .45f;
+            profile.terrainSurfaceUvRange = new Vector2(.318f, .695f);
+            profile.terrainSurfaceContactV = .695f;
+            profile.terrainFillStartV = .695f;
             profile.groundPhysicsMaterial = AssetDatabase.LoadAssetAtPath<PhysicsMaterial>(GroundPhysicsPath);
             profile.terrainEdgeWidth = .18f;
             profile.terrainVisualDepth = 22f;
@@ -182,8 +219,88 @@ namespace AnimeHillRacing.Editor
                 Mathf.Abs(profile.terrainFillStartV - profile.terrainSurfaceContactV) > .0001f ||
                 !(d0 < d3750 && d3750 < d7500) || !Mathf.Approximately(d7500, d12000) ||
                 environment.clouds == null || environment.clouds.Length != 15 ||
+                !profile.useCityBridges || profile.cityBridges == null ||
+                profile.cityBridges.bridgeSprite == null || profile.cityBridges.waterSprite == null ||
                 catalog.FindMap("city", GameModeType.Adventure2_5D) != profile)
                 throw new System.InvalidOperationException("City integration validation failed.");
+            ValidateBridgeLayout(profile);
+        }
+
+        [MenuItem("Anime Hill Racing/City/Verify Bridge Layout (0-30 km)")]
+        public static void VerifyBridgeLayout()
+        {
+            MapProfile profile = AssetDatabase.LoadAssetAtPath<MapProfile>(ProfilePath);
+            if (profile == null)
+                throw new System.InvalidOperationException($"City profile is missing at {ProfilePath}.");
+            ValidateBridgeLayout(profile);
+
+            var cycleSummary = new List<string>(4);
+            for (int cycle = 0; cycle <= 3; cycle++)
+                cycleSummary.Add($"{cycle * 10} km: {TerrainGenerator.GetCityBridgeZoneCount(profile, cycle)} " +
+                                 $"zones / {TerrainGenerator.GetCityProgressiveBridgeZoneCount(profile, cycle)} " +
+                                 "progressive");
+            Debug.Log("City bridge verification passed — " + string.Join(", ", cycleSummary));
+        }
+
+        private static void ValidateBridgeLayout(MapProfile profile)
+        {
+            if (profile == null || !profile.useCityBridges || profile.cityBridges == null ||
+                profile.cityBridges.bridgeSprite == null || profile.cityBridges.waterSprite == null)
+                throw new System.InvalidOperationException("City bridge assets or settings are missing.");
+            CityBridgeSettings settings = profile.cityBridges;
+            float normalLength = -1f;
+            for (int cycle = 0; cycle <= 3; cycle++)
+            {
+                int count = TerrainGenerator.GetCityBridgeZoneCount(profile, cycle);
+                int progressive = TerrainGenerator.GetCityProgressiveBridgeZoneCount(profile, cycle);
+                if (count < 7 || count > 10 || progressive < 5 || progressive > 7)
+                    throw new System.InvalidOperationException(
+                        $"City bridge distribution failed in cycle {cycle}: {count} total, {progressive} progressive.");
+
+                float previousEnd = cycle * CityBridgeSettings.RequiredCycleLength;
+                int countedProgressive = 0;
+                for (int slot = 0; slot < count; slot++)
+                {
+                    CityBridgeZoneLayout zone = TerrainGenerator.GetCityBridgeZone(profile, cycle, slot);
+                    float separation = zone.approachStart - previousEnd;
+                    if (separation < (slot == 0 ? 0f : settings.minimumZoneSpacing) - .01f)
+                        throw new System.InvalidOperationException(
+                            $"City bridge spacing failed in cycle {cycle}, slot {slot}: {separation:F2} m.");
+                    if (!(zone.approachStart < zone.gapStart && zone.gapStart < zone.waterStart &&
+                          zone.waterStart < zone.waterEnd && zone.waterEnd <= zone.gapEnd &&
+                          zone.gapEnd < zone.recoveryEnd))
+                        throw new System.InvalidOperationException(
+                            $"City bridge geometry order failed in cycle {cycle}, slot {slot}.");
+                    previousEnd = zone.recoveryEnd;
+                    if (zone.isProgressive)
+                    {
+                        countedProgressive++;
+                        float expected = profile.cityBridges.progressiveBaseWaterLength + cycle * 10f;
+                        if (!Mathf.Approximately(zone.waterLength, expected) || zone.HasExitBridge)
+                            throw new System.InvalidOperationException(
+                                $"Progressive City bridge is invalid in cycle {cycle}, slot {slot}.");
+                    }
+                    else
+                    {
+                        if (normalLength < 0f) normalLength = zone.waterLength;
+                        if (!Mathf.Approximately(zone.waterLength, normalLength) || !zone.HasExitBridge)
+                            throw new System.InvalidOperationException(
+                                $"Normal City bridge is invalid in cycle {cycle}, slot {slot}.");
+                    }
+                }
+                if (countedProgressive != progressive)
+                    throw new System.InvalidOperationException(
+                        $"City progressive count mismatch in cycle {cycle}.");
+                float cycleLimit = (cycle + 1) * CityBridgeSettings.RequiredCycleLength -
+                                   settings.cycleEndMargin;
+                if (previousEnd > cycleLimit + .01f)
+                    throw new System.InvalidOperationException(
+                        $"City bridge layout exceeds cycle {cycle}: {previousEnd:F2} > {cycleLimit:F2}.");
+            }
+            if (!Mathf.Approximately(profile.cityBridges.transitionSeconds, 3f) ||
+                !Mathf.Approximately(profile.cityBridges.openAngleDegrees, 45f) ||
+                !Mathf.Approximately(profile.cityBridges.closedAngleDegrees, 0f))
+                throw new System.InvalidOperationException("City bridge animation contract is invalid.");
         }
 
         private static void ConfigureSprite(string path, int maximumSize, TextureWrapMode wrapMode)
@@ -192,6 +309,10 @@ namespace AnimeHillRacing.Editor
             if (importer == null) return;
             importer.textureType = TextureImporterType.Sprite;
             importer.spriteImportMode = SpriteImportMode.Single;
+            var textureSettings = new TextureImporterSettings();
+            importer.ReadTextureSettings(textureSettings);
+            textureSettings.spriteMeshType = SpriteMeshType.FullRect;
+            importer.SetTextureSettings(textureSettings);
             importer.alphaIsTransparency = true;
             importer.mipmapEnabled = false;
             importer.filterMode = FilterMode.Bilinear;
@@ -217,6 +338,9 @@ namespace AnimeHillRacing.Editor
                 material.SetFloat("_SeamlessHorizontalTiling", 1f);
             if (material.HasProperty("_HorizontalInset"))
                 material.SetFloat("_HorizontalInset", .012f);
+            if (material.HasProperty("_HorizontalUvRange"))
+                material.SetVector("_HorizontalUvRange", path == GroundMaterialPath
+                    ? new Vector4(.02f, .67f, 0f, 0f) : new Vector4(0f, 1f, 0f, 0f));
             material.renderQueue = path == GroundMaterialPath ? 2451 : 2450;
             EditorUtility.SetDirty(material);
             return material;

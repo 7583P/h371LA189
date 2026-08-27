@@ -57,7 +57,7 @@ namespace AnimeHillRacing.Editor
             environment.sunVisualWidth = 3.5f;
             environment.sunRelativeParallax = 0.003f;
             environment.mountainVisualHeight = 19f;
-            environment.mountainBaseY = 1f;
+            environment.mountainBaseY = 2f;
             environment.mountainParallaxX = 0.18f;
             environment.mountainParallaxY = 0.04f;
             environment.lockVerticalToCamera = true;

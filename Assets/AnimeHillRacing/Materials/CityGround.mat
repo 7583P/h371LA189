@@ -34,5 +34,6 @@ Material:
     - _SeamlessHorizontalTiling: 1
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _HorizontalUvRange: {r: 0.02, g: 0.67, b: 0, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

@@ -7,6 +7,7 @@ Shader "AnimeHillRacing/Transparent Texture"
         _HorizontalSample ("Horizontal Sample (-1 = tiled)", Range(-1,1)) = -1
         _SeamlessHorizontalTiling ("Seamless Mirrored Horizontal Tiling", Float) = 0
         _HorizontalInset ("Horizontal Transparent Edge Inset", Range(0,0.1)) = 0
+        _HorizontalUvRange ("Horizontal UV Range", Vector) = (0,1,0,0)
     }
 
     SubShader
@@ -48,6 +49,7 @@ Shader "AnimeHillRacing/Transparent Texture"
             float _HorizontalSample;
             float _SeamlessHorizontalTiling;
             float _HorizontalInset;
+            float4 _HorizontalUvRange;
 
             v2f vert(appdata input)
             {
@@ -65,8 +67,11 @@ Shader "AnimeHillRacing/Transparent Texture"
                     float localU = frac(output.uv.x);
                     if (fmod(abs(tile), 2.0) >= 1.0)
                         localU = 1.0 - localU;
-                    float inset = clamp(_HorizontalInset, 0.0, 0.49);
-                    output.uv.x = lerp(inset, 1.0 - inset, localU);
+                    float rangeMin = clamp(min(_HorizontalUvRange.x, _HorizontalUvRange.y), 0.0, 1.0);
+                    float rangeMax = clamp(max(_HorizontalUvRange.x, _HorizontalUvRange.y), rangeMin, 1.0);
+                    float range = max(0.0001, rangeMax - rangeMin);
+                    float inset = clamp(_HorizontalInset, 0.0, 0.49) * range;
+                    output.uv.x = lerp(rangeMin + inset, rangeMax - inset, localU);
                 }
                 return output;
             }

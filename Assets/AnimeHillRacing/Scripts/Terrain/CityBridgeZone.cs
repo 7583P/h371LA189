@@ -1,0 +1,247 @@
+using UnityEngine;
+
+namespace AnimeHillRacing.Terrain
+{
+    public sealed class CityBridgeZone : MonoBehaviour
+    {
+        // Visible alpha bounds of the supplied Water.png. Scaling the painted water rather than the full
+        // transparent canvas keeps its surface and both horizontal ends flush with the event geometry.
+        private const float WaterVisibleWidthFraction = .9591f;
+        private const float WaterVisibleDepthFraction = .6212f;
+        private const float WaterSurfaceFromPivotFraction = .1792f;
+
+        private CityBridgeDeck entryBridge;
+        private CityBridgeDeck exitBridge;
+        private SpriteRenderer waterRenderer;
+        private CityBridgeSettings settings;
+        private float animationPhaseOffset;
+
+        public int CycleIndex { get; private set; }
+        public int ZoneIndex { get; private set; }
+        public bool IsProgressive { get; private set; }
+        public bool HasExitBridge => exitBridge != null && exitBridge.gameObject.activeSelf;
+        public float WaterLength { get; private set; }
+
+        private void Awake() => EnsureComponents();
+
+        private void EnsureComponents()
+        {
+            if (entryBridge == null)
+                entryBridge = EnsureBridge("Entry Bridge");
+            if (exitBridge == null)
+                exitBridge = EnsureBridge("Exit Bridge");
+            if (waterRenderer == null)
+            {
+                Transform child = transform.Find("Water Visual");
+                if (child == null)
+                {
+                    child = new GameObject("Water Visual").transform;
+                    child.SetParent(transform, false);
+                }
+                waterRenderer = child.GetComponent<SpriteRenderer>();
+                if (waterRenderer == null) waterRenderer = child.gameObject.AddComponent<SpriteRenderer>();
+            }
+        }
+
+        private CityBridgeDeck EnsureBridge(string bridgeName)
+        {
+            Transform child = transform.Find(bridgeName);
+            if (child == null)
+            {
+                child = new GameObject(bridgeName).transform;
+                child.SetParent(transform, false);
+            }
+            CityBridgeDeck deck = child.GetComponent<CityBridgeDeck>();
+            if (deck == null) deck = child.gameObject.AddComponent<CityBridgeDeck>();
+            return deck;
+        }
+
+        public void Configure(MapProfile profile, CityBridgeZoneLayout layout, float trackWidth)
+        {
+            EnsureComponents();
+            settings = profile != null && profile.cityBridges != null
+                ? profile.cityBridges : new CityBridgeSettings();
+            CycleIndex = layout.cycleIndex;
+            ZoneIndex = layout.zoneIndex;
+            IsProgressive = layout.isProgressive;
+            WaterLength = layout.waterLength;
+            transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+
+            entryBridge.Configure(settings, new Vector2(layout.gapStart, layout.baselineHeight),
+                layout.bridgeLength, trackWidth, true);
+            entryBridge.gameObject.SetActive(true);
+
+            bool needsExit = layout.HasExitBridge;
+            exitBridge.gameObject.SetActive(needsExit);
+            if (needsExit)
+                exitBridge.Configure(settings, new Vector2(layout.gapEnd, layout.baselineHeight),
+                    layout.bridgeLength, trackWidth, false);
+
+            if (waterRenderer != null)
+            {
+                waterRenderer.sprite = settings.waterSprite;
+                waterRenderer.drawMode = SpriteDrawMode.Simple;
+                waterRenderer.sortingOrder = settings.waterSortingOrder;
+                waterRenderer.flipX = false;
+                float visualDepth = Mathf.Max(.5f, settings.waterVisualDepth);
+                Vector2 sourceSize = settings.waterSprite != null
+                    ? settings.waterSprite.bounds.size : Vector2.one;
+                float horizontalScale = layout.waterLength /
+                                        Mathf.Max(.001f, sourceSize.x * WaterVisibleWidthFraction);
+                float verticalScale = visualDepth /
+                                      Mathf.Max(.001f, sourceSize.y * WaterVisibleDepthFraction);
+                waterRenderer.transform.localScale = new Vector3(horizontalScale, verticalScale, 1f);
+                float surfaceFromPivot = sourceSize.y * WaterSurfaceFromPivotFraction * verticalScale;
+                waterRenderer.transform.position = new Vector3(
+                    (layout.waterStart + layout.waterEnd) * .5f,
+                    layout.baselineHeight + settings.waterSurfaceOffset - surfaceFromPivot,
+                    0f);
+                waterRenderer.transform.rotation = Quaternion.identity;
+                waterRenderer.enabled = settings.waterSprite != null;
+            }
+
+            float period = AnimationPeriod;
+            animationPhaseOffset = period > .001f
+                ? Mathf.Repeat(layout.cycleIndex * 2.173f + layout.zoneIndex * 1.317f, period) : 0f;
+            ApplyAngle(EvaluateAnimationAngle(Time.time + animationPhaseOffset), true);
+            gameObject.name = $"City {(layout.isProgressive ? "Progressive" : "Normal")} Bridge " +
+                              $"C{CycleIndex} #{ZoneIndex + 1} - Pooled";
+            gameObject.SetActive(true);
+        }
+
+        private float AnimationPeriod => settings == null ? 0f :
+            settings.closedHoldSeconds + settings.openHoldSeconds + settings.transitionSeconds * 2f;
+
+        private void FixedUpdate()
+        {
+            if (settings == null) return;
+            ApplyAngle(EvaluateAnimationAngle(Time.time + animationPhaseOffset), false);
+        }
+
+        private float EvaluateAnimationAngle(float time)
+        {
+            float transition = Mathf.Max(.001f, settings.transitionSeconds);
+            float closedHold = Mathf.Max(0f, settings.closedHoldSeconds);
+            float openHold = Mathf.Max(0f, settings.openHoldSeconds);
+            float period = closedHold + transition + openHold + transition;
+            float phase = Mathf.Repeat(time, period);
+            if (phase < closedHold) return settings.closedAngleDegrees;
+            phase -= closedHold;
+            if (phase < transition)
+            {
+                float t = Mathf.SmoothStep(0f, 1f, phase / transition);
+                return Mathf.Lerp(settings.closedAngleDegrees, settings.openAngleDegrees, t);
+            }
+            phase -= transition;
+            if (phase < openHold) return settings.openAngleDegrees;
+            phase -= openHold;
+            float closingT = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(phase / transition));
+            return Mathf.Lerp(settings.openAngleDegrees, settings.closedAngleDegrees, closingT);
+        }
+
+        private void ApplyAngle(float angle, bool immediate)
+        {
+            entryBridge?.SetLiftAngle(angle, immediate);
+            if (HasExitBridge) exitBridge.SetLiftAngle(angle, immediate);
+        }
+
+        public void Deactivate()
+        {
+            settings = null;
+            gameObject.SetActive(false);
+        }
+    }
+
+    [DisallowMultipleComponent]
+    public sealed class CityBridgeDeck : MonoBehaviour
+    {
+        private Rigidbody2D body2D;
+        private BoxCollider2D bridgeCollider2D;
+        private BoxCollider collider3D;
+        private SpriteRenderer bridgeRenderer;
+        private bool extendsRight;
+
+        private void Awake() => EnsureComponents();
+
+        private void EnsureComponents()
+        {
+            if (body2D == null) body2D = GetComponent<Rigidbody2D>();
+            if (body2D == null) body2D = gameObject.AddComponent<Rigidbody2D>();
+            body2D.bodyType = RigidbodyType2D.Kinematic;
+            body2D.useFullKinematicContacts = true;
+            body2D.interpolation = RigidbodyInterpolation2D.Interpolate;
+            body2D.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+
+            if (bridgeCollider2D == null) bridgeCollider2D = GetComponent<BoxCollider2D>();
+            if (bridgeCollider2D == null) bridgeCollider2D = gameObject.AddComponent<BoxCollider2D>();
+
+            Transform collider3DTransform = transform.Find("Bridge Collider 3D");
+            if (collider3DTransform == null)
+            {
+                collider3DTransform = new GameObject("Bridge Collider 3D").transform;
+                collider3DTransform.SetParent(transform, false);
+            }
+            if (collider3D == null) collider3D = collider3DTransform.GetComponent<BoxCollider>();
+            if (collider3D == null) collider3D = collider3DTransform.gameObject.AddComponent<BoxCollider>();
+
+            Transform visual = transform.Find("Bridge Visual");
+            if (visual == null)
+            {
+                visual = new GameObject("Bridge Visual").transform;
+                visual.SetParent(transform, false);
+            }
+            if (bridgeRenderer == null) bridgeRenderer = visual.GetComponent<SpriteRenderer>();
+            if (bridgeRenderer == null) bridgeRenderer = visual.gameObject.AddComponent<SpriteRenderer>();
+        }
+
+        public void Configure(CityBridgeSettings settings, Vector2 pivot, float length, float trackWidth,
+            bool pointsRight)
+        {
+            EnsureComponents();
+            extendsRight = pointsRight;
+            transform.position = new Vector3(pivot.x, pivot.y, 0f);
+            transform.rotation = Quaternion.identity;
+
+            float direction = extendsRight ? 1f : -1f;
+            float thickness = Mathf.Max(.08f, settings.bridgeColliderThickness);
+            // Terrain gaps are cut per generated sample, so a small hidden overlap absorbs the possible
+            // half-sample seam without changing the visible bridge length or its terrain-side pivot.
+            float overlap = Mathf.Clamp(settings.bridgeGroundOverlap, 0f, 2f);
+            float colliderLength = length + overlap;
+            Vector2 center = new Vector2(direction * (length - overlap) * .5f, -thickness * .5f);
+            bridgeCollider2D.size = new Vector2(colliderLength, thickness);
+            bridgeCollider2D.offset = center;
+            bridgeCollider2D.isTrigger = false;
+
+            collider3D.size = new Vector3(colliderLength, thickness, Mathf.Max(2f, trackWidth));
+            collider3D.center = new Vector3(center.x, center.y, 0f);
+            collider3D.isTrigger = false;
+
+            bridgeRenderer.sprite = settings.bridgeSprite;
+            bridgeRenderer.sortingOrder = settings.bridgeSortingOrder;
+            bridgeRenderer.flipX = !extendsRight;
+            bridgeRenderer.enabled = settings.bridgeSprite != null;
+            float sourceWidth = settings.bridgeSprite != null
+                ? Mathf.Max(.001f, settings.bridgeSprite.bounds.size.x) : 1f;
+            float uniformScale = length / sourceWidth;
+            bridgeRenderer.transform.localScale = Vector3.one * uniformScale;
+            bridgeRenderer.transform.localPosition = new Vector3(direction * length * .5f,
+                settings.bridgeArtSurfaceOffset, 0f);
+            bridgeRenderer.transform.localRotation = Quaternion.Euler(0f, 0f,
+                direction * -settings.bridgeArtSlopeDegrees);
+            SetLiftAngle(settings.closedAngleDegrees, true);
+        }
+
+        public void SetLiftAngle(float angle, bool immediate)
+        {
+            float signedAngle = extendsRight ? angle : -angle;
+            if (body2D == null || immediate)
+            {
+                transform.rotation = Quaternion.Euler(0f, 0f, signedAngle);
+                if (body2D != null) body2D.rotation = signedAngle;
+                return;
+            }
+            body2D.MoveRotation(signedAngle);
+        }
+    }
+}

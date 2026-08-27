@@ -195,6 +195,58 @@ namespace AnimeHillRacing.Terrain
             new[] { 430f, 1280f, 2040f, 2770f, 3460f, 4140f, 4980f, 5530f };
     }
 
+    [System.Serializable]
+    public sealed class CityBridgeSettings
+    {
+        public const float RequiredCycleLength = 10000f;
+        public const int RequiredMinimumZones = 7;
+        public const int RequiredMaximumZones = 10;
+        public const int RequiredMinimumProgressiveZones = 5;
+        public const int RequiredMaximumProgressiveZones = 7;
+        public const float RequiredProgressiveGrowth = 10f;
+        public const float RequiredBridgeAngle = 45f;
+        public const float RequiredTransitionSeconds = 3f;
+
+        [Header("Deterministic 10,000 m Layout")]
+        public float cycleLength = RequiredCycleLength;
+        public int minimumZonesPerCycle = RequiredMinimumZones;
+        public int maximumZonesPerCycle = RequiredMaximumZones;
+        public int minimumProgressiveZones = RequiredMinimumProgressiveZones;
+        public int maximumProgressiveZones = RequiredMaximumProgressiveZones;
+        [Min(100f)] public float cycleStartMargin = 320f;
+        [Min(100f)] public float cycleEndMargin = 320f;
+        [Min(50f)] public float minimumZoneSpacing = 300f;
+        [Min(5f)] public float approachBlendLength = 30f;
+        [Min(5f)] public float recoveryBlendLength = 30f;
+
+        [Header("Bridge / Water Geometry")]
+        [Min(4f)] public float bridgeLength = 14f;
+        [Min(2f)] public float normalWaterLength = 22f;
+        [Min(2f)] public float progressiveBaseWaterLength = 22f;
+        [Min(0f)] public float progressiveGrowthPerCycle = RequiredProgressiveGrowth;
+        [Min(.5f)] public float waterVisualDepth = 4f;
+        public float waterSurfaceOffset = -.35f;
+        [Min(.08f)] public float bridgeColliderThickness = .45f;
+        [Range(0f, 2f)] public float bridgeGroundOverlap = 1f;
+
+        [Header("Bridge Animation")]
+        [Range(0f, 45f)] public float closedAngleDegrees;
+        [Range(0f, 45f)] public float openAngleDegrees = RequiredBridgeAngle;
+        [Min(.1f)] public float transitionSeconds = RequiredTransitionSeconds;
+        [Min(0f)] public float closedHoldSeconds = 4f;
+        [Min(0f)] public float openHoldSeconds = 4f;
+
+        [Header("Authored Visuals")]
+        public Sprite bridgeSprite;
+        public Sprite waterSprite;
+        [Tooltip("Slope already painted into Bridge.png; the visual child compensates it while physics stays horizontal at 0 degrees.")]
+        public float bridgeArtSlopeDegrees = 16.1f;
+        [Tooltip("Moves the compensated bridge art so its painted road surface matches the collider top.")]
+        public float bridgeArtSurfaceOffset = -1.1f;
+        public int waterSortingOrder = 1;
+        public int bridgeSortingOrder = 5;
+    }
+
     public enum SpaceEventType
     {
         Void,
@@ -291,6 +343,8 @@ namespace AnimeHillRacing.Terrain
         public bool useCityHighwayTerrain;
         [Min(42f)] public float cityFeatureLength = 120f;
         [Range(0f, .35f)] public float cityMiniRhythmStrength = .18f;
+        public bool useCityBridges;
+        public CityBridgeSettings cityBridges = new CityBridgeSettings();
 
         [Header("Progressive Difficulty")]
         public AnimationCurve difficultyCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f);
@@ -396,11 +450,32 @@ namespace AnimeHillRacing.Terrain
             fuelPlacementSearchStep = Mathf.Max(0.5f, fuelPlacementSearchStep);
             initialFuelGap = Mathf.Max(1f, initialFuelGap);
             liquidChallenges ??= new LiquidChallengeSettings();
+            cityBridges ??= new CityBridgeSettings();
             spaceChallenges ??= new SpaceChallengeSettings();
             arena ??= new ArenaSettings();
             mountains ??= new MountainsSettings();
             rainstorm ??= new RainstormSettings();
             countrysideSpecialFeatures ??= new CountrysideSpecialFeatureSettings();
+            if (useCityBridges)
+            {
+                useCityHighwayTerrain = true;
+                cityBridges.cycleLength = CityBridgeSettings.RequiredCycleLength;
+                cityBridges.minimumZonesPerCycle = CityBridgeSettings.RequiredMinimumZones;
+                cityBridges.maximumZonesPerCycle = CityBridgeSettings.RequiredMaximumZones;
+                cityBridges.minimumProgressiveZones = CityBridgeSettings.RequiredMinimumProgressiveZones;
+                cityBridges.maximumProgressiveZones = CityBridgeSettings.RequiredMaximumProgressiveZones;
+                cityBridges.progressiveGrowthPerCycle = CityBridgeSettings.RequiredProgressiveGrowth;
+                cityBridges.closedAngleDegrees = 0f;
+                cityBridges.openAngleDegrees = CityBridgeSettings.RequiredBridgeAngle;
+                cityBridges.transitionSeconds = CityBridgeSettings.RequiredTransitionSeconds;
+                cityBridges.bridgeLength = Mathf.Max(4f, cityBridges.bridgeLength);
+                cityBridges.normalWaterLength = Mathf.Max(2f, cityBridges.normalWaterLength);
+                cityBridges.progressiveBaseWaterLength = Mathf.Max(2f,
+                    cityBridges.progressiveBaseWaterLength);
+                cityBridges.minimumZoneSpacing = Mathf.Max(50f, cityBridges.minimumZoneSpacing);
+                cityBridges.approachBlendLength = Mathf.Max(5f, cityBridges.approachBlendLength);
+                cityBridges.recoveryBlendLength = Mathf.Max(5f, cityBridges.recoveryBlendLength);
+            }
             countrysideSpecialFeatures.eventInterval = Mathf.Max(250f,
                 countrysideSpecialFeatures.eventInterval);
             countrysideSpecialFeatures.transitionLength = Mathf.Max(5f,

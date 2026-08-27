@@ -32,6 +32,37 @@ MonoBehaviour:
   useCityHighwayTerrain: 1
   cityFeatureLength: 48
   cityMiniRhythmStrength: 0.16
+  useCityBridges: 1
+  cityBridges:
+    cycleLength: 10000
+    minimumZonesPerCycle: 7
+    maximumZonesPerCycle: 10
+    minimumProgressiveZones: 5
+    maximumProgressiveZones: 7
+    cycleStartMargin: 320
+    cycleEndMargin: 320
+    minimumZoneSpacing: 300
+    approachBlendLength: 30
+    recoveryBlendLength: 30
+    bridgeLength: 14
+    normalWaterLength: 22
+    progressiveBaseWaterLength: 22
+    progressiveGrowthPerCycle: 10
+    waterVisualDepth: 4
+    waterSurfaceOffset: -0.35
+    bridgeColliderThickness: 0.45
+    bridgeGroundOverlap: 1
+    closedAngleDegrees: 0
+    openAngleDegrees: 45
+    transitionSeconds: 3
+    closedHoldSeconds: 4
+    openHoldSeconds: 4
+    bridgeSprite: {fileID: 21300000, guid: b1000000000000000000000000000001, type: 3}
+    waterSprite: {fileID: 21300000, guid: b1000000000000000000000000000002, type: 3}
+    bridgeArtSlopeDegrees: 16.1
+    bridgeArtSurfaceOffset: -1.1
+    waterSortingOrder: 1
+    bridgeSortingOrder: 5
   difficultyCurve:
     serializedVersion: 2
     m_Curve:
@@ -121,9 +152,9 @@ MonoBehaviour:
   fitAuthoredTerrainTexture: 1
   terrainTextureRepeatWidth: 45
   terrainWallUvRange: {x: 0.171, y: 0.82}
-  terrainSurfaceUvRange: {x: 0.293, y: 0.45}
-  terrainSurfaceContactV: 0.45
-  terrainFillStartV: 0.45
+  terrainSurfaceUvRange: {x: 0.318, y: 0.695}
+  terrainSurfaceContactV: 0.695
+  terrainFillStartV: 0.695
   groundPhysicsMaterial: {fileID: 13400000, guid: 4dfb87f232532b24aafe44e9c5c97f50, type: 2}
   groundPhysicsMaterial2D: {fileID: 0}
   terrainEdgeWidth: 0.18

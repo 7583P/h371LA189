@@ -75,6 +75,26 @@ namespace AnimeHillRacing.Terrain
         public float liquidSurfaceY;
     }
 
+    public struct CityBridgeZoneLayout
+    {
+        public int cycleIndex;
+        public int zoneIndex;
+        public int zonesInCycle;
+        public int progressiveZonesInCycle;
+        public bool isProgressive;
+        public float approachStart;
+        public float gapStart;
+        public float waterStart;
+        public float waterEnd;
+        public float gapEnd;
+        public float recoveryEnd;
+        public float baselineHeight;
+        public float bridgeLength;
+        public float waterLength;
+
+        public bool HasExitBridge => !isProgressive;
+    }
+
     public struct SpaceChallengeLayout
     {
         public int phase;
@@ -1162,6 +1182,23 @@ namespace AnimeHillRacing.Terrain
 
         public static float SampleCityHighwayHeight(MapProfile profile, float worldX)
         {
+            float general = SampleCityHighwayBaseHeight(profile, worldX);
+            if (profile == null || !profile.useCityBridges || profile.cityBridges == null || worldX < 0f ||
+                !TryGetCityBridgeZoneNearDistance(profile, worldX, out CityBridgeZoneLayout zone))
+                return general;
+
+            if (worldX < zone.gapStart)
+            {
+                float t = Smooth01(Mathf.InverseLerp(zone.approachStart, zone.gapStart, worldX));
+                return Mathf.Lerp(general, zone.baselineHeight, t);
+            }
+            if (worldX <= zone.gapEnd) return zone.baselineHeight;
+            float recoveryT = Smooth01(Mathf.InverseLerp(zone.gapEnd, zone.recoveryEnd, worldX));
+            return Mathf.Lerp(zone.baselineHeight, general, recoveryT);
+        }
+
+        private static float SampleCityHighwayBaseHeight(MapProfile profile, float worldX)
+        {
             if (profile == null) return 0f;
             float distance = Mathf.Max(0f, worldX);
             float featureLength = Mathf.Max(42f, profile.cityFeatureLength);
@@ -1188,6 +1225,168 @@ namespace AnimeHillRacing.Terrain
             float startBlend = Smooth01(Mathf.InverseLerp(10f, 110f, distance));
             return profile.baseHeight + (backbone + miniRhythm + broadWave) * amplitude * startBlend;
         }
+
+        public static int GetCityBridgeZoneCount(MapProfile profile, int cycleIndex)
+        {
+            uint seed = CombinedSeed(profile);
+            int cycle = Mathf.Max(0, cycleIndex);
+            float random = Hash01(seed, cycle * 92821 + 1709);
+            return CityBridgeSettings.RequiredMinimumZones + Mathf.FloorToInt(random *
+                (CityBridgeSettings.RequiredMaximumZones - CityBridgeSettings.RequiredMinimumZones + 1));
+        }
+
+        public static int GetCityProgressiveBridgeZoneCount(MapProfile profile, int cycleIndex)
+        {
+            uint seed = CombinedSeed(profile);
+            int cycle = Mathf.Max(0, cycleIndex);
+            int total = GetCityBridgeZoneCount(profile, cycle);
+            float random = Hash01(seed, cycle * 74149 + 2903);
+            int progressive = CityBridgeSettings.RequiredMinimumProgressiveZones + Mathf.FloorToInt(random *
+                (CityBridgeSettings.RequiredMaximumProgressiveZones -
+                 CityBridgeSettings.RequiredMinimumProgressiveZones + 1));
+            // Keep at least one normal two-ended bridge zone in every cycle.
+            return Mathf.Clamp(progressive, CityBridgeSettings.RequiredMinimumProgressiveZones,
+                Mathf.Min(CityBridgeSettings.RequiredMaximumProgressiveZones, total - 1));
+        }
+
+        public static bool IsCityBridgeZoneProgressive(MapProfile profile, int cycleIndex, int zoneIndex)
+        {
+            int count = GetCityBridgeZoneCount(profile, cycleIndex);
+            int slot = Mathf.Clamp(zoneIndex, 0, count - 1);
+            int progressiveCount = GetCityProgressiveBridgeZoneCount(profile, cycleIndex);
+            uint seed = CombinedSeed(profile);
+            float score = Hash01(seed, cycleIndex * 35771 + slot * 1013 + 811);
+            int rank = 0;
+            for (int candidate = 0; candidate < count; candidate++)
+            {
+                if (candidate == slot) continue;
+                float other = Hash01(seed, cycleIndex * 35771 + candidate * 1013 + 811);
+                if (other < score || Mathf.Approximately(other, score) && candidate < slot) rank++;
+            }
+            return rank < progressiveCount;
+        }
+
+        public static CityBridgeZoneLayout GetCityBridgeZone(MapProfile profile, int cycleIndex,
+            int zoneIndex)
+        {
+            CityBridgeSettings settings = profile != null && profile.cityBridges != null
+                ? profile.cityBridges : new CityBridgeSettings();
+            int cycle = Mathf.Max(0, cycleIndex);
+            int count = GetCityBridgeZoneCount(profile, cycle);
+            int slot = Mathf.Clamp(zoneIndex, 0, count - 1);
+            int progressiveCount = GetCityProgressiveBridgeZoneCount(profile, cycle);
+            float bridgeLength = Mathf.Max(4f, settings.bridgeLength);
+
+            float totalReservedWidth = 0f;
+            for (int i = 0; i < count; i++)
+                totalReservedWidth += GetCityBridgeReservedWidth(profile, cycle, i);
+
+            float cycleLength = CityBridgeSettings.RequiredCycleLength;
+            float startMargin = Mathf.Max(100f, settings.cycleStartMargin);
+            float endMargin = Mathf.Max(100f, settings.cycleEndMargin);
+            float usableForSpacing = Mathf.Max(0f, cycleLength - startMargin - endMargin - totalReservedWidth);
+            float spacing = count > 1
+                ? Mathf.Min(Mathf.Max(50f, settings.minimumZoneSpacing), usableForSpacing / (count - 1)) : 0f;
+            float freeSpace = Mathf.Max(0f, usableForSpacing - spacing * Mathf.Max(0, count - 1));
+
+            uint seed = CombinedSeed(profile);
+            float totalGapWeight = 0f;
+            for (int gap = 0; gap <= count; gap++)
+                totalGapWeight += CityBridgeGapWeight(seed, cycle, gap);
+
+            float cursor = cycle * cycleLength + startMargin;
+            for (int i = 0; i <= slot; i++)
+            {
+                cursor += freeSpace * CityBridgeGapWeight(seed, cycle, i) /
+                          Mathf.Max(.001f, totalGapWeight);
+                if (i == slot) break;
+                cursor += GetCityBridgeReservedWidth(profile, cycle, i) + spacing;
+            }
+
+            bool progressive = IsCityBridgeZoneProgressive(profile, cycle, slot);
+            float waterLength = progressive
+                ? Mathf.Max(2f, settings.progressiveBaseWaterLength) +
+                  cycle * CityBridgeSettings.RequiredProgressiveGrowth
+                : Mathf.Max(2f, settings.normalWaterLength);
+            float approachLength = Mathf.Max(5f, settings.approachBlendLength);
+            float recoveryLength = Mathf.Max(5f, settings.recoveryBlendLength);
+            float approachStart = cursor;
+            float gapStart = approachStart + approachLength;
+            float waterStart = gapStart + bridgeLength;
+            float waterEnd = waterStart + waterLength;
+            float gapEnd = waterEnd + (progressive ? 0f : bridgeLength);
+            float baseline = SampleCityHighwayBaseHeight(profile, gapStart);
+            return new CityBridgeZoneLayout
+            {
+                cycleIndex = cycle,
+                zoneIndex = slot,
+                zonesInCycle = count,
+                progressiveZonesInCycle = progressiveCount,
+                isProgressive = progressive,
+                approachStart = approachStart,
+                gapStart = gapStart,
+                waterStart = waterStart,
+                waterEnd = waterEnd,
+                gapEnd = gapEnd,
+                recoveryEnd = gapEnd + recoveryLength,
+                baselineHeight = baseline,
+                bridgeLength = bridgeLength,
+                waterLength = waterLength
+            };
+        }
+
+        public static bool TryGetCityBridgeZoneNearDistance(MapProfile profile, float worldX,
+            out CityBridgeZoneLayout zone)
+        {
+            zone = default;
+            if (profile == null || !profile.useCityBridges || profile.cityBridges == null || worldX < 0f)
+                return false;
+            int centerCycle = Mathf.FloorToInt(worldX / CityBridgeSettings.RequiredCycleLength);
+            for (int cycle = Mathf.Max(0, centerCycle - 1); cycle <= centerCycle + 1; cycle++)
+            {
+                int count = GetCityBridgeZoneCount(profile, cycle);
+                for (int slot = 0; slot < count; slot++)
+                {
+                    CityBridgeZoneLayout candidate = GetCityBridgeZone(profile, cycle, slot);
+                    if (worldX < candidate.approachStart || worldX > candidate.recoveryEnd) continue;
+                    zone = candidate;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public static bool TryGetCityBridgeGapAtDistance(MapProfile profile, float worldX,
+            out CityBridgeZoneLayout zone)
+        {
+            if (TryGetCityBridgeZoneNearDistance(profile, worldX, out zone) &&
+                worldX >= zone.gapStart && worldX < zone.gapEnd) return true;
+            zone = default;
+            return false;
+        }
+
+        public static bool IsCityBridgeWater(MapProfile profile, float worldX)
+        {
+            return TryGetCityBridgeZoneNearDistance(profile, worldX, out CityBridgeZoneLayout zone) &&
+                   worldX >= zone.waterStart && worldX < zone.waterEnd;
+        }
+
+        private static float GetCityBridgeReservedWidth(MapProfile profile, int cycleIndex, int zoneIndex)
+        {
+            CityBridgeSettings settings = profile != null && profile.cityBridges != null
+                ? profile.cityBridges : new CityBridgeSettings();
+            bool progressive = IsCityBridgeZoneProgressive(profile, cycleIndex, zoneIndex);
+            float waterLength = progressive
+                ? Mathf.Max(2f, settings.progressiveBaseWaterLength) +
+                  Mathf.Max(0, cycleIndex) * CityBridgeSettings.RequiredProgressiveGrowth
+                : Mathf.Max(2f, settings.normalWaterLength);
+            float bridges = Mathf.Max(4f, settings.bridgeLength) * (progressive ? 1f : 2f);
+            return Mathf.Max(5f, settings.approachBlendLength) + bridges + waterLength +
+                   Mathf.Max(5f, settings.recoveryBlendLength);
+        }
+
+        private static float CityBridgeGapWeight(uint seed, int cycleIndex, int gapIndex) =>
+            .75f + Hash01(seed, cycleIndex * 61441 + gapIndex * 1877 + 1237) * .5f;
 
         private static float CityAnchor(uint seed, int index)
         {
@@ -1413,6 +1612,8 @@ namespace AnimeHillRacing.Terrain
         public static bool IsTerrainGap(MapProfile profile, float worldX)
         {
             if (profile != null && profile.useArenaTerrain) return IsArenaGap(profile, worldX);
+            if (profile != null && profile.useCityBridges &&
+                TryGetCityBridgeGapAtDistance(profile, worldX, out _)) return true;
             if (profile == null || !profile.useSpaceTerrain || profile.spaceChallenges == null) return false;
             float interval = Mathf.Max(250f, profile.spaceChallenges.eventInterval);
             int phase = Mathf.Max(1, Mathf.FloorToInt(worldX / interval));
@@ -1475,7 +1676,7 @@ namespace AnimeHillRacing.Terrain
         }
 
         public static bool IsLiquidPool(MapProfile profile, float worldX) =>
-            TryGetLiquidChallengeAtDistance(profile, worldX, out _);
+            TryGetLiquidChallengeAtDistance(profile, worldX, out _) || IsCityBridgeWater(profile, worldX);
 
         private static float SampleNeonHeight(MapProfile profile, float worldX)
         {
@@ -1985,6 +2186,21 @@ namespace AnimeHillRacing.Terrain
                                        Mathf.Max(10f, profile.spaceChallenges.approachBlendLength);
                     if (worldX < blendStart || worldX > layout.recoveryEnd) continue;
                     surfaceHeights[i] = EvaluateFloat32Precision(SampleSpaceHeight(profile, worldX), worldX);
+                }
+                previousHeight = surfaceHeights[sampleCount - 1];
+                previousSlope = sampleCount > 1
+                    ? (surfaceHeights[sampleCount - 1] - surfaceHeights[sampleCount - 2]) / dx : 0f;
+            }
+
+            if (profile.useCityBridges && profile.cityBridges != null)
+            {
+                // Generic smoothing must not bend the authored flat bridge banks. Reapply the City event
+                // profile so the visible road, the terrain gap and each rotating bridge share one baseline.
+                for (int i = 0; i < sampleCount; i++)
+                {
+                    float worldX = chunkStartX + i * dx;
+                    if (!TryGetCityBridgeZoneNearDistance(profile, worldX, out _)) continue;
+                    surfaceHeights[i] = EvaluateFloat32Precision(SampleCityHighwayHeight(profile, worldX), worldX);
                 }
                 previousHeight = surfaceHeights[sampleCount - 1];
                 previousSlope = sampleCount > 1

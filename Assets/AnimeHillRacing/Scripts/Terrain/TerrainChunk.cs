@@ -179,9 +179,9 @@ namespace AnimeHillRacing.Terrain
                 meshRenderer.sharedMaterials = new[] { profile.terrainMaterial, profile.terrainEdgeMaterial };
                 groundProperties ??= new MaterialPropertyBlock();
                 groundProperties.Clear();
-                // City Ground.png contains dark panel separators in the source art. Sampling a clean vertical
-                // cross-section preserves its authored shading while producing one continuous ground ribbon.
-                groundProperties.SetFloat(HorizontalSampleId, profile.useCityHighwayTerrain ? .44f : -1f);
+                // Keep the full horizontal artwork in use. CityGround.mat restricts sampling to the long
+                // road strip in its sprite sheet, preserving the authored yellow lane markings as it tiles.
+                groundProperties.SetFloat(HorizontalSampleId, -1f);
                 meshRenderer.SetPropertyBlock(groundProperties, 1);
             }
             else

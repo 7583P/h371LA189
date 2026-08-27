@@ -36,6 +36,11 @@ namespace AnimeHillRacing.Terrain
             new Dictionary<long, NeonLiquidHazard>();
         private readonly HashSet<long> requiredLiquidHazards = new HashSet<long>();
         private readonly List<long> liquidKeyBuffer = new List<long>(12);
+        private readonly List<CityBridgeZone> cityBridgePool = new List<CityBridgeZone>(6);
+        private readonly Dictionary<long, CityBridgeZone> activeCityBridges =
+            new Dictionary<long, CityBridgeZone>();
+        private readonly HashSet<long> requiredCityBridges = new HashSet<long>();
+        private readonly List<long> cityBridgeKeyBuffer = new List<long>(6);
         private readonly List<SpaceGapEvent> spaceEventPool = new List<SpaceGapEvent>(4);
         private readonly Dictionary<int, SpaceGapEvent> activeSpaceEvents = new Dictionary<int, SpaceGapEvent>();
         private readonly HashSet<int> requiredSpaceEvents = new HashSet<int>();
@@ -108,6 +113,8 @@ namespace AnimeHillRacing.Terrain
             }
             PrewarmLiquidHazards(count + 2);
             RefreshLiquidHazards();
+            PrewarmCityBridges(4);
+            RefreshCityBridges();
             PrewarmSpaceEvents(3);
             RefreshSpaceEvents();
             PrewarmArenaEvents(6);
@@ -173,6 +180,7 @@ namespace AnimeHillRacing.Terrain
             RebuildAuthoritativeTerrainCollider();
             RebuildAuthoritativeTerrainCollider2D();
             RefreshLiquidHazards();
+            RefreshCityBridges();
             RefreshSpaceEvents();
             RefreshArenaEvents();
         }
@@ -307,6 +315,7 @@ namespace AnimeHillRacing.Terrain
                 RebuildAuthoritativeTerrainCollider();
                 RebuildAuthoritativeTerrainCollider2D();
                 RefreshLiquidHazards();
+                RefreshCityBridges();
                 RefreshSpaceEvents();
                 RefreshArenaEvents();
             }
@@ -323,6 +332,7 @@ namespace AnimeHillRacing.Terrain
             RebuildAuthoritativeTerrainCollider();
             RebuildAuthoritativeTerrainCollider2D();
             RefreshLiquidHazards();
+            RefreshCityBridges();
             RefreshSpaceEvents();
             RefreshArenaEvents();
         }
@@ -616,7 +626,8 @@ namespace AnimeHillRacing.Terrain
             {
                 float distance = milestone * DistanceBonusTracker.IntervalMeters;
                 if (distance >= end) break;
-                if (distance < start || !chunk.TrySampleSurface(distance, out float surfaceY, out _)) continue;
+                if (distance < start || TerrainGenerator.IsTerrainGap(mapProfile, distance) ||
+                    !chunk.TrySampleSurface(distance, out float surfaceY, out _)) continue;
 
                 DistanceBonusMarker marker = DistanceBonusMarker.Create(chunk.transform,
                     new Vector3(distance, surfaceY + 1.7f, -.35f), distance, false);
@@ -712,6 +723,71 @@ namespace AnimeHillRacing.Terrain
                 hazardObject.SetActive(false);
                 liquidHazardPool.Add(hazard);
             }
+        }
+
+        private void PrewarmCityBridges(int count)
+        {
+            if (mapProfile == null || !mapProfile.useCityBridges) return;
+            while (cityBridgePool.Count < count)
+            {
+                GameObject zoneObject = new GameObject("City Bridge - Available Pooled Instance");
+                zoneObject.transform.SetParent(transform, false);
+                CityBridgeZone zone = zoneObject.AddComponent<CityBridgeZone>();
+                zoneObject.SetActive(false);
+                cityBridgePool.Add(zone);
+            }
+        }
+
+        private void RefreshCityBridges()
+        {
+            if (mapProfile == null || !mapProfile.useCityBridges || mapProfile.cityBridges == null)
+            {
+                for (int i = 0; i < cityBridgePool.Count; i++) cityBridgePool[i]?.Deactivate();
+                activeCityBridges.Clear();
+                return;
+            }
+
+            float loadedStart = minimumLoadedIndex * chunkLength;
+            float loadedEnd = (maximumLoadedIndex + 1) * chunkLength;
+            int firstCycle = Mathf.Max(0, Mathf.FloorToInt(
+                Mathf.Max(0f, loadedStart - 200f) / CityBridgeSettings.RequiredCycleLength));
+            int lastCycle = Mathf.Max(0, Mathf.FloorToInt(
+                Mathf.Max(0f, loadedEnd + 200f) / CityBridgeSettings.RequiredCycleLength));
+            requiredCityBridges.Clear();
+            for (int cycle = firstCycle; cycle <= lastCycle; cycle++)
+            {
+                int count = TerrainGenerator.GetCityBridgeZoneCount(mapProfile, cycle);
+                for (int slot = 0; slot < count; slot++)
+                {
+                    CityBridgeZoneLayout layout = TerrainGenerator.GetCityBridgeZone(mapProfile, cycle, slot);
+                    if (layout.recoveryEnd < loadedStart || layout.approachStart > loadedEnd) continue;
+                    long key = ((long)cycle << 32) | (uint)slot;
+                    requiredCityBridges.Add(key);
+                    if (activeCityBridges.ContainsKey(key)) continue;
+                    CityBridgeZone zone = GetAvailableCityBridge();
+                    zone.Configure(mapProfile, layout, width);
+                    activeCityBridges.Add(key, zone);
+                }
+            }
+
+            cityBridgeKeyBuffer.Clear();
+            foreach (KeyValuePair<long, CityBridgeZone> pair in activeCityBridges)
+                if (!requiredCityBridges.Contains(pair.Key)) cityBridgeKeyBuffer.Add(pair.Key);
+            for (int i = 0; i < cityBridgeKeyBuffer.Count; i++)
+            {
+                long key = cityBridgeKeyBuffer[i];
+                activeCityBridges[key].Deactivate();
+                activeCityBridges.Remove(key);
+            }
+        }
+
+        private CityBridgeZone GetAvailableCityBridge()
+        {
+            for (int i = 0; i < cityBridgePool.Count; i++)
+                if (cityBridgePool[i] != null && !cityBridgePool[i].gameObject.activeSelf)
+                    return cityBridgePool[i];
+            PrewarmCityBridges(cityBridgePool.Count + 1);
+            return cityBridgePool[cityBridgePool.Count - 1];
         }
 
         private void RefreshLiquidHazards()

@@ -14,8 +14,10 @@ namespace AnimeHillRacing.Vehicle
         public const float VehicleForegroundZ = -6f;
         private const float SurfaceMaskWidth = 48f;
         private const float SurfaceMaskHeight = 96f;
+        private const int SurfaceMaskSampleCount = 129;
+        private const int SurfaceMaskIntersectionIterations = 4;
 
-        private static Sprite sharedSurfaceMaskSprite;
+        private static Texture2D sharedSurfaceMaskTexture;
 
         [SerializeField] private VehicleRuntimeBase vehicle;
         [SerializeField] private VehicleDefinition definition;
@@ -31,6 +33,9 @@ namespace AnimeHillRacing.Vehicle
         [SerializeField, Min(0.05f)] private float wheelRadius = 0.43f;
 
         private SpriteMask surfaceClipMask;
+        private Sprite surfaceClipMaskSprite;
+        private Vector2[] surfaceClipVertices;
+        private ushort[] surfaceClipTriangles;
         private SpriteRenderer[] surfaceMaskedRenderers;
         private readonly Dictionary<SpriteRenderer, SpriteMaskInteraction> originalMaskInteractions =
             new Dictionary<SpriteRenderer, SpriteMaskInteraction>();
@@ -47,6 +52,11 @@ namespace AnimeHillRacing.Vehicle
         private void OnDisable()
         {
             DisableSurfaceClipMask();
+        }
+
+        private void OnDestroy()
+        {
+            if (surfaceClipMaskSprite != null) Destroy(surfaceClipMaskSprite);
         }
 
         private void LateUpdate()
@@ -71,7 +81,7 @@ namespace AnimeHillRacing.Vehicle
             }
 
             EnforceVehicleForegroundDepth();
-            EnableSurfaceClipMask(reference.position.x, surfaceY, slopeDegrees);
+            EnableSurfaceClipMask(terrain, reference.position.x, surfaceY, slopeDegrees);
         }
 
         public void ApplySavedCustomization()
@@ -212,7 +222,8 @@ namespace AnimeHillRacing.Vehicle
             }
         }
 
-        private void EnableSurfaceClipMask(float worldX, float surfaceY, float slopeDegrees)
+        private void EnableSurfaceClipMask(TerrainManager terrain, float worldX, float surfaceY,
+            float slopeDegrees)
         {
             EnsureSurfaceClipMask();
             if (surfaceClipMask == null) return;
@@ -232,35 +243,111 @@ namespace AnimeHillRacing.Vehicle
             maskTransform.position = new Vector3(worldX, surfaceY, VehicleForegroundZ - .1f);
             maskTransform.rotation = Quaternion.Euler(0f, 0f, slopeDegrees);
             maskTransform.localScale = new Vector3(SurfaceMaskWidth, SurfaceMaskHeight, 1f);
+            UpdateSurfaceClipGeometry(terrain, worldX, surfaceY, slopeDegrees);
             surfaceClipMask.enabled = true;
         }
 
         private void EnsureSurfaceClipMask()
         {
             if (surfaceClipMask != null) return;
-            if (sharedSurfaceMaskSprite == null)
+            if (sharedSurfaceMaskTexture == null)
             {
-                Texture2D texture = new Texture2D(1, 1, TextureFormat.RGBA32, false)
+                sharedSurfaceMaskTexture = new Texture2D(1, 2, TextureFormat.RGBA32, false)
                 {
                     name = "Adventure Surface Clip Mask Texture",
                     hideFlags = HideFlags.HideAndDontSave,
                     filterMode = FilterMode.Point,
                     wrapMode = TextureWrapMode.Clamp
                 };
-                texture.SetPixel(0, 0, Color.white);
-                texture.Apply(false, true);
-                sharedSurfaceMaskSprite = Sprite.Create(texture, new Rect(0f, 0f, 1f, 1f),
-                    new Vector2(.5f, 0f), 1f, 0, SpriteMeshType.FullRect);
-                sharedSurfaceMaskSprite.name = "Adventure Surface Clip Mask Sprite";
-                sharedSurfaceMaskSprite.hideFlags = HideFlags.HideAndDontSave;
+                sharedSurfaceMaskTexture.SetPixel(0, 0, Color.white);
+                sharedSurfaceMaskTexture.SetPixel(0, 1, Color.white);
+                sharedSurfaceMaskTexture.Apply(false, true);
             }
+
+            surfaceClipMaskSprite = Sprite.Create(sharedSurfaceMaskTexture, new Rect(0f, 0f, 1f, 2f),
+                new Vector2(.5f, .5f), 1f, 0, SpriteMeshType.FullRect);
+            surfaceClipMaskSprite.name = "Adventure Dynamic Surface Clip Mask Sprite";
+            surfaceClipMaskSprite.hideFlags = HideFlags.HideAndDontSave;
+            InitializeSurfaceClipGeometry();
 
             GameObject maskObject = new GameObject("Progressive Terrain Surface Mask");
             maskObject.transform.SetParent(transform, true);
             surfaceClipMask = maskObject.AddComponent<SpriteMask>();
-            surfaceClipMask.sprite = sharedSurfaceMaskSprite;
+            surfaceClipMask.sprite = surfaceClipMaskSprite;
             surfaceClipMask.alphaCutoff = .01f;
             surfaceClipMask.isCustomRangeActive = true;
+        }
+
+        private void InitializeSurfaceClipGeometry()
+        {
+            surfaceClipVertices = new Vector2[SurfaceMaskSampleCount * 2];
+            surfaceClipTriangles = new ushort[(SurfaceMaskSampleCount - 1) * 6];
+            for (int i = 0; i < SurfaceMaskSampleCount; i++)
+            {
+                // OverrideGeometry uses sprite-rect pixel coordinates. With this 1x2 sprite and centred
+                // pivot, rect X 0..1 becomes local X -0.5..0.5 and rect Y 0..2 becomes local Y -1..1.
+                float rectX = i / (SurfaceMaskSampleCount - 1f);
+                int vertex = i * 2;
+                surfaceClipVertices[vertex] = new Vector2(rectX, 1f);
+                surfaceClipVertices[vertex + 1] = new Vector2(rectX, 2f);
+                if (i >= SurfaceMaskSampleCount - 1) continue;
+                int triangle = i * 6;
+                surfaceClipTriangles[triangle] = (ushort)vertex;
+                surfaceClipTriangles[triangle + 1] = (ushort)(vertex + 1);
+                surfaceClipTriangles[triangle + 2] = (ushort)(vertex + 3);
+                surfaceClipTriangles[triangle + 3] = (ushort)vertex;
+                surfaceClipTriangles[triangle + 4] = (ushort)(vertex + 3);
+                surfaceClipTriangles[triangle + 5] = (ushort)(vertex + 2);
+            }
+            surfaceClipMaskSprite.OverrideGeometry(surfaceClipVertices, surfaceClipTriangles);
+        }
+
+        private void UpdateSurfaceClipGeometry(TerrainManager terrain, float worldX, float surfaceY,
+            float slopeDegrees)
+        {
+            if (terrain == null || surfaceClipMaskSprite == null || surfaceClipVertices == null) return;
+
+            float radians = slopeDegrees * Mathf.Deg2Rad;
+            float tangentX = Mathf.Cos(radians);
+            float tangentY = Mathf.Sin(radians);
+            float normalX = -tangentY;
+            float normalY = tangentX;
+            float halfWidth = SurfaceMaskWidth * .5f;
+            for (int i = 0; i < SurfaceMaskSampleCount; i++)
+            {
+                float normalizedX = i / (SurfaceMaskSampleCount - 1f);
+                float tangentOffset = Mathf.Lerp(-halfWidth, halfWidth, normalizedX);
+                float baseX = worldX + tangentX * tangentOffset;
+                float baseY = surfaceY + tangentY * tangentOffset;
+                float normalOffset = 0f;
+                bool hasSurface = true;
+                for (int iteration = 0; iteration < SurfaceMaskIntersectionIterations; iteration++)
+                {
+                    float sampleX = baseX + normalX * normalOffset;
+                    if (!terrain.TrySampleAuthoritativeSurface(sampleX, out float sampledY,
+                            out float sampledSlopeDegrees))
+                    {
+                        hasSurface = false;
+                        break;
+                    }
+
+                    float error = baseY + normalY * normalOffset - sampledY;
+                    if (Mathf.Abs(error) <= .001f) break;
+                    float sampledSlope = Mathf.Tan(sampledSlopeDegrees * Mathf.Deg2Rad);
+                    float derivative = normalY - sampledSlope * normalX;
+                    if (Mathf.Abs(derivative) <= .01f) break;
+                    normalOffset = Mathf.Clamp(normalOffset - error / derivative,
+                        -SurfaceMaskHeight, SurfaceMaskHeight);
+                }
+
+                int vertex = i * 2;
+                float localContactY = hasSurface
+                    ? Mathf.Clamp(normalOffset / SurfaceMaskHeight, -1f, 1f) : -1f;
+                surfaceClipVertices[vertex] = new Vector2(normalizedX, localContactY + 1f);
+                surfaceClipVertices[vertex + 1] = new Vector2(normalizedX, 2f);
+            }
+
+            surfaceClipMaskSprite.OverrideGeometry(surfaceClipVertices, surfaceClipTriangles);
         }
 
         private void DisableSurfaceClipMask()

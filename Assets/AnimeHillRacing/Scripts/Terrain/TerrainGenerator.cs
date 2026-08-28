@@ -154,6 +154,13 @@ namespace AnimeHillRacing.Terrain
         // makes the sampled painted contact curve use the same source-pixel scale as the artwork.
         public const float AuthoredTrackModuleWidth = 20.48f;
         public const float AuthoredTrackMaximumVisualExtent = 3f;
+        public const float CompactGroundModuleWidth = 45f;
+        public const float CompactGroundMaximumVisualExtent = 2.5f;
+        public const float NeonCityGroundMaximumVisualExtent = 1.35f;
+        public const float NeonCityGroundMaximumVisualRise = .65f;
+        public const float CountrysideGroundModuleWidth = 13.3f;
+        public const float CountrysideGroundMaximumVisualExtent = 1.5f;
+        public const float CountrysideGroundMaximumVisualRise = .8f;
         public const int NeonTemplateSectionCount = 10;
         private static readonly Dictionary<uint, List<ArenaSegmentType>> ArenaSegmentHistory =
             new Dictionary<uint, List<ArenaSegmentType>>();
@@ -2218,6 +2225,9 @@ namespace AnimeHillRacing.Terrain
                 (Mathf.Max(1f, profile.maximumDifficulty) + 0.5f) - profile.terrainVisualDepth;
             float terrainFillDepth = CalculateTerrainFillDepth(profile);
             bool hasAuthoredContactCurve = HasAuthoredSurfaceContactCurve(profile);
+            bool sampleContactRowOnTopSurface = profile.useCityHighwayTerrain ||
+                                                profile.terrainMaximumVisualExtent > 0f ||
+                                                hasAuthoredContactCurve;
             // Six independent vertices keep the three responsibilities separate: deep Terrain wall,
             // visible Ground ribbon and the horizontal driveable surface. Their top Y still comes from
             // the same surfaceHeights array used by the authoritative physics collider.
@@ -2274,12 +2284,11 @@ namespace AnimeHillRacing.Terrain
                     uvs[vertex + 1] = new Vector2(textureU, profile.terrainWallUvRange.x);
                     uvs[vertex + 2] = new Vector2(textureU, profile.terrainSurfaceUvRange.y);
                     uvs[vertex + 3] = new Vector2(textureU, profile.terrainSurfaceUvRange.x);
-                    // The City top cap is viewed edge-on by the 2.5D camera. Sampling the authored
-                    // contact row here prevents that cap from painting the white border over the
-                    // yellow stripe where the tires physically touch the road.
-                    uvs[vertex + 4] = new Vector2(textureU, profile.useCityHighwayTerrain || hasAuthoredContactCurve
+                    // Compact 2.5D slabs are viewed edge-on by the camera. Sampling their authored
+                    // contact row prevents the cap from projecting the vertical wall onto the road.
+                    uvs[vertex + 4] = new Vector2(textureU, sampleContactRowOnTopSurface
                         ? groundContactV : profile.terrainSurfaceUvRange.y);
-                    uvs[vertex + 5] = new Vector2(textureU, profile.useCityHighwayTerrain || hasAuthoredContactCurve
+                    uvs[vertex + 5] = new Vector2(textureU, sampleContactRowOnTopSurface
                         ? groundContactV : profile.terrainSurfaceUvRange.x);
                 }
                 else
@@ -2381,17 +2390,21 @@ namespace AnimeHillRacing.Terrain
             // Both extents come from the source pixels and PPU-derived repeat width; there is no visual offset.
             float rawDepth = Mathf.Abs(contactV - bottomV) * metresPerV;
             float rawRise = Mathf.Abs(topV - contactV) * metresPerV;
-            if (profile.useCityHighwayTerrain)
+            float configuredMaximumExtent = profile.terrainMaximumVisualExtent;
+            if (configuredMaximumExtent <= 0f && profile.useCityHighwayTerrain)
+                configuredMaximumExtent = CompactGroundMaximumVisualExtent;
+            if (configuredMaximumExtent > 0f)
             {
-                // Scale both sides uniformly. Independent clamping moved the painted yellow row away
-                // from the collider even though contactV was correct.
-                // City uses a slightly slimmer road presentation while the authored yellow stripe remains
-                // fixed on the collider. Both halves scale together, so no portion shifts independently.
-                const float cityMaximumVisualExtent = 2.5f;
-                float uniformScale = Mathf.Min(1f, cityMaximumVisualExtent /
+                // Compact 2.5D slabs share City's presentation without inheriting City's height grammar.
+                // The initial uniform scale preserves the artwork proportions; an optional upper-rise cap
+                // can then slim only the part behind the car without moving the painted contact row.
+                float uniformScale = Mathf.Min(1f, configuredMaximumExtent /
                     Mathf.Max(.001f, Mathf.Max(rawDepth, rawRise)));
                 depthBelowSurface = Mathf.Max(.05f, rawDepth * uniformScale);
                 riseAboveSurface = rawRise * uniformScale;
+                if (profile.terrainMaximumVisualRiseAboveSurface > 0f)
+                    riseAboveSurface = Mathf.Min(riseAboveSurface,
+                        profile.terrainMaximumVisualRiseAboveSurface);
                 return;
             }
             if (HasAuthoredSurfaceContactCurve(profile))

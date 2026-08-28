@@ -44,7 +44,7 @@ namespace AnimeHillRacing.Editor
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
             ConfigureSprite(ArtRoot + "/Sky.png", 2048, TextureWrapMode.Clamp);
             ConfigureSprite(ArtRoot + "/Background.png", 4096, TextureWrapMode.Repeat);
-            ConfigureSprite(ArtRoot + "/Ground.png", 2048, TextureWrapMode.Repeat);
+            ConfigureSprite(ArtRoot + "/Ground.png", 4096, TextureWrapMode.Repeat);
             ConfigureSprite(ArtRoot + "/Terrain.png", 2048, TextureWrapMode.Repeat);
 
             Sprite sky = AssetDatabase.LoadAssetAtPath<Sprite>(ArtRoot + "/Sky.png");
@@ -123,24 +123,17 @@ namespace AnimeHillRacing.Editor
             profile.terrainEdgeMaterial = groundMaterial;
             profile.useSeparateTerrainMaterials = true;
             profile.fitAuthoredTerrainTexture = true;
-            profile.terrainTextureRepeatWidth = ground.rect.width /
-                                                Mathf.Max(.001f, ground.pixelsPerUnit);
+            profile.terrainTextureRepeatWidth = TerrainGenerator.CompactGroundModuleWidth;
             profile.terrainWallUvRange = new Vector2(0f, 1f);
-            profile.terrainSurfaceUvRange = new Vector2(0f, 1f);
-            profile.terrainSurfaceContactV = .9f;
-            profile.terrainSurfaceContactVSamples = new[]
-            {
-                .73724f, .80102f, .79847f, .80867f, .83163f, .86735f, .90816f, .94898f,
-                .97704f, .99235f, .99490f, .97959f, .95408f, .91837f, .88010f, .84184f,
-                .81378f, .80612f, .81888f, .84184f, .86990f, .90051f, .93112f, .95408f,
-                .96939f, .97704f, .96684f, .94388f, .91327f, .87500f, .84184f, .81888f,
-                .79337f
-            };
+            profile.terrainSurfaceUvRange = new Vector2(.313f, .701f);
+            profile.terrainSurfaceContactV = .579f;
+            profile.terrainSurfaceContactVSamples = new float[0];
             // Match City/North Pole: the deep Terrain wall starts at the physical contact line
             // behind the complete Ground ribbon, so transparent lower contours cannot expose a gap.
             profile.terrainFillStartV = profile.terrainSurfaceContactV;
             profile.groundPhysicsMaterial = wetGround;
-            profile.terrainEdgeWidth = .22f;
+            profile.terrainEdgeWidth = .18f;
+            profile.terrainMaximumVisualExtent = TerrainGenerator.CompactGroundMaximumVisualExtent;
             profile.terrainVisualDepth = 27f;
             profile.supportsLiquidExposure = false;
             profile.rainstorm ??= new RainstormSettings();
@@ -180,9 +173,13 @@ namespace AnimeHillRacing.Editor
                 profile.environment != environment || !profile.useSeparateTerrainMaterials ||
                 profile.terrainMaterial == profile.terrainEdgeMaterial || !profile.fitAuthoredTerrainTexture ||
                 profile.terrainSurfaceContactVSamples == null ||
-                profile.terrainSurfaceContactVSamples.Length != 33 ||
+                profile.terrainSurfaceContactVSamples.Length != 0 ||
                 Mathf.Abs(profile.terrainFillStartV - profile.terrainSurfaceContactV) > .0001f ||
-                Mathf.Abs(profile.terrainTextureRepeatWidth - TerrainGenerator.AuthoredTrackModuleWidth) > .001f ||
+                Mathf.Abs(profile.terrainTextureRepeatWidth - TerrainGenerator.CompactGroundModuleWidth) > .001f ||
+                Mathf.Abs(profile.terrainMaximumVisualExtent -
+                          TerrainGenerator.CompactGroundMaximumVisualExtent) > .001f ||
+                Vector2.Distance(profile.terrainSurfaceUvRange, new Vector2(.313f, .701f)) > .001f ||
+                Mathf.Abs(profile.terrainSurfaceContactV - .579f) > .001f ||
                 profile.rainstorm == null || !profile.rainstorm.permanentRain ||
                 Mathf.Abs(profile.rainstorm.lightningEventsPerMinute - 4f) > .001f ||
                 profile.rainstorm.surfaceGripMultiplier >= 1f || city == null ||
@@ -237,7 +234,8 @@ namespace AnimeHillRacing.Editor
             material.color = Color.white;
             if (material.HasProperty("_SeamlessHorizontalTiling"))
                 material.SetFloat("_SeamlessHorizontalTiling", 1f);
-            if (material.HasProperty("_HorizontalInset")) material.SetFloat("_HorizontalInset", .012f);
+            if (material.HasProperty("_HorizontalInset"))
+                material.SetFloat("_HorizontalInset", path == GroundMaterialPath ? .008f : .012f);
             if (material.HasProperty("_HorizontalUvRange"))
                 material.SetVector("_HorizontalUvRange", new Vector4(0f, 1f, 0f, 0f));
             if (material.HasProperty("_DepthWrite")) material.SetFloat("_DepthWrite", 1f);

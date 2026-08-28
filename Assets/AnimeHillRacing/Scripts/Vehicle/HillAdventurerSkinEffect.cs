@@ -49,7 +49,9 @@ namespace AnimeHillRacing.Vehicle
         public static Material GetDefaultSpriteMaterial()
         {
             if (s_defaultSpriteMaterial != null) return s_defaultSpriteMaterial;
-            Shader shader = Shader.Find("Sprites/Default");
+            Shader shader = Shader.Find("Universal Render Pipeline/2D/Sprite-Unlit-Default");
+            if (shader == null) shader = Shader.Find("Sprites/Default");
+            if (shader == null) shader = Shader.Find("AnimeHillRacing/Transparent Texture");
             if (shader != null)
             {
                 s_defaultSpriteMaterial = new Material(shader)

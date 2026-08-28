@@ -188,7 +188,7 @@ namespace AnimeHillRacing.Editor
             profile.terrainEdgeMaterial = groundMaterial;
             profile.useSeparateTerrainMaterials = true;
             profile.fitAuthoredTerrainTexture = true;
-            profile.terrainTextureRepeatWidth = 45f;
+            profile.terrainTextureRepeatWidth = TerrainGenerator.CompactGroundModuleWidth;
             profile.terrainWallUvRange = new Vector2(.171f, .82f);
             // Complete visible bounds of the long road tile in Ground.png. This removes only the
             // transparent canvas and alternate short tiles; no visible road pixel is cropped.
@@ -197,6 +197,7 @@ namespace AnimeHillRacing.Editor
             profile.terrainFillStartV = .579f;
             profile.groundPhysicsMaterial = AssetDatabase.LoadAssetAtPath<PhysicsMaterial>(GroundPhysicsPath);
             profile.terrainEdgeWidth = .18f;
+            profile.terrainMaximumVisualExtent = TerrainGenerator.CompactGroundMaximumVisualExtent;
             profile.terrainVisualDepth = 22f;
             profile.supportsLiquidExposure = false;
             EditorUtility.SetDirty(profile);
@@ -229,6 +230,8 @@ namespace AnimeHillRacing.Editor
             float d12000 = profile.EvaluateDifficulty(12000f);
             if (!profile.useCityHighwayTerrain || profile.supportsLiquidExposure ||
                 Mathf.Abs(profile.terrainFillStartV - profile.terrainSurfaceContactV) > .0001f ||
+                Mathf.Abs(profile.terrainMaximumVisualExtent -
+                          TerrainGenerator.CompactGroundMaximumVisualExtent) > .001f ||
                 profile.terrainEdgeMaterial == null ||
                 !profile.terrainEdgeMaterial.HasProperty("_DepthWrite") ||
                 profile.terrainEdgeMaterial.GetFloat("_DepthWrite") < .5f ||

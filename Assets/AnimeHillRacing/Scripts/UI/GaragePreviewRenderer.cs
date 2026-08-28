@@ -51,8 +51,7 @@ namespace AnimeHillRacing.UI
         private void Awake()
         {
             EnsureTexture();
-            if (body != null && body.sharedMaterial == null)
-                body.sharedMaterial = HillAdventurerSkinEffect.GetDefaultSpriteMaterial();
+            EnsureDefaultMaterials();
         }
 
         private void OnEnable()
@@ -60,9 +59,25 @@ namespace AnimeHillRacing.UI
             Invalidate();
             warmUpFrames = 4;
             EnsureTexture();
-            if (body != null && body.sharedMaterial == null)
-                body.sharedMaterial = HillAdventurerSkinEffect.GetDefaultSpriteMaterial();
+            EnsureDefaultMaterials();
             RenderNow();
+        }
+
+        private void EnsureDefaultMaterials()
+        {
+            Material defaultMat = HillAdventurerSkinEffect.GetDefaultSpriteMaterial();
+            if (body != null && body.sharedMaterial == null) body.sharedMaterial = defaultMat;
+            if (rearWheel != null && rearWheel.sharedMaterial == null) rearWheel.sharedMaterial = defaultMat;
+            if (frontWheel != null && frontWheel.sharedMaterial == null) frontWheel.sharedMaterial = defaultMat;
+            if (previewRoot != null)
+            {
+                SpriteRenderer[] srs = previewRoot.GetComponentsInChildren<SpriteRenderer>(true);
+                for (int i = 0; i < srs.Length; i++)
+                {
+                    if (srs[i] != null && srs[i].sharedMaterial == null)
+                        srs[i].sharedMaterial = defaultMat;
+                }
+            }
         }
 
         public void Invalidate()
@@ -310,6 +325,8 @@ namespace AnimeHillRacing.UI
             Vector2 position, float diameter, int sortingOrder)
         {
             if (renderer == null) return;
+            if (renderer.sharedMaterial == null)
+                renderer.sharedMaterial = HillAdventurerSkinEffect.GetDefaultSpriteMaterial();
             renderer.sprite = option != null ? option.sprite : null;
             renderer.transform.localPosition = new Vector3(position.x, position.y, -.02f);
             if (body != null) renderer.sortingLayerID = body.sortingLayerID;

@@ -101,47 +101,15 @@ MonoBehaviour:
   terrainEdgeMaterial: {fileID: 2100000, guid: f44368956a273aa4087a79254e1f10db, type: 2}
   useSeparateTerrainMaterials: 1
   fitAuthoredTerrainTexture: 1
-  terrainTextureRepeatWidth: 20.48
+  terrainTextureRepeatWidth: 45
   terrainWallUvRange: {x: 0, y: 1}
-  terrainSurfaceUvRange: {x: 0, y: 1}
-  terrainSurfaceContactV: 0.9
-  terrainSurfaceContactVSamples:
-  - 0.73724
-  - 0.80102
-  - 0.79847
-  - 0.80867
-  - 0.83163
-  - 0.86735
-  - 0.90816
-  - 0.94898
-  - 0.97704
-  - 0.99235
-  - 0.9949
-  - 0.97959
-  - 0.95408
-  - 0.91837
-  - 0.8801
-  - 0.84184
-  - 0.81378
-  - 0.80612
-  - 0.81888
-  - 0.84184
-  - 0.8699
-  - 0.90051
-  - 0.93112
-  - 0.95408
-  - 0.96939
-  - 0.97704
-  - 0.96684
-  - 0.94388
-  - 0.91327
-  - 0.875
-  - 0.84184
-  - 0.81888
-  - 0.79337
-  terrainFillStartV: 0.9
+  terrainSurfaceUvRange: {x: 0.313, y: 0.701}
+  terrainSurfaceContactV: 0.579
+  terrainSurfaceContactVSamples: []
+  terrainFillStartV: 0.579
   groundPhysicsMaterial: {fileID: 13400000, guid: 26ba0ca693e07af46b45d6e09338bdc9, type: 2}
-  terrainEdgeWidth: 0.22
+  terrainEdgeWidth: 0.18
+  terrainMaximumVisualExtent: 2.5
   terrainVisualDepth: 27
   supportsLiquidExposure: 0
   neonMaximumAmplitude: 28

@@ -169,6 +169,7 @@ MonoBehaviour:
   groundPhysicsMaterial: {fileID: 13400000, guid: 4dfb87f232532b24aafe44e9c5c97f50, type: 2}
   groundPhysicsMaterial2D: {fileID: 0}
   terrainEdgeWidth: 0.18
+  terrainMaximumVisualExtent: 2.5
   terrainVisualDepth: 22
   supportsLiquidExposure: 0
   neonMaximumAmplitude: 28

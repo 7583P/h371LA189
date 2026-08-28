@@ -425,6 +425,13 @@ namespace AnimeHillRacing.Terrain
         public PhysicsMaterial groundPhysicsMaterial;
         public PhysicsMaterial2D groundPhysicsMaterial2D;
         [Range(0.04f, 0.5f)] public float terrainEdgeWidth = 0.18f;
+        [Tooltip("Optional maximum size, in metres, for either half of the authored Ground ribbon. " +
+                 "Zero keeps the legacy per-map behavior. A positive value scales the painted rise and " +
+                 "depth uniformly, so the configured contact row stays exactly on the collider.")]
+        [Min(0f)] public float terrainMaximumVisualExtent;
+        [Tooltip("Optional independent limit for the painted Ground above the wheel-contact line. " +
+                 "Zero keeps the rise produced by the shared extent scale.")]
+        [Min(0f)] public float terrainMaximumVisualRiseAboveSurface;
         [Min(5f)] public float terrainVisualDepth = 20f;
 
         [Header("Optional Liquid Challenges")]

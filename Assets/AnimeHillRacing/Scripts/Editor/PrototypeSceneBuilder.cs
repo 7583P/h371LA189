@@ -5783,11 +5783,13 @@ namespace AnimeHillRacing.Editor
             assets.countryside.useSeparateTerrainMaterials = true;
             assets.countryside.fitAuthoredTerrainTexture = true;
             assets.countryside.terrainTextureRepeatWidth = assets.countrysideGround != null
-                ? assets.countrysideGround.rect.width / assets.countrysideGround.pixelsPerUnit : 21.72f;
+                ? assets.countrysideGround.rect.width / assets.countrysideGround.pixelsPerUnit : 21.63f;
             assets.countryside.terrainWallUvRange = new Vector2(0f, 1f);
-            assets.countryside.terrainSurfaceUvRange = new Vector2(.441989f, .622928f);
-            assets.countryside.terrainSurfaceContactV = .559392f;
-            assets.countryside.terrainFillStartV = .559392f;
+            // Ground.png uses its complete painted platform band. The yellow layer is the authored
+            // wheel contact row; the matching brown section continues into Terrain.png behind it.
+            assets.countryside.terrainSurfaceUvRange = new Vector2(.219f, .708f);
+            assets.countryside.terrainSurfaceContactV = .63f;
+            assets.countryside.terrainFillStartV = .63f;
             assets.countryside.groundPhysicsMaterial = assets.groundPhysics;
             assets.countryside.terrainEdgeWidth = 0.18f;
             assets.countryside.terrainVisualDepth = 20f;

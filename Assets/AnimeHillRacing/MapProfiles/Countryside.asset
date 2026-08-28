@@ -169,11 +169,11 @@ MonoBehaviour:
   terrainEdgeMaterial: {fileID: 2100000, guid: 4741ca1bc6914f4aa98872d53d41c57b, type: 2}
   useSeparateTerrainMaterials: 1
   fitAuthoredTerrainTexture: 1
-  terrainTextureRepeatWidth: 21.72
+  terrainTextureRepeatWidth: 21.63
   terrainWallUvRange: {x: 0, y: 1}
-  terrainSurfaceUvRange: {x: 0.441989, y: 0.622928}
-  terrainSurfaceContactV: 0.559392
-  terrainFillStartV: 0.559392
+  terrainSurfaceUvRange: {x: 0.219, y: 0.708}
+  terrainSurfaceContactV: 0.63
+  terrainFillStartV: 0.63
   groundPhysicsMaterial: {fileID: 13400000, guid: 4dfb87f232532b24aafe44e9c5c97f50, type: 2}
   groundPhysicsMaterial2D: {fileID: 0}
   terrainEdgeWidth: 0.18

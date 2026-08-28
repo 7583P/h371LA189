@@ -149,6 +149,11 @@ namespace AnimeHillRacing.Terrain
     public static class TerrainGenerator
     {
         private const float TwoPi = Mathf.PI * 2f;
+        // Rainyer, Neon City, Mountains and Space use complete 2048 px Ground modules imported at
+        // 100 PPU. Keeping their repeat at the native 20.48 m prevents horizontal stretching and
+        // makes the sampled painted contact curve use the same source-pixel scale as the artwork.
+        public const float AuthoredTrackModuleWidth = 20.48f;
+        public const float AuthoredTrackMaximumVisualExtent = 3f;
         public const int NeonTemplateSectionCount = 10;
         private static readonly Dictionary<uint, List<ArenaSegmentType>> ArenaSegmentHistory =
             new Dictionary<uint, List<ArenaSegmentType>>();
@@ -2211,13 +2216,8 @@ namespace AnimeHillRacing.Terrain
             endSlope = previousSlope;
             float skirtBottom = profile.baseHeight - profile.amplitude *
                 (Mathf.Max(1f, profile.maximumDifficulty) + 0.5f) - profile.terrainVisualDepth;
-            CalculateGroundVisualExtents(profile, out float groundVisualDepth, out float groundVisualRise);
             float terrainFillDepth = CalculateTerrainFillDepth(profile);
-            float groundContactV = profile.terrainSurfaceContactV >=
-                                   Mathf.Min(profile.terrainSurfaceUvRange.x, profile.terrainSurfaceUvRange.y) &&
-                                   profile.terrainSurfaceContactV <=
-                                   Mathf.Max(profile.terrainSurfaceUvRange.x, profile.terrainSurfaceUvRange.y)
-                ? profile.terrainSurfaceContactV : profile.terrainSurfaceUvRange.y;
+            bool hasAuthoredContactCurve = HasAuthoredSurfaceContactCurve(profile);
             // Six independent vertices keep the three responsibilities separate: deep Terrain wall,
             // visible Ground ribbon and the horizontal driveable surface. Their top Y still comes from
             // the same surfaceHeights array used by the authoritative physics collider.
@@ -2245,6 +2245,9 @@ namespace AnimeHillRacing.Terrain
                         textureU = Mathf.Round(textureU / uvStep) * uvStep;
                 }
 
+                float groundContactV = SampleGroundSurfaceContactV(profile, textureU);
+                CalculateGroundVisualExtents(profile, groundContactV,
+                    out float groundVisualDepth, out float groundVisualRise);
                 float surfaceY = surfaceHeights[i];
                 float groundBottomY = EvaluateFloat32Precision(surfaceY - groundVisualDepth, worldX);
                 float groundTopY = EvaluateFloat32Precision(surfaceY + groundVisualRise, worldX);
@@ -2274,9 +2277,9 @@ namespace AnimeHillRacing.Terrain
                     // The City top cap is viewed edge-on by the 2.5D camera. Sampling the authored
                     // contact row here prevents that cap from painting the white border over the
                     // yellow stripe where the tires physically touch the road.
-                    uvs[vertex + 4] = new Vector2(textureU, profile.useCityHighwayTerrain
+                    uvs[vertex + 4] = new Vector2(textureU, profile.useCityHighwayTerrain || hasAuthoredContactCurve
                         ? groundContactV : profile.terrainSurfaceUvRange.y);
-                    uvs[vertex + 5] = new Vector2(textureU, profile.useCityHighwayTerrain
+                    uvs[vertex + 5] = new Vector2(textureU, profile.useCityHighwayTerrain || hasAuthoredContactCurve
                         ? groundContactV : profile.terrainSurfaceUvRange.x);
                 }
                 else
@@ -2351,10 +2354,17 @@ namespace AnimeHillRacing.Terrain
         public static void CalculateGroundVisualExtents(MapProfile profile, out float depthBelowSurface,
             out float riseAboveSurface)
         {
+            CalculateGroundVisualExtents(profile, ResolveConfiguredSurfaceContactV(profile),
+                out depthBelowSurface, out riseAboveSurface);
+        }
+
+        private static void CalculateGroundVisualExtents(MapProfile profile, float contactV,
+            out float depthBelowSurface, out float riseAboveSurface)
+        {
             depthBelowSurface = 0f;
             riseAboveSurface = 0f;
             if (profile == null) return;
-            if (profile.useSpaceTerrain)
+            if (profile.useSpaceTerrain && !profile.fitAuthoredTerrainTexture)
             {
                 depthBelowSurface = .52f;
                 riseAboveSurface = .07f;
@@ -2366,11 +2376,7 @@ namespace AnimeHillRacing.Terrain
             if (texture == null || texture.width <= 0 || texture.height <= 0) return;
             float bottomV = profile.terrainSurfaceUvRange.x;
             float topV = profile.terrainSurfaceUvRange.y;
-            float minimumV = Mathf.Min(bottomV, topV);
-            float maximumV = Mathf.Max(bottomV, topV);
-            float contactV = profile.terrainSurfaceContactV >= minimumV &&
-                             profile.terrainSurfaceContactV <= maximumV
-                ? profile.terrainSurfaceContactV : topV;
+            contactV = Mathf.Clamp(contactV, Mathf.Min(bottomV, topV), Mathf.Max(bottomV, topV));
             float metresPerV = profile.terrainTextureRepeatWidth * texture.height / texture.width;
             // Both extents come from the source pixels and PPU-derived repeat width; there is no visual offset.
             float rawDepth = Mathf.Abs(contactV - bottomV) * metresPerV;
@@ -2388,14 +2394,81 @@ namespace AnimeHillRacing.Terrain
                 riseAboveSurface = rawRise * uniformScale;
                 return;
             }
+            if (HasAuthoredSurfaceContactCurve(profile))
+            {
+                // A sampled painted contact path must use one scale for both halves of the ribbon.
+                // Clamping depth and rise independently moves the sampled contact away from y=surfaceY,
+                // which is exactly what made wheels appear to float over authored wavy terrain.
+                // Three metres is also the canonical visible module extent shared by the themed tracks.
+                float uniformScale = Mathf.Min(1f, AuthoredTrackMaximumVisualExtent /
+                    Mathf.Max(.001f, Mathf.Max(rawDepth, rawRise)));
+                depthBelowSurface = Mathf.Max(.05f, rawDepth * uniformScale);
+                riseAboveSurface = rawRise * uniformScale;
+                return;
+            }
             depthBelowSurface = Mathf.Clamp(rawDepth, .05f, 3f);
             riseAboveSurface = Mathf.Clamp(rawRise, 0f, 3f);
+        }
+
+        public static bool HasAuthoredSurfaceContactCurve(MapProfile profile) =>
+            profile != null && profile.terrainSurfaceContactVSamples != null &&
+            profile.terrainSurfaceContactVSamples.Length >= 2;
+
+        public static float SampleGroundSurfaceContactV(MapProfile profile, float textureU)
+        {
+            float fallback = ResolveConfiguredSurfaceContactV(profile);
+            if (!HasAuthoredSurfaceContactCurve(profile)) return fallback;
+
+            float sourceU = ResolveGroundTextureU(profile, textureU);
+            float[] samples = profile.terrainSurfaceContactVSamples;
+            float scaled = Mathf.Clamp01(sourceU) * (samples.Length - 1);
+            int left = Mathf.Min(Mathf.FloorToInt(scaled), samples.Length - 2);
+            float contactV = Mathf.Lerp(samples[left], samples[left + 1], scaled - left);
+            return Mathf.Clamp(contactV, Mathf.Min(profile.terrainSurfaceUvRange.x,
+                    profile.terrainSurfaceUvRange.y),
+                Mathf.Max(profile.terrainSurfaceUvRange.x, profile.terrainSurfaceUvRange.y));
+        }
+
+        private static float ResolveConfiguredSurfaceContactV(MapProfile profile)
+        {
+            if (profile == null) return 0f;
+            float minimumV = Mathf.Min(profile.terrainSurfaceUvRange.x, profile.terrainSurfaceUvRange.y);
+            float maximumV = Mathf.Max(profile.terrainSurfaceUvRange.x, profile.terrainSurfaceUvRange.y);
+            return profile.terrainSurfaceContactV >= minimumV && profile.terrainSurfaceContactV <= maximumV
+                ? profile.terrainSurfaceContactV : profile.terrainSurfaceUvRange.y;
+        }
+
+        private static float ResolveGroundTextureU(MapProfile profile, float textureU)
+        {
+            Material material = profile != null ? profile.terrainEdgeMaterial : null;
+            float transformedU = textureU;
+            if (material != null)
+                transformedU = textureU * material.mainTextureScale.x + material.mainTextureOffset.x;
+
+            if (material != null && material.HasProperty("_HorizontalSample"))
+            {
+                float fixedSample = material.GetFloat("_HorizontalSample");
+                if (fixedSample >= 0f) return Mathf.Clamp01(fixedSample);
+            }
+
+            if (material != null && material.HasProperty("_SeamlessHorizontalTiling") &&
+                material.GetFloat("_SeamlessHorizontalTiling") > .5f)
+            {
+                float tile = Mathf.Floor(transformedU);
+                float localU = Mathf.Repeat(transformedU, 1f);
+                if (Mathf.Repeat(Mathf.Abs(tile), 2f) >= 1f) localU = 1f - localU;
+                // Samples are authored across the material's visible horizontal range after its
+                // inset, so the normalized mirrored tile coordinate is the correct curve domain.
+                return localU;
+            }
+
+            return Mathf.Repeat(transformedU, 1f);
         }
 
         public static float CalculateTerrainFillDepth(MapProfile profile)
         {
             if (profile == null) return 0f;
-            if (profile.useSpaceTerrain) return .46f;
+            if (profile.useSpaceTerrain && !profile.fitAuthoredTerrainTexture) return .46f;
             if (!profile.fitAuthoredTerrainTexture) return 0f;
             Texture texture = profile.terrainEdgeMaterial != null
                 ? profile.terrainEdgeMaterial.mainTexture : null;

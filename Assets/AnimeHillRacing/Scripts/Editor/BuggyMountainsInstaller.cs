@@ -14,7 +14,7 @@ namespace AnimeHillRacing.Editor
 {
     public static class BuggyMountainsInstaller
     {
-        private const string SessionKey = "AHR.BuggyMountainsInstaller.v10";
+        private const string SessionKey = "AHR.BuggyMountainsInstaller.v11";
         private const string Root = "Assets/AnimeHillRacing";
         private const string BuggyBodyPath = "Assets/Art/Vehicles/Buggy/Buggy_Body.png";
         private const string BuggyRedBodyPath = "Assets/Art/Vehicles/Buggy/Buggy_Body_Red.png";
@@ -28,6 +28,7 @@ namespace AnimeHillRacing.Editor
         private const string MountainsArtRoot = "Assets/Art/Backgrounds/Mountains";
         private const string MountainsAnimeHorizonPath = MountainsArtRoot + "/Mountains_AnimeHorizon.png";
         private const string MountainsTerrainRoot = "Assets/Art/Terrain/Mountains";
+        private const string MountainsGroundPath = MountainsTerrainRoot + "/Ground.png";
 
         [InitializeOnLoadMethod]
         private static void QueueAutomaticInstall()
@@ -63,6 +64,7 @@ namespace AnimeHillRacing.Editor
             ConfigureSprite(MountainsArtRoot + "/Mountains_Near.png", 1024, true);
             ConfigureSprite(MountainsAnimeHorizonPath, 2048, false);
             ConfigureTiledTexture(MountainsTerrainRoot + "/Mountains_Rock.png");
+            ConfigureAuthoredGroundTexture(MountainsGroundPath);
 
             Sprite body = AssetDatabase.LoadAssetAtPath<Sprite>(BuggyBodyPath);
             Sprite redBody = AssetDatabase.LoadAssetAtPath<Sprite>(BuggyRedBodyPath);
@@ -489,13 +491,33 @@ namespace AnimeHillRacing.Editor
             };
             profile.environment = environment;
             Texture2D rock = AssetDatabase.LoadAssetAtPath<Texture2D>(MountainsTerrainRoot + "/Mountains_Rock.png");
+            Texture2D ground = AssetDatabase.LoadAssetAtPath<Texture2D>(MountainsGroundPath);
+            if (ground == null) throw new InvalidOperationException("The authored Mountains Ground.png is missing.");
+            TextureImporter groundImporter = AssetImporter.GetAtPath(MountainsGroundPath) as TextureImporter;
+            if (groundImporter == null)
+                throw new InvalidOperationException("The authored Mountains Ground importer is missing.");
             profile.terrainMaterial = LoadOrCreateMaterial(Root + "/Materials/MountainsRock.mat", rock,
                 Color.white);
-            profile.terrainEdgeMaterial = LoadOrCreateMaterial(Root + "/Materials/MountainsRockSurface.mat", rock,
-                Color.white);
+            profile.terrainEdgeMaterial = LoadOrCreateMaterial(Root + "/Materials/MountainsRockSurface.mat", ground,
+                Color.white, true);
             profile.useSeparateTerrainMaterials = true;
-            profile.fitAuthoredTerrainTexture = false;
-            profile.terrainTextureRepeatWidth = 36f;
+            profile.fitAuthoredTerrainTexture = true;
+            profile.terrainTextureRepeatWidth = ground.width /
+                                                Mathf.Max(.001f, groundImporter.spritePixelsPerUnit);
+            profile.terrainWallUvRange = new Vector2(0f, 1f);
+            profile.terrainSurfaceUvRange = new Vector2(.18f, .69f);
+            profile.terrainSurfaceContactV = .62f;
+            profile.terrainSurfaceContactVSamples = new[]
+            {
+                .63050f, .65543f, .63490f, .60850f, .59824f, .60264f, .61730f, .64223f,
+                .67009f, .68328f, .67889f, .65982f, .63050f, .60264f, .57918f, .56305f,
+                .56012f, .57331f, .59971f, .62757f, .64516f, .64809f, .63636f, .61437f,
+                .58798f, .57478f, .58358f, .61144f, .64516f, .67009f, .68035f, .67302f,
+                .62610f
+            };
+            // Start the deep rock wall at the painted wheel-contact line behind Ground. This is
+            // the same overlap used by City/North Pole and keeps both layers visually connected.
+            profile.terrainFillStartV = profile.terrainSurfaceContactV;
             profile.terrainVisualDepth = 360f;
             profile.terrainEdgeWidth = .24f;
             profile.groundPhysicsMaterial = LoadOrCreatePhysicsMaterial(
@@ -693,10 +715,13 @@ namespace AnimeHillRacing.Editor
             Debug.Log("ADVENTURE_TRACK_SELECTOR_OK|countryside|city|neon-city|mountains|rainyer|space|north-pole");
         }
 
-        private static Material LoadOrCreateMaterial(string path, Texture texture, Color color)
+        private static Material LoadOrCreateMaterial(string path, Texture texture, Color color,
+            bool transparent = false)
         {
             Material material = AssetDatabase.LoadAssetAtPath<Material>(path);
-            Shader shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Texture");
+            Shader shader = transparent
+                ? Shader.Find("AnimeHillRacing/Transparent Texture") ?? Shader.Find("Sprites/Default")
+                : Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Texture");
             if (material == null)
             {
                 material = new Material(shader);
@@ -705,8 +730,32 @@ namespace AnimeHillRacing.Editor
             else if (shader != null) material.shader = shader;
             material.mainTexture = texture;
             material.color = color;
+            if (transparent)
+            {
+                if (material.HasProperty("_SeamlessHorizontalTiling"))
+                    material.SetFloat("_SeamlessHorizontalTiling", 1f);
+                if (material.HasProperty("_HorizontalInset")) material.SetFloat("_HorizontalInset", .012f);
+                if (material.HasProperty("_HorizontalUvRange"))
+                    material.SetVector("_HorizontalUvRange", new Vector4(0f, 1f, 0f, 0f));
+                if (material.HasProperty("_DepthWrite")) material.SetFloat("_DepthWrite", 1f);
+                material.renderQueue = 2451;
+            }
             EditorUtility.SetDirty(material);
             return material;
+        }
+
+        private static void ConfigureAuthoredGroundTexture(string path)
+        {
+            TextureImporter importer = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (importer == null) return;
+            importer.textureType = TextureImporterType.Default;
+            importer.alphaIsTransparency = true;
+            importer.wrapMode = TextureWrapMode.Repeat;
+            importer.mipmapEnabled = false;
+            importer.filterMode = FilterMode.Bilinear;
+            importer.textureCompression = TextureImporterCompression.Compressed;
+            importer.maxTextureSize = 2048;
+            importer.SaveAndReimport();
         }
 
         private static PhysicsMaterial LoadOrCreatePhysicsMaterial(string path, float friction)

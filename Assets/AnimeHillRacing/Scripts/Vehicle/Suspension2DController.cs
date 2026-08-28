@@ -69,9 +69,9 @@ namespace AnimeHillRacing.Vehicle
         public float LastAppliedMotorTorque => lastAppliedMotorTorque;
         public float WheelAngularVelocity => wheelBody != null ? wheelBody.angularVelocity * Mathf.Deg2Rad : 0f;
         public float VisualCenterError => wheelBody != null && wheelVisual != null
-            ? Vector2.Distance(wheelBody.position, wheelVisual.position) : 0f;
+            ? Vector2.Distance(wheelBody.transform.position, wheelVisual.position) : 0f;
         public float VisualRotationError => wheelBody != null && wheelVisual != null
-            ? Mathf.Abs(Mathf.DeltaAngle(wheelBody.rotation, wheelVisual.eulerAngles.z)) : 0f;
+            ? Mathf.Abs(Mathf.DeltaAngle(wheelBody.transform.eulerAngles.z, wheelVisual.eulerAngles.z)) : 0f;
 
         public WheelTerrainState TerrainState => terrainState;
         public bool IsBelowSurface => terrainState == WheelTerrainState.BelowSurface;

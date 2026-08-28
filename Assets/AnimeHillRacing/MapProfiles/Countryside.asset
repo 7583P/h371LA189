@@ -173,6 +173,40 @@ MonoBehaviour:
   terrainWallUvRange: {x: 0, y: 1}
   terrainSurfaceUvRange: {x: 0.219, y: 0.708}
   terrainSurfaceContactV: 0.63
+  terrainSurfaceContactVSamples:
+  - 0.63411
+  - 0.66988
+  - 0.66988
+  - 0.65199
+  - 0.63136
+  - 0.59835
+  - 0.58872
+  - 0.62173
+  - 0.63686
+  - 0.64237
+  - 0.663
+  - 0.663
+  - 0.64099
+  - 0.60523
+  - 0.58047
+  - 0.55846
+  - 0.5447
+  - 0.5447
+  - 0.56534
+  - 0.58047
+  - 0.59835
+  - 0.63136
+  - 0.64787
+  - 0.63274
+  - 0.61348
+  - 0.60248
+  - 0.58322
+  - 0.58184
+  - 0.58872
+  - 0.60523
+  - 0.62448
+  - 0.63274
+  - 0.64237
   terrainFillStartV: 0.63
   groundPhysicsMaterial: {fileID: 13400000, guid: 4dfb87f232532b24aafe44e9c5c97f50, type: 2}
   groundPhysicsMaterial2D: {fileID: 0}

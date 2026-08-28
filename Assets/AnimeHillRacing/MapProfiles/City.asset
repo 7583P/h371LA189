@@ -164,6 +164,7 @@ MonoBehaviour:
   terrainWallUvRange: {x: 0.171, y: 0.82}
   terrainSurfaceUvRange: {x: 0.313, y: 0.701}
   terrainSurfaceContactV: 0.579
+  terrainSurfaceContactVSamples: []
   terrainFillStartV: 0.579
   groundPhysicsMaterial: {fileID: 13400000, guid: 4dfb87f232532b24aafe44e9c5c97f50, type: 2}
   groundPhysicsMaterial2D: {fileID: 0}

@@ -417,8 +417,9 @@ namespace AnimeHillRacing.Terrain
                     bounciness = 0f
                 };
             }
-            authoritativeTerrainCollider2D.edgeRadius = mapProfile != null && mapProfile.useMountainsTerrain
-                ? .14f : 0f;
+            // The collider path itself is the painted driving surface. A non-zero EdgeCollider2D radius
+            // inflates that path and makes tires visibly hover above the authored line (Mountains used 14 cm).
+            authoritativeTerrainCollider2D.edgeRadius = 0f;
             authoritativeTerrainCollider2D.sharedMaterial = mapProfile != null && mapProfile.groundPhysicsMaterial2D != null
                 ? mapProfile.groundPhysicsMaterial2D : authoritativeTerrainMaterial2D;
         }
@@ -493,7 +494,7 @@ namespace AnimeHillRacing.Terrain
                 GameObject child = new GameObject($"Authoritative Terrain 2D Segment {authoritativeTerrainColliderSegments2D.Count + 1}");
                 child.transform.SetParent(transform, false);
                 EdgeCollider2D collider = child.AddComponent<EdgeCollider2D>();
-                collider.edgeRadius = mapProfile != null && mapProfile.useMountainsTerrain ? .14f : 0f;
+                collider.edgeRadius = 0f;
                 collider.sharedMaterial = mapProfile != null && mapProfile.groundPhysicsMaterial2D != null
                     ? mapProfile.groundPhysicsMaterial2D : authoritativeTerrainMaterial2D;
                 authoritativeTerrainColliderSegments2D.Add(collider);

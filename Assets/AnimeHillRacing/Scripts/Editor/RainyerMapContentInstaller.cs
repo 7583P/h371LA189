@@ -122,12 +122,23 @@ namespace AnimeHillRacing.Editor
             profile.terrainMaterial = terrainMaterial;
             profile.terrainEdgeMaterial = groundMaterial;
             profile.useSeparateTerrainMaterials = true;
-            profile.fitAuthoredTerrainTexture = false;
-            profile.terrainTextureRepeatWidth = 34f;
+            profile.fitAuthoredTerrainTexture = true;
+            profile.terrainTextureRepeatWidth = ground.rect.width /
+                                                Mathf.Max(.001f, ground.pixelsPerUnit);
             profile.terrainWallUvRange = new Vector2(0f, 1f);
             profile.terrainSurfaceUvRange = new Vector2(0f, 1f);
-            profile.terrainSurfaceContactV = -1f;
-            profile.terrainFillStartV = -1f;
+            profile.terrainSurfaceContactV = .9f;
+            profile.terrainSurfaceContactVSamples = new[]
+            {
+                .73724f, .80102f, .79847f, .80867f, .83163f, .86735f, .90816f, .94898f,
+                .97704f, .99235f, .99490f, .97959f, .95408f, .91837f, .88010f, .84184f,
+                .81378f, .80612f, .81888f, .84184f, .86990f, .90051f, .93112f, .95408f,
+                .96939f, .97704f, .96684f, .94388f, .91327f, .87500f, .84184f, .81888f,
+                .79337f
+            };
+            // Match City/North Pole: the deep Terrain wall starts at the physical contact line
+            // behind the complete Ground ribbon, so transparent lower contours cannot expose a gap.
+            profile.terrainFillStartV = profile.terrainSurfaceContactV;
             profile.groundPhysicsMaterial = wetGround;
             profile.terrainEdgeWidth = .22f;
             profile.terrainVisualDepth = 27f;
@@ -167,7 +178,11 @@ namespace AnimeHillRacing.Editor
             MapProfile city = catalog.FindMap("city", GameModeType.Adventure2_5D) as MapProfile;
             if (catalog.FindMap("rainyer", GameModeType.Adventure2_5D) != profile ||
                 profile.environment != environment || !profile.useSeparateTerrainMaterials ||
-                profile.terrainMaterial == profile.terrainEdgeMaterial || profile.fitAuthoredTerrainTexture ||
+                profile.terrainMaterial == profile.terrainEdgeMaterial || !profile.fitAuthoredTerrainTexture ||
+                profile.terrainSurfaceContactVSamples == null ||
+                profile.terrainSurfaceContactVSamples.Length != 33 ||
+                Mathf.Abs(profile.terrainFillStartV - profile.terrainSurfaceContactV) > .0001f ||
+                Mathf.Abs(profile.terrainTextureRepeatWidth - TerrainGenerator.AuthoredTrackModuleWidth) > .001f ||
                 profile.rainstorm == null || !profile.rainstorm.permanentRain ||
                 Mathf.Abs(profile.rainstorm.lightningEventsPerMinute - 4f) > .001f ||
                 profile.rainstorm.surfaceGripMultiplier >= 1f || city == null ||
@@ -220,6 +235,12 @@ namespace AnimeHillRacing.Editor
             else if (material.shader != shader) material.shader = shader;
             material.mainTexture = texture;
             material.color = Color.white;
+            if (material.HasProperty("_SeamlessHorizontalTiling"))
+                material.SetFloat("_SeamlessHorizontalTiling", 1f);
+            if (material.HasProperty("_HorizontalInset")) material.SetFloat("_HorizontalInset", .012f);
+            if (material.HasProperty("_HorizontalUvRange"))
+                material.SetVector("_HorizontalUvRange", new Vector4(0f, 1f, 0f, 0f));
+            if (material.HasProperty("_DepthWrite")) material.SetFloat("_DepthWrite", 1f);
             material.renderQueue = renderQueue;
             EditorUtility.SetDirty(material);
             return material;

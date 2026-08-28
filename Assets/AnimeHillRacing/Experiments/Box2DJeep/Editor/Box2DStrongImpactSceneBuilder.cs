@@ -69,6 +69,7 @@ namespace AnimeHillRacing.EditorTools
             SessionState.SetInt(VerifyPhaseKey, 1);
             EditorApplication.update -= ContinuePlayModeVerification;
             EditorApplication.update += ContinuePlayModeVerification;
+            AdventurePlayModeStartScene.UseSceneForNextPlayMode(ScenePath);
             EditorApplication.isPlaying = true;
         }
 

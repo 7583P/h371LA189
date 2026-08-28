@@ -32,6 +32,47 @@ MonoBehaviour:
   useCityHighwayTerrain: 0
   cityFeatureLength: 120
   cityMiniRhythmStrength: 0.18
+  useCityBridges: 0
+  cityBridges:
+    cycleLength: 10000
+    minimumZonesPerCycle: 7
+    maximumZonesPerCycle: 10
+    minimumProgressiveZones: 5
+    maximumProgressiveZones: 7
+    cycleStartMargin: 320
+    cycleEndMargin: 320
+    minimumZoneSpacing: 300
+    approachBlendLength: 50
+    recoveryBlendLength: 50
+    bridgeLength: 14
+    normalWaterLength: 22
+    progressiveBaseWaterLength: 22
+    progressiveGrowthPerCycle: 10
+    waterVisualDepth: 10
+    waterSurfaceOffset: -0.45
+    waterVisualAlpha: 0.5
+    waterBedThickness: 22
+    waterEndBankWidth: 3
+    waterSpeedRetainedPerSecond: 0.4
+    waterAngularSpeedRetainedPerSecond: 0.3
+    waterBuoyancySpring: 4
+    waterVerticalDamping: 3
+    waterMaximumSinkAcceleration: 8
+    waterDriverDownClearance: 5
+    bridgeColliderThickness: 0.45
+    bridgeGroundOverlap: 1
+    closedAngleDegrees: 0
+    openAngleDegrees: 45
+    transitionSeconds: 3
+    closedHoldSeconds: 4
+    openHoldSeconds: 4
+    bridgeSprite: {fileID: 0}
+    waterSprite: {fileID: 0}
+    bridgeArtSlopeDegrees: 16.1
+    bridgeArtSurfaceOffset: -0.61
+    waterSortingOrder: 1
+    waterBedSortingOrder: 0
+    bridgeSortingOrder: 5
   difficultyCurve:
     serializedVersion: 2
     m_Curve:
@@ -100,12 +141,46 @@ MonoBehaviour:
   terrainMaterial: {fileID: 2100000, guid: 0382e42eacc3aa547aaaa3d366ec5510, type: 2}
   terrainEdgeMaterial: {fileID: 2100000, guid: 7bbc9455beeb6a24987ed1ca0b6968c2, type: 2}
   useSeparateTerrainMaterials: 1
-  fitAuthoredTerrainTexture: 0
-  terrainTextureRepeatWidth: 36
+  fitAuthoredTerrainTexture: 1
+  terrainTextureRepeatWidth: 20.48
   terrainWallUvRange: {x: 0, y: 1}
-  terrainSurfaceUvRange: {x: 0, y: 1}
-  terrainSurfaceContactV: -1
-  terrainFillStartV: -1
+  terrainSurfaceUvRange: {x: 0.18, y: 0.69}
+  terrainSurfaceContactV: 0.62
+  terrainSurfaceContactVSamples:
+  - 0.6305
+  - 0.65543
+  - 0.6349
+  - 0.6085
+  - 0.59824
+  - 0.60264
+  - 0.6173
+  - 0.64223
+  - 0.67009
+  - 0.68328
+  - 0.67889
+  - 0.65982
+  - 0.6305
+  - 0.60264
+  - 0.57918
+  - 0.56305
+  - 0.56012
+  - 0.57331
+  - 0.59971
+  - 0.62757
+  - 0.64516
+  - 0.64809
+  - 0.63636
+  - 0.61437
+  - 0.58798
+  - 0.57478
+  - 0.58358
+  - 0.61144
+  - 0.64516
+  - 0.67009
+  - 0.68035
+  - 0.67302
+  - 0.6261
+  terrainFillStartV: 0.62
   groundPhysicsMaterial: {fileID: 13400000, guid: fdedc5efa6298df4c9ca2b981075128e, type: 2}
   groundPhysicsMaterial2D: {fileID: 6200000, guid: 40a6d01f10a17944a93d40786678a90b, type: 2}
   terrainEdgeWidth: 0.24

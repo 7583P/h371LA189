@@ -314,6 +314,7 @@ namespace AnimeHillRacing.Editor
             BuiltAssets assets = CreateAssets();
             ValidateCustomizationContract(assets);
             ValidateCountrysideTerrainContract(assets.countryside);
+            ValidateSharedAuthoredTrackDimensions();
             ValidateNorthPoleContract(assets);
             ValidateSpaceContract(assets);
             ValidateNeonCityContract(assets);
@@ -460,6 +461,7 @@ namespace AnimeHillRacing.Editor
             BuiltAssets assets = CreateAssets();
             ValidateCustomizationContract(assets);
             ValidateCountrysideTerrainContract(assets.countryside);
+            ValidateSharedAuthoredTrackDimensions();
             ValidateNorthPoleContract(assets);
             ValidateSpaceContract(assets);
             ValidateNeonCityContract(assets);
@@ -1778,9 +1780,13 @@ namespace AnimeHillRacing.Editor
                           SpaceGapEvent.CalculateBlackHoleVisualHeight(fourth.gapLength)) > .01f ||
                 profile.hardEndDistance != 10000f ||
                 !profile.terrainMaterial.HasProperty("_SurfaceMode") ||
-                !profile.terrainEdgeMaterial.HasProperty("_SurfaceMode") ||
                 profile.terrainMaterial.GetFloat("_SurfaceMode") > .5f ||
-                profile.terrainEdgeMaterial.GetFloat("_SurfaceMode") < .5f ||
+                !profile.fitAuthoredTerrainTexture ||
+                profile.terrainSurfaceContactVSamples == null ||
+                profile.terrainSurfaceContactVSamples.Length != 33 ||
+                profile.terrainEdgeMaterial.mainTexture == null ||
+                AssetDatabase.GetAssetPath(profile.terrainEdgeMaterial.mainTexture) !=
+                "Assets/Art/Backgrounds/Space/Ground.png" ||
                 settings.rampRise < 5f ||
                 settings.rampFlatFraction > .1f)
                 throw new System.InvalidOperationException(
@@ -2388,8 +2394,11 @@ namespace AnimeHillRacing.Editor
                 {
                     float groundTop = visual[i * 6 + 2].y;
                     float groundBottom = visual[i * 6 + 3].y;
+                    float textureU = (start + i * (chunkLength / samples)) /
+                                     Mathf.Max(1f, profile.terrainTextureRepeatWidth);
+                    float contactV = TerrainGenerator.SampleGroundSurfaceContactV(profile, textureU);
                     float contactT = Mathf.InverseLerp(profile.terrainSurfaceUvRange.x,
-                        profile.terrainSurfaceUvRange.y, profile.terrainSurfaceContactV);
+                        profile.terrainSurfaceUvRange.y, contactV);
                     float groundContact = Mathf.Lerp(groundBottom, groundTop, contactT);
                     float terrainTop = visual[i * 6].y;
                     float colliderTop = physical[i * 2].y;
@@ -2791,7 +2800,8 @@ namespace AnimeHillRacing.Editor
             if (authoredTerrain == null || authoredGround == null || profile.terrainMaterial == null ||
                 profile.terrainEdgeMaterial == null || profile.terrainMaterial.mainTexture != authoredTerrain ||
                 profile.terrainEdgeMaterial.mainTexture != authoredGround || !profile.useSeparateTerrainMaterials ||
-                !profile.fitAuthoredTerrainTexture ||
+                !profile.fitAuthoredTerrainTexture || profile.terrainSurfaceContactVSamples == null ||
+                profile.terrainSurfaceContactVSamples.Length != 33 ||
                 Mathf.Abs(profile.terrainFillStartV - profile.terrainSurfaceContactV) > .0001f ||
                 Mathf.Abs(profile.terrainTextureRepeatWidth - expectedRepeatWidth) > .001f ||
                 terrainImporter == null || groundImporter == null || terrainImporter.mipmapEnabled ||
@@ -2837,8 +2847,11 @@ namespace AnimeHillRacing.Editor
                     float terrainBottom = visual[i * 6 + 1].y;
                     float renderedSurface = visual[i * 6 + 4].y;
                     float colliderSurface = physical[i * 2].y;
+                    float textureU = (chunk * chunkLength + i * dx) /
+                                     Mathf.Max(1f, profile.terrainTextureRepeatWidth);
+                    float contactV = TerrainGenerator.SampleGroundSurfaceContactV(profile, textureU);
                     float contactT = Mathf.InverseLerp(profile.terrainSurfaceUvRange.x,
-                        profile.terrainSurfaceUvRange.y, profile.terrainSurfaceContactV);
+                        profile.terrainSurfaceUvRange.y, contactV);
                     float groundContact = Mathf.Lerp(groundBottom, groundTop, contactT);
                     float expectedTerrainTop = heights[i] - TerrainGenerator.CalculateTerrainFillDepth(profile);
                     maximumAlignmentError = Mathf.Max(maximumAlignmentError,
@@ -2873,6 +2886,91 @@ namespace AnimeHillRacing.Editor
                        $"max slope {maximumSlope:0.0} degrees, {directionChanges} climb/descent changes, " +
                        $"difficulty peaks at 15000m; Ground/collider error {maximumAlignmentError:0.000000}m, " +
                        $"Ground band {minimumGroundDepth:0.000}m, Terrain fill >= {minimumTerrainDepth:0.0}m.");
+        }
+
+        [MenuItem("Anime Hill Racing/Validation/Validate Authored Track Surface Contract")]
+        public static void ValidateAuthoredTrackSurfaceContract()
+        {
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            MapProfile countryside = AssetDatabase.LoadAssetAtPath<MapProfile>(
+                Root + "/MapProfiles/Countryside.asset");
+            ValidateCountrysideTerrainContract(countryside);
+            ValidateSharedAuthoredTrackDimensions();
+        }
+
+        private static void ValidateSharedAuthoredTrackDimensions()
+        {
+            string[] profilePaths =
+            {
+                Root + "/MapProfiles/Rainyer.asset", Root + "/MapProfiles/NeonCity.asset",
+                Root + "/MapProfiles/Mountains.asset", SpaceMapPath
+            };
+            string[] groundPaths =
+            {
+                "Assets/Art/Backgrounds/Rainyer/Ground.png", NeonGroundPath,
+                "Assets/Art/Terrain/Mountains/Ground.png", "Assets/Art/Backgrounds/Space/Ground.png"
+            };
+            var mesh = new Mesh();
+            float maximumAlignmentError = 0f;
+            float maximumSubsoilTopError = 0f;
+            float maximumExtent = 0f;
+            float minimumMaximumDepth = float.PositiveInfinity;
+            for (int track = 0; track < profilePaths.Length; track++)
+            {
+                MapProfile profile = AssetDatabase.LoadAssetAtPath<MapProfile>(profilePaths[track]);
+                Texture2D ground = AssetDatabase.LoadAssetAtPath<Texture2D>(groundPaths[track]);
+                TextureImporter importer = AssetImporter.GetAtPath(groundPaths[track]) as TextureImporter;
+                float expectedRepeatWidth = ground != null && importer != null
+                    ? ground.width / Mathf.Max(.001f, importer.spritePixelsPerUnit) : 0f;
+                if (profile == null || ground == null || importer == null || profile.terrainEdgeMaterial == null ||
+                    profile.terrainEdgeMaterial.mainTexture != ground || !profile.useSeparateTerrainMaterials ||
+                    !profile.fitAuthoredTerrainTexture || profile.terrainSurfaceContactVSamples == null ||
+                    profile.terrainSurfaceContactVSamples.Length != 33 || importer.mipmapEnabled ||
+                    importer.wrapMode != TextureWrapMode.Repeat ||
+                    Mathf.Abs(profile.terrainFillStartV - profile.terrainSurfaceContactV) > .0001f ||
+                    Mathf.Abs(profile.terrainTextureRepeatWidth - expectedRepeatWidth) > .001f)
+                    throw new System.InvalidOperationException(
+                        $"{profilePaths[track]} does not satisfy the shared authored-track dimensions.");
+
+                TerrainGenerator.BuildMesh(mesh, profile, 0f, 80f, 96, 10f, false, 0f, 0f,
+                    out float[] heights, out _, out _);
+                Vector3[] vertices = mesh.vertices;
+                float trackMaximumDepth = 0f;
+                float dx = 80f / 96f;
+                for (int i = 0; i < heights.Length; i++)
+                {
+                    float groundTop = vertices[i * 6 + 2].y;
+                    float groundBottom = vertices[i * 6 + 3].y;
+                    float terrainTop = vertices[i * 6].y;
+                    float textureU = i * dx / profile.terrainTextureRepeatWidth;
+                    float contactV = TerrainGenerator.SampleGroundSurfaceContactV(profile, textureU);
+                    float contactT = Mathf.InverseLerp(profile.terrainSurfaceUvRange.x,
+                        profile.terrainSurfaceUvRange.y, contactV);
+                    float visualContact = Mathf.Lerp(groundBottom, groundTop, contactT);
+                    maximumAlignmentError = Mathf.Max(maximumAlignmentError,
+                        Mathf.Abs(visualContact - heights[i]));
+                    maximumSubsoilTopError = Mathf.Max(maximumSubsoilTopError,
+                        Mathf.Abs(terrainTop - heights[i]));
+                    float depth = heights[i] - groundBottom;
+                    float rise = groundTop - heights[i];
+                    trackMaximumDepth = Mathf.Max(trackMaximumDepth, depth);
+                    maximumExtent = Mathf.Max(maximumExtent, depth, rise);
+                }
+                minimumMaximumDepth = Mathf.Min(minimumMaximumDepth, trackMaximumDepth);
+            }
+            Object.DestroyImmediate(mesh);
+            if (maximumAlignmentError > .0001f || maximumSubsoilTopError > .0001f ||
+                maximumExtent > TerrainGenerator.AuthoredTrackMaximumVisualExtent + .001f ||
+                minimumMaximumDepth < TerrainGenerator.AuthoredTrackMaximumVisualExtent - .05f)
+                throw new System.InvalidOperationException(
+                    $"Shared authored-track geometry failed: alignment={maximumAlignmentError:0.000000}m, " +
+                    $"subsoilTop={maximumSubsoilTopError:0.000000}m, " +
+                    $"extent={maximumExtent:0.000}m, minimum depth={minimumMaximumDepth:0.000}m.");
+            Debug.Log($"AUTHORED_TRACK_DIMENSIONS_PASS|tracks=rainyer,neon-city,mountains,space|" +
+                      $"width={TerrainGenerator.AuthoredTrackModuleWidth:0.00}m|depth=" +
+                      $"{TerrainGenerator.AuthoredTrackMaximumVisualExtent:0.00}m|" +
+                      $"alignment={maximumAlignmentError:0.000000}m|" +
+                      $"subsoilTop={maximumSubsoilTopError:0.000000}m");
         }
 
         private static void ValidateFuelSequenceContract(BuiltAssets assets)
@@ -5789,6 +5887,14 @@ namespace AnimeHillRacing.Editor
             // wheel contact row; the matching brown section continues into Terrain.png behind it.
             assets.countryside.terrainSurfaceUvRange = new Vector2(.219f, .708f);
             assets.countryside.terrainSurfaceContactV = .63f;
+            assets.countryside.terrainSurfaceContactVSamples = new[]
+            {
+                .63411f, .66988f, .66988f, .65199f, .63136f, .59835f, .58872f, .62173f,
+                .63686f, .64237f, .66300f, .66300f, .64099f, .60523f, .58047f, .55846f,
+                .54470f, .54470f, .56534f, .58047f, .59835f, .63136f, .64787f, .63274f,
+                .61348f, .60248f, .58322f, .58184f, .58872f, .60523f, .62448f, .63274f,
+                .64237f
+            };
             assets.countryside.terrainFillStartV = .63f;
             assets.countryside.groundPhysicsMaterial = assets.groundPhysics;
             assets.countryside.terrainEdgeWidth = 0.18f;
@@ -6053,6 +6159,25 @@ namespace AnimeHillRacing.Editor
             assets.neonCity.environment = assets.neonCityEnvironment;
             assets.neonCity.terrainMaterial = assets.neonCityMaterial;
             assets.neonCity.terrainEdgeMaterial = assets.neonCityEdgeMaterial;
+            assets.neonCity.useSeparateTerrainMaterials = true;
+            assets.neonCity.fitAuthoredTerrainTexture = true;
+            assets.neonCity.terrainTextureRepeatWidth = assets.neonGround != null
+                ? assets.neonGround.rect.width / Mathf.Max(.001f, assets.neonGround.pixelsPerUnit)
+                : TerrainGenerator.AuthoredTrackModuleWidth;
+            assets.neonCity.terrainWallUvRange = new Vector2(0f, 1f);
+            assets.neonCity.terrainSurfaceUvRange = new Vector2(.17f, .66f);
+            assets.neonCity.terrainSurfaceContactV = .61f;
+            assets.neonCity.terrainSurfaceContactVSamples = new[]
+            {
+                .62903f, .65689f, .65103f, .63343f, .61290f, .60264f, .60117f, .61290f,
+                .63196f, .64809f, .64809f, .64516f, .62170f, .59971f, .57771f, .56158f,
+                .54839f, .54839f, .56012f, .57771f, .59824f, .60997f, .60411f, .59384f,
+                .57771f, .57038f, .56452f, .56598f, .58211f, .60264f, .62317f, .63783f,
+                .62463f
+            };
+            // Match City/North Pole: overlap the deep Terrain wall behind the complete Ground
+            // ribbon from the wheel-contact line, rather than joining two irregular transparent edges.
+            assets.neonCity.terrainFillStartV = assets.neonCity.terrainSurfaceContactV;
             assets.neonCity.groundPhysicsMaterial = assets.groundPhysics;
             assets.neonCity.terrainEdgeWidth = .18f;
             assets.neonCity.terrainVisualDepth = 22f;
@@ -7779,7 +7904,8 @@ namespace AnimeHillRacing.Editor
             Material material = AssetDatabase.LoadAssetAtPath<Material>(path);
             bool needsTransparency = name == "CityTerrain" || name == "CityGround" ||
                                      name == "CountrysideTerrain" || name == "CountrysideGround" ||
-                                     name == "NorthPoleTerrain" || name == "NorthPoleGround";
+                                     name == "NorthPoleTerrain" || name == "NorthPoleGround" ||
+                                     name == "NeonCityEdge";
             Shader shader = needsTransparency
                 ? Shader.Find("AnimeHillRacing/Transparent Texture") ?? Shader.Find("Sprites/Default")
                 : Shader.Find("Unlit/Texture") ?? Shader.Find("Sprites/Default");
@@ -7794,7 +7920,8 @@ namespace AnimeHillRacing.Editor
             material.color = Color.white;
             bool useSeamlessTerrainTiling = name == "CityTerrain" || name == "CityGround" ||
                                              name == "CountrysideTerrain" || name == "CountrysideGround" ||
-                                             name == "NorthPoleTerrain" || name == "NorthPoleGround";
+                                             name == "NorthPoleTerrain" || name == "NorthPoleGround" ||
+                                             name == "NeonCityEdge";
             if (material.HasProperty("_SeamlessHorizontalTiling"))
                 material.SetFloat("_SeamlessHorizontalTiling", useSeamlessTerrainTiling ? 1f : 0f);
             if (material.HasProperty("_HorizontalInset"))
@@ -7813,7 +7940,8 @@ namespace AnimeHillRacing.Editor
                 material.SetFloat("_DepthWrite", 1f);
             if (name == "CityTerrain" || name == "CountrysideTerrain" || name == "NorthPoleTerrain")
                 material.renderQueue = 2450;
-            else if (name == "CityGround" || name == "CountrysideGround" || name == "NorthPoleGround")
+            else if (name == "CityGround" || name == "CountrysideGround" || name == "NorthPoleGround" ||
+                     name == "NeonCityEdge")
                 material.renderQueue = 2451;
             EditorUtility.SetDirty(material);
             return material;

@@ -30,6 +30,9 @@ namespace AnimeHillRacing.EditorTools
         private const string ResultsKey = SessionPrefix + "Results";
         private const string AllPassedKey = SessionPrefix + "AllPassed";
         private const string PhaseStartedKey = SessionPrefix + "PhaseStartedUtcTicks";
+        private const string RequestedVehiclesKey = SessionPrefix + "RequestedVehicles";
+        private const string RequestedMapsKey = SessionPrefix + "RequestedMaps";
+        private const string MapIndexKey = SessionPrefix + "MapIndex";
 
         private const int PhaseLaunching = 1;
         private const int PhaseRunning = 2;
@@ -43,6 +46,15 @@ namespace AnimeHillRacing.EditorTools
             "formula-01",
             "rally-01",
             "sport-bike-01"
+        };
+
+        private static readonly string[] MapIds =
+        {
+            "countryside",
+            "rainyer",
+            "neon-city",
+            "mountains",
+            "space"
         };
 
         static AdventurePhysics2DPlayModeRunner()
@@ -59,21 +71,22 @@ namespace AnimeHillRacing.EditorTools
             if (EditorApplication.isCompiling || EditorApplication.isUpdating || EditorApplication.isPlaying ||
                 EditorApplication.isPlayingOrWillChangePlaymode)
                 return;
-            EditorApplication.update -= ConsumeRunRequest;
+            string requestedVehicles = File.ReadAllText(RequestPath);
             File.Delete(RequestPath);
-            StartAudit();
+            string[] requestParts = requestedVehicles.Split(new[] { '|' }, 2);
+            StartAudit(requestParts[0], requestParts.Length > 1 ? requestParts[1] : null);
         }
 
         [MenuItem(MenuPath)]
         public static void RunFromMenu()
         {
-            StartAudit();
+            StartAudit(null, null);
         }
 
         /// <summary>Entry point suitable for Unity -executeMethod. Do not add -quit; the runner exits itself.</summary>
         public static void RunFromCommandLine()
         {
-            StartAudit();
+            StartAudit(null, null);
         }
 
         [MenuItem(MenuPath, true)]
@@ -83,7 +96,7 @@ namespace AnimeHillRacing.EditorTools
                    !EditorApplication.isCompiling;
         }
 
-        private static void StartAudit()
+        private static void StartAudit(string requestedVehicles, string requestedMaps)
         {
             if (SessionState.GetBool(ActiveKey, false))
             {
@@ -116,9 +129,16 @@ namespace AnimeHillRacing.EditorTools
             SessionState.SetString(ResultsKey, string.Empty);
             SessionState.SetBool(AllPassedKey, true);
             SessionState.SetInt(VehicleIndexKey, 0);
+            SessionState.SetInt(MapIndexKey, 0);
+            string[] activeVehicles = ParseRequestedVehicles(requestedVehicles);
+            string[] activeMaps = ParseRequestedMaps(requestedMaps);
+            SessionState.SetString(RequestedVehiclesKey, string.Join(",", activeVehicles));
+            SessionState.SetString(RequestedMapsKey, string.Join(",", activeMaps));
             SessionState.SetBool(ActiveKey, true);
             Application.runInBackground = true;
-            Debug.Log($"ADVENTURE_BOX2D_PLAY_BEGIN|classification=REAL_ADVENTURE_PLAY_MODE|vehicles={string.Join(",", VehicleIds)}|simulation=FixedUpdate");
+            Debug.Log($"ADVENTURE_BOX2D_PLAY_BEGIN|classification=REAL_ADVENTURE_PLAY_MODE|" +
+                      $"vehicles={string.Join(",", activeVehicles)}|maps={string.Join(",", activeMaps)}|" +
+                      "simulation=FixedUpdate");
             RehookUpdate();
             BeginCurrentVehicle();
         }
@@ -127,7 +147,8 @@ namespace AnimeHillRacing.EditorTools
         {
             if (!SessionState.GetBool(ActiveKey, false)) return;
             int index = SessionState.GetInt(VehicleIndexKey, 0);
-            if (index < 0 || index >= VehicleIds.Length)
+            string[] activeVehicles = ActiveVehicleIds();
+            if (index < 0 || index >= activeVehicles.Length)
             {
                 FinishAudit();
                 return;
@@ -135,14 +156,16 @@ namespace AnimeHillRacing.EditorTools
 
             try
             {
-                string vehicleId = VehicleIds[index];
+                string vehicleId = activeVehicles[index];
                 SaveManager.SelectedVehicleId = vehicleId;
-                SaveManager.SelectedMapId = "countryside";
+                SaveManager.SelectedMapId = CurrentMapId();
                 SaveManager.SelectedGameMode = GameModeType.Adventure2_5D;
                 Application.runInBackground = true;
                 EditorSceneManager.OpenScene(AdventureScenePath, OpenSceneMode.Single);
+                AdventurePlayModeStartScene.UseSceneForNextPlayMode(AdventureScenePath);
                 SetPhase(PhaseLaunching);
-                Debug.Log($"ADVENTURE_BOX2D_PLAY_VEHICLE_BEGIN|index={index}|vehicle={vehicleId}");
+                Debug.Log($"ADVENTURE_BOX2D_PLAY_VEHICLE_BEGIN|index={index}|vehicle={vehicleId}|" +
+                          $"map={CurrentMapId()}");
                 EditorApplication.isPlaying = true;
             }
             catch (Exception exception)
@@ -207,7 +230,9 @@ namespace AnimeHillRacing.EditorTools
                 {
                     GameObject probeObject = new GameObject("Adventure Physics2D Play Mode Probe");
                     probe = probeObject.AddComponent<AdventurePhysics2DPlayModeProbe>();
-                    probe.Configure(CurrentVehicleId());
+                    // This audit validates representative driving and terrain alignment. The probe's legacy
+                    // 32/262/524 km glitch scenarios are intentional relocations and must not fail this run.
+                    probe.Configure(CurrentVehicleId(), CurrentMapId(), false);
                 }
                 SetPhase(PhaseRunning);
                 return;
@@ -249,7 +274,8 @@ namespace AnimeHillRacing.EditorTools
             if (!probe.Passed)
             {
                 SessionState.SetBool(AllPassedKey, false);
-                AppendResult("ADVENTURE_BOX2D_PLAY_FAILURE|vehicle=" + CurrentVehicleId() + "|" +
+                AppendResult("ADVENTURE_BOX2D_PLAY_FAILURE|vehicle=" + CurrentVehicleId() + "|map=" +
+                             CurrentMapId() + "|" +
                              probe.FailureSummary);
             }
             SetPhase(PhaseStopping);
@@ -260,9 +286,18 @@ namespace AnimeHillRacing.EditorTools
         {
             if (EditorApplication.isPlaying || EditorApplication.isPlayingOrWillChangePlaymode) return;
 
-            int nextIndex = SessionState.GetInt(VehicleIndexKey, 0) + 1;
-            SessionState.SetInt(VehicleIndexKey, nextIndex);
-            if (nextIndex >= VehicleIds.Length)
+            int nextMapIndex = SessionState.GetInt(MapIndexKey, 0) + 1;
+            if (nextMapIndex < ActiveMapIds().Length)
+            {
+                SessionState.SetInt(MapIndexKey, nextMapIndex);
+                BeginCurrentVehicle();
+                return;
+            }
+
+            SessionState.SetInt(MapIndexKey, 0);
+            int nextVehicleIndex = SessionState.GetInt(VehicleIndexKey, 0) + 1;
+            SessionState.SetInt(VehicleIndexKey, nextVehicleIndex);
+            if (nextVehicleIndex >= ActiveVehicleIds().Length)
             {
                 FinishAudit();
                 return;
@@ -284,8 +319,60 @@ namespace AnimeHillRacing.EditorTools
 
         private static string CurrentVehicleId()
         {
-            int index = Mathf.Clamp(SessionState.GetInt(VehicleIndexKey, 0), 0, VehicleIds.Length - 1);
-            return VehicleIds[index];
+            string[] activeVehicles = ActiveVehicleIds();
+            int index = Mathf.Clamp(SessionState.GetInt(VehicleIndexKey, 0), 0, activeVehicles.Length - 1);
+            return activeVehicles[index];
+        }
+
+        private static string[] ActiveVehicleIds()
+        {
+            string stored = SessionState.GetString(RequestedVehiclesKey, string.Empty);
+            return string.IsNullOrWhiteSpace(stored)
+                ? VehicleIds
+                : stored.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+        }
+
+        private static string CurrentMapId()
+        {
+            string[] activeMaps = ActiveMapIds();
+            int index = Mathf.Clamp(SessionState.GetInt(MapIndexKey, 0), 0, activeMaps.Length - 1);
+            return activeMaps[index];
+        }
+
+        private static string[] ActiveMapIds()
+        {
+            string stored = SessionState.GetString(RequestedMapsKey, string.Empty);
+            return string.IsNullOrWhiteSpace(stored)
+                ? new[] { MapIds[0] }
+                : stored.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+        }
+
+        private static string[] ParseRequestedVehicles(string request)
+        {
+            if (string.IsNullOrWhiteSpace(request)) return VehicleIds;
+            string[] requested = request.Split(new[] { ',', ';', '\r', '\n', ' ' },
+                StringSplitOptions.RemoveEmptyEntries);
+            var accepted = new System.Collections.Generic.List<string>();
+            for (int i = 0; i < requested.Length; i++)
+            {
+                string id = requested[i].Trim();
+                if (Array.IndexOf(VehicleIds, id) >= 0 && !accepted.Contains(id)) accepted.Add(id);
+            }
+            return accepted.Count > 0 ? accepted.ToArray() : VehicleIds;
+        }
+
+        private static string[] ParseRequestedMaps(string request)
+        {
+            if (string.IsNullOrWhiteSpace(request)) return new[] { MapIds[0] };
+            string[] requested = request.Split(new[] { ',', ';', '\r', '\n', ' ' },
+                StringSplitOptions.RemoveEmptyEntries);
+            var accepted = new System.Collections.Generic.List<string>();
+            for (int i = 0; i < requested.Length; i++)
+            {
+                string id = requested[i].Trim();
+                if (Array.IndexOf(MapIds, id) >= 0 && !accepted.Contains(id)) accepted.Add(id);
+            }
+            return accepted.Count > 0 ? accepted.ToArray() : new[] { MapIds[0] };
         }
 
         private static void SetPhase(int phase)
@@ -340,6 +427,7 @@ namespace AnimeHillRacing.EditorTools
             GameModeType originalMode = (GameModeType)SessionState.GetInt(OriginalModeKey,
                 (int)GameModeType.Adventure2_5D);
             string originalScene = SessionState.GetString(OriginalSceneKey, string.Empty);
+            int testedCombinationCount = ActiveVehicleIds().Length * ActiveMapIds().Length;
 
             try
             {
@@ -360,7 +448,7 @@ namespace AnimeHillRacing.EditorTools
             ClearSession();
             EditorApplication.update -= ContinueAudit;
             if (!string.IsNullOrEmpty(results)) Debug.Log(results);
-            Debug.Log($"ADVENTURE_BOX2D_PLAY_END|passed={passed}|count={VehicleIds.Length}|" +
+            Debug.Log($"ADVENTURE_BOX2D_PLAY_END|passed={passed}|count={testedCombinationCount}|" +
                       "simulation=FixedUpdate|manualSimulate=False");
             if (Application.isBatchMode) EditorApplication.Exit(passed ? 0 : 1);
         }
@@ -370,6 +458,7 @@ namespace AnimeHillRacing.EditorTools
             SessionState.EraseBool(ActiveKey);
             SessionState.EraseInt(PhaseKey);
             SessionState.EraseInt(VehicleIndexKey);
+            SessionState.EraseInt(MapIndexKey);
             SessionState.EraseString(OriginalVehicleKey);
             SessionState.EraseString(OriginalMapKey);
             SessionState.EraseInt(OriginalModeKey);
@@ -377,6 +466,8 @@ namespace AnimeHillRacing.EditorTools
             SessionState.EraseString(ResultsKey);
             SessionState.EraseBool(AllPassedKey);
             SessionState.EraseString(PhaseStartedKey);
+            SessionState.EraseString(RequestedVehiclesKey);
+            SessionState.EraseString(RequestedMapsKey);
         }
 
         private static void RehookUpdate()

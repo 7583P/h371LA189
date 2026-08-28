@@ -1508,7 +1508,7 @@ namespace AnimeHillRacing.UI
 
             Button paintButton = ResolveAdventurePaintButton();
             if (paintButton != null)
-                paintButton.gameObject.SetActive(showGarageChrome &&
+                paintButton.gameObject.SetActive(showGarageChrome && !adventurePreparation &&
                     section != GarageSection.Settings);
 
             if (!showGarageChrome && storePanel != null && storePanel.transform is RectTransform storeRect)

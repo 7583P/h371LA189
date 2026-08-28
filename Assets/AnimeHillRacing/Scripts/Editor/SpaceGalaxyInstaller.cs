@@ -8,9 +8,11 @@ namespace AnimeHillRacing.Editor
 {
     public static class SpaceGalaxyInstaller
     {
-        private const string SessionKey = "AHR.SpaceGalaxyInstaller.v8";
+        private const string SessionKey = "AHR.SpaceGalaxyInstaller.v9";
         private const string GalaxyPath = "Assets/Art/Backgrounds/Space/Space_Cosmic_Panorama_v4.png";
         private const string StarfieldPath = "Assets/Art/Backgrounds/Space/Space_Stars.png";
+        private const string GroundPath = "Assets/Art/Backgrounds/Space/Ground.png";
+        private const string GroundMaterialPath = "Assets/AnimeHillRacing/Materials/SpaceGround.mat";
         private const string PanoramaShaderPath =
             "Assets/AnimeHillRacing/Shaders/CinematicSpacePanorama.shader";
         private const string EnvironmentPath = "Assets/AnimeHillRacing/MapProfiles/SpaceEnvironment.asset";
@@ -45,14 +47,59 @@ namespace AnimeHillRacing.Editor
             importer.maxTextureSize = 2048;
             importer.SaveAndReimport();
 
+            TextureImporter groundImporter = AssetImporter.GetAtPath(GroundPath) as TextureImporter;
+            if (groundImporter == null) throw new InvalidOperationException("The authored Space Ground.png is missing.");
+            groundImporter.textureType = TextureImporterType.Default;
+            groundImporter.alphaIsTransparency = true;
+            groundImporter.mipmapEnabled = false;
+            groundImporter.wrapMode = TextureWrapMode.Repeat;
+            groundImporter.filterMode = FilterMode.Bilinear;
+            groundImporter.maxTextureSize = 2048;
+            groundImporter.SaveAndReimport();
+
             Sprite galaxy = AssetDatabase.LoadAssetAtPath<Sprite>(GalaxyPath);
             Sprite starfield = AssetDatabase.LoadAssetAtPath<Sprite>(StarfieldPath);
             Shader panoramaShader = AssetDatabase.LoadAssetAtPath<Shader>(PanoramaShaderPath);
             EnvironmentDefinition environment = AssetDatabase.LoadAssetAtPath<EnvironmentDefinition>(EnvironmentPath);
             MapProfile profile = AssetDatabase.LoadAssetAtPath<MapProfile>(ProfilePath);
+            Texture2D ground = AssetDatabase.LoadAssetAtPath<Texture2D>(GroundPath);
+            Material groundMaterial = AssetDatabase.LoadAssetAtPath<Material>(GroundMaterialPath);
             if (galaxy == null || starfield == null || panoramaShader == null || environment == null || profile == null ||
-                profile.spaceChallenges == null)
+                profile.spaceChallenges == null || ground == null || groundMaterial == null)
                 throw new InvalidOperationException("Space galaxy configuration assets are incomplete.");
+
+            Shader groundShader = Shader.Find("AnimeHillRacing/Transparent Texture") ?? Shader.Find("Sprites/Default");
+            if (groundShader == null) throw new InvalidOperationException("The transparent terrain shader is missing.");
+            groundMaterial.shader = groundShader;
+            groundMaterial.mainTexture = ground;
+            groundMaterial.color = Color.white;
+            if (groundMaterial.HasProperty("_SeamlessHorizontalTiling"))
+                groundMaterial.SetFloat("_SeamlessHorizontalTiling", 1f);
+            if (groundMaterial.HasProperty("_HorizontalInset")) groundMaterial.SetFloat("_HorizontalInset", .012f);
+            if (groundMaterial.HasProperty("_HorizontalUvRange"))
+                groundMaterial.SetVector("_HorizontalUvRange", new Vector4(0f, 1f, 0f, 0f));
+            if (groundMaterial.HasProperty("_DepthWrite")) groundMaterial.SetFloat("_DepthWrite", 1f);
+            groundMaterial.renderQueue = 2451;
+
+            profile.terrainEdgeMaterial = groundMaterial;
+            profile.useSeparateTerrainMaterials = true;
+            profile.fitAuthoredTerrainTexture = true;
+            profile.terrainTextureRepeatWidth = ground.width /
+                                                Mathf.Max(.001f, groundImporter.spritePixelsPerUnit);
+            profile.terrainWallUvRange = new Vector2(0f, 1f);
+            profile.terrainSurfaceUvRange = new Vector2(0f, 1f);
+            profile.terrainSurfaceContactV = .92f;
+            profile.terrainSurfaceContactVSamples = new[]
+            {
+                .93910f, .97436f, .97756f, .95192f, .91346f, .88141f, .87821f, .90064f,
+                .93590f, .95513f, .97756f, .99679f, .99359f, .96795f, .91346f, .85897f,
+                .82692f, .81731f, .83974f, .86538f, .90705f, .95192f, .98077f, .97115f,
+                .94231f, .90064f, .87500f, .87179f, .90705f, .94551f, .97115f, .96795f,
+                .94231f
+            };
+            // The Terrain wall overlaps behind Ground from the painted driving line downward,
+            // following the proven City/North Pole composition contract.
+            profile.terrainFillStartV = profile.terrainSurfaceContactV;
 
             profile.unlockedByDefault = false;
             profile.coinPrice = 40000;
@@ -91,6 +138,7 @@ namespace AnimeHillRacing.Editor
 
             EditorUtility.SetDirty(environment);
             EditorUtility.SetDirty(profile);
+            EditorUtility.SetDirty(groundMaterial);
             AssetDatabase.SaveAssets();
 
             SpaceChallengeLayout first = TerrainGenerator.GetSpaceChallenge(profile, 1);
@@ -106,6 +154,11 @@ namespace AnimeHillRacing.Editor
                 environment.starTwinkleAmount < .25f ||
                 AssetDatabase.GetAssetPath(environment.sky) != StarfieldPath ||
                 AssetDatabase.GetAssetPath(environment.mountains) != GalaxyPath ||
+                profile.terrainEdgeMaterial != groundMaterial || !profile.fitAuthoredTerrainTexture ||
+                profile.terrainSurfaceContactVSamples == null ||
+                profile.terrainSurfaceContactVSamples.Length != 33 ||
+                Mathf.Abs(profile.terrainFillStartV - profile.terrainSurfaceContactV) > .0001f ||
+                Mathf.Abs(profile.terrainTextureRepeatWidth - TerrainGenerator.AuthoredTrackModuleWidth) > .001f ||
                 !first.IsVoid || !second.IsVoid || !third.IsVoid || !tenth.IsVoid ||
                 Mathf.Abs(first.eventDistance - 2000f) > .01f ||
                 Mathf.Abs(second.eventDistance - 4000f) > .01f ||

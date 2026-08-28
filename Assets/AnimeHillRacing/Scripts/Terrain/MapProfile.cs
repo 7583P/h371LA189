@@ -416,6 +416,9 @@ namespace AnimeHillRacing.Terrain
         [Tooltip("V coordinate inside terrainSurfaceUvRange that represents the physical driving surface. " +
                  "Negative values keep the legacy behavior and use the upper edge.")]
         [Range(-1f, 1f)] public float terrainSurfaceContactV = -1f;
+        [Tooltip("Optional contact V samples across one authored Ground tile. When present, the visual " +
+                 "ribbon is warped so a painted wavy driving line remains exactly on the physical collider.")]
+        public float[] terrainSurfaceContactVSamples = new float[0];
         [Tooltip("V coordinate where the deep Terrain fill starts behind the Ground artwork. " +
                  "Negative values use the lower edge of the authored Ground band.")]
         [Range(-1f, 1f)] public float terrainFillStartV = -1f;

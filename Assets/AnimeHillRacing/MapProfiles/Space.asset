@@ -147,52 +147,22 @@ MonoBehaviour:
   fuelPlacementSearchStep: 2
   fuelMaximumPlacementSlope: 15
   environment: {fileID: 11400000, guid: 5ace0000000000000000000000000020, type: 2}
+  useVehicleContactLineOcclusion: 1
   terrainMaterial: {fileID: 2100000, guid: 5ace0000000000000000000000000011, type: 2}
   terrainEdgeMaterial: {fileID: 2100000, guid: 5ace0000000000000000000000000012, type: 2}
   useSeparateTerrainMaterials: 1
   fitAuthoredTerrainTexture: 1
-  terrainTextureRepeatWidth: 20.48
+  terrainTextureRepeatWidth: 19.55
   terrainWallUvRange: {x: 0, y: 1}
-  terrainSurfaceUvRange: {x: 0, y: 1}
-  terrainSurfaceContactV: 0.92
-  terrainSurfaceContactVSamples:
-  - 0.9391
-  - 0.97436
-  - 0.97756
-  - 0.95192
-  - 0.91346
-  - 0.88141
-  - 0.87821
-  - 0.90064
-  - 0.9359
-  - 0.95513
-  - 0.97756
-  - 0.99679
-  - 0.99359
-  - 0.96795
-  - 0.91346
-  - 0.85897
-  - 0.82692
-  - 0.81731
-  - 0.83974
-  - 0.86538
-  - 0.90705
-  - 0.95192
-  - 0.98077
-  - 0.97115
-  - 0.94231
-  - 0.90064
-  - 0.875
-  - 0.87179
-  - 0.90705
-  - 0.94551
-  - 0.97115
-  - 0.96795
-  - 0.94231
-  terrainFillStartV: 0.92
+  terrainSurfaceUvRange: {x: 0.177, y: 0.714}
+  terrainSurfaceContactV: 0.56
+  terrainSurfaceContactVSamples: []
+  terrainFillStartV: 0.56
   groundPhysicsMaterial: {fileID: 13400000, guid: 4dfb87f232532b24aafe44e9c5c97f50, type: 2}
   groundPhysicsMaterial2D: {fileID: 0}
   terrainEdgeWidth: 0.2
+  terrainMaximumVisualExtent: 2.5
+  terrainMaximumVisualRiseAboveSurface: 1.05
   terrainVisualDepth: 46
   supportsLiquidExposure: 0
   neonMaximumAmplitude: 28

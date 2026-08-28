@@ -161,6 +161,12 @@ namespace AnimeHillRacing.Terrain
         public const float CountrysideGroundModuleWidth = 13.3f;
         public const float CountrysideGroundMaximumVisualExtent = 1.5f;
         public const float CountrysideGroundMaximumVisualRise = .8f;
+        public const float MountainsGroundModuleWidth = 17.38f;
+        public const float MountainsGroundMaximumVisualExtent = 2f;
+        public const float MountainsGroundMaximumVisualRise = .82f;
+        public const float SpaceGroundModuleWidth = 19.55f;
+        public const float SpaceGroundMaximumVisualExtent = 2.5f;
+        public const float SpaceGroundMaximumVisualRise = 1.05f;
         public const int NeonTemplateSectionCount = 10;
         private static readonly Dictionary<uint, List<ArenaSegmentType>> ArenaSegmentHistory =
             new Dictionary<uint, List<ArenaSegmentType>>();

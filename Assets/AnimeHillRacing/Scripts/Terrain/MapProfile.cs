@@ -405,6 +405,9 @@ namespace AnimeHillRacing.Terrain
 
         [Header("Presentation")]
         public EnvironmentDefinition environment;
+        [Tooltip("Clips vehicle sprites at the authoritative terrain contact line while keeping their " +
+                 "visible portion in front of the 2.5D terrain.")]
+        public bool useVehicleContactLineOcclusion;
         public Material terrainMaterial;
         public Material terrainEdgeMaterial;
         public bool useSeparateTerrainMaterials;

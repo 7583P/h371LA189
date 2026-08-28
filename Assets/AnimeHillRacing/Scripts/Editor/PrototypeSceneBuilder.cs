@@ -144,6 +144,8 @@ namespace AnimeHillRacing.Editor
         private const string NorthPoleTerrainPath = NorthPoleRoot + "/Terrain.png";
         private const string NorthPoleGroundPath = NorthPoleRoot + "/Ground.png";
         private const string SpaceMapPath = Root + "/MapProfiles/Space.asset";
+        private const string SpaceGroundPath = "Assets/Art/Backgrounds/Space/Ground.png";
+        private const string SpaceTerrainPath = "Assets/Art/Backgrounds/Space/Terrain.png";
         private const string SpaceGalaxyPath = "Assets/Art/Backgrounds/Space/Space_Cosmic_Panorama_v4.png";
         private const string SpaceStarfieldPath = "Assets/Art/Backgrounds/Space/Space_Stars.png";
         private const string ArenaMapPath = Root + "/MapProfiles/Arena.asset";
@@ -1779,14 +1781,22 @@ namespace AnimeHillRacing.Editor
                 Mathf.Abs(SpaceGapEvent.CalculateBlackHoleVisualHeight(first.gapLength) -
                           SpaceGapEvent.CalculateBlackHoleVisualHeight(fourth.gapLength)) > .01f ||
                 profile.hardEndDistance != 10000f ||
-                !profile.terrainMaterial.HasProperty("_SurfaceMode") ||
-                profile.terrainMaterial.GetFloat("_SurfaceMode") > .5f ||
                 !profile.fitAuthoredTerrainTexture ||
                 profile.terrainSurfaceContactVSamples == null ||
-                profile.terrainSurfaceContactVSamples.Length != 33 ||
+                profile.terrainSurfaceContactVSamples.Length != 0 ||
+                Mathf.Abs(profile.terrainTextureRepeatWidth -
+                          TerrainGenerator.SpaceGroundModuleWidth) > .001f ||
+                Mathf.Abs(profile.terrainMaximumVisualExtent -
+                          TerrainGenerator.SpaceGroundMaximumVisualExtent) > .001f ||
+                Mathf.Abs(profile.terrainMaximumVisualRiseAboveSurface -
+                          TerrainGenerator.SpaceGroundMaximumVisualRise) > .001f ||
+                Vector2.Distance(profile.terrainSurfaceUvRange, new Vector2(.177f, .714f)) > .001f ||
+                Mathf.Abs(profile.terrainSurfaceContactV - .56f) > .001f ||
                 profile.terrainEdgeMaterial.mainTexture == null ||
                 AssetDatabase.GetAssetPath(profile.terrainEdgeMaterial.mainTexture) !=
-                "Assets/Art/Backgrounds/Space/Ground.png" ||
+                SpaceGroundPath ||
+                profile.terrainMaterial.mainTexture == null ||
+                AssetDatabase.GetAssetPath(profile.terrainMaterial.mainTexture) != SpaceTerrainPath ||
                 settings.rampRise < 5f ||
                 settings.rampFlatFraction > .1f)
                 throw new System.InvalidOperationException(
@@ -2934,35 +2944,57 @@ namespace AnimeHillRacing.Editor
                 MapProfile profile = AssetDatabase.LoadAssetAtPath<MapProfile>(profilePaths[track]);
                 Texture2D ground = AssetDatabase.LoadAssetAtPath<Texture2D>(groundPaths[track]);
                 TextureImporter importer = AssetImporter.GetAtPath(groundPaths[track]) as TextureImporter;
-                bool usesCompactSlab = track < 2;
-                float expectedRepeatWidth = usesCompactSlab
-                    ? TerrainGenerator.CompactGroundModuleWidth
-                    : ground != null && importer != null
-                        ? ground.width / Mathf.Max(.001f, importer.spritePixelsPerUnit) : 0f;
-                int expectedContactSamples = usesCompactSlab ? 0 : 33;
-                float expectedMaximumExtent = track == 1
-                    ? TerrainGenerator.NeonCityGroundMaximumVisualExtent
-                    : usesCompactSlab
-                        ? TerrainGenerator.CompactGroundMaximumVisualExtent
-                        : TerrainGenerator.AuthoredTrackMaximumVisualExtent;
-                float expectedMaximumRise = track == 1
-                    ? TerrainGenerator.NeonCityGroundMaximumVisualRise : 0f;
+                float expectedRepeatWidth = track switch
+                {
+                    0 => TerrainGenerator.CompactGroundModuleWidth,
+                    1 => TerrainGenerator.CompactGroundModuleWidth,
+                    2 => TerrainGenerator.MountainsGroundModuleWidth,
+                    _ => TerrainGenerator.SpaceGroundModuleWidth
+                };
+                float expectedMaximumExtent = track switch
+                {
+                    0 => TerrainGenerator.CompactGroundMaximumVisualExtent,
+                    1 => TerrainGenerator.NeonCityGroundMaximumVisualExtent,
+                    2 => TerrainGenerator.MountainsGroundMaximumVisualExtent,
+                    _ => TerrainGenerator.SpaceGroundMaximumVisualExtent
+                };
+                float expectedMaximumRise = track switch
+                {
+                    0 => 0f,
+                    1 => TerrainGenerator.NeonCityGroundMaximumVisualRise,
+                    2 => TerrainGenerator.MountainsGroundMaximumVisualRise,
+                    _ => TerrainGenerator.SpaceGroundMaximumVisualRise
+                };
+                Vector2 expectedSurfaceRange = track switch
+                {
+                    0 => new Vector2(.313f, .701f),
+                    1 => new Vector2(.313f, .83f),
+                    2 => new Vector2(.2f, .677f),
+                    _ => new Vector2(.177f, .714f)
+                };
+                float expectedContact = track < 2 ? .579f : track == 2 ? .54f : .56f;
+                Vector4 horizontalUvRange = profile != null && profile.terrainEdgeMaterial != null &&
+                                            profile.terrainEdgeMaterial.HasProperty("_HorizontalUvRange")
+                    ? profile.terrainEdgeMaterial.GetVector("_HorizontalUvRange") : Vector4.zero;
+                Vector2 horizontalRange = new Vector2(horizontalUvRange.x, horizontalUvRange.y);
+                Vector2 expectedHorizontalRange = track == 2
+                    ? new Vector2(.1f, .9f) : new Vector2(.05f, .95f);
                 if (profile == null || ground == null || importer == null || profile.terrainEdgeMaterial == null ||
                     profile.terrainEdgeMaterial.mainTexture != ground || !profile.useSeparateTerrainMaterials ||
                     !profile.fitAuthoredTerrainTexture || profile.terrainSurfaceContactVSamples == null ||
-                    profile.terrainSurfaceContactVSamples.Length != expectedContactSamples || importer.mipmapEnabled ||
+                    profile.terrainSurfaceContactVSamples.Length != 0 || importer.mipmapEnabled ||
                     importer.wrapMode != TextureWrapMode.Repeat ||
                     Mathf.Abs(profile.terrainFillStartV - profile.terrainSurfaceContactV) > .0001f ||
                     Mathf.Abs(profile.terrainTextureRepeatWidth - expectedRepeatWidth) > .001f ||
-                    usesCompactSlab &&
-                    (ground.width != 2172 || ground.height != 724 || importer.maxTextureSize < 4096 ||
-                     Mathf.Abs(profile.terrainMaximumVisualExtent - expectedMaximumExtent) > .001f ||
-                     Mathf.Abs(profile.terrainMaximumVisualRiseAboveSurface - expectedMaximumRise) > .001f ||
-                     Mathf.Abs(profile.terrainSurfaceContactV - .579f) > .001f ||
-                     track == 0 && Vector2.Distance(profile.terrainSurfaceUvRange,
-                         new Vector2(.313f, .701f)) > .001f ||
-                     track == 1 && Vector2.Distance(profile.terrainSurfaceUvRange,
-                         new Vector2(.313f, .83f)) > .001f))
+                    ground.width != 2172 || ground.height != 724 || importer.maxTextureSize < 4096 ||
+                    Mathf.Abs(profile.terrainMaximumVisualExtent - expectedMaximumExtent) > .001f ||
+                    Mathf.Abs(profile.terrainMaximumVisualRiseAboveSurface - expectedMaximumRise) > .001f ||
+                    Mathf.Abs(profile.terrainSurfaceContactV - expectedContact) > .001f ||
+                    Vector2.Distance(profile.terrainSurfaceUvRange, expectedSurfaceRange) > .001f ||
+                    track >= 2 &&
+                    (!profile.terrainEdgeMaterial.HasProperty("_HorizontalInset") ||
+                     Mathf.Abs(profile.terrainEdgeMaterial.GetFloat("_HorizontalInset") - .004f) > .001f ||
+                     Vector2.Distance(horizontalRange, expectedHorizontalRange) > .001f))
                     throw new System.InvalidOperationException(
                         $"{profilePaths[track]} does not satisfy the shared authored-track dimensions.");
 
@@ -3007,8 +3039,10 @@ namespace AnimeHillRacing.Editor
                       $"compactDepths=rainyer:{TerrainGenerator.CompactGroundMaximumVisualExtent:0.00}m," +
                       $"neon-city:{TerrainGenerator.NeonCityGroundMaximumVisualExtent:0.00}m|" +
                       $"neonCityRise={TerrainGenerator.NeonCityGroundMaximumVisualRise:0.00}m|" +
-                      $"legacyWidth={TerrainGenerator.AuthoredTrackModuleWidth:0.00}m|" +
-                      $"legacyDepth={TerrainGenerator.AuthoredTrackMaximumVisualExtent:0.00}m|" +
+                      $"mountains={TerrainGenerator.MountainsGroundModuleWidth:0.00}x" +
+                      $"{TerrainGenerator.MountainsGroundMaximumVisualExtent:0.00}m|" +
+                      $"space={TerrainGenerator.SpaceGroundModuleWidth:0.00}x" +
+                      $"{TerrainGenerator.SpaceGroundMaximumVisualExtent:0.00}m|" +
                       $"alignment={maximumAlignmentError:0.000000}m|" +
                       $"subsoilTop={maximumSubsoilTopError:0.000000}m");
         }

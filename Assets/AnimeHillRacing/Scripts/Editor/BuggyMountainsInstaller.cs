@@ -14,7 +14,7 @@ namespace AnimeHillRacing.Editor
 {
     public static class BuggyMountainsInstaller
     {
-        private const string SessionKey = "AHR.BuggyMountainsInstaller.v11";
+        private const string SessionKey = "AHR.BuggyMountainsInstaller.v12";
         private const string Root = "Assets/AnimeHillRacing";
         private const string BuggyBodyPath = "Assets/Art/Vehicles/Buggy/Buggy_Body.png";
         private const string BuggyRedBodyPath = "Assets/Art/Vehicles/Buggy/Buggy_Body_Red.png";
@@ -500,24 +500,23 @@ namespace AnimeHillRacing.Editor
                 Color.white);
             profile.terrainEdgeMaterial = LoadOrCreateMaterial(Root + "/Materials/MountainsRockSurface.mat", ground,
                 Color.white, true);
+            if (profile.terrainEdgeMaterial.HasProperty("_HorizontalInset"))
+                profile.terrainEdgeMaterial.SetFloat("_HorizontalInset", .004f);
+            if (profile.terrainEdgeMaterial.HasProperty("_HorizontalUvRange"))
+                profile.terrainEdgeMaterial.SetVector("_HorizontalUvRange", new Vector4(.1f, .9f, 0f, 0f));
             profile.useSeparateTerrainMaterials = true;
             profile.fitAuthoredTerrainTexture = true;
-            profile.terrainTextureRepeatWidth = ground.width /
-                                                Mathf.Max(.001f, groundImporter.spritePixelsPerUnit);
+            profile.terrainTextureRepeatWidth = TerrainGenerator.MountainsGroundModuleWidth;
             profile.terrainWallUvRange = new Vector2(0f, 1f);
-            profile.terrainSurfaceUvRange = new Vector2(.18f, .69f);
-            profile.terrainSurfaceContactV = .62f;
-            profile.terrainSurfaceContactVSamples = new[]
-            {
-                .63050f, .65543f, .63490f, .60850f, .59824f, .60264f, .61730f, .64223f,
-                .67009f, .68328f, .67889f, .65982f, .63050f, .60264f, .57918f, .56305f,
-                .56012f, .57331f, .59971f, .62757f, .64516f, .64809f, .63636f, .61437f,
-                .58798f, .57478f, .58358f, .61144f, .64516f, .67009f, .68035f, .67302f,
-                .62610f
-            };
+            profile.terrainSurfaceUvRange = new Vector2(.2f, .677f);
+            profile.terrainSurfaceContactV = .54f;
+            profile.terrainSurfaceContactVSamples = new float[0];
             // Start the deep rock wall at the painted wheel-contact line behind Ground. This is
             // the same overlap used by City/North Pole and keeps both layers visually connected.
             profile.terrainFillStartV = profile.terrainSurfaceContactV;
+            profile.terrainMaximumVisualExtent = TerrainGenerator.MountainsGroundMaximumVisualExtent;
+            profile.terrainMaximumVisualRiseAboveSurface =
+                TerrainGenerator.MountainsGroundMaximumVisualRise;
             profile.terrainVisualDepth = 360f;
             profile.terrainEdgeWidth = .24f;
             profile.groundPhysicsMaterial = LoadOrCreatePhysicsMaterial(
@@ -754,7 +753,7 @@ namespace AnimeHillRacing.Editor
             importer.mipmapEnabled = false;
             importer.filterMode = FilterMode.Bilinear;
             importer.textureCompression = TextureImporterCompression.Compressed;
-            importer.maxTextureSize = 2048;
+            importer.maxTextureSize = 4096;
             importer.SaveAndReimport();
         }
 
@@ -904,7 +903,7 @@ namespace AnimeHillRacing.Editor
             importer.mipmapEnabled = true;
             importer.filterMode = FilterMode.Bilinear;
             importer.textureCompression = TextureImporterCompression.Compressed;
-            importer.maxTextureSize = 1024;
+            importer.maxTextureSize = 2048;
             importer.SaveAndReimport();
         }
 

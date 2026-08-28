@@ -53,8 +53,7 @@ namespace AnimeHillRacing.Vehicle
         {
             TerrainManager terrain = TerrainManager.Instance;
             MapProfile profile = terrain != null ? terrain.ActiveProfile : null;
-            bool usesContactLineOcclusion = profile != null &&
-                                             (profile.mapId == "city" || profile.mapId == "north-pole");
+            bool usesContactLineOcclusion = profile != null && profile.useVehicleContactLineOcclusion;
             if (!usesContactLineOcclusion)
             {
                 DisableSurfaceClipMask();

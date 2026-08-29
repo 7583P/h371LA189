@@ -19,7 +19,11 @@ MonoBehaviour:
     openingSeconds: 7200
     minimumCoins: 1200
     maximumCoins: 1500
+    minimumGems: 0
+    maximumGems: 0
     blueprintReward: 0
+    hasExplicitRewardRarity: 0
+    rewardRarity: 0
     closedSprite: {fileID: 21300000, guid: 948261fb474d55841bd0c1d14ac3a7a6, type: 3}
     openSprite: {fileID: 21300000, guid: 56fb6b50b0adbd94897af79b596d8183, type: 3}
     accentColor: {r: 0.7, g: 0.38, b: 0.15, a: 1}
@@ -29,7 +33,11 @@ MonoBehaviour:
     openingSeconds: 14400
     minimumCoins: 2500
     maximumCoins: 3700
+    minimumGems: 0
+    maximumGems: 0
     blueprintReward: 0
+    hasExplicitRewardRarity: 0
+    rewardRarity: 0
     closedSprite: {fileID: 21300000, guid: 327d03f84d4eaa6408da9495595ec814, type: 3}
     openSprite: {fileID: 21300000, guid: 70af07755c0966c4f8d815bb4e4aae01, type: 3}
     accentColor: {r: 0.75, g: 0.84, b: 0.94, a: 1}
@@ -39,7 +47,11 @@ MonoBehaviour:
     openingSeconds: 21600
     minimumCoins: 5000
     maximumCoins: 7500
+    minimumGems: 0
+    maximumGems: 0
     blueprintReward: 0
+    hasExplicitRewardRarity: 0
+    rewardRarity: 0
     closedSprite: {fileID: 21300000, guid: 1e3fafe405a75a24889e0c4faadc391f, type: 3}
     openSprite: {fileID: 21300000, guid: f4de571a2ce98af48b4080829255d869, type: 3}
     accentColor: {r: 1, g: 0.72, b: 0.12, a: 1}
@@ -49,7 +61,11 @@ MonoBehaviour:
     openingSeconds: 43200
     minimumCoins: 15000
     maximumCoins: 20000
+    minimumGems: 0
+    maximumGems: 0
     blueprintReward: 5
+    hasExplicitRewardRarity: 0
+    rewardRarity: 0
     closedSprite: {fileID: 21300000, guid: 28bcadb1d1167714ca91ae0ea8b27853, type: 3}
     openSprite: {fileID: 21300000, guid: bce9c3a278da4744caeb5cdbda858e41, type: 3}
     accentColor: {r: 0.62, g: 0.2, b: 1, a: 1}
@@ -59,7 +75,11 @@ MonoBehaviour:
     openingSeconds: 86400
     minimumCoins: 30000
     maximumCoins: 50000
+    minimumGems: 0
+    maximumGems: 0
     blueprintReward: 10
+    hasExplicitRewardRarity: 0
+    rewardRarity: 0
     closedSprite: {fileID: 21300000, guid: 8e2bd5bc8abc96344ab705689ca5abfd, type: 3}
     openSprite: {fileID: 21300000, guid: a65ac6c1abbe0b847bc497e060ff25c8, type: 3}
     accentColor: {r: 1, g: 0.2, b: 0.62, a: 1}

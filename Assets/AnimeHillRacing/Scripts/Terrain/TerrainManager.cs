@@ -23,6 +23,8 @@ namespace AnimeHillRacing.Terrain
         private int minimumLoadedIndex;
         private int maximumLoadedIndex;
         private readonly ProgressiveFuelSequence fuelSequence = new ProgressiveFuelSequence();
+        private readonly RandomGemRouteSequence gemSequence = new RandomGemRouteSequence();
+        private readonly List<GemRoutePoint> gemPointBuffer = new List<GemRoutePoint>(2);
         private MeshCollider authoritativeTerrainCollider;
         private Mesh authoritativeTerrainMesh;
         private EdgeCollider2D authoritativeTerrainCollider2D;
@@ -91,6 +93,8 @@ namespace AnimeHillRacing.Terrain
             pickupPool?.Initialize();
             EnsureAuthoritativeTerrainCollider();
             fuelSequence.Reset(0f, mapProfile.initialFuelGap, mapProfile.fuelGapIncrease);
+            int gemRouteSeed = unchecked((mapProfile.seed * 397) ^ System.Environment.TickCount ^ GetInstanceID());
+            gemSequence.Reset(0f, gemRouteSeed);
             int count = chunksBehind + chunksAhead + 1;
             chunks = new TerrainChunk[count];
             currentChunkIndex = Mathf.FloorToInt(VehicleWorldX / chunkLength);
@@ -379,6 +383,7 @@ namespace AnimeHillRacing.Terrain
             SpawnDistanceBonusMarkers(chunk, index);
             SpawnCoins(chunk, index);
             SpawnProgressiveFuel(chunk, index);
+            SpawnGems(chunk, index);
         }
 
         private void EnsureAuthoritativeTerrainCollider()
@@ -695,6 +700,48 @@ namespace AnimeHillRacing.Terrain
             return bestSlope < float.MaxValue
                 ? new Vector3(bestX, bestY + .68f, 0f)
                 : new Vector3(float.NaN, float.NaN, 0f);
+        }
+
+        private void SpawnGems(TerrainChunk chunk, int index)
+        {
+            if (pickupPool == null || chunk == null || index < 0) return;
+            float start = index * chunkLength;
+            float end = start + chunkLength;
+            gemSequence.GetPoints(start, end, gemPointBuffer);
+            for (int i = 0; i < gemPointBuffer.Count; i++)
+            {
+                GemRoutePoint point = gemPointBuffer[i];
+                Vector3 position = FindAccessibleGemPosition(chunk, start, end, point.Position);
+                if (float.IsNaN(position.x)) continue;
+                GemPickup pickup = pickupPool.SpawnGem(position, position.x, point.StableId);
+                chunk.TrackPickup(pickup);
+            }
+        }
+
+        private Vector3 FindAccessibleGemPosition(TerrainChunk chunk, float chunkStart, float chunkEnd,
+            float targetDistance)
+        {
+            const float searchRadius = 18f;
+            const float searchStep = 2f;
+            const float edgeInset = 1f;
+            int steps = Mathf.CeilToInt(searchRadius / searchStep);
+            for (int i = 0; i <= steps; i++)
+            {
+                int sideCount = i == 0 ? 1 : 2;
+                for (int sideIndex = 0; sideIndex < sideCount; sideIndex++)
+                {
+                    float signedOffset = i == 0 ? 0f : i * searchStep * (sideIndex == 0 ? -1f : 1f);
+                    float candidateX = Mathf.Clamp(targetDistance + signedOffset,
+                        chunkStart + edgeInset, chunkEnd - edgeInset);
+                    if (TerrainGenerator.IsLiquidPool(mapProfile, candidateX) ||
+                        TerrainGenerator.IsTerrainGap(mapProfile, candidateX) ||
+                        TerrainGenerator.IsArenaReservedObstacleZone(mapProfile, candidateX) ||
+                        !chunk.TrySampleSurface(candidateX, out float surfaceY, out _))
+                        continue;
+                    return new Vector3(candidateX, surfaceY + 1.25f, 0f);
+                }
+            }
+            return new Vector3(float.NaN, float.NaN, 0f);
         }
 
         public void AssignRuntimeReferences(MapProfile profile, VehicleRuntimeBase targetVehicle, PickupPool pool)

@@ -1479,12 +1479,12 @@ namespace AnimeHillRacing.Editor
 
         private static VehicleDefinition.CustomizationOption Customization(string id, string name, Sprite sprite,
             bool unlockedByDefault = true, int gemPrice = 0, float visibleDiameter = 0f, Vector2 visibleSize = default,
-            Vector2 visualOffset = default) =>
+            Vector2 visualOffset = default, bool allowsBlueprintProgression = true) =>
             new VehicleDefinition.CustomizationOption
             {
                 optionId = id, displayName = name, sprite = sprite,
                 unlockedByDefault = unlockedByDefault, gemPrice = gemPrice,
-                bundleType = BundleType.Cosmetic, allowsBlueprintProgression = true,
+                bundleType = BundleType.Cosmetic, allowsBlueprintProgression = allowsBlueprintProgression,
                 visibleDiameter = visibleDiameter,
                 visibleSize = visibleSize,
                 visualOffset = visualOffset
@@ -1554,6 +1554,7 @@ namespace AnimeHillRacing.Editor
                 assets.formula.skins[3].optionId != "formula-skin-hill-adventurer-gold" ||
                 assets.formula.skins[3].sprite != assets.formulaHillAdventurerSkin ||
                 assets.formula.skins[3].unlockedByDefault || assets.formula.skins[3].gemPrice != 1000 ||
+                assets.formula.skins[3].allowsBlueprintProgression ||
                 assets.formula.wheels[0].sprite != assets.formulaWheel02 ||
                 assets.formula.wheels[1].sprite != assets.formulaWheel01 ||
                 assets.formula.wheels[1].unlockedByDefault || assets.formula.wheels[1].gemPrice != 500 ||
@@ -2332,17 +2333,30 @@ namespace AnimeHillRacing.Editor
             if (!exposure.LimitReached || Mathf.Abs(exposure.TotalSeconds - 10f) > .001f)
                 throw new System.InvalidOperationException("Liquid exposure did not crash at 10 seconds.");
 
-            var gems = new GemMilestoneTracker();
-            if (gems.ClaimThrough(999f) != 0 || gems.ClaimThrough(1000f) != 1 ||
-                gems.ClaimThrough(999f) != 0 || gems.ClaimThrough(2000f) != 1)
-                throw new System.InvalidOperationException("Gem milestone anti-exploit contract failed.");
-            gems.Reset();
-            if (gems.ClaimThrough(1950f) != 1 || gems.ClaimThrough(3050f) != 2)
-                throw new System.InvalidOperationException("Skipped Gem milestone recovery failed.");
+            var gemRoute = new RandomGemRouteSequence();
+            var gemPoints = new List<GemRoutePoint>();
+            gemRoute.Reset(0f, 73421);
+            gemRoute.GetPoints(0f, 10000f, gemPoints);
+            if (gemPoints.Count < 9 || !gemRoute.HasValidSpacing())
+                throw new System.InvalidOperationException("Random Gem route left the 700-1000m interval.");
+            bool hasVariableSpacing = false;
+            float previousGem = 0f;
+            float firstSpacing = gemPoints[0].Position;
+            var gemIds = new HashSet<long>();
+            for (int i = 0; i < gemPoints.Count; i++)
+            {
+                float spacing = gemPoints[i].Position - previousGem;
+                hasVariableSpacing |= Mathf.Abs(spacing - firstSpacing) > .01f;
+                previousGem = gemPoints[i].Position;
+                if (!gemIds.Add(gemPoints[i].StableId))
+                    throw new System.InvalidOperationException("Gem route generated a duplicate pickup id.");
+            }
+            if (!hasVariableSpacing)
+                throw new System.InvalidOperationException("Gem route intervals did not vary.");
             if (SaveManager.CanAffordGems(999, 1000) || !SaveManager.CanAffordGems(1000, 1000) ||
                 SaveManager.CanAffordGems(499, 500) || !SaveManager.CanAffordGems(500, 500))
                 throw new System.InvalidOperationException("Premium cosmetic Gem thresholds are invalid.");
-            Debug.Log("Neon validation: cycles 0-3=8/8, grammar complete, exposure 3+4+3=10s, Gems milestones stable.");
+            Debug.Log("Neon validation: cycles 0-3=8/8, exposure 3+4+3=10s, random pooled Gems stay 700-1000m apart.");
         }
 
         private static void ValidateCityContract(BuiltAssets assets)
@@ -5444,7 +5458,7 @@ namespace AnimeHillRacing.Editor
                     assets.formulaElectricitySkin, false, 1000),
                 Customization("formula-skin-hill-adventurer-gold", "HILL ADVENTURER GOLD",
                     assets.formulaHillAdventurerSkin, false, 1000, 0f,
-                    new Vector2(21.07f, 4.93f), new Vector2(.11f, .125f))
+                    new Vector2(21.07f, 4.93f), new Vector2(.11f, .125f), false)
             };
             assets.formula.wheels = new[]
             {

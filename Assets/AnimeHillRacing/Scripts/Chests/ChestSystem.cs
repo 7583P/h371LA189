@@ -105,6 +105,7 @@ namespace AnimeHillRacing.Chests
                 target.rewardClaimed = true;
                 target.state = ChestState.Claimed;
                 SaveManager.AddCoins(target.coinReward, false);
+                SaveManager.AddGems(target.gemReward, false);
                 int total = 0;
                 bool unlocked = false;
                 int blueprints = bundle != null ? target.blueprintReward : 0;
@@ -114,6 +115,7 @@ namespace AnimeHillRacing.Chests
                 result.Success = true;
                 result.Type = target.type;
                 result.Coins = target.coinReward;
+                result.Gems = target.gemReward;
                 result.BundleId = bundle?.BundleId;
                 result.BundleName = bundle?.DisplayName;
                 result.Blueprints = blueprints;
@@ -179,6 +181,10 @@ namespace AnimeHillRacing.Chests
         {
             ChestDefinition definition = catalog.chestCatalog.Find(type);
             int coinReward = random.Range(definition.minimumCoins, definition.maximumCoins + 1);
+            int minimumGems = Mathf.Max(0, definition.minimumGems);
+            int maximumGems = Mathf.Max(minimumGems, definition.maximumGems);
+            int gemReward = maximumGems > minimumGems
+                ? random.Range(minimumGems, maximumGems + 1) : minimumGems;
             string bundleId = string.Empty;
             if (definition.blueprintReward > 0)
             {
@@ -192,6 +198,7 @@ namespace AnimeHillRacing.Chests
                 state = ChestState.Pending,
                 createdUtc = DateTime.UtcNow.ToString("O"),
                 coinReward = coinReward,
+                gemReward = gemReward,
                 blueprintBundleId = bundleId,
                 blueprintReward = string.IsNullOrEmpty(bundleId) ? 0 : definition.blueprintReward,
                 rewardClaimed = false,

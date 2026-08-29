@@ -30,6 +30,8 @@ MonoBehaviour:
     gemPrice: 0
     bundleType: 0
     allowsBlueprintProgression: 1
+    hasExplicitRarity: 0
+    rarity: 5
     visibleDiameter: 0
     visibleSize: {x: 14.94, y: 7.86}
     visualOffset: {x: -0.02, y: 0.075}
@@ -40,6 +42,8 @@ MonoBehaviour:
     gemPrice: 1000
     bundleType: 0
     allowsBlueprintProgression: 1
+    hasExplicitRarity: 0
+    rarity: 5
     visibleDiameter: 0
     visibleSize: {x: 15.09, y: 8.04}
     visualOffset: {x: 0.005, y: 0.185}
@@ -50,6 +54,8 @@ MonoBehaviour:
     gemPrice: 1000
     bundleType: 0
     allowsBlueprintProgression: 1
+    hasExplicitRarity: 0
+    rarity: 5
     visibleDiameter: 0
     visibleSize: {x: 15.01, y: 7.93}
     visualOffset: {x: -0.025, y: 0.085}
@@ -60,6 +66,8 @@ MonoBehaviour:
     gemPrice: 1000
     bundleType: 0
     allowsBlueprintProgression: 1
+    hasExplicitRarity: 0
+    rarity: 5
     visibleDiameter: 0
     visibleSize: {x: 15.35, y: 9.09}
     visualOffset: {x: 0.01, y: 0.205}
@@ -71,6 +79,8 @@ MonoBehaviour:
     gemPrice: 0
     bundleType: 0
     allowsBlueprintProgression: 1
+    hasExplicitRarity: 0
+    rarity: 5
     visibleDiameter: 9.94
     visibleSize: {x: 9.76, y: 9.82}
     visualOffset: {x: 0, y: 0}
@@ -81,6 +91,8 @@ MonoBehaviour:
     gemPrice: 0
     bundleType: 0
     allowsBlueprintProgression: 1
+    hasExplicitRarity: 0
+    rarity: 5
     visibleDiameter: 10.1
     visibleSize: {x: 9.89, y: 10.03}
     visualOffset: {x: 0, y: 0}
@@ -91,6 +103,8 @@ MonoBehaviour:
     gemPrice: 500
     bundleType: 0
     allowsBlueprintProgression: 1
+    hasExplicitRarity: 0
+    rarity: 5
     visibleDiameter: 14.08
     visibleSize: {x: 14.08, y: 14.06}
     visualOffset: {x: 0, y: 0}
@@ -101,6 +115,8 @@ MonoBehaviour:
     gemPrice: 500
     bundleType: 0
     allowsBlueprintProgression: 1
+    hasExplicitRarity: 0
+    rarity: 5
     visibleDiameter: 14.56
     visibleSize: {x: 14.4, y: 14.56}
     visualOffset: {x: 0, y: 0}
@@ -111,6 +127,8 @@ MonoBehaviour:
     gemPrice: 500
     bundleType: 0
     allowsBlueprintProgression: 1
+    hasExplicitRarity: 0
+    rarity: 5
     visibleDiameter: 7.44
     visibleSize: {x: 7.36, y: 7.44}
     visualOffset: {x: 0, y: 0}

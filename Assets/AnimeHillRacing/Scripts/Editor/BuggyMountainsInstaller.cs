@@ -399,7 +399,7 @@ namespace AnimeHillRacing.Editor
             environment.lockFarMountainsVerticalToCamera = true;
             environment.lockNearMountainsVerticalToCamera = true;
             environment.coverViewportVertically = true;
-            environment.coverViewportVerticalOffset = 5f;
+            environment.coverViewportVerticalOffset = 9f;
             environment.farMountainParallaxX = .08f;
             environment.mountainParallaxX = .12f;
             environment.nearMountainParallaxX = .36f;

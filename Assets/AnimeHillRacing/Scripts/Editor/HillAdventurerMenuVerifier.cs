@@ -939,7 +939,7 @@ namespace AnimeHillRacing.Editor
 
                 if (scene.name == "PreStart")
                 {
-                    ValidateSiblingSet(scene, safe, safeBounds, "Chest Slot ", 4,
+                    ValidateSiblingSet(scene, safe, safeBounds, "Chest Slot ", ChestPanelUI.SlotsPerPage,
                         profileNames[profile], errors);
                 }
                 else if (scene.name == "Garage")

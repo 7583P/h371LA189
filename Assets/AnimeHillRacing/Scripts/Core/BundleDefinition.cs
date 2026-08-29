@@ -21,10 +21,12 @@ namespace AnimeHillRacing.Core
         public string Category { get; }
         public string OptionId { get; }
         public bool UnlockedByDefault { get; }
+        public ItemRarity Rarity { get; }
         public int BlueprintRequirement => Type == BundleType.Vehicle ? 150 : 100;
 
         public BundleDefinition(string bundleId, string displayName, BundleType type, Sprite thumbnail,
-            int gemPrice, string scopeId, string category, string optionId, bool unlockedByDefault)
+            int gemPrice, string scopeId, string category, string optionId, bool unlockedByDefault,
+            ItemRarity rarity)
         {
             BundleId = bundleId;
             DisplayName = displayName;
@@ -35,6 +37,7 @@ namespace AnimeHillRacing.Core
             Category = category;
             OptionId = optionId;
             UnlockedByDefault = unlockedByDefault;
+            Rarity = rarity;
         }
     }
 
@@ -53,7 +56,7 @@ namespace AnimeHillRacing.Core
                     bundles.Add(new BundleDefinition(
                         VehicleBundleId(vehicle.vehicleId), vehicle.displayName + " VEHICLE BUNDLE",
                         BundleType.Vehicle, vehicle.previewSprite, vehicle.gemPrice, vehicle.vehicleId,
-                        "Vehicle", vehicle.vehicleId, vehicle.unlockedByDefault));
+                        "Vehicle", vehicle.vehicleId, vehicle.unlockedByDefault, ItemRarity.Mythic));
                 }
                 AppendCosmetics(bundles, vehicle, vehicle.skins, "Skin");
                 AppendCosmetics(bundles, vehicle, vehicle.wheels, "Wheels");
@@ -96,11 +99,14 @@ namespace AnimeHillRacing.Core
                 string displayName = option.displayName ?? string.Empty;
                 if (displayName.IndexOf(vehicle.displayName, System.StringComparison.OrdinalIgnoreCase) < 0)
                     displayName += " - " + vehicle.displayName;
+                bool isDefault = category == "Skin"
+                    ? option.optionId == vehicle.DefaultSkinId
+                    : category == "Wheels" && option.optionId == vehicle.DefaultWheelId;
                 target.Add(new BundleDefinition(
                     CosmeticBundleId(vehicle.vehicleId, category, option.optionId),
                     displayName,
                     option.bundleType, option.sprite, option.gemPrice, vehicle.vehicleId, category,
-                    option.optionId, option.unlockedByDefault));
+                    option.optionId, option.unlockedByDefault, option.ResolveRarity(isDefault)));
             }
         }
 
@@ -114,7 +120,8 @@ namespace AnimeHillRacing.Core
                 target.Add(new BundleDefinition(
                     CosmeticBundleId("global", "CharacterAccessory", option.accessoryId),
                     option.displayName, BundleType.Cosmetic, option.sprite, option.gemPrice,
-                    "global", "CharacterAccessory", option.accessoryId, option.unlockedByDefault));
+                    "global", "CharacterAccessory", option.accessoryId, option.unlockedByDefault,
+                    option.ResolveRarity(option.accessoryId == driver.DefaultAccessoryId)));
             }
         }
     }

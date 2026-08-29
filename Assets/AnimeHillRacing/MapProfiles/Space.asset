@@ -147,6 +147,7 @@ MonoBehaviour:
   fuelPlacementSearchStep: 2
   fuelMaximumPlacementSlope: 15
   environment: {fileID: 11400000, guid: 5ace0000000000000000000000000020, type: 2}
+  selectionPreview: {fileID: 21300000, guid: 5ace7e1d2c3b456789abcdef01234567, type: 3}
   useVehicleContactLineOcclusion: 1
   terrainMaterial: {fileID: 2100000, guid: 5ace0000000000000000000000000011, type: 2}
   terrainEdgeMaterial: {fileID: 2100000, guid: 5ace0000000000000000000000000012, type: 2}

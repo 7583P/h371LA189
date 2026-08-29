@@ -18,6 +18,7 @@ MonoBehaviour:
   seed: 18472
   unlockedByDefault: 1
   coinPrice: 0
+  leaderboardId: 
   coinRoute: {fileID: 11400000, guid: 2d8f01a9a8d293943a19b887710af661, type: 2}
   introEndDistance: 750
   easyEndDistance: 3000
@@ -165,6 +166,7 @@ MonoBehaviour:
   fuelPlacementSearchStep: 3
   fuelMaximumPlacementSlope: 12.599999
   environment: {fileID: 11400000, guid: 1f42449c8cf4dfd48b1ecb84164eb343, type: 2}
+  selectionPreview: {fileID: 21300000, guid: 91c0a1d2e3f4456789abcdef01234567, type: 3}
   useVehicleContactLineOcclusion: 1
   terrainMaterial: {fileID: 2100000, guid: 93c78abf61cc4aba86d35ab9b07cfe85, type: 2}
   terrainEdgeMaterial: {fileID: 2100000, guid: 4741ca1bc6914f4aa98872d53d41c57b, type: 2}

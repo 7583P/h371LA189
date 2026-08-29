@@ -14,6 +14,8 @@ namespace AnimeHillRacing.UI
 
         [SerializeField] private GameCatalog catalog;
         [SerializeField] private Text coinsText;
+        [SerializeField] private Text gemsText;
+        [SerializeField] private Image gemIcon;
         [SerializeField] private Text progressText;
         [SerializeField] private GameObject[] stepPanels;
         [SerializeField] private Image[] modeCards;
@@ -69,6 +71,7 @@ namespace AnimeHillRacing.UI
         private readonly List<TrackSelectionCardUI> generatedTrackCards = new List<TrackSelectionCardUI>();
         private float lastTrackViewportWidth = -1f;
         private int displayedTrackCoins = int.MinValue;
+        private int displayedTrackGems = int.MinValue;
 
         private VehicleDefinition CurrentVehicle => catalog != null && catalog.vehicles != null && catalog.vehicles.Length > 0
             ? catalog.vehicles[Mathf.Clamp(vehicleIndex, 0, catalog.vehicles.Length - 1)] : null;
@@ -77,8 +80,10 @@ namespace AnimeHillRacing.UI
         private void Awake()
         {
             RefreshMenuBackground();
+            EnsureGemCounter();
             if (trackSelectionLayout) EnsurePurchaseConfirmation();
             if (!trackSelectionLayout) EnsureModernLayout();
+            EconomyCounterIconBinder.RefreshActiveScene();
         }
 
         private void Start()
@@ -101,9 +106,9 @@ namespace AnimeHillRacing.UI
 
         private void Update()
         {
-            if (!trackSelectionLayout) return;
-            ConfigureTwoColumnGrid();
-            if (displayedTrackCoins != SaveManager.TotalCoins) RefreshTrackSelectionCurrency();
+            if (trackSelectionLayout) ConfigureTwoColumnGrid();
+            if (displayedTrackCoins != SaveManager.TotalCoins || displayedTrackGems != SaveManager.TotalGems)
+                RefreshTrackSelectionCurrency();
         }
 
         private void EnsureModernLayout()
@@ -540,7 +545,47 @@ namespace AnimeHillRacing.UI
         private void RefreshTrackSelectionCurrency()
         {
             displayedTrackCoins = SaveManager.TotalCoins;
+            displayedTrackGems = SaveManager.TotalGems;
             if (coinsText != null) coinsText.text = $"COINS  {displayedTrackCoins:N0}";
+            if (gemsText != null) gemsText.text = $"GEMS  {displayedTrackGems:N0}";
+        }
+
+        private void EnsureGemCounter()
+        {
+            if (gemsText != null || coinsText == null || coinsText.transform.parent == null) return;
+            RectTransform coinCard = coinsText.transform.parent as RectTransform;
+            if (coinCard == null || coinCard.parent == null) return;
+
+            Transform existing = coinCard.parent.Find("Gems Card");
+            GameObject gemCard = existing != null
+                ? existing.gameObject
+                : Object.Instantiate(coinCard.gameObject, coinCard.parent, false);
+            gemCard.name = "Gems Card";
+            RectTransform gemCardRect = gemCard.GetComponent<RectTransform>();
+            // Currency balances form one vertical stack in every menu.
+            gemCardRect.anchoredPosition = coinCard.anchoredPosition +
+                                           Vector2.down * (coinCard.rect.height + 4f);
+
+            Image[] images = gemCard.GetComponentsInChildren<Image>(true);
+            for (int i = 0; i < images.Length; i++)
+            {
+                if (images[i] == null || images[i].transform == gemCard.transform) continue;
+                gemIcon = images[i];
+                gemIcon.name = "Gem Icon";
+                break;
+            }
+
+            Text[] labels = gemCard.GetComponentsInChildren<Text>(true);
+            if (labels.Length > 0) gemsText = labels[0];
+            HillAdventurerUiCatalog ui = HillAdventurerUiCatalog.Instance;
+            if (gemIcon != null)
+            {
+                gemIcon.sprite = ui != null ? ui.gemCounterIcon : null;
+                gemIcon.enabled = gemIcon.sprite != null;
+                gemIcon.preserveAspect = true;
+                gemIcon.raycastTarget = false;
+            }
+            displayedTrackGems = int.MinValue;
         }
 
         public void SelectAdventureTrack(int compatibleMapIndex)
@@ -1165,6 +1210,7 @@ namespace AnimeHillRacing.UI
             trackCards = cards;
             trackCardTemplate = null;
             coinsText = coins;
+            EnsureGemCounter();
             trackSelectionTitleText = title;
             trackSelectionEmptyText = emptyState;
             trackCardAspectRatio = Mathf.Max(.5f, cardAspectRatio);
@@ -1186,6 +1232,7 @@ namespace AnimeHillRacing.UI
             trackCards = null;
             trackCardTemplate = cardTemplate;
             coinsText = coins;
+            EnsureGemCounter();
             trackSelectionTitleText = title;
             trackSelectionEmptyText = emptyState;
             trackCardAspectRatio = Mathf.Max(.5f, cardAspectRatio);
@@ -1208,7 +1255,7 @@ namespace AnimeHillRacing.UI
             Text[] tuneNames, Text[] tuneLabels, Text[] tuneValues, Text[] tuneCosts, Button[] tuneButtons, Text tuningCoins,
             GaragePreviewRenderer composedPreview = null, GameObject trackSelector = null)
         {
-            catalog = gameCatalog; coinsText = coins; progressText = progress; stepPanels = panels;
+            catalog = gameCatalog; coinsText = coins; EnsureGemCounter(); progressText = progress; stepPanels = panels;
             modeCards = cards; modeCardRects = cardRects; modeCardStatusTexts = cardStatuses;
             modeText = modeLabel; mapText = mapLabel; vehicleText = vehicleLabel; vehiclePreviewImage = vehiclePreview;
             vehiclePreviewFallback = previewFallback;

@@ -176,6 +176,12 @@ namespace AnimeHillRacing.UI
         private Image vehicleLockIcon;
         private Button vehiclePurchaseButton;
         private Text vehiclePurchaseLabel;
+        private Image[] optionRarityFrames;
+        private Image[] optionOwnedBadges;
+        private Image[] optionEquippedBadges;
+        private Button[] optionReadyButtons;
+        private Image[] shopAccessoryRarityFrames;
+        private StarterPackShopUI starterPackShop;
 
         private Sprite ResolvedVehicleLockSprite => vehicleLockSprite != null
             ? vehicleLockSprite : Resources.Load<Sprite>("UI/LockIcon");
@@ -189,6 +195,8 @@ namespace AnimeHillRacing.UI
 
         private void OnEnable()
         {
+            SaveManager.CurrencyChanged -= HandleCurrencyChanged;
+            if (Application.isPlaying) SaveManager.CurrencyChanged += HandleCurrencyChanged;
             if (catalog == null) return;
             startInFlight = false;
             purchaseInFlight = false;
@@ -202,12 +210,30 @@ namespace AnimeHillRacing.UI
             EnsureTuneCardButtons();
             EnsureAccessoryPaginationControls();
             EnsureVehiclePurchaseControls();
+            EnsureOptionStateVisuals();
+            if (Application.isPlaying) starterPackShop = StarterPackShopUI.Attach(storePanel, catalog);
             FindSavedVehicle();
             section = GameSession.RequestedGarageSection;
             preview?.Invalidate();
             if (confirmationModal != null) confirmationModal.SetActive(false);
             Refresh();
+            EconomyCounterIconBinder.RefreshActiveScene();
             if (section == GarageSection.Store) ResetStoreScrollToTop();
+        }
+
+        private void OnDisable() => SaveManager.CurrencyChanged -= HandleCurrencyChanged;
+
+        private void HandleCurrencyChanged()
+        {
+            if (!Application.isPlaying || catalog == null) return;
+            int coins = SaveManager.TotalCoins;
+            int gems = SaveManager.TotalGems;
+            bool coinsChanged = coins != lastObservedCoins;
+            bool gemsChanged = gems != lastObservedGems;
+            lastObservedCoins = coins;
+            lastObservedGems = gems;
+            RefreshEconomyOnly(coinsChanged, gemsChanged);
+            starterPackShop?.Refresh();
         }
 
         public void Back() => SceneManager.LoadScene("PreStart");
@@ -368,8 +394,8 @@ namespace AnimeHillRacing.UI
         private void SetSection(GarageSection targetSection)
         {
             bool enteringStore = section != GarageSection.Store && targetSection == GarageSection.Store;
-            bool previewVisibilityChanged = (section == GarageSection.Store) !=
-                (targetSection == GarageSection.Store);
+            bool previewVisibilityChanged = IsIsolatedSection(section) !=
+                IsIsolatedSection(targetSection);
             if (previewVisibilityChanged) preview?.Invalidate();
             section = targetSection;
             GameSession.RequestedGarageSection = targetSection;
@@ -1208,6 +1234,198 @@ namespace AnimeHillRacing.UI
             tuneCardListenersInitialized = true;
         }
 
+        private void EnsureOptionStateVisuals()
+        {
+            if (!Application.isPlaying) return;
+            int count = optionButtons?.Length ?? 0;
+            optionRarityFrames = new Image[count];
+            optionOwnedBadges = new Image[count];
+            optionEquippedBadges = new Image[count];
+            optionReadyButtons = new Button[count];
+            for (int i = 0; i < count; i++)
+            {
+                Button option = optionButtons[i];
+                if (option == null) continue;
+                optionRarityFrames[i] = EnsureStateImage(option.transform, "Rarity Frame",
+                    Vector2.zero, Vector2.one, string.Empty);
+                optionRarityFrames[i].transform.SetAsFirstSibling();
+                optionOwnedBadges[i] = EnsureStateImage(option.transform, "Owned Badge",
+                    new Vector2(.02f, .76f), new Vector2(.40f, .98f), "OWNED");
+                optionEquippedBadges[i] = EnsureStateImage(option.transform, "Equipped Badge",
+                    new Vector2(.56f, .76f), new Vector2(.98f, .98f), "EQUIPPED");
+                optionReadyButtons[i] = EnsureReadyButton(option.transform, i);
+            }
+
+            int shopCount = shopAccessoryButtons?.Length ?? 0;
+            shopAccessoryRarityFrames = new Image[shopCount];
+            for (int i = 0; i < shopCount; i++)
+            {
+                Button option = shopAccessoryButtons[i];
+                if (option == null) continue;
+                shopAccessoryRarityFrames[i] = EnsureStateImage(option.transform, "Rarity Frame",
+                    Vector2.zero, Vector2.one, string.Empty);
+                shopAccessoryRarityFrames[i].transform.SetAsFirstSibling();
+            }
+        }
+
+        private static Image EnsureStateImage(Transform parent, string objectName, Vector2 anchorMin,
+            Vector2 anchorMax, string fallbackLabel)
+        {
+            Transform existing = parent.Find(objectName);
+            GameObject instance = existing != null ? existing.gameObject :
+                new GameObject(objectName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            RectTransform rect = instance.GetComponent<RectTransform>();
+            if (existing == null) rect.SetParent(parent, false);
+            rect.anchorMin = anchorMin;
+            rect.anchorMax = anchorMax;
+            rect.offsetMin = new Vector2(3f, 3f);
+            rect.offsetMax = new Vector2(-3f, -3f);
+            Image image = instance.GetComponent<Image>();
+            image.preserveAspect = true;
+            image.raycastTarget = false;
+
+            if (!string.IsNullOrEmpty(fallbackLabel) && instance.transform.Find("Fallback Label") == null)
+            {
+                GameObject labelObject = new GameObject("Fallback Label", typeof(RectTransform),
+                    typeof(CanvasRenderer), typeof(Text));
+                RectTransform labelRect = labelObject.GetComponent<RectTransform>();
+                labelRect.SetParent(instance.transform, false);
+                labelRect.anchorMin = Vector2.zero;
+                labelRect.anchorMax = Vector2.one;
+                labelRect.offsetMin = Vector2.zero;
+                labelRect.offsetMax = Vector2.zero;
+                Text label = labelObject.GetComponent<Text>();
+                label.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+                label.text = fallbackLabel;
+                label.fontSize = 12;
+                label.resizeTextForBestFit = true;
+                label.resizeTextMinSize = 8;
+                label.resizeTextMaxSize = 12;
+                label.alignment = TextAnchor.MiddleCenter;
+                label.color = Color.white;
+                label.raycastTarget = false;
+            }
+            return image;
+        }
+
+        private Button EnsureReadyButton(Transform parent, int slot)
+        {
+            Transform existing = parent.Find("Ready Button");
+            GameObject instance = existing != null ? existing.gameObject :
+                new GameObject("Ready Button", typeof(RectTransform), typeof(CanvasRenderer),
+                    typeof(Image), typeof(Button));
+            RectTransform rect = instance.GetComponent<RectTransform>();
+            if (existing == null) rect.SetParent(parent, false);
+            rect.anchorMin = new Vector2(.57f, .03f);
+            rect.anchorMax = new Vector2(.97f, .23f);
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            Image image = instance.GetComponent<Image>();
+            Button button = instance.GetComponent<Button>();
+            button.targetGraphic = image;
+            button.onClick = new Button.ButtonClickedEvent();
+            int capturedSlot = slot;
+            button.onClick.AddListener(() => SelectOption(capturedSlot));
+
+            Transform labelTransform = instance.transform.Find("Fallback Label");
+            if (labelTransform == null)
+            {
+                GameObject labelObject = new GameObject("Fallback Label", typeof(RectTransform),
+                    typeof(CanvasRenderer), typeof(Text));
+                RectTransform labelRect = labelObject.GetComponent<RectTransform>();
+                labelRect.SetParent(instance.transform, false);
+                labelRect.anchorMin = Vector2.zero;
+                labelRect.anchorMax = Vector2.one;
+                labelRect.offsetMin = Vector2.zero;
+                labelRect.offsetMax = Vector2.zero;
+                Text label = labelObject.GetComponent<Text>();
+                label.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+                label.text = "READY";
+                label.fontSize = 11;
+                label.resizeTextForBestFit = true;
+                label.resizeTextMinSize = 8;
+                label.resizeTextMaxSize = 11;
+                label.alignment = TextAnchor.MiddleCenter;
+                label.color = Color.white;
+                label.raycastTarget = false;
+            }
+            return button;
+        }
+
+        private void RefreshOptionStateVisual(int slot, int optionIndex, bool unlocked, bool selected,
+            bool vehicleUnlocked)
+        {
+            if (optionRarityFrames == null || slot < 0 || slot >= optionRarityFrames.Length) return;
+            bool isSkin = category == Category.Skin && CurrentVehicle?.skins != null &&
+                          optionIndex >= 0 && optionIndex < CurrentVehicle.skins.Length &&
+                          CurrentVehicle.skins[optionIndex] != null;
+            bool isWheel = category == Category.Wheels && CurrentVehicle?.wheels != null &&
+                           optionIndex >= 0 && optionIndex < CurrentVehicle.wheels.Length &&
+                           CurrentVehicle.wheels[optionIndex] != null;
+            DriverDefinition driver = category == Category.Characters ? SelectedDriver() : null;
+            bool isAccessory = driver?.accessories != null && optionIndex >= 0 &&
+                               optionIndex < driver.accessories.Length &&
+                               driver.accessories[optionIndex] != null;
+            HillAdventurerUiCatalog assets = HillAdventurerUiCatalog.Instance;
+            bool supportsRarity = isSkin || isWheel || isAccessory;
+            ItemRarity rarity = ItemRarity.Common;
+            if (isSkin)
+            {
+                VehicleDefinition.CustomizationOption option = CurrentVehicle.skins[optionIndex];
+                rarity = option.ResolveRarity(option.optionId == CurrentVehicle.DefaultSkinId);
+            }
+            else if (isWheel)
+            {
+                VehicleDefinition.CustomizationOption option = CurrentVehicle.wheels[optionIndex];
+                rarity = option.ResolveRarity(option.optionId == CurrentVehicle.DefaultWheelId);
+            }
+            else if (isAccessory)
+            {
+                DriverDefinition.CharacterAccessoryOption option = driver.accessories[optionIndex];
+                rarity = option.ResolveRarity(option.accessoryId == driver.DefaultAccessoryId);
+            }
+            SetStateImage(optionRarityFrames[slot], supportsRarity && assets != null
+                ? assets.GetRarityFrame(rarity) : null, supportsRarity, string.Empty,
+                ItemRarityUtility.AccentColor(rarity));
+            SetStateImage(optionOwnedBadges[slot], assets != null ? assets.ownedBadge : null,
+                isSkin && unlocked && !selected, "OWNED", new Color(.12f, .58f, .34f, .96f));
+            SetStateImage(optionEquippedBadges[slot], assets != null ? assets.equippedBadge : null,
+                isSkin && unlocked && selected, "EQUIPPED", new Color(.12f, .52f, .86f, .96f));
+
+            Button ready = optionReadyButtons[slot];
+            if (ready != null)
+            {
+                bool showReady = isSkin && unlocked && !selected;
+                ready.gameObject.SetActive(showReady);
+                ready.interactable = showReady && vehicleUnlocked;
+                Sprite sprite = assets != null ? assets.readyButton : null;
+                ready.image.sprite = sprite;
+                ready.image.preserveAspect = sprite != null;
+                ready.image.color = sprite != null ? Color.white : new Color(.12f, .58f, .82f, .98f);
+                Text label = ready.GetComponentInChildren<Text>(true);
+                if (label != null) label.enabled = sprite == null;
+            }
+        }
+
+        private static void SetStateImage(Image image, Sprite sprite, bool visible, string fallbackLabel,
+            Color fallbackColor)
+        {
+            if (image == null) return;
+            image.gameObject.SetActive(visible);
+            if (!visible) return;
+            image.sprite = sprite;
+            image.color = sprite != null ? Color.white : fallbackColor;
+            image.preserveAspect = sprite != null;
+            Text label = image.GetComponentInChildren<Text>(true);
+            if (label != null)
+            {
+                if (!string.IsNullOrEmpty(fallbackLabel)) label.text = fallbackLabel;
+                label.enabled = sprite == null && !string.IsNullOrEmpty(fallbackLabel);
+            }
+            // A missing rarity sheet must not paint a solid panel over the actual item thumbnail.
+            if (sprite == null && string.IsNullOrEmpty(fallbackLabel)) image.color = Color.clear;
+        }
+
         private Button CreateTuneDownButton(Button template, int slot)
         {
             GameObject gameObject = new GameObject("Decrease", typeof(RectTransform), typeof(Image), typeof(Button));
@@ -1406,10 +1624,14 @@ namespace AnimeHillRacing.UI
                 }
                 if (optionLabels != null && i < optionLabels.Length && optionLabels[i] != null)
                 {
-                    string action = isSelected ? SelectedAccessoryAction(accessory) : unlocked
-                        ? "SELECT" : gemPrice > 0 ? $"{gemPrice:N0} GEMS" : "LOCKED";
+                    string action = category == Category.Skin
+                        ? isSelected ? "EQUIPPED" : unlocked ? "OWNED  •  READY" :
+                            gemPrice > 0 ? $"{gemPrice:N0} GEMS" : "LOCKED"
+                        : isSelected ? SelectedAccessoryAction(accessory) : unlocked
+                            ? "SELECT" : gemPrice > 0 ? $"{gemPrice:N0} GEMS" : "LOCKED";
                     optionLabels[i].text = OptionName(optionIndex) + "\n" + action;
                 }
+                RefreshOptionStateVisual(i, optionIndex, unlocked, isSelected, vehicleUnlocked);
                 RefreshOptionBlueprintProgress(i, optionIndex, unlocked);
             }
 
@@ -1440,7 +1662,7 @@ namespace AnimeHillRacing.UI
                     $"FUEL  {stats.totalRunFuelDuration:0} SEC";
             }
             RefreshAdventureContext();
-            RefreshStoreIsolation();
+            RefreshSectionIsolation();
             RefreshGarageBackground();
             RefreshAudioSetting();
         }
@@ -1451,7 +1673,7 @@ namespace AnimeHillRacing.UI
             VehicleDefinition vehicle = CurrentVehicle;
             bool vehicleUnlocked = vehicle != null && SaveManager.IsVehicleUnlocked(vehicle.vehicleId,
                 vehicle.unlockedByDefault);
-            bool showGarageContext = section != GarageSection.Store;
+            bool showGarageContext = !IsIsolatedSection(section);
             bool showStart = showGarageContext && hasTrack && vehicleUnlocked;
             if (startButton != null)
             {
@@ -1477,10 +1699,10 @@ namespace AnimeHillRacing.UI
             RefreshGarageBackground();
         }
 
-        private void RefreshStoreIsolation()
+        private void RefreshSectionIsolation()
         {
             if (!Application.isPlaying) return;
-            bool showGarageChrome = section != GarageSection.Store;
+            bool showGarageChrome = !IsIsolatedSection(section);
             bool adventurePreparation = GameSession.HasPendingAdventureTrack;
 
             ResolveGarageSectionTabs();
@@ -1518,7 +1740,19 @@ namespace AnimeHillRacing.UI
                 storeRect.anchoredPosition = Vector2.zero;
                 storeRect.sizeDelta = Vector2.zero;
             }
+
+            if (section == GarageSection.Settings && settingsPanel != null &&
+                settingsPanel.transform is RectTransform settingsRect)
+            {
+                settingsRect.anchorMin = new Vector2(.18f, .15f);
+                settingsRect.anchorMax = new Vector2(.82f, .84f);
+                settingsRect.anchoredPosition = Vector2.zero;
+                settingsRect.sizeDelta = Vector2.zero;
+            }
         }
+
+        private static bool IsIsolatedSection(GarageSection candidate) =>
+            candidate == GarageSection.Store || candidate == GarageSection.Settings;
 
         private void ResolveGarageSectionTabs()
         {
@@ -1615,7 +1849,7 @@ namespace AnimeHillRacing.UI
             if (Application.isPlaying && selectedMenuId != storedMenuId)
                 SaveManager.SelectedMenuBackgroundId = selectedMenuId;
 
-            Sprite selectedSprite = section == GarageSection.Store
+            Sprite selectedSprite = IsIsolatedSection(section)
                 ? selectedMenuSprite : selectedGarageSprite;
             if (garageBackground != null)
             {
@@ -1870,6 +2104,7 @@ namespace AnimeHillRacing.UI
                 }
             }
             RefreshShopAccessories();
+            starterPackShop?.Refresh();
         }
 
         private void RefreshShopAccessories()
@@ -1891,6 +2126,12 @@ namespace AnimeHillRacing.UI
                 DriverDefinition.CharacterAccessoryOption option = driver.accessories[accessoryIndex];
                 bool unlocked = IsAccessoryUnlocked(option);
                 bool selected = option.accessoryId == SaveManager.GetSelectedCharacterAccessoryId(driver.DefaultAccessoryId);
+                bool isDefault = option.accessoryId == driver.DefaultAccessoryId;
+                ItemRarity rarity = option.ResolveRarity(isDefault);
+                SetStateImage(shopAccessoryRarityFrames != null && i < shopAccessoryRarityFrames.Length
+                        ? shopAccessoryRarityFrames[i] : null,
+                    HillAdventurerUiCatalog.Instance?.GetRarityFrame(rarity), true, string.Empty,
+                    ItemRarityUtility.AccentColor(rarity));
                 bool flipX = option.supportsFlipVariant &&
                     SaveManager.GetCharacterAccessoryFlipX(option.accessoryId, option.flipX);
                 button.interactable = unlocked || option.gemPrice > 0;

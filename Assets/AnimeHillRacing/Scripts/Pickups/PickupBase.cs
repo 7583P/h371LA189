@@ -164,6 +164,7 @@ namespace AnimeHillRacing.Pickups
     public enum PickupKind
     {
         Coin,
-        Fuel
+        Fuel,
+        Gem
     }
 }

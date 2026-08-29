@@ -21,6 +21,19 @@ namespace AnimeHillRacing.UI
 
         private Image lockShade;
         private Image lockImage;
+        private bool previewLayoutCaptured;
+        private Vector2 previewAnchorMin;
+        private Vector2 previewAnchorMax;
+        private Vector2 previewPivot;
+        private Vector2 previewAnchoredPosition;
+        private Vector2 previewSizeDelta;
+        private AspectRatioFitter previewAspectFitter;
+        private bool previewFitterExisted;
+        private bool previewFitterEnabled;
+        private AspectRatioFitter.AspectMode previewFitterMode;
+        private float previewFitterRatio;
+        private Button leaderboardButton;
+        private Text leaderboardFallbackText;
 
         private Sprite ResolvedLockSprite => lockSprite != null
             ? lockSprite : Resources.Load<Sprite>("UI/LockIcon");
@@ -33,11 +46,13 @@ namespace AnimeHillRacing.UI
         private void Awake()
         {
             ResolveButton();
+            EnsureLeaderboardButton();
         }
 
         private void OnDestroy()
         {
             if (selectionButton != null) selectionButton.onClick.RemoveListener(HandleSelection);
+            if (leaderboardButton != null) leaderboardButton.onClick.RemoveListener(HandleLeaderboard);
         }
 
         public void Bind(MapDefinition map, int mapIndex, Action<int> onSelected)
@@ -46,6 +61,7 @@ namespace AnimeHillRacing.UI
             compatibleMapIndex = mapIndex;
             selectionHandler = onSelected;
             ResolveButton();
+            EnsureLeaderboardButton();
 
             bool valid = map != null && map.supportedGameMode == GameModeType.Adventure2_5D &&
                          !string.IsNullOrWhiteSpace(map.mapId);
@@ -55,6 +71,7 @@ namespace AnimeHillRacing.UI
                 selectionButton.onClick.AddListener(HandleSelection);
                 selectionButton.interactable = valid;
             }
+            if (leaderboardButton != null) leaderboardButton.interactable = valid;
 
             if (titleText != null)
                 titleText.text = valid ? DisplayName(map).ToUpperInvariant() : "UNAVAILABLE TRACK";
@@ -108,6 +125,81 @@ namespace AnimeHillRacing.UI
             if (selectionButton == null) selectionButton = GetComponent<Button>();
         }
 
+        private void EnsureLeaderboardButton()
+        {
+            if (leaderboardButton != null || bestDistanceText == null) return;
+            Transform existing = transform.Find("Leaderboard Button");
+            GameObject buttonObject = existing != null ? existing.gameObject :
+                new GameObject("Leaderboard Button", typeof(RectTransform), typeof(CanvasRenderer),
+                    typeof(Image), typeof(Button));
+            RectTransform rect = buttonObject.GetComponent<RectTransform>();
+            if (existing == null) rect.SetParent(transform, false);
+
+            RectTransform bestRect = bestDistanceText.rectTransform;
+            float statusStart = statusText != null ? statusText.rectTransform.anchorMin.x : .96f;
+            float buttonMax = Mathf.Clamp(statusStart - .01f, .58f, .94f);
+            float buttonMin = Mathf.Max(bestRect.anchorMin.x + .14f, buttonMax - .22f);
+            Vector2 bestMax = bestRect.anchorMax;
+            bestMax.x = Mathf.Min(bestMax.x, buttonMin - .01f);
+            bestRect.anchorMax = bestMax;
+
+            rect.anchorMin = new Vector2(buttonMin, Mathf.Max(0f, bestRect.anchorMin.y - .035f));
+            rect.anchorMax = new Vector2(buttonMax, Mathf.Min(1f, bestRect.anchorMax.y + .035f));
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            Image buttonImage = buttonObject.GetComponent<Image>();
+            leaderboardButton = buttonObject.GetComponent<Button>();
+            leaderboardButton.targetGraphic = buttonImage;
+            leaderboardButton.onClick.RemoveListener(HandleLeaderboard);
+            leaderboardButton.onClick.AddListener(HandleLeaderboard);
+
+            HillAdventurerUiCatalog catalog = HillAdventurerUiCatalog.Instance;
+            Sprite sprite = catalog != null ? catalog.leaderboardButton : null;
+            buttonImage.sprite = sprite;
+            buttonImage.preserveAspect = sprite != null;
+            buttonImage.color = sprite != null ? Color.white : new Color(.08f, .38f, .62f, .96f);
+
+            Transform labelTransform = buttonObject.transform.Find("Fallback Label");
+            if (labelTransform == null)
+            {
+                GameObject labelObject = new GameObject("Fallback Label", typeof(RectTransform),
+                    typeof(CanvasRenderer), typeof(Text));
+                RectTransform labelRect = labelObject.GetComponent<RectTransform>();
+                labelRect.SetParent(buttonObject.transform, false);
+                labelRect.anchorMin = Vector2.zero;
+                labelRect.anchorMax = Vector2.one;
+                labelRect.offsetMin = Vector2.zero;
+                labelRect.offsetMax = Vector2.zero;
+                leaderboardFallbackText = labelObject.GetComponent<Text>();
+                leaderboardFallbackText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+                leaderboardFallbackText.fontSize = 13;
+                leaderboardFallbackText.resizeTextForBestFit = true;
+                leaderboardFallbackText.resizeTextMinSize = 9;
+                leaderboardFallbackText.resizeTextMaxSize = 13;
+                leaderboardFallbackText.alignment = TextAnchor.MiddleCenter;
+                leaderboardFallbackText.color = Color.white;
+                leaderboardFallbackText.raycastTarget = false;
+                leaderboardFallbackText.text = "RANK";
+            }
+            else
+                leaderboardFallbackText = labelTransform.GetComponent<Text>();
+            if (leaderboardFallbackText != null) leaderboardFallbackText.enabled = sprite == null;
+            buttonObject.transform.SetAsLastSibling();
+        }
+
+        private void HandleLeaderboard()
+        {
+            if (Map == null) return;
+            if (ExternalServiceProviders.Leaderboards.TryShowLeaderboard(Map.mapId,
+                    Map.leaderboardId, out string reason)) return;
+            if (statusText != null)
+            {
+                statusText.text = string.IsNullOrWhiteSpace(reason) ? "LEADERBOARD UNAVAILABLE" : reason;
+                CancelInvoke(nameof(RefreshSelectedState));
+                Invoke(nameof(RefreshSelectedState), 2f);
+            }
+        }
+
         private void EnsureLockVisual()
         {
             Transform preview = environmentImage != null ? environmentImage.transform.parent : transform;
@@ -154,6 +246,15 @@ namespace AnimeHillRacing.UI
 
         private void ApplyPreview(MapProfile profile)
         {
+            if (profile != null && profile.selectionPreview != null)
+            {
+                SetSprite(skyImage, null);
+                SetSprite(environmentImage, profile.selectionPreview);
+                ConfigureDedicatedPreview(profile.selectionPreview);
+                return;
+            }
+
+            RestoreLayeredPreviewLayout();
             Sprite sky = profile?.environment != null ? profile.environment.sky : null;
             Sprite environment = profile?.environment != null
                 ? profile.environment.mountains ?? profile.environment.nearMountains ??
@@ -170,6 +271,67 @@ namespace AnimeHillRacing.UI
             target.enabled = sprite != null;
             target.preserveAspect = true;
             target.raycastTarget = false;
+        }
+
+        private void ConfigureDedicatedPreview(Sprite sprite)
+        {
+            if (environmentImage == null || sprite == null) return;
+            CapturePreviewLayout();
+
+            RectTransform rect = environmentImage.rectTransform;
+            rect.anchorMin = new Vector2(.5f, .5f);
+            rect.anchorMax = new Vector2(.5f, .5f);
+            rect.pivot = new Vector2(.5f, .5f);
+            rect.anchoredPosition = Vector2.zero;
+            rect.sizeDelta = Vector2.zero;
+
+            if (previewAspectFitter == null)
+                previewAspectFitter = environmentImage.gameObject.AddComponent<AspectRatioFitter>();
+            previewAspectFitter.enabled = false;
+            previewAspectFitter.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
+            previewAspectFitter.aspectRatio = Mathf.Max(.01f, sprite.rect.width / sprite.rect.height);
+            previewAspectFitter.enabled = true;
+        }
+
+        private void CapturePreviewLayout()
+        {
+            if (previewLayoutCaptured || environmentImage == null) return;
+            RectTransform rect = environmentImage.rectTransform;
+            previewAnchorMin = rect.anchorMin;
+            previewAnchorMax = rect.anchorMax;
+            previewPivot = rect.pivot;
+            previewAnchoredPosition = rect.anchoredPosition;
+            previewSizeDelta = rect.sizeDelta;
+
+            previewAspectFitter = environmentImage.GetComponent<AspectRatioFitter>();
+            previewFitterExisted = previewAspectFitter != null;
+            if (previewFitterExisted)
+            {
+                previewFitterEnabled = previewAspectFitter.enabled;
+                previewFitterMode = previewAspectFitter.aspectMode;
+                previewFitterRatio = previewAspectFitter.aspectRatio;
+            }
+            previewLayoutCaptured = true;
+        }
+
+        private void RestoreLayeredPreviewLayout()
+        {
+            if (!previewLayoutCaptured || environmentImage == null) return;
+            if (previewAspectFitter != null) previewAspectFitter.enabled = false;
+
+            RectTransform rect = environmentImage.rectTransform;
+            rect.anchorMin = previewAnchorMin;
+            rect.anchorMax = previewAnchorMax;
+            rect.pivot = previewPivot;
+            rect.anchoredPosition = previewAnchoredPosition;
+            rect.sizeDelta = previewSizeDelta;
+
+            if (previewFitterExisted && previewAspectFitter != null)
+            {
+                previewAspectFitter.aspectMode = previewFitterMode;
+                previewAspectFitter.aspectRatio = previewFitterRatio;
+                previewAspectFitter.enabled = previewFitterEnabled;
+            }
         }
 
         private static string DisplayName(MapDefinition map) =>

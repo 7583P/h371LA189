@@ -56,6 +56,8 @@ namespace AnimeHillRacing.Core
         private const string MasterAudioEnabledKey = "AHR.Settings.MasterAudioEnabled";
         private const string FormulaWheelMigrationKey = "AHR.Migration.FormulaDefaultWheel02.V1";
         private const string PurchasableContentMigrationKey = "AHR.Migration.PurchasableContent.V1";
+        private const string EconomyMigrationKey = "AHR.Migration.Economy.Gems.V1";
+        private const string StarterPackOwnedKey = "AHR.Store.StarterPack.Owned.V1";
         private const string FormulaLegacyWheelId = "formula-wheel-rainbow";
         private const string FormulaLuxuryWheelId = "formula-wheel-luxury";
         private const string RallyLegacyWheelId = "rally-wheel-rainbow";
@@ -65,6 +67,8 @@ namespace AnimeHillRacing.Core
             ? UnlimitedCurrencyDisplayAmount : StoredTotalCoins;
         public static int TotalGems => TemporaryUnlimitedCurrencyEnabled
             ? UnlimitedCurrencyDisplayAmount : StoredTotalGems;
+        public static bool IsStarterPackOwned => PlayerPrefs.GetInt(StarterPackOwnedKey, 0) != 0;
+        public static event System.Action CurrencyChanged;
         public static GameModeType SelectedGameMode
         {
             get => (GameModeType)Mathf.Clamp(PlayerPrefs.GetInt(SelectedModeKey, 0), 0, 2);
@@ -262,13 +266,14 @@ namespace AnimeHillRacing.Core
             PlayerPrefs.Save();
         }
 
-        public static void AddGems(int amount)
+        public static void AddGems(int amount, bool persistImmediately = true)
         {
             int award = Mathf.Max(0, amount);
             if (award == 0) return;
             long total = (long)StoredTotalGems + award;
             PlayerPrefs.SetInt(TotalGemsKey, (int)System.Math.Min(int.MaxValue, total));
-            PlayerPrefs.Save();
+            if (persistImmediately) PlayerPrefs.Save();
+            CurrencyChanged?.Invoke();
         }
 
         public static void AddCoins(int amount, bool persistImmediately = true)
@@ -278,6 +283,63 @@ namespace AnimeHillRacing.Core
             long total = (long)StoredTotalCoins + award;
             PlayerPrefs.SetInt(TotalCoinsKey, (int)System.Math.Min(int.MaxValue, total));
             if (persistImmediately) PlayerPrefs.Save();
+            CurrencyChanged?.Invoke();
+        }
+
+        public static bool TrySpendGems(int amount, bool persistImmediately = true)
+        {
+            if (amount <= 0 || TemporaryUnlimitedCurrencyEnabled) return amount > 0;
+            int balance = StoredTotalGems;
+            if (balance < amount) return false;
+            PlayerPrefs.SetInt(TotalGemsKey, balance - amount);
+            if (persistImmediately) PlayerPrefs.Save();
+            CurrencyChanged?.Invoke();
+            return true;
+        }
+
+        public static bool TrySpendCoins(int amount, bool persistImmediately = true)
+        {
+            if (amount <= 0 || TemporaryUnlimitedCurrencyEnabled) return amount > 0;
+            int balance = StoredTotalCoins;
+            if (balance < amount) return false;
+            PlayerPrefs.SetInt(TotalCoinsKey, balance - amount);
+            if (persistImmediately) PlayerPrefs.Save();
+            CurrencyChanged?.Invoke();
+            return true;
+        }
+
+        public static bool TryGrantStarterPack(GameCatalog catalog, StarterPackConfiguration configuration,
+            out string error)
+        {
+            error = string.Empty;
+            if (IsStarterPackOwned)
+            {
+                error = "STARTER PACK ALREADY OWNED";
+                return false;
+            }
+            if (catalog == null || configuration == null ||
+                string.IsNullOrWhiteSpace(configuration.exclusiveBundleId))
+            {
+                error = "EXCLUSIVE STARTER PACK BUNDLE NOT CONFIGURED";
+                return false;
+            }
+            BundleDefinition exclusiveBundle = PremiumBundleCatalog.Find(catalog,
+                configuration.exclusiveBundleId);
+            if (exclusiveBundle == null)
+            {
+                error = "EXCLUSIVE STARTER PACK BUNDLE WAS NOT FOUND";
+                return false;
+            }
+
+            long coins = (long)StoredTotalCoins + Mathf.Max(0, configuration.coinReward);
+            long gems = (long)StoredTotalGems + Mathf.Max(0, configuration.gemReward);
+            PlayerPrefs.SetInt(TotalCoinsKey, (int)System.Math.Min(int.MaxValue, coins));
+            PlayerPrefs.SetInt(TotalGemsKey, (int)System.Math.Min(int.MaxValue, gems));
+            UnlockBundleWithoutSave(exclusiveBundle);
+            PlayerPrefs.SetInt(StarterPackOwnedKey, 1);
+            PlayerPrefs.Save();
+            CurrencyChanged?.Invoke();
+            return true;
         }
 
         public static bool IsVehicleUnlocked(string vehicleId, bool unlockedByDefault)
@@ -340,6 +402,7 @@ namespace AnimeHillRacing.Core
                 PlayerPrefs.SetInt(TotalCoinsKey, StoredTotalCoins - price);
             PlayerPrefs.SetInt(unlockKey, 1);
             PlayerPrefs.Save();
+            CurrencyChanged?.Invoke();
             result = CoinUnlockPurchaseResult.Success;
             return true;
         }
@@ -423,6 +486,7 @@ namespace AnimeHillRacing.Core
                 PlayerPrefs.SetInt(TotalCoinsKey, StoredTotalCoins - coinPrice);
             AddBlueprints(bundle, blueprintAmount, out _, false);
             PlayerPrefs.Save();
+            CurrencyChanged?.Invoke();
             result = BlueprintPurchaseResult.Success;
             return true;
         }
@@ -455,6 +519,7 @@ namespace AnimeHillRacing.Core
                 PlayerPrefs.SetInt(TotalGemsKey, StoredTotalGems - gemPrice);
             PlayerPrefs.SetInt(unlockKey, 1);
             PlayerPrefs.Save();
+            CurrencyChanged?.Invoke();
             result = CustomizationPurchaseResult.Success;
             return true;
         }
@@ -481,6 +546,7 @@ namespace AnimeHillRacing.Core
             long total = (long)StoredTotalCoins + Mathf.Max(0, runCoins);
             PlayerPrefs.SetInt(TotalCoinsKey, (int)System.Math.Min(int.MaxValue, total));
             PlayerPrefs.Save();
+            CurrencyChanged?.Invoke();
             return best;
         }
 
@@ -631,6 +697,7 @@ namespace AnimeHillRacing.Core
             PlayerPrefs.SetInt(EquippedLevelKey(definition.vehicleId, type), resultingTune);
             PlayerPrefs.SetInt(OneBasedSchemaKey(definition.vehicleId, type), 1);
             PlayerPrefs.Save();
+            CurrencyChanged?.Invoke();
             result = TunePurchaseResult.Success;
             return true;
         }
@@ -784,6 +851,17 @@ namespace AnimeHillRacing.Core
 
         private static int StoredTotalCoins => Mathf.Max(0, PlayerPrefs.GetInt(TotalCoinsKey, 0));
         private static int StoredTotalGems => Mathf.Max(0, PlayerPrefs.GetInt(TotalGemsKey, 0));
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void EnsureEconomyMigration()
+        {
+            if (PlayerPrefs.GetInt(EconomyMigrationKey, 0) != 0) return;
+            // PlayerPrefs already returns zero for a missing key. Persisting it explicitly makes the
+            // schema migration visible without touching any existing balance or progression key.
+            if (!PlayerPrefs.HasKey(TotalGemsKey)) PlayerPrefs.SetInt(TotalGemsKey, 0);
+            PlayerPrefs.SetInt(EconomyMigrationKey, 1);
+            PlayerPrefs.Save();
+        }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void EnsurePurchasableContentMigration()

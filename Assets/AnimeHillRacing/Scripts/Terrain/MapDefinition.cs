@@ -19,6 +19,10 @@ namespace AnimeHillRacing.Terrain
         [Min(0), Tooltip("Permanent unlock price in coins. Zero is only valid for a free map.")]
         public int coinPrice;
 
+        [Header("External Services")]
+        [Tooltip("Google Play leaderboard ID for this exact map. Leave empty until configured; never use a placeholder ID.")]
+        public string leaderboardId;
+
         [Header("Deterministic Pickups")]
         public CoinRouteDefinition coinRoute;
 

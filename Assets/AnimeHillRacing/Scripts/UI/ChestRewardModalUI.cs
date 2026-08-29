@@ -1,7 +1,9 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using AnimeHillRacing.Chests;
 using AnimeHillRacing.Core;
+using AnimeHillRacing.Vehicle;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -9,432 +11,512 @@ namespace AnimeHillRacing.UI
 {
     public sealed class ChestRewardModalUI : MonoBehaviour
     {
+        private enum RewardKind { Coins, Gems, Blueprints, Skin }
+
+        private struct RewardPresentation
+        {
+            public RewardKind Kind;
+            public string Name;
+            public string Details;
+            public ItemRarity Rarity;
+            public Sprite Sprite;
+            public Sprite DefaultVehicleSprite;
+        }
+
         [SerializeField] private GameObject modalRoot;
-        [SerializeField] private Image overlayBackground;
         [SerializeField] private RectTransform modalBox;
+        [SerializeField] private Image modalBackground;
         [SerializeField] private Text chestTitleText;
         [SerializeField] private Image chestImage;
         [SerializeField] private Image glowEffect;
-        [SerializeField] private GameObject rewardsRoot;
-        [SerializeField] private GameObject coinsRewardCard;
-        [SerializeField] private Text coinsRewardText;
-        [SerializeField] private GameObject blueprintRewardCard;
-        [SerializeField] private Image blueprintThumbnail;
-        [SerializeField] private Text blueprintRewardText;
-        [SerializeField] private Text blueprintDetailsText;
-        [SerializeField] private Button claimButton;
-        [SerializeField] private Text claimButtonText;
+        [SerializeField] private Image youGotImage;
+        [SerializeField] private Text youGotFallback;
+        [SerializeField] private RectTransform rewardRoot;
+        [SerializeField] private CanvasGroup rewardCanvasGroup;
+        [SerializeField] private Image rarityFrame;
+        [SerializeField] private Image rewardImage;
+        [SerializeField] private Image defaultVehicleImage;
+        [SerializeField] private Text rewardNameText;
+        [SerializeField] private Text rewardDetailsText;
+        [SerializeField] private Text rarityText;
+        [SerializeField] private Text tapHintText;
+        [SerializeField] private Button tapAdvanceButton;
+        [SerializeField] private Button readyButton;
+        [SerializeField] private Text readyFallbackText;
 
-        private Action onClaimClosed;
+        private readonly List<RewardPresentation> rewards = new List<RewardPresentation>(4);
+        private Action onClosed;
         private Coroutine animationRoutine;
+        private GameCatalog catalog;
+        private int rewardIndex;
         private bool isAnimating;
+        private bool waitingForTap;
+        private bool rewardsComplete;
+
+        public bool IsAnimating => isAnimating;
 
         private void Awake()
         {
-            if (claimButton != null)
-                claimButton.onClick.AddListener(OnClaimClicked);
-            if (modalRoot != null)
-                modalRoot.SetActive(false);
+            BindButtons();
+            if (modalRoot != null) modalRoot.SetActive(false);
         }
 
-        public void Open(ChestDefinition definition, ChestClaimResult claim, BundleDefinition bundle, Sprite coinSprite, Action onClose)
+        private void OnDestroy()
         {
-            onClaimClosed = onClose;
-            if (modalRoot == null)
-                BuildDynamicModal(coinSprite);
-
-            modalRoot.SetActive(true);
-            if (animationRoutine != null)
-                StopCoroutine(animationRoutine);
-
-            animationRoutine = StartCoroutine(AnimateChestOpening(definition, claim, bundle));
+            if (tapAdvanceButton != null) tapAdvanceButton.onClick.RemoveListener(OnAdvanceTap);
+            if (readyButton != null) readyButton.onClick.RemoveListener(OnReadyClicked);
         }
 
-        private IEnumerator AnimateChestOpening(ChestDefinition definition, ChestClaimResult claim, BundleDefinition bundle)
+        public void Open(ChestDefinition definition, ChestClaimResult claim, BundleDefinition bundle,
+            Sprite legacyCoinSprite, Action closeCallback) =>
+            Open(definition, claim, bundle, legacyCoinSprite, null, closeCallback);
+
+        public void Open(ChestDefinition definition, ChestClaimResult claim, BundleDefinition bundle,
+            Sprite legacyCoinSprite, GameCatalog gameCatalog, Action closeCallback)
+        {
+            catalog = gameCatalog;
+            onClosed = closeCallback;
+            if (modalRoot == null) BuildDynamicModal(legacyCoinSprite);
+            BindButtons();
+            BuildRewardQueue(definition, claim, bundle);
+            ApplySuppliedArtwork();
+
+            rewardIndex = 0;
+            waitingForTap = false;
+            rewardsComplete = false;
+            if (animationRoutine != null) StopCoroutine(animationRoutine);
+            modalRoot.SetActive(true);
+            modalRoot.transform.SetAsLastSibling();
+            animationRoutine = StartCoroutine(AnimateChestOpening(definition));
+        }
+
+        private void BuildRewardQueue(ChestDefinition definition, ChestClaimResult claim,
+            BundleDefinition bundle)
+        {
+            rewards.Clear();
+            if (claim == null) return;
+            ItemRarity currencyRarity = definition != null
+                ? definition.ResolveRewardRarity() : ItemRarity.Common;
+            HillAdventurerUiCatalog ui = HillAdventurerUiCatalog.Instance;
+            if (claim.Coins > 0)
+                rewards.Add(new RewardPresentation
+                {
+                    Kind = RewardKind.Coins,
+                    Name = $"+{claim.Coins:N0} COINS",
+                    Details = "COIN REWARD",
+                    Rarity = currencyRarity,
+                    Sprite = ui != null ? ui.coinsRewardIcon : null
+                });
+            if (claim.Gems > 0)
+                rewards.Add(new RewardPresentation
+                {
+                    Kind = RewardKind.Gems,
+                    Name = $"+{claim.Gems:N0} GEMS",
+                    Details = "GEM REWARD",
+                    Rarity = currencyRarity,
+                    Sprite = ui != null ? ui.gemsRewardIcon : null
+                });
+            if (bundle == null || claim.Blueprints <= 0) return;
+
+            bool unlockedSkin = claim.BundleUnlocked && bundle.Type == BundleType.Cosmetic &&
+                                string.Equals(bundle.Category, "Skin", StringComparison.OrdinalIgnoreCase);
+            Sprite defaultVehicle = null;
+            if (unlockedSkin && catalog != null)
+            {
+                VehicleDefinition vehicle = catalog.FindVehicle(bundle.ScopeId);
+                defaultVehicle = vehicle != null ? vehicle.previewSprite : null;
+            }
+            rewards.Add(new RewardPresentation
+            {
+                Kind = unlockedSkin ? RewardKind.Skin : RewardKind.Blueprints,
+                Name = unlockedSkin ? (bundle.DisplayName ?? "SKIN").ToUpperInvariant() :
+                    $"+{claim.Blueprints:N0} BLUEPRINTS",
+                Details = unlockedSkin ? "SKIN UNLOCKED" :
+                    $"{(claim.BundleName ?? "BUNDLE").ToUpperInvariant()}\n" +
+                    $"{claim.BlueprintTotal:N0} / {claim.BlueprintRequirement:N0}" +
+                    (claim.BundleUnlocked ? "  •  UNLOCKED" : string.Empty),
+                Rarity = bundle.Rarity,
+                Sprite = bundle.Thumbnail,
+                DefaultVehicleSprite = defaultVehicle
+            });
+        }
+
+        private IEnumerator AnimateChestOpening(ChestDefinition definition)
         {
             isAnimating = true;
-            if (claimButton != null)
-                claimButton.gameObject.SetActive(false);
-            if (rewardsRoot != null)
-                rewardsRoot.SetActive(false);
+            waitingForTap = false;
+            rewardsComplete = false;
+            tapAdvanceButton.gameObject.SetActive(true);
+            tapAdvanceButton.interactable = false;
+            readyButton.gameObject.SetActive(false);
+            rewardRoot.gameObject.SetActive(false);
+            tapHintText.gameObject.SetActive(false);
+            SetHeaderVisible(false);
 
-            // Set Title & Colors
-            if (chestTitleText != null)
-            {
-                chestTitleText.text = definition != null ? $"{definition.displayName.ToUpperInvariant()} CHEST" : "CHEST OPENED";
-                chestTitleText.color = definition != null ? definition.accentColor : Color.white;
-            }
+            chestTitleText.gameObject.SetActive(true);
+            chestTitleText.text = definition != null && !string.IsNullOrWhiteSpace(definition.displayName)
+                ? definition.displayName.ToUpperInvariant() + " CHEST" : "CHEST OPENED";
+            chestTitleText.color = definition != null ? definition.accentColor : Color.white;
+            chestImage.gameObject.SetActive(true);
+            chestImage.sprite = definition != null ? definition.closedSprite : null;
+            chestImage.enabled = chestImage.sprite != null;
+            chestImage.preserveAspect = true;
+            chestImage.rectTransform.localScale = Vector3.one * .68f;
+            glowEffect.gameObject.SetActive(true);
+            glowEffect.color = Color.clear;
 
-            // Start with closed sprite
-            if (chestImage != null)
-            {
-                chestImage.sprite = definition != null ? definition.closedSprite : null;
-                chestImage.preserveAspect = true;
-                chestImage.enabled = chestImage.sprite != null;
-                chestImage.rectTransform.localScale = Vector3.one * 0.7f;
-            }
-
-            if (glowEffect != null)
-            {
-                glowEffect.color = new Color(1f, 1f, 1f, 0f);
-                glowEffect.gameObject.SetActive(true);
-            }
-
-            // Phase 1: Pop in & anticipation scale
+            yield return AnimateScale(chestImage.rectTransform, .68f, 1.14f, .34f, false);
             float elapsed = 0f;
-            const float popDuration = 0.35f;
-            while (elapsed < popDuration)
+            while (elapsed < .24f)
             {
                 elapsed += Time.unscaledDeltaTime;
-                float t = Mathf.Clamp01(elapsed / popDuration);
-                float scale = Mathf.Lerp(0.7f, 1.15f, Mathf.Sin(t * Mathf.PI * 0.5f));
-                if (chestImage != null)
-                    chestImage.rectTransform.localScale = Vector3.one * scale;
+                float shake = Mathf.Sin(elapsed * 42f) * .065f;
+                chestImage.rectTransform.localScale = new Vector3(1.14f + shake, 1.14f - shake, 1f);
                 yield return null;
             }
 
-            // Phase 2: Wiggle / shake
-            elapsed = 0f;
-            const float shakeDuration = 0.25f;
-            Vector3 baseScale = Vector3.one * 1.15f;
-            while (elapsed < shakeDuration)
-            {
-                elapsed += Time.unscaledDeltaTime;
-                float shake = Mathf.Sin(elapsed * 40f) * 0.08f;
-                if (chestImage != null)
-                    chestImage.rectTransform.localScale = new Vector3(baseScale.x + shake, baseScale.y - shake, 1f);
-                yield return null;
-            }
-
-            // Phase 3: Chest Burst & Open!
-            if (chestImage != null && definition != null && definition.openSprite != null)
-            {
+            if (definition != null && definition.openSprite != null)
                 chestImage.sprite = definition.openSprite;
-            }
+            Color accent = definition != null ? definition.accentColor : new Color(.2f, .8f, 1f);
+            glowEffect.color = new Color(accent.r, accent.g, accent.b, .76f);
+            yield return AnimateScale(chestImage.rectTransform, 1.24f, 1f, .28f, false);
+            yield return new WaitForSecondsRealtime(.12f);
 
-            // Flash glow
-            if (glowEffect != null)
-            {
-                Color accent = definition != null ? definition.accentColor : new Color(0.2f, 0.8f, 1f, 1f);
-                glowEffect.color = new Color(accent.r, accent.g, accent.b, 0.75f);
-            }
+            chestImage.gameObject.SetActive(false);
+            glowEffect.gameObject.SetActive(false);
+            chestTitleText.gameObject.SetActive(false);
+            SetHeaderVisible(true);
+            if (rewards.Count == 0)
+                yield return ShowReady();
+            else
+                yield return RevealCurrentReward();
+        }
 
-            elapsed = 0f;
-            const float burstDuration = 0.3f;
-            while (elapsed < burstDuration)
-            {
-                elapsed += Time.unscaledDeltaTime;
-                float t = Mathf.Clamp01(elapsed / burstDuration);
-                float scale = Mathf.Lerp(1.25f, 1f, t);
-                if (chestImage != null)
-                    chestImage.rectTransform.localScale = Vector3.one * scale;
-                if (glowEffect != null)
-                    glowEffect.color = new Color(glowEffect.color.r, glowEffect.color.g, glowEffect.color.b, Mathf.Lerp(0.75f, 0.25f, t));
-                yield return null;
-            }
+        private IEnumerator RevealCurrentReward()
+        {
+            isAnimating = true;
+            waitingForTap = false;
+            tapAdvanceButton.gameObject.SetActive(true);
+            tapAdvanceButton.interactable = false;
+            readyButton.gameObject.SetActive(false);
 
-            yield return new WaitForSecondsRealtime(0.15f);
-
-            // Phase 4: Reveal Rewards
-            SetupRewardCards(claim, bundle);
-            if (rewardsRoot != null)
-            {
-                rewardsRoot.SetActive(true);
-                rewardsRoot.transform.localScale = Vector3.one * 0.8f;
-            }
-
-            elapsed = 0f;
-            const float rewardRevealDuration = 0.25f;
-            while (elapsed < rewardRevealDuration)
+            RewardPresentation reward = rewards[rewardIndex];
+            ConfigureReward(reward);
+            rewardRoot.gameObject.SetActive(true);
+            tapHintText.gameObject.SetActive(true);
+            rewardCanvasGroup.alpha = 0f;
+            float intensity = Mathf.InverseLerp(0f, ItemRarityUtility.Count - 1, (int)reward.Rarity);
+            float duration = Mathf.Lerp(.24f, .38f, intensity);
+            float startScale = Mathf.Lerp(.78f, .62f, intensity);
+            float elapsed = 0f;
+            while (elapsed < duration)
             {
                 elapsed += Time.unscaledDeltaTime;
-                float t = Mathf.Clamp01(elapsed / rewardRevealDuration);
-                if (rewardsRoot != null)
-                    rewardsRoot.transform.localScale = Vector3.Lerp(Vector3.one * 0.8f, Vector3.one, Mathf.SmoothStep(0f, 1f, t));
+                float t = Mathf.Clamp01(elapsed / duration);
+                rewardCanvasGroup.alpha = Mathf.SmoothStep(0f, 1f, t);
+                float scale = Mathf.LerpUnclamped(startScale, 1f, EaseOutBack(t, 1.35f + intensity));
+                rewardRoot.localScale = Vector3.one * scale;
                 yield return null;
             }
+            rewardCanvasGroup.alpha = 1f;
+            rewardRoot.localScale = Vector3.one;
+            tapHintText.text = $"TAP TO CONTINUE   •   {rewardIndex + 1} / {rewards.Count}";
+            isAnimating = false;
+            waitingForTap = true;
+            tapAdvanceButton.interactable = true;
+        }
 
-            if (claimButton != null)
+        private void ConfigureReward(RewardPresentation reward)
+        {
+            HillAdventurerUiCatalog ui = HillAdventurerUiCatalog.Instance;
+            Sprite frame = ui != null ? ui.GetRarityFrame(reward.Rarity) : null;
+            rarityFrame.sprite = frame;
+            rarityFrame.preserveAspect = frame != null;
+            Color accent = ItemRarityUtility.AccentColor(reward.Rarity);
+            rarityFrame.color = frame != null ? Color.white : new Color(accent.r, accent.g, accent.b, .42f);
+
+            rewardImage.sprite = reward.Sprite;
+            rewardImage.enabled = reward.Sprite != null;
+            rewardImage.preserveAspect = true;
+            rewardImage.rectTransform.localScale = Vector3.one *
+                                                   (reward.Kind == RewardKind.Skin ? 1.42f : 1f);
+            defaultVehicleImage.sprite = reward.DefaultVehicleSprite;
+            defaultVehicleImage.enabled = reward.Kind == RewardKind.Skin && reward.DefaultVehicleSprite != null;
+            defaultVehicleImage.preserveAspect = true;
+            rewardNameText.text = reward.Name ?? string.Empty;
+            rewardDetailsText.text = reward.Details ?? string.Empty;
+            rarityText.text = ItemRarityUtility.DisplayName(reward.Rarity);
+            rarityText.color = accent;
+        }
+
+        private void OnAdvanceTap()
+        {
+            if (isAnimating || !waitingForTap || rewardsComplete) return;
+            isAnimating = true;
+            waitingForTap = false;
+            tapAdvanceButton.interactable = false;
+            animationRoutine = StartCoroutine(AnimateExitAndAdvance());
+        }
+
+        private IEnumerator AnimateExitAndAdvance()
+        {
+            float elapsed = 0f;
+            const float duration = .18f;
+            while (elapsed < duration)
             {
-                claimButton.gameObject.SetActive(true);
-                claimButton.transform.localScale = Vector3.one;
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                rewardCanvasGroup.alpha = 1f - t;
+                rewardRoot.localScale = Vector3.one * Mathf.Lerp(1f, .82f, t);
+                yield return null;
             }
+            rewardRoot.gameObject.SetActive(false);
+            rewardIndex++;
+            if (rewardIndex < rewards.Count)
+                yield return RevealCurrentReward();
+            else
+                yield return ShowReady();
+        }
 
+        private IEnumerator ShowReady()
+        {
+            isAnimating = true;
+            waitingForTap = false;
+            rewardsComplete = true;
+            tapAdvanceButton.interactable = false;
+            tapAdvanceButton.gameObject.SetActive(false);
+            rewardRoot.gameObject.SetActive(false);
+            tapHintText.gameObject.SetActive(false);
+            readyButton.gameObject.SetActive(true);
+            readyButton.interactable = false;
+            readyButton.transform.localScale = Vector3.one * .72f;
+            yield return AnimateScale(readyButton.transform as RectTransform, .72f, 1f, .26f, true);
+            readyButton.transform.localScale = Vector3.one;
+            readyButton.interactable = true;
             isAnimating = false;
         }
 
-        private void SetupRewardCards(ChestClaimResult claim, BundleDefinition bundle)
+        private void OnReadyClicked()
         {
-            if (claim == null) return;
+            if (isAnimating || !rewardsComplete) return;
+            isAnimating = true;
+            readyButton.interactable = false;
+            if (animationRoutine != null) StopCoroutine(animationRoutine);
+            modalRoot.SetActive(false);
+            Action callback = onClosed;
+            onClosed = null;
+            callback?.Invoke();
+        }
 
-            // Coins card
-            if (coinsRewardCard != null)
+        private static IEnumerator AnimateScale(RectTransform target, float from, float to,
+            float duration, bool overshoot)
+        {
+            if (target == null) yield break;
+            float elapsed = 0f;
+            while (elapsed < duration)
             {
-                coinsRewardCard.SetActive(claim.Coins > 0);
-                if (coinsRewardText != null)
-                    coinsRewardText.text = $"+{claim.Coins:N0} COINS";
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(elapsed / Mathf.Max(.01f, duration));
+                float eased = overshoot ? EaseOutBack(t, 1.5f) : Mathf.SmoothStep(0f, 1f, t);
+                target.localScale = Vector3.one * Mathf.LerpUnclamped(from, to, eased);
+                yield return null;
             }
+            target.localScale = Vector3.one * to;
+        }
 
-            // Blueprints card
-            if (blueprintRewardCard != null)
+        private static float EaseOutBack(float t, float overshoot)
+        {
+            float shifted = t - 1f;
+            return 1f + (overshoot + 1f) * shifted * shifted * shifted +
+                   overshoot * shifted * shifted;
+        }
+
+        private void ApplySuppliedArtwork()
+        {
+            HillAdventurerUiCatalog ui = HillAdventurerUiCatalog.Instance;
+            Sprite background = ui != null ? ui.chestRewardBackground : null;
+            modalBackground.sprite = background;
+            modalBackground.preserveAspect = background != null;
+            modalBackground.color = background != null ? Color.white : new Color(.035f, .055f, .12f, .99f);
+            Sprite header = ui != null ? ui.youGotHeader : null;
+            youGotImage.sprite = header;
+            youGotImage.enabled = header != null;
+            youGotImage.preserveAspect = true;
+            youGotFallback.enabled = header == null;
+
+            Sprite ready = ui != null ? ui.readyButton : null;
+            readyButton.image.sprite = ready;
+            readyButton.image.preserveAspect = ready != null;
+            readyButton.image.color = ready != null ? Color.white : new Color(.10f, .62f, .35f, .98f);
+            readyFallbackText.enabled = ready == null;
+        }
+
+        private void SetHeaderVisible(bool visible)
+        {
+            if (youGotImage != null) youGotImage.gameObject.SetActive(visible);
+            if (youGotFallback != null) youGotFallback.gameObject.SetActive(visible);
+        }
+
+        private void BindButtons()
+        {
+            if (tapAdvanceButton != null)
             {
-                bool hasBlueprints = claim.Blueprints > 0;
-                blueprintRewardCard.SetActive(hasBlueprints);
-                if (hasBlueprints)
-                {
-                    if (blueprintThumbnail != null)
-                    {
-                        blueprintThumbnail.sprite = bundle != null ? bundle.Thumbnail : null;
-                        blueprintThumbnail.enabled = blueprintThumbnail.sprite != null;
-                        blueprintThumbnail.preserveAspect = true;
-                    }
-                    if (blueprintRewardText != null)
-                    {
-                        blueprintRewardText.text = $"+{claim.Blueprints} BLUEPRINTS";
-                    }
-                    if (blueprintDetailsText != null)
-                    {
-                        string unlockedTag = claim.BundleUnlocked ? "  <color=#00FF66>UNLOCKED!</color>" : "";
-                        blueprintDetailsText.text = $"{claim.BundleName ?? "BUNDLE"}\n{claim.BlueprintTotal} / {claim.BlueprintRequirement}{unlockedTag}";
-                    }
-                }
+                tapAdvanceButton.onClick.RemoveListener(OnAdvanceTap);
+                tapAdvanceButton.onClick.AddListener(OnAdvanceTap);
+            }
+            if (readyButton != null)
+            {
+                readyButton.onClick.RemoveListener(OnReadyClicked);
+                readyButton.onClick.AddListener(OnReadyClicked);
             }
         }
 
-        private void OnClaimClicked()
+        public void BuildDynamicModal(Sprite legacyCoinIcon)
         {
-            if (isAnimating) return;
-            if (animationRoutine != null)
-                StopCoroutine(animationRoutine);
-
-            if (modalRoot != null)
-                modalRoot.SetActive(false);
-
-            onClaimClosed?.Invoke();
-            onClaimClosed = null;
-        }
-
-        public void BuildDynamicModal(Sprite coinIcon)
-        {
+            if (modalRoot != null) return;
             Transform parent = transform;
-            var canvas = GetComponentInParent<Canvas>();
-            if (canvas != null)
-                parent = canvas.transform;
+            Canvas canvas = GetComponentInParent<Canvas>();
+            if (canvas != null) parent = canvas.transform;
 
-            modalRoot = new GameObject("Chest Reward Modal Root", typeof(RectTransform));
-            modalRoot.transform.SetParent(parent, false);
-            var rootRt = modalRoot.GetComponent<RectTransform>();
-            rootRt.anchorMin = Vector2.zero;
-            rootRt.anchorMax = Vector2.one;
-            rootRt.anchoredPosition = Vector2.zero;
-            rootRt.sizeDelta = Vector2.zero;
+            modalRoot = CreateRectObject("Chest Reward Modal Root", parent).gameObject;
+            SetStretch(modalRoot.GetComponent<RectTransform>(), Vector2.zero, Vector2.one);
 
-            // 50% Black Overlay - intercepting raycasts to block underlying buttons
-            var overlayGo = new GameObject("Dark Overlay (50%)", typeof(RectTransform), typeof(Image));
-            overlayGo.transform.SetParent(modalRoot.transform, false);
-            var overlayRt = overlayGo.GetComponent<RectTransform>();
-            overlayRt.anchorMin = Vector2.zero;
-            overlayRt.anchorMax = Vector2.one;
-            overlayRt.anchoredPosition = Vector2.zero;
-            overlayRt.sizeDelta = Vector2.zero;
-            overlayBackground = overlayGo.GetComponent<Image>();
-            overlayBackground.color = new Color(0f, 0f, 0f, 0.50f);
-            overlayBackground.raycastTarget = true;
+            Image overlay = CreateImage("Dark Overlay", modalRoot.transform, Vector2.zero, Vector2.one);
+            overlay.color = new Color(0f, 0f, 0f, .78f);
+            overlay.raycastTarget = true;
 
-            // Modal Content Box
-            var boxGo = new GameObject("Modal Container", typeof(RectTransform), typeof(Image), typeof(Outline));
-            boxGo.transform.SetParent(modalRoot.transform, false);
-            modalBox = boxGo.GetComponent<RectTransform>();
-            modalBox.anchorMin = new Vector2(0.5f, 0.5f);
-            modalBox.anchorMax = new Vector2(0.5f, 0.5f);
-            modalBox.anchoredPosition = Vector2.zero;
-            modalBox.sizeDelta = new Vector2(680f, 640f);
+            GameObject box = CreateRectObject("Reward Experience", modalRoot.transform).gameObject;
+            modalBox = box.GetComponent<RectTransform>();
+            SetStretch(modalBox, new Vector2(.16f, .055f), new Vector2(.84f, .945f));
+            modalBackground = box.AddComponent<Image>();
+            modalBackground.raycastTarget = false;
+            Outline outline = box.AddComponent<Outline>();
+            outline.effectColor = new Color(.26f, .75f, 1f, .9f);
+            outline.effectDistance = new Vector2(2f, -2f);
 
-            var boxImage = boxGo.GetComponent<Image>();
-            boxImage.color = new Color(0.04f, 0.08f, 0.15f, 0.96f);
-            var boxOutline = boxGo.GetComponent<Outline>();
-            boxOutline.effectColor = new Color(0.25f, 0.72f, 1f, 0.90f);
-            boxOutline.effectDistance = new Vector2(2f, -2f);
+            youGotImage = CreateImage("You Got", box.transform,
+                new Vector2(.25f, .865f), new Vector2(.75f, .98f));
+            youGotImage.raycastTarget = false;
+            youGotFallback = CreateText("You Got Fallback", youGotImage.transform, "YOU GOT", 34,
+                TextAnchor.MiddleCenter, Vector2.zero, Vector2.one);
+            youGotFallback.fontStyle = FontStyle.Bold;
 
-            // Title
-            var titleGo = new GameObject("Chest Title", typeof(RectTransform), typeof(Text), typeof(Outline));
-            titleGo.transform.SetParent(boxGo.transform, false);
-            var titleRt = titleGo.GetComponent<RectTransform>();
-            titleRt.anchorMin = new Vector2(0.5f, 1f);
-            titleRt.anchorMax = new Vector2(0.5f, 1f);
-            titleRt.anchoredPosition = new Vector2(0f, -48f);
-            titleRt.sizeDelta = new Vector2(600f, 54f);
-            chestTitleText = titleGo.GetComponent<Text>();
-            chestTitleText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf") ?? Resources.GetBuiltinResource<Font>("Arial.ttf");
-            chestTitleText.fontSize = 32;
+            chestTitleText = CreateText("Chest Title", box.transform, "CHEST OPENED", 30,
+                TextAnchor.MiddleCenter, new Vector2(.12f, .79f), new Vector2(.88f, .88f));
             chestTitleText.fontStyle = FontStyle.Bold;
-            chestTitleText.alignment = TextAnchor.MiddleCenter;
-            chestTitleText.color = Color.white;
-            var titleOutline = titleGo.GetComponent<Outline>();
-            titleOutline.effectColor = new Color(0f, 0f, 0f, 0.95f);
-            titleOutline.effectDistance = new Vector2(1.5f, -1.5f);
 
-            // Glow
-            var glowGo = new GameObject("Glow", typeof(RectTransform), typeof(Image));
-            glowGo.transform.SetParent(boxGo.transform, false);
-            var glowRt = glowGo.GetComponent<RectTransform>();
-            glowRt.anchorMin = new Vector2(0.5f, 0.5f);
-            glowRt.anchorMax = new Vector2(0.5f, 0.5f);
-            glowRt.anchoredPosition = new Vector2(0f, 85f);
-            glowRt.sizeDelta = new Vector2(340f, 340f);
-            glowEffect = glowGo.GetComponent<Image>();
-            glowEffect.color = new Color(0.2f, 0.8f, 1f, 0.35f);
+            glowEffect = CreateImage("Opening Glow", box.transform,
+                new Vector2(.25f, .25f), new Vector2(.75f, .78f));
             glowEffect.raycastTarget = false;
-
-            // Chest Image
-            var chestImgGo = new GameObject("Chest Image", typeof(RectTransform), typeof(Image));
-            chestImgGo.transform.SetParent(boxGo.transform, false);
-            var chestImgRt = chestImgGo.GetComponent<RectTransform>();
-            chestImgRt.anchorMin = new Vector2(0.5f, 0.5f);
-            chestImgRt.anchorMax = new Vector2(0.5f, 0.5f);
-            chestImgRt.anchoredPosition = new Vector2(0f, 85f);
-            chestImgRt.sizeDelta = new Vector2(250f, 250f);
-            chestImage = chestImgGo.GetComponent<Image>();
-            chestImage.preserveAspect = true;
+            chestImage = CreateImage("Chest Image", box.transform,
+                new Vector2(.30f, .27f), new Vector2(.70f, .74f));
             chestImage.raycastTarget = false;
+            chestImage.preserveAspect = true;
 
-            // Rewards Root Container
-            var rewardsGo = new GameObject("Rewards Container", typeof(RectTransform));
-            rewardsGo.transform.SetParent(boxGo.transform, false);
-            var rewardsRt = rewardsGo.GetComponent<RectTransform>();
-            rewardsRt.anchorMin = new Vector2(0.5f, 0f);
-            rewardsRt.anchorMax = new Vector2(0.5f, 0f);
-            rewardsRt.anchoredPosition = new Vector2(0f, 140f);
-            rewardsRt.sizeDelta = new Vector2(620f, 130f);
-            rewardsRoot = rewardsGo;
+            rewardRoot = CreateRectObject("Single Reward", box.transform);
+            SetStretch(rewardRoot, new Vector2(.12f, .06f), new Vector2(.88f, .86f));
+            rewardCanvasGroup = rewardRoot.gameObject.AddComponent<CanvasGroup>();
 
-            // Coins Reward Card
-            var coinsCardGo = new GameObject("Coins Reward Card", typeof(RectTransform), typeof(Image), typeof(Outline));
-            coinsCardGo.transform.SetParent(rewardsGo.transform, false);
-            var coinsCardRt = coinsCardGo.GetComponent<RectTransform>();
-            coinsCardRt.anchorMin = new Vector2(0.5f, 0.5f);
-            coinsCardRt.anchorMax = new Vector2(0.5f, 0.5f);
-            coinsCardRt.anchoredPosition = new Vector2(0f, 25f);
-            coinsCardRt.sizeDelta = new Vector2(480f, 52f);
-            var coinsBg = coinsCardGo.GetComponent<Image>();
-            coinsBg.color = new Color(0.08f, 0.16f, 0.28f, 0.90f);
-            var coinsOutline = coinsCardGo.GetComponent<Outline>();
-            coinsOutline.effectColor = new Color(1f, 0.85f, 0.25f, 0.75f);
-            coinsOutline.effectDistance = new Vector2(1f, -1f);
-            coinsRewardCard = coinsCardGo;
+            defaultVehicleImage = CreateImage("Default Vehicle Identification", rewardRoot,
+                new Vector2(.40f, .76f), new Vector2(.60f, .94f));
+            defaultVehicleImage.raycastTarget = false;
+            defaultVehicleImage.preserveAspect = true;
 
-            // Coin Icon
-            if (coinIcon != null)
-            {
-                var iconGo = new GameObject("Coin Icon", typeof(RectTransform), typeof(Image));
-                iconGo.transform.SetParent(coinsCardGo.transform, false);
-                var iconRt = iconGo.GetComponent<RectTransform>();
-                iconRt.anchorMin = new Vector2(0f, 0.5f);
-                iconRt.anchorMax = new Vector2(0f, 0.5f);
-                iconRt.anchoredPosition = new Vector2(30f, 0f);
-                iconRt.sizeDelta = new Vector2(38f, 38f);
-                var iconImg = iconGo.GetComponent<Image>();
-                iconImg.sprite = coinIcon;
-                iconImg.preserveAspect = true;
-                iconImg.raycastTarget = false;
-            }
+            rarityFrame = CreateImage("Rarity Frame", rewardRoot,
+                new Vector2(.20f, .20f), new Vector2(.80f, .78f));
+            rarityFrame.raycastTarget = false;
+            rarityFrame.preserveAspect = true;
 
-            // Coin Text
-            var coinTxtGo = new GameObject("Coins Text", typeof(RectTransform), typeof(Text), typeof(Outline));
-            coinTxtGo.transform.SetParent(coinsCardGo.transform, false);
-            var coinTxtRt = coinTxtGo.GetComponent<RectTransform>();
-            coinTxtRt.anchorMin = Vector2.zero;
-            coinTxtRt.anchorMax = Vector2.one;
-            coinTxtRt.anchoredPosition = Vector2.zero;
-            coinTxtRt.sizeDelta = Vector2.zero;
-            coinsRewardText = coinTxtGo.GetComponent<Text>();
-            coinsRewardText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf") ?? Resources.GetBuiltinResource<Font>("Arial.ttf");
-            coinsRewardText.fontSize = 24;
-            coinsRewardText.fontStyle = FontStyle.Bold;
-            coinsRewardText.alignment = TextAnchor.MiddleCenter;
-            coinsRewardText.color = new Color(1f, 0.92f, 0.35f, 1f);
-            var coinOutline = coinTxtGo.GetComponent<Outline>();
-            coinOutline.effectColor = new Color(0f, 0f, 0f, 0.95f);
-            coinOutline.effectDistance = new Vector2(1.5f, -1.5f);
+            GameObject cropObject = CreateRectObject("Reward Preview Crop", rewardRoot).gameObject;
+            RectTransform cropRect = cropObject.GetComponent<RectTransform>();
+            SetStretch(cropRect, new Vector2(.30f, .31f), new Vector2(.70f, .68f));
+            cropObject.AddComponent<RectMask2D>();
+            rewardImage = CreateImage("Reward Artwork", cropObject.transform, Vector2.zero, Vector2.one);
+            rewardImage.raycastTarget = false;
+            rewardImage.preserveAspect = true;
 
-            // Blueprint Reward Card
-            var bpCardGo = new GameObject("Blueprint Reward Card", typeof(RectTransform), typeof(Image), typeof(Outline));
-            bpCardGo.transform.SetParent(rewardsGo.transform, false);
-            var bpCardRt = bpCardGo.GetComponent<RectTransform>();
-            bpCardRt.anchorMin = new Vector2(0.5f, 0.5f);
-            bpCardRt.anchorMax = new Vector2(0.5f, 0.5f);
-            bpCardRt.anchoredPosition = new Vector2(0f, -32f);
-            bpCardRt.sizeDelta = new Vector2(480f, 52f);
-            var bpBg = bpCardGo.GetComponent<Image>();
-            bpBg.color = new Color(0.08f, 0.16f, 0.28f, 0.90f);
-            var bpOutline = bpCardGo.GetComponent<Outline>();
-            bpOutline.effectColor = new Color(0.38f, 0.88f, 1f, 0.75f);
-            bpOutline.effectDistance = new Vector2(1f, -1f);
-            blueprintRewardCard = bpCardGo;
+            rewardNameText = CreateText("Reward Name", rewardRoot, string.Empty, 27,
+                TextAnchor.MiddleCenter, new Vector2(.12f, .11f), new Vector2(.88f, .23f));
+            rewardNameText.fontStyle = FontStyle.Bold;
+            rewardDetailsText = CreateText("Reward Details", rewardRoot, string.Empty, 17,
+                TextAnchor.MiddleCenter, new Vector2(.12f, .035f), new Vector2(.88f, .13f));
+            rarityText = CreateText("Rarity", rewardRoot, string.Empty, 16,
+                TextAnchor.MiddleCenter, new Vector2(.36f, .72f), new Vector2(.64f, .78f));
+            rarityText.fontStyle = FontStyle.Bold;
+            tapHintText = CreateText("Tap Hint", box.transform, "TAP TO CONTINUE", 15,
+                TextAnchor.MiddleCenter, new Vector2(.25f, .012f), new Vector2(.75f, .065f));
+            tapHintText.color = new Color(.75f, .84f, .94f);
 
-            // Blueprint Thumbnail
-            var bpThumbGo = new GameObject("Thumbnail", typeof(RectTransform), typeof(Image));
-            bpThumbGo.transform.SetParent(bpCardGo.transform, false);
-            var bpThumbRt = bpThumbGo.GetComponent<RectTransform>();
-            bpThumbRt.anchorMin = new Vector2(0f, 0.5f);
-            bpThumbRt.anchorMax = new Vector2(0f, 0.5f);
-            bpThumbRt.anchoredPosition = new Vector2(30f, 0f);
-            bpThumbRt.sizeDelta = new Vector2(42f, 42f);
-            blueprintThumbnail = bpThumbGo.GetComponent<Image>();
-            blueprintThumbnail.preserveAspect = true;
-            blueprintThumbnail.raycastTarget = false;
+            GameObject readyObject = CreateRectObject("Ready", box.transform).gameObject;
+            RectTransform readyRect = readyObject.GetComponent<RectTransform>();
+            SetStretch(readyRect, new Vector2(.34f, .07f), new Vector2(.66f, .20f));
+            Image readyImage = readyObject.AddComponent<Image>();
+            readyButton = readyObject.AddComponent<Button>();
+            readyButton.targetGraphic = readyImage;
+            readyFallbackText = CreateText("Ready Fallback", readyObject.transform, "READY", 24,
+                TextAnchor.MiddleCenter, Vector2.zero, Vector2.one);
+            readyFallbackText.fontStyle = FontStyle.Bold;
 
-            // Blueprint Text
-            var bpTxtGo = new GameObject("BP Text", typeof(RectTransform), typeof(Text), typeof(Outline));
-            bpTxtGo.transform.SetParent(bpCardGo.transform, false);
-            var bpTxtRt = bpTxtGo.GetComponent<RectTransform>();
-            bpTxtRt.anchorMin = new Vector2(0.15f, 0f);
-            bpTxtRt.anchorMax = new Vector2(0.95f, 1f);
-            bpTxtRt.anchoredPosition = Vector2.zero;
-            bpTxtRt.sizeDelta = Vector2.zero;
-            blueprintRewardText = bpTxtGo.GetComponent<Text>();
-            blueprintRewardText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf") ?? Resources.GetBuiltinResource<Font>("Arial.ttf");
-            blueprintRewardText.fontSize = 20;
-            blueprintRewardText.fontStyle = FontStyle.Bold;
-            blueprintRewardText.alignment = TextAnchor.MiddleCenter;
-            blueprintRewardText.color = new Color(0.45f, 0.90f, 1f, 1f);
-            var bpTextOutline = bpTxtGo.GetComponent<Outline>();
-            bpTextOutline.effectColor = new Color(0f, 0f, 0f, 0.95f);
-            bpTextOutline.effectDistance = new Vector2(1.5f, -1.5f);
+            GameObject tapObject = CreateRectObject("Tap To Advance", modalRoot.transform).gameObject;
+            SetStretch(tapObject.GetComponent<RectTransform>(), Vector2.zero, Vector2.one);
+            Image tapImage = tapObject.AddComponent<Image>();
+            tapImage.color = Color.clear;
+            tapImage.raycastTarget = true;
+            tapAdvanceButton = tapObject.AddComponent<Button>();
+            tapAdvanceButton.targetGraphic = tapImage;
+            tapAdvanceButton.transition = Selectable.Transition.None;
 
-            // Claim Button
-            var btnGo = new GameObject("Claim Button", typeof(RectTransform), typeof(Image), typeof(Button), typeof(Outline), typeof(ButtonPressFeedback));
-            btnGo.transform.SetParent(boxGo.transform, false);
-            var btnRt = btnGo.GetComponent<RectTransform>();
-            btnRt.anchorMin = new Vector2(0.5f, 0f);
-            btnRt.anchorMax = new Vector2(0.5f, 0f);
-            btnRt.anchoredPosition = new Vector2(0f, 45f);
-            btnRt.sizeDelta = new Vector2(300f, 62f);
-            var btnImg = btnGo.GetComponent<Image>();
-            btnImg.color = new Color(0.12f, 0.58f, 0.32f, 0.96f);
-            var btnOutline = btnGo.GetComponent<Outline>();
-            btnOutline.effectColor = new Color(0.30f, 0.95f, 0.50f, 0.90f);
-            btnOutline.effectDistance = new Vector2(1.5f, -1.5f);
-            claimButton = btnGo.GetComponent<Button>();
-            claimButton.onClick.AddListener(OnClaimClicked);
+            BindButtons();
+            ApplySuppliedArtwork();
+        }
 
-            var btnTxtGo = new GameObject("Label", typeof(RectTransform), typeof(Text), typeof(Outline));
-            btnTxtGo.transform.SetParent(btnGo.transform, false);
-            var btnTxtRt = btnTxtGo.GetComponent<RectTransform>();
-            btnTxtRt.anchorMin = Vector2.zero;
-            btnTxtRt.anchorMax = Vector2.one;
-            btnTxtRt.anchoredPosition = Vector2.zero;
-            btnTxtRt.sizeDelta = Vector2.zero;
-            claimButtonText = btnTxtGo.GetComponent<Text>();
-            claimButtonText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf") ?? Resources.GetBuiltinResource<Font>("Arial.ttf");
-            claimButtonText.fontSize = 24;
-            claimButtonText.fontStyle = FontStyle.Bold;
-            claimButtonText.alignment = TextAnchor.MiddleCenter;
-            claimButtonText.color = Color.white;
-            claimButtonText.text = "CONTINUE";
-            var btnTxtOutline = btnTxtGo.GetComponent<Outline>();
-            btnTxtOutline.effectColor = new Color(0f, 0f, 0f, 0.95f);
-            btnTxtOutline.effectDistance = new Vector2(1.5f, -1.5f);
+        private static RectTransform CreateRectObject(string objectName, Transform parent)
+        {
+            GameObject instance = new GameObject(objectName, typeof(RectTransform));
+            RectTransform rect = instance.GetComponent<RectTransform>();
+            rect.SetParent(parent, false);
+            return rect;
+        }
+
+        private static Image CreateImage(string objectName, Transform parent, Vector2 anchorMin,
+            Vector2 anchorMax)
+        {
+            GameObject instance = new GameObject(objectName, typeof(RectTransform), typeof(CanvasRenderer),
+                typeof(Image));
+            RectTransform rect = instance.GetComponent<RectTransform>();
+            rect.SetParent(parent, false);
+            SetStretch(rect, anchorMin, anchorMax);
+            return instance.GetComponent<Image>();
+        }
+
+        private static Text CreateText(string objectName, Transform parent, string value, int fontSize,
+            TextAnchor alignment, Vector2 anchorMin, Vector2 anchorMax)
+        {
+            GameObject instance = new GameObject(objectName, typeof(RectTransform), typeof(CanvasRenderer),
+                typeof(Text));
+            RectTransform rect = instance.GetComponent<RectTransform>();
+            rect.SetParent(parent, false);
+            SetStretch(rect, anchorMin, anchorMax);
+            Text text = instance.GetComponent<Text>();
+            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf") ??
+                        Resources.GetBuiltinResource<Font>("Arial.ttf");
+            text.text = value;
+            text.fontSize = fontSize;
+            text.resizeTextForBestFit = true;
+            text.resizeTextMinSize = 10;
+            text.resizeTextMaxSize = fontSize;
+            text.alignment = alignment;
+            text.color = Color.white;
+            text.raycastTarget = false;
+            return text;
+        }
+
+        private static void SetStretch(RectTransform rect, Vector2 anchorMin, Vector2 anchorMax)
+        {
+            rect.anchorMin = anchorMin;
+            rect.anchorMax = anchorMax;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
         }
     }
 }

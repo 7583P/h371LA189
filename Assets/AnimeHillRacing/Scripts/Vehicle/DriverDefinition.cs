@@ -26,6 +26,12 @@ namespace AnimeHillRacing.Vehicle
             [Min(.1f)] public float rainbowFrequency = 1.15f;
             [Range(0f, 2f)] public float rainbowNeonGlow = 1.25f;
             public bool allowsBlueprintProgression = true;
+            [Tooltip("When disabled, the first/default accessory resolves to Common and every other accessory resolves to Mythic.")]
+            public bool hasExplicitRarity;
+            public AnimeHillRacing.Core.ItemRarity rarity = AnimeHillRacing.Core.ItemRarity.Mythic;
+
+            public AnimeHillRacing.Core.ItemRarity ResolveRarity(bool isDefaultItem) =>
+                AnimeHillRacing.Core.ItemRarityUtility.Resolve(hasExplicitRarity, rarity, isDefaultItem);
         }
 
         public string driverId = "stickman-black";

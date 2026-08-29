@@ -12,6 +12,7 @@ namespace AnimeHillRacing.Editor
     public static class ChestDebugTools
     {
         private const string CatalogPath = "Assets/AnimeHillRacing/VehicleData/GameCatalog.asset";
+        private const string TotalGemsKey = "AHR.TotalGems";
 
         [MenuItem("Anime Hill Racing/Chests/DEBUG +30 MIN CHEST PROGRESS")]
         public static void AddThirtyMinutes()
@@ -109,7 +110,13 @@ namespace AnimeHillRacing.Editor
                 newBestAward != 150)
                 throw new InvalidOperationException("Distance bonus must skip milestones at or below the personal best.");
 
+            ValidateGemSaveCompatibility();
+
             List<BundleDefinition> bundles = PremiumBundleCatalog.GetAll(gameCatalog);
+            if (PremiumBundleCatalog.Find(gameCatalog, PremiumBundleCatalog.CosmeticBundleId(
+                    "formula-01", "Skin", "formula-skin-hill-adventurer-gold")) != null)
+                throw new InvalidOperationException(
+                    "Formula Hill Adventurer Gold must not participate in blueprint progression.");
             for (int i = 0; i < bundles.Count; i++)
             {
                 BundleDefinition bundle = bundles[i];
@@ -119,6 +126,38 @@ namespace AnimeHillRacing.Editor
                         StringComparison.OrdinalIgnoreCase) < 0)
                     throw new InvalidOperationException("Every Ghosty Wheels bundle must identify its vehicle.");
             }
+
+            for (int vehicleIndex = 0; vehicleIndex < gameCatalog.vehicles.Length; vehicleIndex++)
+            {
+                VehicleDefinition vehicle = gameCatalog.vehicles[vehicleIndex];
+                if (vehicle?.wheels == null) continue;
+                for (int wheelIndex = 0; wheelIndex < vehicle.wheels.Length; wheelIndex++)
+                {
+                    VehicleDefinition.CustomizationOption wheel = vehicle.wheels[wheelIndex];
+                    if (wheel == null) continue;
+                    bool isDefault = wheel.optionId == vehicle.DefaultWheelId;
+                    ItemRarity expected = isDefault ? ItemRarity.Common : ItemRarity.Mythic;
+                    if (wheel.ResolveRarity(isDefault) != expected)
+                        throw new InvalidOperationException(
+                            $"Wheel rarity contract failed: {vehicle.vehicleId}/{wheel.optionId}.");
+                }
+            }
+            if (gameCatalog.drivers != null)
+                for (int driverIndex = 0; driverIndex < gameCatalog.drivers.Length; driverIndex++)
+                {
+                    DriverDefinition driver = gameCatalog.drivers[driverIndex];
+                    if (driver?.accessories == null) continue;
+                    for (int accessoryIndex = 0; accessoryIndex < driver.accessories.Length; accessoryIndex++)
+                    {
+                        DriverDefinition.CharacterAccessoryOption accessory = driver.accessories[accessoryIndex];
+                        if (accessory == null) continue;
+                        bool isDefault = accessory.accessoryId == driver.DefaultAccessoryId;
+                        ItemRarity expected = isDefault ? ItemRarity.Common : ItemRarity.Mythic;
+                        if (accessory.ResolveRarity(isDefault) != expected)
+                            throw new InvalidOperationException(
+                                $"Accessory rarity contract failed: {driver.driverId}/{accessory.accessoryId}.");
+                    }
+                }
 
             var persisted = new ChestSaveData
             {
@@ -130,6 +169,7 @@ namespace AnimeHillRacing.Editor
                         chestId = "persistence-test", type = ChestType.Master, state = ChestState.Opening,
                         openStartedUtc = DateTime.UtcNow.AddHours(-1).ToString("O"),
                         openReadyUtc = DateTime.UtcNow.AddHours(11).ToString("O"), coinReward = 17420,
+                        gemReward = 7,
                         blueprintBundleId = "cosmetic:test:Skin:test", blueprintReward = 5
                     }
                 }
@@ -138,6 +178,7 @@ namespace AnimeHillRacing.Editor
             if (restored == null || Mathf.Abs(restored.chestGameplayProgress - 1020f) > .001f ||
                 restored.inventory == null || restored.inventory.Count != 1 ||
                 restored.inventory[0].chestId != "persistence-test" || restored.inventory[0].coinReward != 17420 ||
+                restored.inventory[0].gemReward != 7 ||
                 restored.inventory[0].blueprintReward != 5)
                 throw new InvalidOperationException("Chest inventory/progress persistence contract failed.");
 
@@ -155,7 +196,8 @@ namespace AnimeHillRacing.Editor
             }
             Debug.Log($"CHEST_BLUEPRINT_AUDIT_PASS: milestone 29:59/30:00, remainder 15s, UTC offline, " +
                 $"coin ranges, Master +5, Legendary +10, normal 100, vehicle 150, " +
-                $"Shop 10K:+1/50K:+5/100K:+10/1M:+100, tune prices x10, distance bonus PB-only 500m/+25..+500 validated; " +
+                $"Shop 10K:+1/50K:+5/100K:+10/1M:+100, tune prices x10, Gems save/add/spend validated, " +
+                $"distance bonus PB-only 500m/+25..+500 validated; " +
                 $"Monte Carlo B/S/G/M/L={counts[0]/(float)samples:P2}/{counts[1]/(float)samples:P2}/" +
                 $"{counts[2]/(float)samples:P2}/{counts[3]/(float)samples:P2}/{counts[4]/(float)samples:P2}.");
         }
@@ -164,6 +206,33 @@ namespace AnimeHillRacing.Editor
         {
             ChestRecord chest = ChestSystem.Grant(LoadCatalog(), type);
             Debug.Log(chest == null ? "CHEST_DEBUG_GRANT_FAILED" : $"CHEST_DEBUG_GRANTED: {type} {chest.chestId}");
+        }
+
+        private static void ValidateGemSaveCompatibility()
+        {
+            bool existed = PlayerPrefs.HasKey(TotalGemsKey);
+            int original = PlayerPrefs.GetInt(TotalGemsKey, 0);
+            try
+            {
+                // A pre-Gems save has no key and must resolve to zero without touching other progress.
+                PlayerPrefs.DeleteKey(TotalGemsKey);
+                if (SaveManager.TotalGems != 0)
+                    throw new InvalidOperationException("A legacy save without Gems did not migrate to zero.");
+                SaveManager.AddGems(1000, false);
+                if (SaveManager.TotalGems != 1000 || SaveManager.TrySpendGems(1001, false) ||
+                    SaveManager.TotalGems != 1000 || !SaveManager.TrySpendGems(400, false) ||
+                    SaveManager.TotalGems != 600)
+                    throw new InvalidOperationException("Gems add/spend/non-negative balance contract failed.");
+                SaveManager.AddGems(-10, false);
+                if (SaveManager.TotalGems != 600)
+                    throw new InvalidOperationException("A negative Gems award changed the balance.");
+            }
+            finally
+            {
+                if (existed) PlayerPrefs.SetInt(TotalGemsKey, original);
+                else PlayerPrefs.DeleteKey(TotalGemsKey);
+                PlayerPrefs.Save();
+            }
         }
 
         private static GameCatalog LoadCatalog()

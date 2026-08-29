@@ -167,14 +167,16 @@ namespace AnimeHillRacing.UI
                           (claim.BundleUnlocked ? "  UNLOCKED!" : string.Empty)
                         : claim.Type == ChestType.Master || claim.Type == ChestType.Legendary
                             ? "\nNO ELIGIBLE BLUEPRINT BUNDLE" : string.Empty;
+                    string gemsLine = claim.Gems > 0 ? $"\n+{claim.Gems:N0} GEMS" : string.Empty;
                     SetFeedback($"{claim.Type.ToString().ToUpperInvariant()} CHEST OPENED\n+{claim.Coins:N0} COINS" +
+                        gemsLine +
                         blueprintLine, bundle?.Thumbnail);
 
                     EnsureRewardModal();
                     if (rewardModal != null)
                     {
                         Sprite coinIcon = catalog.chestCatalog?.coinsChestSprite;
-                        rewardModal.Open(definition, claim, bundle, coinIcon, Refresh);
+                        rewardModal.Open(definition, claim, bundle, coinIcon, catalog, Refresh);
                     }
                 }
             }

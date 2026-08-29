@@ -157,7 +157,10 @@ namespace AnimeHillRacing.Terrain
         public const float CompactGroundModuleWidth = 45f;
         public const float CompactGroundMaximumVisualExtent = 2.5f;
         public const float NeonCityGroundMaximumVisualExtent = 1.35f;
-        public const float NeonCityGroundMaximumVisualRise = .65f;
+        // At the 1.35 m authored-band scale the painted contact row needs about 1.274 m
+        // above the road. A lower independent cap distorts the contact ratio and makes the
+        // visible road float below the collider (the former .65 m cap caused a .320987 m gap).
+        public const float NeonCityGroundMaximumVisualRise = 1.28f;
         public const float CountrysideGroundModuleWidth = 13.3f;
         public const float CountrysideGroundMaximumVisualExtent = 1.5f;
         public const float CountrysideGroundMaximumVisualRise = .8f;

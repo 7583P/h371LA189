@@ -21,6 +21,7 @@ namespace AnimeHillRacing.Chests
         public string openStartedUtc;
         public string openReadyUtc;
         public int coinReward;
+        public int gemReward;
         public string blueprintBundleId;
         public int blueprintReward;
         public bool rewardClaimed;
@@ -56,6 +57,7 @@ namespace AnimeHillRacing.Chests
         public bool Success { get; internal set; }
         public ChestType Type { get; internal set; }
         public int Coins { get; internal set; }
+        public int Gems { get; internal set; }
         public string BundleId { get; internal set; }
         public string BundleName { get; internal set; }
         public int Blueprints { get; internal set; }

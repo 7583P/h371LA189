@@ -25,10 +25,15 @@ namespace AnimeHillRacing.UI
 
         private void OnEnable()
         {
+            SaveManager.CurrencyChanged -= RefreshCoins;
+            SaveManager.CurrencyChanged += RefreshCoins;
             GameSession.ClearGarageContext();
             FindSavedVehicle();
             Refresh();
+            EconomyCounterIconBinder.RefreshActiveScene();
         }
+
+        private void OnDisable() => SaveManager.CurrencyChanged -= RefreshCoins;
 
         private void Update()
         {

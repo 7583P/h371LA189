@@ -405,6 +405,8 @@ namespace AnimeHillRacing.Terrain
 
         [Header("Presentation")]
         public EnvironmentDefinition environment;
+        [Tooltip("Optional full-card artwork used only by the track selection UI. Gameplay backgrounds remain unchanged.")]
+        public Sprite selectionPreview;
         [Tooltip("Clips vehicle sprites at the authoritative terrain contact line while keeping their " +
                  "visible portion in front of the 2.5D terrain.")]
         public bool useVehicleContactLineOcclusion;

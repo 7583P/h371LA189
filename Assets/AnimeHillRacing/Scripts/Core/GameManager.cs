@@ -37,25 +37,6 @@ namespace AnimeHillRacing.Core
         }
     }
 
-    public sealed class GemMilestoneTracker
-    {
-        public const float MilestoneDistance = 1000f;
-        public float NextDistance { get; private set; } = MilestoneDistance;
-
-        public void Reset() => NextDistance = MilestoneDistance;
-
-        public int ClaimThrough(float maximumRunDistance)
-        {
-            int awards = 0;
-            while (maximumRunDistance >= NextDistance)
-            {
-                awards++;
-                NextDistance += MilestoneDistance;
-            }
-            return awards;
-        }
-    }
-
     [DefaultExecutionOrder(-50)]
     public sealed class GameManager : MonoBehaviour
     {
@@ -78,7 +59,6 @@ namespace AnimeHillRacing.Core
         private int lastDistanceBonus;
         private float distanceBonusMessageUntil;
         private readonly LiquidExposureTracker liquidExposure = new LiquidExposureTracker();
-        private readonly GemMilestoneTracker gemMilestones = new GemMilestoneTracker();
         private readonly DistanceBonusTracker distanceBonuses = new DistanceBonusTracker();
         private bool liquidCrashRequested;
         private int lastGemAward;
@@ -181,7 +161,6 @@ namespace AnimeHillRacing.Core
             BestDistance = SaveManager.GetBestDistance(Mode, MapId);
             vehicle?.SetTransmissionMode(GameSession.SelectedTransmission);
             liquidExposure.Reset(LiquidExposureLimit);
-            gemMilestones.Reset();
             distanceBonuses.Reset(BestDistance);
         }
 
@@ -269,13 +248,6 @@ namespace AnimeHillRacing.Core
             vehicle.Fuel?.TickRun(Time.deltaTime, State == RunState.Running);
             maxProgress = Mathf.Max(maxProgress, vehicle.ProgressPosition);
             maxSpeedKmh = Mathf.Max(maxSpeedKmh, vehicle.SpeedKmh);
-            int gemAwards = gemMilestones.ClaimThrough(Distance);
-            if (gemAwards > 0)
-            {
-                SaveManager.AddGems(gemAwards);
-                lastGemAward = gemAwards;
-                gemMessageUntil = Time.unscaledTime + 2.5f;
-            }
             if (SupportsLiquidExposure && (State == RunState.Running || State == RunState.OutOfFuelPending))
             {
                 liquidExposure.Tick(Time.deltaTime);
@@ -294,10 +266,6 @@ namespace AnimeHillRacing.Core
                 BestDistance = SaveManager.SaveBestDistance(distanceMilestone, Mode, MapId);
                 lastDistanceBonus = distanceAward;
                 distanceBonusMessageUntil = Time.unscaledTime + 2.5f;
-                // At every 1000 m a gem and a distance bonus arrive together. Show the requested
-                // distance message first, then keep the gem notification alive for its own turn.
-                if (gemMessageUntil > Time.unscaledTime)
-                    gemMessageUntil = Mathf.Max(gemMessageUntil, distanceBonusMessageUntil + 2.5f);
             }
             if (input != null && input.RetryPressedThisFrame)
                 Retry();
@@ -327,6 +295,17 @@ namespace AnimeHillRacing.Core
                 runCoins += Mathf.Max(0, amount);
                 hud?.RefreshImmediate(this);
             }
+        }
+
+        public void AddGem(int amount)
+        {
+            if (State != RunState.Running && State != RunState.OutOfFuelPending) return;
+            int award = Mathf.Max(0, amount);
+            if (award == 0) return;
+            SaveManager.AddGems(award);
+            lastGemAward = award;
+            gemMessageUntil = Time.unscaledTime + 2.5f;
+            hud?.RefreshImmediate(this);
         }
 
         public void NotifyLiquidContact(int poolId, bool inside)

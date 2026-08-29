@@ -41,12 +41,18 @@ namespace AnimeHillRacing.Vehicle
             [Min(0)] public int gemPrice;
             public AnimeHillRacing.Core.BundleType bundleType = AnimeHillRacing.Core.BundleType.Cosmetic;
             public bool allowsBlueprintProgression = true;
+            [Tooltip("When disabled, the first/default option resolves to Common and every other option resolves to Mythic.")]
+            public bool hasExplicitRarity;
+            public AnimeHillRacing.Core.ItemRarity rarity = AnimeHillRacing.Core.ItemRarity.Mythic;
             [Min(0f)] public float visibleDiameter;
             [Tooltip("Alpha-bounded visible sprite size in world units. Populated automatically in the editor; " +
                      "transparent canvas padding is excluded.")]
             public Vector2 visibleSize;
             [Tooltip("Alpha-bounded center offset in world units from sprite pivot to align different skins.")]
             public Vector2 visualOffset;
+
+            public AnimeHillRacing.Core.ItemRarity ResolveRarity(bool isDefaultItem) =>
+                AnimeHillRacing.Core.ItemRarityUtility.Resolve(hasExplicitRarity, rarity, isDefaultItem);
         }
 
         [Serializable]

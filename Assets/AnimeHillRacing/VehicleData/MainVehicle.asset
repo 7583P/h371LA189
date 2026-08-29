@@ -30,6 +30,8 @@ MonoBehaviour:
     gemPrice: 0
     bundleType: 0
     allowsBlueprintProgression: 1
+    hasExplicitRarity: 0
+    rarity: 5
     visibleDiameter: 0
     visibleSize: {x: 25.238234, y: 8.309999}
     visualOffset: {x: 0, y: 0}
@@ -40,6 +42,8 @@ MonoBehaviour:
     gemPrice: 1000
     bundleType: 0
     allowsBlueprintProgression: 1
+    hasExplicitRarity: 0
+    rarity: 5
     visibleDiameter: 0
     visibleSize: {x: 21.72, y: 6.925371}
     visualOffset: {x: 0, y: 0}
@@ -51,6 +55,8 @@ MonoBehaviour:
     gemPrice: 0
     bundleType: 0
     allowsBlueprintProgression: 1
+    hasExplicitRarity: 0
+    rarity: 5
     visibleDiameter: 0
     visibleSize: {x: 14.44, y: 14.51}
     visualOffset: {x: 0, y: 0}
@@ -61,6 +67,8 @@ MonoBehaviour:
     gemPrice: 0
     bundleType: 0
     allowsBlueprintProgression: 1
+    hasExplicitRarity: 0
+    rarity: 5
     visibleDiameter: 0
     visibleSize: {x: 14.55, y: 14.41}
     visualOffset: {x: 0, y: 0}
@@ -71,6 +79,8 @@ MonoBehaviour:
     gemPrice: 500
     bundleType: 0
     allowsBlueprintProgression: 1
+    hasExplicitRarity: 0
+    rarity: 5
     visibleDiameter: 0
     visibleSize: {x: 12.63, y: 12.4}
     visualOffset: {x: 0, y: 0}

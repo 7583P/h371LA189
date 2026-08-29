@@ -1,4 +1,5 @@
 using System;
+using AnimeHillRacing.Core;
 using UnityEngine;
 
 namespace AnimeHillRacing.Chests
@@ -21,12 +22,31 @@ namespace AnimeHillRacing.Chests
         [Min(1)] public int openingSeconds = 1;
         [Min(0)] public int minimumCoins;
         [Min(0)] public int maximumCoins;
+        [Min(0)] public int minimumGems;
+        [Min(0)] public int maximumGems;
         [Min(0)] public int blueprintReward;
+        [Tooltip("When disabled, reward rarity follows the chest tier without changing serialized chest assets.")]
+        public bool hasExplicitRewardRarity;
+        public ItemRarity rewardRarity;
         public Sprite closedSprite;
         public Sprite openSprite;
         public Color accentColor = Color.white;
 
         public TimeSpan OpeningDuration => TimeSpan.FromSeconds(Mathf.Max(1, openingSeconds));
+
+        public ItemRarity ResolveRewardRarity()
+        {
+            if (hasExplicitRewardRarity) return ItemRarityUtility.Resolve(true, rewardRarity, false);
+            switch (type)
+            {
+                case ChestType.Bronze: return ItemRarity.Uncommon;
+                case ChestType.Silver: return ItemRarity.Rare;
+                case ChestType.Gold: return ItemRarity.Epic;
+                case ChestType.Master: return ItemRarity.Legendary;
+                case ChestType.Legendary: return ItemRarity.Mythic;
+                default: return ItemRarity.Common;
+            }
+        }
     }
 
     [CreateAssetMenu(menuName = "Anime Hill Racing/Chest Catalog", fileName = "ChestCatalog")]

@@ -14,6 +14,8 @@ namespace AnimeHillRacing.UI
         [SerializeField] private Text bestText;
         [SerializeField] private Text coinsText;
         [SerializeField] private Image coinIcon;
+        [SerializeField] private Text gemsText;
+        [SerializeField] private Image gemIcon;
         [SerializeField] private Text nextFuelText;
         [SerializeField] private Image nextFuelIcon;
         [SerializeField] private GameObject nextFuelPanel;
@@ -80,6 +82,8 @@ namespace AnimeHillRacing.UI
             AddTextOutline(coinsText);
             AddTextOutline(bestText);
             ConfigurePrimaryHudLayout();
+            EnsureGemBalanceCard();
+            EconomyCounterIconBinder.RefreshActiveScene();
             terrainManager = FindFirstObjectByType<TerrainManager>();
             roadManager = FindFirstObjectByType<RoadTrackGenerator>();
             if (input == null)
@@ -271,6 +275,7 @@ namespace AnimeHillRacing.UI
             // Top-left cluster at the 1920x1080 reference resolution:
             // [ enlarged fuel bar ][ best distance ]
             // [      coin balance ]
+            // [       gem balance ]
             ConfigureRect(fuelCard, new Vector2(0f, 1f), new Vector2(0f, 1f),
                 new Vector2(20f, -20f), new Vector2(450f, 104f));
             ConfigureRect(bestCard, new Vector2(0f, 1f), new Vector2(0f, 1f),
@@ -315,6 +320,51 @@ namespace AnimeHillRacing.UI
                 coinsText.resizeTextForBestFit = false;
                 coinsText.alignment = TextAnchor.MiddleRight;
             }
+        }
+
+        private void EnsureGemBalanceCard()
+        {
+            if (gemsText != null || coinsText == null || coinsText.transform.parent == null) return;
+            Transform parent = coinsText.transform.parent.parent;
+            if (parent == null) return;
+            Transform existing = parent.Find("Gems Card");
+            GameObject card = existing != null ? existing.gameObject :
+                new GameObject("Gems Card", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            RectTransform cardRect = card.GetComponent<RectTransform>();
+            if (existing == null) cardRect.SetParent(parent, false);
+            ConfigureRect(cardRect, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(20f, -208f), new Vector2(280f, 72f));
+            Image cardImage = card.GetComponent<Image>();
+            cardImage.color = Color.clear;
+            cardImage.raycastTarget = false;
+
+            Transform iconTransform = card.transform.Find("Gem Icon");
+            GameObject iconObject = iconTransform != null ? iconTransform.gameObject :
+                new GameObject("Gem Icon", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            RectTransform iconRect = iconObject.GetComponent<RectTransform>();
+            if (iconTransform == null) iconRect.SetParent(card.transform, false);
+            ConfigureRect(iconRect, new Vector2(0f, .5f), new Vector2(0f, .5f),
+                new Vector2(8f, 0f), new Vector2(58f, 58f));
+            gemIcon = iconObject.GetComponent<Image>();
+            HillAdventurerUiCatalog ui = HillAdventurerUiCatalog.Instance;
+            gemIcon.sprite = ui != null ? ui.gemCounterIcon : null;
+            gemIcon.enabled = gemIcon.sprite != null;
+            gemIcon.preserveAspect = true;
+            gemIcon.raycastTarget = false;
+
+            Transform textTransform = card.transform.Find("Gems Balance");
+            GameObject textObject = textTransform != null ? textTransform.gameObject :
+                new GameObject("Gems Balance", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
+            RectTransform textRect = textObject.GetComponent<RectTransform>();
+            if (textTransform == null) textRect.SetParent(card.transform, false);
+            Stretch(textRect, new Vector2(76f, 4f), new Vector2(-10f, -4f));
+            gemsText = textObject.GetComponent<Text>();
+            gemsText.font = coinsText.font;
+            gemsText.fontSize = 32;
+            gemsText.alignment = TextAnchor.MiddleRight;
+            gemsText.color = Color.white;
+            gemsText.raycastTarget = false;
+            AddTextOutline(gemsText);
         }
 
         private static RectTransform ParentRect(Text content, string expectedName)
@@ -380,6 +430,7 @@ namespace AnimeHillRacing.UI
             }
             if (bestText != null) bestText.text = $"BEST\n{Mathf.Max(gameManager.BestDistance, gameManager.Distance):N0} m";
             if (coinsText != null) coinsText.text = $"{gameManager.DisplayCoins:N0}";
+            if (gemsText != null) gemsText.text = $"{gameManager.TotalGems:N0}";
             if (nextFuelText != null)
             {
                 float progress = vehicle.ProgressPosition;

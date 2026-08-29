@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Build-safe manifest used only until Google Play Games > Setup > Android Setup
+     generates this library's real APP_ID metadata. The package value matches the
+     official plugin template and is not a Play Console credential. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.google.example.games.mainlibproj" />

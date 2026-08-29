@@ -30,8 +30,10 @@ MonoBehaviour:
     gemPrice: 0
     bundleType: 0
     allowsBlueprintProgression: 1
+    hasExplicitRarity: 0
+    rarity: 5
     visibleDiameter: 0
-    visibleSize: {x: 21.72, y: 7.24}
+    visibleSize: {x: 21.01, y: 6.61}
     visualOffset: {x: 0, y: 0}
   - optionId: aerial-satelite-red-black-gold
     displayName: RED, BLACK & GOLD
@@ -40,8 +42,10 @@ MonoBehaviour:
     gemPrice: 0
     bundleType: 0
     allowsBlueprintProgression: 1
+    hasExplicitRarity: 0
+    rarity: 5
     visibleDiameter: 0
-    visibleSize: {x: 21.44, y: 7.33}
+    visibleSize: {x: 21.22, y: 6.7}
     visualOffset: {x: 0, y: 0}
   wheels:
   - optionId: aerial-satelite-wheel
@@ -51,8 +55,10 @@ MonoBehaviour:
     gemPrice: 0
     bundleType: 0
     allowsBlueprintProgression: 1
+    hasExplicitRarity: 0
+    rarity: 5
     visibleDiameter: 0
-    visibleSize: {x: 12.54, y: 12.54}
+    visibleSize: {x: 11.78, y: 11.72}
     visualOffset: {x: 0, y: 0}
   electricSkinOverlay: {fileID: 0}
   preserveDriverPose: 1

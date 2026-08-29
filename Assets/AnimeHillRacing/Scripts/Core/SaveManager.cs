@@ -58,6 +58,8 @@ namespace AnimeHillRacing.Core
         private const string PurchasableContentMigrationKey = "AHR.Migration.PurchasableContent.V1";
         private const string EconomyMigrationKey = "AHR.Migration.Economy.Gems.V1";
         private const string StarterPackOwnedKey = "AHR.Store.StarterPack.Owned.V1";
+        private const string StarterPackRewardsGrantedKey =
+            "AHR.Store.StarterPack.InitialRewardsGranted.V1";
         private const string FormulaLegacyWheelId = "formula-wheel-rainbow";
         private const string FormulaLuxuryWheelId = "formula-wheel-luxury";
         private const string RallyLegacyWheelId = "rally-wheel-rainbow";
@@ -68,6 +70,8 @@ namespace AnimeHillRacing.Core
         public static int TotalGems => TemporaryUnlimitedCurrencyEnabled
             ? UnlimitedCurrencyDisplayAmount : StoredTotalGems;
         public static bool IsStarterPackOwned => PlayerPrefs.GetInt(StarterPackOwnedKey, 0) != 0;
+        public static bool IsStarterPackInitialRewardsGranted =>
+            PlayerPrefs.GetInt(StarterPackRewardsGrantedKey, 0) != 0;
         public static event System.Action CurrencyChanged;
         public static GameModeType SelectedGameMode
         {
@@ -312,34 +316,93 @@ namespace AnimeHillRacing.Core
             out string error)
         {
             error = string.Empty;
-            if (IsStarterPackOwned)
-            {
-                error = "STARTER PACK ALREADY OWNED";
-                return false;
-            }
-            if (catalog == null || configuration == null ||
-                string.IsNullOrWhiteSpace(configuration.exclusiveBundleId))
-            {
-                error = "EXCLUSIVE STARTER PACK BUNDLE NOT CONFIGURED";
-                return false;
-            }
-            BundleDefinition exclusiveBundle = PremiumBundleCatalog.Find(catalog,
-                configuration.exclusiveBundleId);
-            if (exclusiveBundle == null)
-            {
-                error = "EXCLUSIVE STARTER PACK BUNDLE WAS NOT FOUND";
-                return false;
-            }
+            if (!TryResolveStarterPackContent(catalog, configuration, out VehicleDefinition vehicle,
+                    out VehicleDefinition.CustomizationOption skin, out BundleDefinition legacyBundle,
+                    out error)) return false;
 
-            long coins = (long)StoredTotalCoins + Mathf.Max(0, configuration.coinReward);
-            long gems = (long)StoredTotalGems + Mathf.Max(0, configuration.gemReward);
-            PlayerPrefs.SetInt(TotalCoinsKey, (int)System.Math.Min(int.MaxValue, coins));
-            PlayerPrefs.SetInt(TotalGemsKey, (int)System.Math.Min(int.MaxValue, gems));
-            UnlockBundleWithoutSave(exclusiveBundle);
+            bool grantInitialRewards = !IsStarterPackInitialRewardsGranted;
+            if (grantInitialRewards)
+            {
+                long coins = (long)StoredTotalCoins + Mathf.Max(0, configuration.coinReward);
+                long gems = (long)StoredTotalGems + Mathf.Max(0, configuration.gemReward);
+                PlayerPrefs.SetInt(TotalCoinsKey, (int)System.Math.Min(int.MaxValue, coins));
+                PlayerPrefs.SetInt(TotalGemsKey, (int)System.Math.Min(int.MaxValue, gems));
+                PlayerPrefs.SetInt(StarterPackRewardsGrantedKey, 1);
+            }
+            UnlockStarterPackContentWithoutSave(vehicle, skin, legacyBundle);
             PlayerPrefs.SetInt(StarterPackOwnedKey, 1);
             PlayerPrefs.Save();
-            CurrencyChanged?.Invoke();
+            if (grantInitialRewards) CurrencyChanged?.Invoke();
             return true;
+        }
+
+        public static bool IsStarterPackContentConfigured(GameCatalog catalog,
+            StarterPackConfiguration configuration, out string error) =>
+            TryResolveStarterPackContent(catalog, configuration, out _, out _, out _, out error);
+
+        public static bool RestoreStarterPackOwnership(GameCatalog catalog,
+            StarterPackConfiguration configuration, out string error)
+        {
+            if (!TryResolveStarterPackContent(catalog, configuration, out VehicleDefinition vehicle,
+                    out VehicleDefinition.CustomizationOption skin, out BundleDefinition legacyBundle,
+                    out error)) return false;
+
+            UnlockStarterPackContentWithoutSave(vehicle, skin, legacyBundle);
+            PlayerPrefs.SetInt(StarterPackOwnedKey, 1);
+            // A store restore proves permanent ownership, but it must never replay the pack's
+            // one-time currency payload on a reinstall or another device.
+            PlayerPrefs.SetInt(StarterPackRewardsGrantedKey, 1);
+            PlayerPrefs.Save();
+            return true;
+        }
+
+        public static bool GrantPermanentCustomization(string scopeId, string category, string optionId,
+            bool persistImmediately = true)
+        {
+            if (string.IsNullOrWhiteSpace(scopeId) || string.IsNullOrWhiteSpace(category) ||
+                string.IsNullOrWhiteSpace(optionId)) return false;
+            string normalizedId = category == "Wheels"
+                ? NormalizeLegacyWheelId(scopeId, optionId) : optionId;
+            PlayerPrefs.SetInt($"AHR.Customize.Unlock.{scopeId}.{category}.{normalizedId}", 1);
+            if (persistImmediately) PlayerPrefs.Save();
+            return true;
+        }
+
+        internal static bool GrantPermanentVehicle(string vehicleId, bool persistImmediately = true)
+        {
+            if (string.IsNullOrWhiteSpace(vehicleId)) return false;
+            PlayerPrefs.SetInt(VehicleUnlockKey(vehicleId), 1);
+            if (persistImmediately) PlayerPrefs.Save();
+            return true;
+        }
+
+        internal static bool GrantPermanentMap(string mapId, bool persistImmediately = true)
+        {
+            if (string.IsNullOrWhiteSpace(mapId)) return false;
+            PlayerPrefs.SetInt(MapUnlockKey(mapId), 1);
+            if (persistImmediately) PlayerPrefs.Save();
+            return true;
+        }
+
+        internal static void SetCloudCurrencyBalances(int coins, int gems)
+        {
+            PlayerPrefs.SetInt(TotalCoinsKey, Mathf.Max(0, coins));
+            PlayerPrefs.SetInt(TotalGemsKey, Mathf.Max(0, gems));
+        }
+
+        internal static float MergeCloudBestDistance(float distance, GameModeType mode, string mapId)
+        {
+            string key = BestKey(mode, mapId);
+            float best = Mathf.Max(PlayerPrefs.GetFloat(key, 0f), Mathf.Max(0f, distance));
+            PlayerPrefs.SetFloat(key, best);
+            LeaderboardSyncService.RecordLocalBest(mode, mapId, best);
+            return best;
+        }
+
+        internal static void CommitCloudMerge(bool currencyChanged)
+        {
+            PlayerPrefs.Save();
+            if (currencyChanged) CurrencyChanged?.Invoke();
         }
 
         public static bool IsVehicleUnlocked(string vehicleId, bool unlockedByDefault)
@@ -535,6 +598,7 @@ namespace AnimeHillRacing.Core
             float best = Mathf.Max(PlayerPrefs.GetFloat(key, 0f), Mathf.Max(0f, distance));
             PlayerPrefs.SetFloat(key, best);
             PlayerPrefs.Save();
+            LeaderboardSyncService.RecordLocalBest(mode, mapId, best);
             return best;
         }
 
@@ -547,6 +611,7 @@ namespace AnimeHillRacing.Core
             PlayerPrefs.SetInt(TotalCoinsKey, (int)System.Math.Min(int.MaxValue, total));
             PlayerPrefs.Save();
             CurrencyChanged?.Invoke();
+            LeaderboardSyncService.RecordLocalBest(mode, mapId, best);
             return best;
         }
 
@@ -853,6 +918,16 @@ namespace AnimeHillRacing.Core
         private static int StoredTotalGems => Mathf.Max(0, PlayerPrefs.GetInt(TotalGemsKey, 0));
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void EnsureStarterPackGrantMigration()
+        {
+            // Phase 1 had a single ownership key and granted the currency in the same write. Treat
+            // every existing owned save as already rewarded so an IAP restore cannot duplicate it.
+            if (!IsStarterPackOwned || PlayerPrefs.HasKey(StarterPackRewardsGrantedKey)) return;
+            PlayerPrefs.SetInt(StarterPackRewardsGrantedKey, 1);
+            PlayerPrefs.Save();
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void EnsureEconomyMigration()
         {
             if (PlayerPrefs.GetInt(EconomyMigrationKey, 0) != 0) return;
@@ -898,6 +973,86 @@ namespace AnimeHillRacing.Core
                     ? NormalizeLegacyWheelId(bundle.ScopeId, bundle.OptionId) : bundle.OptionId;
                 PlayerPrefs.SetInt($"AHR.Customize.Unlock.{bundle.ScopeId}.{bundle.Category}.{optionId}", 1);
             }
+        }
+
+        private static bool TryResolveStarterPackContent(GameCatalog catalog,
+            StarterPackConfiguration configuration, out VehicleDefinition vehicle,
+            out VehicleDefinition.CustomizationOption skin, out BundleDefinition legacyBundle,
+            out string error)
+        {
+            vehicle = null;
+            skin = null;
+            legacyBundle = null;
+            error = string.Empty;
+            if (catalog == null || configuration == null)
+            {
+                error = "STARTER PACK CONFIGURATION NOT AVAILABLE";
+                return false;
+            }
+
+            bool usesDirectContent = !string.IsNullOrWhiteSpace(configuration.exclusiveVehicleId) ||
+                                     !string.IsNullOrWhiteSpace(configuration.exclusiveSkinId);
+            if (usesDirectContent)
+            {
+                if (string.IsNullOrWhiteSpace(configuration.exclusiveVehicleId) ||
+                    string.IsNullOrWhiteSpace(configuration.exclusiveSkinId))
+                {
+                    error = "STARTER PACK VEHICLE/SKIN IDS ARE INCOMPLETE";
+                    return false;
+                }
+
+                if (catalog.vehicles != null)
+                    for (int i = 0; i < catalog.vehicles.Length; i++)
+                        if (catalog.vehicles[i] != null &&
+                            catalog.vehicles[i].vehicleId == configuration.exclusiveVehicleId)
+                        {
+                            vehicle = catalog.vehicles[i];
+                            break;
+                        }
+                if (vehicle == null)
+                {
+                    error = "STARTER PACK VEHICLE WAS NOT FOUND";
+                    return false;
+                }
+
+                if (vehicle.skins != null)
+                    for (int i = 0; i < vehicle.skins.Length; i++)
+                        if (vehicle.skins[i] != null &&
+                            vehicle.skins[i].optionId == configuration.exclusiveSkinId)
+                        {
+                            skin = vehicle.skins[i];
+                            break;
+                        }
+                if (skin == null)
+                {
+                    error = "STARTER PACK SKIN WAS NOT FOUND ON ITS VEHICLE";
+                    return false;
+                }
+                return true;
+            }
+
+            if (string.IsNullOrWhiteSpace(configuration.exclusiveBundleId))
+            {
+                error = "EXCLUSIVE STARTER PACK CONTENT NOT CONFIGURED";
+                return false;
+            }
+            legacyBundle = PremiumBundleCatalog.Find(catalog, configuration.exclusiveBundleId);
+            if (legacyBundle != null) return true;
+            error = "EXCLUSIVE STARTER PACK BUNDLE WAS NOT FOUND";
+            return false;
+        }
+
+        private static void UnlockStarterPackContentWithoutSave(VehicleDefinition vehicle,
+            VehicleDefinition.CustomizationOption skin, BundleDefinition legacyBundle)
+        {
+            if (legacyBundle != null)
+            {
+                UnlockBundleWithoutSave(legacyBundle);
+                return;
+            }
+            if (vehicle == null || skin == null) return;
+            PlayerPrefs.SetInt(VehicleUnlockKey(vehicle.vehicleId), 1);
+            PlayerPrefs.SetInt($"AHR.Customize.Unlock.{vehicle.vehicleId}.Skin.{skin.optionId}", 1);
         }
 
         private static string GetVehicleCustomization(VehicleDefinition vehicle, string category, string fallback)

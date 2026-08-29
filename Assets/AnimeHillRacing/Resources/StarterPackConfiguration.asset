@@ -12,7 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b1e2e296e86143ec8e2449eb2c1fc68b, type: 3}
   m_Name: StarterPackConfiguration
   m_EditorClassIdentifier: 
+  gameCatalog: {fileID: 11400000, guid: 4081c791343ee404cb6383de2d69f753, type: 2}
+  autoAuthenticate: 1
+  enableCloudSave: 0
+  cloudSaveFilename: hill-adventurer-save-v1
   googlePlayProductId: 
+  exclusiveVehicleId: formula-01
+  exclusiveSkinId: formula-skin-hill-adventurer-gold
   exclusiveBundleId: 
   coinReward: 100000
   gemReward: 1000

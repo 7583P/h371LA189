@@ -53,7 +53,7 @@ namespace AnimeHillRacing.UI
     public sealed class GarageUI : MonoBehaviour
     {
         private enum Category { Skin, Wheels, Driver, Characters, Tuning }
-        private enum PurchaseKind { None, Vehicle, Tune, Customization, Blueprints }
+        private enum PurchaseKind { None, Vehicle, Tune, Customization, RealMoneyCustomization, Blueprints }
 
         [SerializeField] private GameCatalog catalog;
         [SerializeField] private GaragePreviewRenderer preview;
@@ -144,6 +144,7 @@ namespace AnimeHillRacing.UI
         private PurchaseKind pendingPurchaseKind;
         private Category pendingCategory;
         private string pendingOptionId;
+        private string pendingGooglePlayProductId;
         private int pendingGemPrice;
         private string pendingBundleId;
         private int blueprintPage;
@@ -182,6 +183,7 @@ namespace AnimeHillRacing.UI
         private Button[] optionReadyButtons;
         private Image[] shopAccessoryRarityFrames;
         private StarterPackShopUI starterPackShop;
+        private GooglePlayStatusUI googlePlayStatus;
 
         private Sprite ResolvedVehicleLockSprite => vehicleLockSprite != null
             ? vehicleLockSprite : Resources.Load<Sprite>("UI/LockIcon");
@@ -197,6 +199,8 @@ namespace AnimeHillRacing.UI
         {
             SaveManager.CurrencyChanged -= HandleCurrencyChanged;
             if (Application.isPlaying) SaveManager.CurrencyChanged += HandleCurrencyChanged;
+            ExternalServiceProviders.Store.StateChanged -= HandleStoreStateChanged;
+            if (Application.isPlaying) ExternalServiceProviders.Store.StateChanged += HandleStoreStateChanged;
             if (catalog == null) return;
             startInFlight = false;
             purchaseInFlight = false;
@@ -212,6 +216,7 @@ namespace AnimeHillRacing.UI
             EnsureVehiclePurchaseControls();
             EnsureOptionStateVisuals();
             if (Application.isPlaying) starterPackShop = StarterPackShopUI.Attach(storePanel, catalog);
+            if (Application.isPlaying) googlePlayStatus = GooglePlayStatusUI.Attach(settingsPanel);
             FindSavedVehicle();
             section = GameSession.RequestedGarageSection;
             preview?.Invalidate();
@@ -221,7 +226,16 @@ namespace AnimeHillRacing.UI
             if (section == GarageSection.Store) ResetStoreScrollToTop();
         }
 
-        private void OnDisable() => SaveManager.CurrencyChanged -= HandleCurrencyChanged;
+        private void OnDisable()
+        {
+            SaveManager.CurrencyChanged -= HandleCurrencyChanged;
+            ExternalServiceProviders.Store.StateChanged -= HandleStoreStateChanged;
+        }
+
+        private void HandleStoreStateChanged()
+        {
+            if (Application.isPlaying && isActiveAndEnabled) Refresh();
+        }
 
         private void HandleCurrencyChanged()
         {
@@ -588,6 +602,25 @@ namespace AnimeHillRacing.UI
                 RefreshBlueprintShop();
                 return;
             }
+            if (pendingPurchaseKind == PurchaseKind.RealMoneyCustomization)
+            {
+                VehicleDefinition.CustomizationOption option = FindCurrentSkin(pendingOptionId);
+                IStorePurchaseProvider provider = ExternalServiceProviders.Store;
+                bool stateMatches = option != null && CurrentVehicle.vehicleId == pendingVehicleId &&
+                                    option.purchaseCurrency == CustomizationPurchaseCurrency.RealMoney &&
+                                    option.googlePlayProductId == pendingGooglePlayProductId;
+                if (!stateMatches || provider == null ||
+                    !provider.IsProductAvailable(pendingGooglePlayProductId))
+                {
+                    purchaseInFlight = false;
+                    if (confirmationStatus != null) confirmationStatus.text = "PRODUCT UNAVAILABLE";
+                    if (confirmationYes != null) confirmationYes.interactable = false;
+                    return;
+                }
+
+                provider.Purchase(pendingGooglePlayProductId, CompleteRealMoneyCustomization);
+                return;
+            }
             if (pendingPurchaseKind == PurchaseKind.Customization)
             {
                 if (pendingCategory != Category.Characters &&
@@ -656,6 +689,31 @@ namespace AnimeHillRacing.UI
             RefreshTuning(CurrentVehicle);
         }
 
+        private void CompleteRealMoneyCustomization(StorePurchaseResult result)
+        {
+            purchaseInFlight = false;
+            if (result.Succeeded)
+            {
+                // The IAP provider already persisted Locked -> Owned. Equipping remains the
+                // existing explicit READY action and is intentionally not automatic.
+                ClearPendingPurchase();
+                if (confirmationModal != null) confirmationModal.SetActive(false);
+                preview?.Invalidate();
+                Refresh();
+                return;
+            }
+
+            Refresh();
+            if (confirmationStatus != null)
+                confirmationStatus.text = !string.IsNullOrWhiteSpace(result.Error)
+                    ? result.Error.ToUpperInvariant()
+                    : result.Status == StorePurchaseStatus.Cancelled
+                        ? "PURCHASE CANCELLED" : "PURCHASE NOT COMPLETED";
+            if (confirmationYes != null)
+                confirmationYes.interactable = result.Status != StorePurchaseStatus.Pending &&
+                    ExternalServiceProviders.Store.IsProductAvailable(pendingGooglePlayProductId);
+        }
+
         public void CancelPurchase()
         {
             if (purchaseInFlight) return;
@@ -667,6 +725,7 @@ namespace AnimeHillRacing.UI
         {
             pendingPurchaseKind = PurchaseKind.None;
             pendingOptionId = string.Empty;
+            pendingGooglePlayProductId = string.Empty;
             pendingBundleId = string.Empty;
             pendingVehicleId = string.Empty;
             pendingPurchasedTune = 0;
@@ -780,6 +839,24 @@ namespace AnimeHillRacing.UI
                 !TryGetOption(index, out string id, out _, out bool unlocked, out int gemPrice)) return;
             if (!unlocked)
             {
+                if (category == Category.Skin &&
+                    TryGetRealMoneySkin(index, out VehicleDefinition.CustomizationOption realMoneySkin))
+                {
+                    pendingPurchaseKind = PurchaseKind.RealMoneyCustomization;
+                    pendingCategory = category;
+                    pendingVehicleId = vehicle.vehicleId;
+                    pendingOptionId = id;
+                    pendingGemPrice = 0;
+                    pendingGooglePlayProductId = realMoneySkin.googlePlayProductId ?? string.Empty;
+                    if (confirmationTitle != null)
+                        confirmationTitle.text = $"BUY {OptionName(index).ToUpperInvariant()}?";
+                    if (confirmationValues != null)
+                        confirmationValues.text = "PERMANENT GOOGLE PLAY SKIN UNLOCK";
+                    RefreshOpenPurchaseAffordability();
+                    SetConfirmationActionLabel("BUY");
+                    if (confirmationModal != null) confirmationModal.SetActive(true);
+                    return;
+                }
                 if (gemPrice <= 0 || category == Category.Driver) return;
                 pendingPurchaseKind = PurchaseKind.Customization;
                 pendingCategory = category;
@@ -1595,12 +1672,18 @@ namespace AnimeHillRacing.UI
                 optionButtons[i].gameObject.SetActive(visible);
                 if (!visible) continue;
                 TryGetOption(optionIndex, out string id, out Sprite icon, out bool unlocked, out int gemPrice);
+                bool realMoney = TryGetRealMoneySkin(optionIndex,
+                    out VehicleDefinition.CustomizationOption realMoneySkin);
+                IStorePurchaseProvider storeProvider = ExternalServiceProviders.Store;
+                bool realMoneyAvailable = realMoney && storeProvider != null &&
+                    storeProvider.IsProductAvailable(realMoneySkin.googlePlayProductId);
                 bool isSelected = id == selected;
                 DriverDefinition.CharacterAccessoryOption accessory = category == Category.Characters
                     ? SelectedDriver()?.accessories[optionIndex] : null;
                 bool accessoryFlipX = accessory != null && accessory.supportsFlipVariant &&
                     SaveManager.GetCharacterAccessoryFlipX(accessory.accessoryId, accessory.flipX);
-                optionButtons[i].interactable = vehicleUnlocked && (unlocked || gemPrice > 0);
+                optionButtons[i].interactable = vehicleUnlocked &&
+                                                (unlocked || gemPrice > 0 || realMoney);
                 optionButtons[i].image.color = isSelected ? new Color(.18f, .60f, .82f, 1f) :
                     unlocked ? new Color(.10f, .20f, .32f, 1f) : new Color(.12f, .12f, .14f, .78f);
                 RefreshAccessoryFlipButton(customizationAccessoryFlipButtons != null &&
@@ -1626,7 +1709,8 @@ namespace AnimeHillRacing.UI
                 {
                     string action = category == Category.Skin
                         ? isSelected ? "EQUIPPED" : unlocked ? "OWNED  •  READY" :
-                            gemPrice > 0 ? $"{gemPrice:N0} GEMS" : "LOCKED"
+                            realMoney ? RealMoneyPriceLabel(storeProvider, realMoneySkin,
+                                realMoneyAvailable) : gemPrice > 0 ? $"{gemPrice:N0} GEMS" : "LOCKED"
                         : isSelected ? SelectedAccessoryAction(accessory) : unlocked
                             ? "SELECT" : gemPrice > 0 ? $"{gemPrice:N0} GEMS" : "LOCKED";
                     optionLabels[i].text = OptionName(optionIndex) + "\n" + action;
@@ -2038,6 +2122,33 @@ namespace AnimeHillRacing.UI
                     confirmationStatus.text = !available ? "UNAVAILABLE" :
                         affordable ? string.Empty : "NOT ENOUGH COINS";
                 if (confirmationYes != null) confirmationYes.interactable = !purchaseInFlight && affordable;
+                return;
+            }
+
+            if (pendingPurchaseKind == PurchaseKind.RealMoneyCustomization)
+            {
+                VehicleDefinition.CustomizationOption option = FindCurrentSkin(pendingOptionId);
+                IStorePurchaseProvider provider = ExternalServiceProviders.Store;
+                bool stateMatches = option != null && CurrentVehicle != null &&
+                                    CurrentVehicle.vehicleId == pendingVehicleId &&
+                                    option.purchaseCurrency == CustomizationPurchaseCurrency.RealMoney &&
+                                    option.googlePlayProductId == pendingGooglePlayProductId;
+                bool available = stateMatches && provider != null &&
+                                 provider.IsProductAvailable(pendingGooglePlayProductId);
+                ConfigureNonTuneConfirmation(false, available);
+                if (confirmationCost != null)
+                    confirmationCost.text = provider != null &&
+                        provider.TryGetLocalizedPrice(pendingGooglePlayProductId, out string localizedPrice)
+                            ? localizedPrice : provider != null &&
+                              provider.State == ExternalStoreState.Initializing
+                                ? "LOADING PRICE..." : "UNAVAILABLE";
+                if (confirmationStatus != null)
+                    confirmationStatus.text = !stateMatches ? "CUSTOMIZATION STATE CHANGED" :
+                        available ? string.Empty : string.IsNullOrWhiteSpace(pendingGooglePlayProductId)
+                            ? "GOOGLE PLAY PRODUCT ID NOT CONFIGURED"
+                            : "PRODUCT UNAVAILABLE IN GOOGLE PLAY";
+                if (confirmationYes != null)
+                    confirmationYes.interactable = !purchaseInFlight && available;
                 return;
             }
 
@@ -2485,6 +2596,40 @@ namespace AnimeHillRacing.UI
             gemPrice = item.gemPrice;
             unlocked = SaveManager.IsCustomizationUnlocked(vehicle.vehicleId, category.ToString(), id, item.unlockedByDefault);
             return true;
+        }
+
+        private bool TryGetRealMoneySkin(int index,
+            out VehicleDefinition.CustomizationOption option)
+        {
+            option = null;
+            VehicleDefinition vehicle = CurrentVehicle;
+            if (category != Category.Skin || vehicle?.skins == null || index < 0 ||
+                index >= vehicle.skins.Length) return false;
+            option = vehicle.skins[index];
+            return option != null &&
+                   option.purchaseCurrency == CustomizationPurchaseCurrency.RealMoney;
+        }
+
+        private VehicleDefinition.CustomizationOption FindCurrentSkin(string optionId)
+        {
+            VehicleDefinition vehicle = CurrentVehicle;
+            if (vehicle?.skins == null || string.IsNullOrWhiteSpace(optionId)) return null;
+            for (int i = 0; i < vehicle.skins.Length; i++)
+                if (vehicle.skins[i] != null && vehicle.skins[i].optionId == optionId)
+                    return vehicle.skins[i];
+            return null;
+        }
+
+        private static string RealMoneyPriceLabel(IStorePurchaseProvider provider,
+            VehicleDefinition.CustomizationOption option, bool available)
+        {
+            if (option == null || string.IsNullOrWhiteSpace(option.googlePlayProductId))
+                return "IAP NOT CONFIGURED";
+            if (available && provider != null &&
+                provider.TryGetLocalizedPrice(option.googlePlayProductId, out string localizedPrice))
+                return localizedPrice;
+            return provider != null && provider.State == ExternalStoreState.Initializing
+                ? "LOADING PRICE..." : "IAP UNAVAILABLE";
         }
 
         private static void SetSelectedOption(VehicleDefinition vehicle, Category selectedCategory, string id)

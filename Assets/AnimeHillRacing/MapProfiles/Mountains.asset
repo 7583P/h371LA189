@@ -18,6 +18,7 @@ MonoBehaviour:
   seed: 40822
   unlockedByDefault: 0
   coinPrice: 30000
+  leaderboardId: 
   coinRoute: {fileID: 0}
   introEndDistance: 1000
   easyEndDistance: 2500

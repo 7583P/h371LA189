@@ -23,6 +23,12 @@ namespace AnimeHillRacing.Vehicle
         InFrontOfEverything
     }
 
+    public enum CustomizationPurchaseCurrency
+    {
+        Gems,
+        RealMoney
+    }
+
     [CreateAssetMenu(menuName = "Anime Hill Racing/Vehicle Definition", fileName = "MainVehicle")]
     public sealed class VehicleDefinition : ScriptableObject
     {
@@ -39,6 +45,10 @@ namespace AnimeHillRacing.Vehicle
             public Sprite sprite;
             public bool unlockedByDefault = true;
             [Min(0)] public int gemPrice;
+            [Tooltip("Gems keeps the existing internal economy flow. RealMoney uses the configured Google Play non-consumable.")]
+            public CustomizationPurchaseCurrency purchaseCurrency = CustomizationPurchaseCurrency.Gems;
+            [Tooltip("Real Google Play Product ID. Used only when Purchase Currency is RealMoney; never use a placeholder.")]
+            public string googlePlayProductId;
             public AnimeHillRacing.Core.BundleType bundleType = AnimeHillRacing.Core.BundleType.Cosmetic;
             public bool allowsBlueprintProgression = true;
             [Tooltip("When disabled, the first/default option resolves to Common and every other option resolves to Mythic.")]

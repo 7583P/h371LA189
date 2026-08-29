@@ -20,6 +20,7 @@ namespace AnimeHillRacing.UI
         private Text buyFallbackText;
         private bool built;
         private bool purchasing;
+        private IStorePurchaseProvider subscribedProvider;
 
         public static StarterPackShopUI Attach(GameObject storePanel, GameCatalog gameCatalog)
         {
@@ -66,11 +67,15 @@ namespace AnimeHillRacing.UI
         private void OnEnable()
         {
             BuildOnce();
+            SubscribeProvider();
             Refresh();
         }
 
+        private void OnDisable() => UnsubscribeProvider();
+
         private void OnDestroy()
         {
+            UnsubscribeProvider();
             if (buyButton != null) buyButton.onClick.RemoveListener(Buy);
         }
 
@@ -80,6 +85,7 @@ namespace AnimeHillRacing.UI
             HillAdventurerUiCatalog ui = HillAdventurerUiCatalog.Instance;
             StarterPackConfiguration config = StarterPackConfiguration.Instance;
             IStorePurchaseProvider provider = ExternalServiceProviders.Store;
+            SubscribeProvider();
 
             Sprite artworkSprite = ui != null ? ui.starterPackArtwork : null;
             artwork.sprite = artworkSprite;
@@ -93,30 +99,38 @@ namespace AnimeHillRacing.UI
             gemsText.text = $"+{(config != null ? config.gemReward : 1000):N0} GEMS";
 
             string productId = config != null ? config.googlePlayProductId : string.Empty;
-            if (provider != null && provider.TryGetLocalizedPrice(productId, out string localizedPrice) &&
+            bool owned = SaveManager.IsStarterPackOwned;
+            if (owned)
+                priceText.text = "OWNED";
+            else if (provider != null && provider.TryGetLocalizedPrice(productId, out string localizedPrice) &&
                 !string.IsNullOrWhiteSpace(localizedPrice))
                 priceText.text = localizedPrice;
+            else if (string.IsNullOrWhiteSpace(productId))
+                priceText.text = "NOT CONFIGURED";
+            else if (provider != null && (provider.State == ExternalStoreState.Initializing ||
+                                           provider.State == ExternalStoreState.NotInitialized))
+                priceText.text = "LOADING PRICE...";
             else
-                priceText.text = (config != null && !string.IsNullOrWhiteSpace(config.conceptualPrice)
-                    ? config.conceptualPrice : "$2.99") + "  CONCEPT";
+                priceText.text = "UNAVAILABLE";
 
-            Sprite buySprite = ui != null ? ui.buyStarterPackButton : null;
+            Sprite buySprite = ui != null ? owned ? ui.ownedBadge : ui.buyStarterPackButton : null;
             buyButton.image.sprite = buySprite;
             buyButton.image.preserveAspect = buySprite != null;
             buyButton.image.color = buySprite != null ? Color.white : new Color(.08f, .54f, .84f, 1f);
             buyFallbackText.enabled = buySprite == null;
 
             bool productConfigured = config != null && !string.IsNullOrWhiteSpace(productId);
-            bool bundleConfigured = config != null && catalog != null &&
-                                    PremiumBundleCatalog.Find(catalog, config.exclusiveBundleId) != null;
+            bool bundleConfigured = SaveManager.IsStarterPackContentConfigured(catalog, config, out _);
             bool providerConfigured = provider != null && provider.IsConfigured;
-            bool owned = SaveManager.IsStarterPackOwned;
+            bool productAvailable = provider != null && provider.IsProductAvailable(productId);
             buyButton.interactable = !purchasing && !owned && productConfigured && bundleConfigured &&
-                                     providerConfigured;
-            statusText.text = owned ? "OWNED  •  REWARDS CLAIMED" : purchasing ? "CONTACTING STORE..." :
+                                     providerConfigured && productAvailable;
+            statusText.text = owned ? "OWNED  -  REWARDS CLAIMED" : purchasing ? "CONTACTING STORE..." :
                 !bundleConfigured ? "EXCLUSIVE SKIN BUNDLE NOT CONFIGURED" :
                 !productConfigured ? "GOOGLE PLAY PRODUCT ID NOT CONFIGURED" :
-                !providerConfigured ? "GOOGLE PLAY BILLING NOT CONNECTED" : "PURCHASE THROUGH GOOGLE PLAY";
+                !providerConfigured ? "GOOGLE PLAY BILLING NOT CONFIGURED" :
+                provider.State == ExternalStoreState.Initializing ? "LOADING GOOGLE PLAY PRICE..." :
+                !productAvailable ? "PRODUCT UNAVAILABLE IN GOOGLE PLAY" : "PURCHASE THROUGH GOOGLE PLAY";
         }
 
         private void Buy()
@@ -125,7 +139,8 @@ namespace AnimeHillRacing.UI
             StarterPackConfiguration config = StarterPackConfiguration.Instance;
             IStorePurchaseProvider provider = ExternalServiceProviders.Store;
             if (config == null || provider == null || !provider.IsConfigured ||
-                string.IsNullOrWhiteSpace(config.googlePlayProductId))
+                string.IsNullOrWhiteSpace(config.googlePlayProductId) ||
+                !provider.IsProductAvailable(config.googlePlayProductId))
             {
                 Refresh();
                 return;
@@ -142,14 +157,15 @@ namespace AnimeHillRacing.UI
             if (!result.Succeeded)
             {
                 statusText.text = string.IsNullOrWhiteSpace(result.Error)
-                    ? "PURCHASE NOT COMPLETED" : result.Error.ToUpperInvariant();
+                    ? result.Status == StorePurchaseStatus.Cancelled
+                        ? "PURCHASE CANCELLED" : "PURCHASE NOT COMPLETED"
+                    : result.Error.ToUpperInvariant();
                 RefreshButtonOnly();
                 return;
             }
 
-            if (!SaveManager.TryGrantStarterPack(catalog, StarterPackConfiguration.Instance,
-                    out string error))
-                statusText.text = error;
+            // The provider persisted the entitlement before reporting success and only then
+            // acknowledged the Google Play order.
             Refresh();
         }
 
@@ -158,7 +174,24 @@ namespace AnimeHillRacing.UI
             StarterPackConfiguration config = StarterPackConfiguration.Instance;
             buyButton.interactable = !SaveManager.IsStarterPackOwned && config != null &&
                                      !string.IsNullOrWhiteSpace(config.googlePlayProductId) &&
-                                     ExternalServiceProviders.Store.IsConfigured;
+                                     ExternalServiceProviders.Store.IsConfigured &&
+                                     ExternalServiceProviders.Store.IsProductAvailable(
+                                         config.googlePlayProductId);
+        }
+
+        private void SubscribeProvider()
+        {
+            IStorePurchaseProvider provider = ExternalServiceProviders.Store;
+            if (ReferenceEquals(subscribedProvider, provider)) return;
+            UnsubscribeProvider();
+            subscribedProvider = provider;
+            if (subscribedProvider != null) subscribedProvider.StateChanged += Refresh;
+        }
+
+        private void UnsubscribeProvider()
+        {
+            if (subscribedProvider != null) subscribedProvider.StateChanged -= Refresh;
+            subscribedProvider = null;
         }
 
         private void BuildOnce()
@@ -195,7 +228,7 @@ namespace AnimeHillRacing.UI
             gemsText = CreateText("Gems Amount", transform, "+1,000 GEMS", 19,
                 TextAnchor.MiddleLeft, new Vector2(.69f, .43f), new Vector2(.98f, .59f));
 
-            priceText = CreateText("Price", transform, "$2.99  CONCEPT", 22,
+            priceText = CreateText("Price", transform, "LOADING PRICE...", 22,
                 TextAnchor.MiddleCenter, new Vector2(.61f, .31f), new Vector2(.98f, .43f));
             statusText = CreateText("Status", transform, "GOOGLE PLAY BILLING NOT CONNECTED", 13,
                 TextAnchor.MiddleCenter, new Vector2(.60f, .22f), new Vector2(.99f, .32f));

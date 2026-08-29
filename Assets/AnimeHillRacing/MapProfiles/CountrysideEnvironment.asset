@@ -35,7 +35,7 @@ MonoBehaviour:
   coverViewportVertically: 0
   coverViewportVerticalOffset: 0
   mountainVisualHeight: 19
-  mountainBaseY: 1
+  mountainBaseY: 4
   pooledMountainSegments: 5
   seamOverlap: 0.004
   mirrorAlternatingMountainTiles: 1

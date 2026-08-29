@@ -6,13 +6,30 @@ namespace AnimeHillRacing.Core
         fileName = "StarterPackConfiguration")]
     public sealed class StarterPackConfiguration : ScriptableObject
     {
+        [Header("Project Catalog")]
+        [Tooltip("Existing Phase 1 catalog used to discover maps, vehicles and explicitly configured IAP skins.")]
+        public GameCatalog gameCatalog;
+
+        [Header("Google Play Games")]
+        [Tooltip("Attempts the non-blocking automatic Play Games v2 sign-in once at startup.")]
+        public bool autoAuthenticate = true;
+        [Tooltip("Keep disabled until Saved Games is enabled and tested in Play Console.")]
+        public bool enableCloudSave;
+        [Tooltip("Stable snapshot filename. This is not a Google credential or resource ID.")]
+        public string cloudSaveFilename = "hill-adventurer-save-v1";
+
+        [Header("Starter Pack IAP")]
         [Tooltip("Real Google Play product ID. Intentionally empty until Play Console is configured.")]
         public string googlePlayProductId;
-        [Tooltip("PremiumBundleCatalog bundle ID for the exclusive vehicle/skin shown by Starter_Pack.")]
+        [Tooltip("Local vehicle ID shown in Starter_Pack artwork. This is not a Google Product ID.")]
+        public string exclusiveVehicleId;
+        [Tooltip("Local skin ID shown in Starter_Pack artwork. This is not a Google Product ID.")]
+        public string exclusiveSkinId;
+        [Tooltip("Legacy Phase 1 PremiumBundleCatalog ID. Used only when the direct local IDs above are empty.")]
         public string exclusiveBundleId;
         [Min(0)] public int coinReward = 100000;
         [Min(0)] public int gemReward = 1000;
-        [Tooltip("Concept price shown only while no localized store price is available.")]
+        [Tooltip("Design reference only. Production UI waits for the localized Google Play price.")]
         public string conceptualPrice = "$2.99";
 
         private static StarterPackConfiguration cached;

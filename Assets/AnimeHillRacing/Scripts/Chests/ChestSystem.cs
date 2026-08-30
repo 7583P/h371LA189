@@ -151,6 +151,67 @@ namespace AnimeHillRacing.Chests
             lastFlushRealtime = Time.realtimeSinceStartup;
         }
 
+        internal static string ExportCloudJson()
+        {
+            EnsureLoaded();
+            return JsonUtility.ToJson(data);
+        }
+
+        internal static bool TryImportCloudJson(string json, GameCatalog catalog)
+        {
+            if (string.IsNullOrWhiteSpace(json)) return true;
+            try
+            {
+                ChestSaveData imported = JsonUtility.FromJson<ChestSaveData>(json);
+                if (imported == null || imported.version != 1) return false;
+                if (imported.inventory == null) imported.inventory = new List<ChestRecord>();
+                if (imported.inventory.Count > 100) return false;
+
+                var ids = new HashSet<string>(StringComparer.Ordinal);
+                for (int i = imported.inventory.Count - 1; i >= 0; i--)
+                {
+                    ChestRecord chest = imported.inventory[i];
+                    ChestDefinition definition = chest != null && catalog?.chestCatalog != null
+                        ? catalog.chestCatalog.Find(chest.type) : null;
+                    if (chest == null || definition == null || chest.rewardClaimed ||
+                        chest.state == ChestState.Claimed || string.IsNullOrWhiteSpace(chest.chestId) ||
+                        !ids.Add(chest.chestId))
+                    {
+                        imported.inventory.RemoveAt(i);
+                        continue;
+                    }
+
+                    int minimumCoins = Mathf.Max(0, definition.minimumCoins);
+                    int maximumCoins = Mathf.Max(minimumCoins, definition.maximumCoins);
+                    int minimumGems = Mathf.Max(0, definition.minimumGems);
+                    int maximumGems = Mathf.Max(minimumGems, definition.maximumGems);
+                    chest.coinReward = Mathf.Clamp(chest.coinReward, minimumCoins, maximumCoins);
+                    chest.gemReward = Mathf.Clamp(chest.gemReward, minimumGems, maximumGems);
+                    chest.blueprintReward = Mathf.Clamp(chest.blueprintReward, 0,
+                        Mathf.Max(0, definition.blueprintReward));
+                    if (chest.blueprintReward == 0 ||
+                        PremiumBundleCatalog.Find(catalog, chest.blueprintBundleId) == null)
+                    {
+                        chest.blueprintReward = 0;
+                        chest.blueprintBundleId = string.Empty;
+                    }
+                }
+
+                imported.chestGameplayProgress = Mathf.Repeat(
+                    Mathf.Max(0f, imported.chestGameplayProgress), ChestCatalog.GameplayIntervalSeconds);
+                data = imported;
+                RefreshOpeningStatesWithoutSaving(DateTime.UtcNow);
+                SaveWithoutFlush();
+                return true;
+            }
+            catch (Exception exception)
+            {
+                Debug.LogWarning("[Cloud Save] Invalid chest data ignored: " +
+                                 exception.GetType().Name);
+                return false;
+            }
+        }
+
         public static string FormatRemaining(DateTime readyUtc, DateTime utcNow)
         {
             TimeSpan remaining = readyUtc.ToUniversalTime() - utcNow.ToUniversalTime();

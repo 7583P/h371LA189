@@ -13,6 +13,7 @@ namespace AnimeHillRacing.UI
         private Button restoreButton;
         private IAuthenticationProvider authentication;
         private IStorePurchaseProvider store;
+        private ICloudSaveProvider cloudSave;
         private bool restoring;
         private bool built;
 
@@ -62,22 +63,42 @@ namespace AnimeHillRacing.UI
                 authentication != null && authentication.State == ExternalAuthenticationState.Authenticating
                     ? "PLAY GAMES: CONNECTING..." : "PLAY GAMES: NOT CONNECTED";
             string billing = store != null && store.IsReady ? "BILLING READY" : "BILLING OFFLINE";
-            statusText.text = games + "  -  " + billing;
+            string cloud = CloudStatus();
+            statusText.text = games + cloud + "  -  " + billing;
             statusText.color = connected ? new Color(.36f, 1f, .62f) : new Color(.76f, .84f, .94f);
 
-            connectLabel.text = connected ? "CONNECTED" :
+            connectLabel.text = connected && cloudSave != null && cloudSave.IsEnabled
+                ? cloudSave.State == CloudSaveState.Synchronizing ? "SYNCING..." : "SYNC NOW" : connected ? "CONNECTED" :
                 authentication != null && authentication.State == ExternalAuthenticationState.Failed
                     ? "RETRY" : "CONNECT";
-            connectButton.interactable = authentication != null && authentication.IsAvailable &&
-                                         authentication.IsConfigured && !connected &&
-                                         authentication.State != ExternalAuthenticationState.Authenticating;
+            connectButton.interactable = connected
+                ? cloudSave != null && cloudSave.IsEnabled &&
+                  cloudSave.State != CloudSaveState.Synchronizing
+                : authentication != null && authentication.IsAvailable &&
+                  authentication.IsConfigured &&
+                  authentication.State != ExternalAuthenticationState.Authenticating;
             restoreButton.interactable = !restoring && store != null && store.IsReady;
         }
 
         private void Connect()
         {
-            authentication?.Authenticate(true);
+            if (authentication != null && authentication.IsAuthenticated)
+                cloudSave?.RequestSync();
+            else
+                authentication?.Authenticate(true);
             Refresh();
+        }
+
+        private string CloudStatus()
+        {
+            if (cloudSave == null || !cloudSave.IsEnabled) return string.Empty;
+            switch (cloudSave.State)
+            {
+                case CloudSaveState.Synchronizing: return "  -  CLOUD: SYNCING";
+                case CloudSaveState.Synchronized: return "  -  CLOUD: SYNCED";
+                case CloudSaveState.Failed: return "  -  CLOUD: FAILED";
+                default: return "  -  CLOUD: WAITING";
+            }
         }
 
         private void Restore()
@@ -101,20 +122,26 @@ namespace AnimeHillRacing.UI
         {
             IAuthenticationProvider nextAuthentication = ExternalServiceProviders.Authentication;
             IStorePurchaseProvider nextStore = ExternalServiceProviders.Store;
-            if (ReferenceEquals(authentication, nextAuthentication) && ReferenceEquals(store, nextStore)) return;
+            ICloudSaveProvider nextCloudSave = ExternalServiceProviders.CloudSave;
+            if (ReferenceEquals(authentication, nextAuthentication) && ReferenceEquals(store, nextStore) &&
+                ReferenceEquals(cloudSave, nextCloudSave)) return;
             Unsubscribe();
             authentication = nextAuthentication;
             store = nextStore;
+            cloudSave = nextCloudSave;
             if (authentication != null) authentication.StateChanged += Refresh;
             if (store != null) store.StateChanged += Refresh;
+            if (cloudSave != null) cloudSave.StateChanged += Refresh;
         }
 
         private void Unsubscribe()
         {
             if (authentication != null) authentication.StateChanged -= Refresh;
             if (store != null) store.StateChanged -= Refresh;
+            if (cloudSave != null) cloudSave.StateChanged -= Refresh;
             authentication = null;
             store = null;
+            cloudSave = null;
         }
 
         private void BuildOnce()

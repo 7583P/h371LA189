@@ -60,6 +60,8 @@ namespace AnimeHillRacing.Core
         private const string StarterPackOwnedKey = "AHR.Store.StarterPack.Owned.V1";
         private const string StarterPackRewardsGrantedKey =
             "AHR.Store.StarterPack.InitialRewardsGranted.V1";
+        private const string PendingPaidCurrencyCloudSyncKey =
+            "AHR.Cloud.PendingPaidCurrencySync.V1";
         private const string FormulaLegacyWheelId = "formula-wheel-rainbow";
         private const string FormulaLuxuryWheelId = "formula-wheel-luxury";
         private const string RallyLegacyWheelId = "rally-wheel-rainbow";
@@ -328,6 +330,7 @@ namespace AnimeHillRacing.Core
                 PlayerPrefs.SetInt(TotalCoinsKey, (int)System.Math.Min(int.MaxValue, coins));
                 PlayerPrefs.SetInt(TotalGemsKey, (int)System.Math.Min(int.MaxValue, gems));
                 PlayerPrefs.SetInt(StarterPackRewardsGrantedKey, 1);
+                PlayerPrefs.SetInt(PendingPaidCurrencyCloudSyncKey, 1);
             }
             UnlockStarterPackContentWithoutSave(vehicle, skin, legacyBundle);
             PlayerPrefs.SetInt(StarterPackOwnedKey, 1);
@@ -403,6 +406,80 @@ namespace AnimeHillRacing.Core
         {
             PlayerPrefs.Save();
             if (currencyChanged) CurrencyChanged?.Invoke();
+        }
+
+        internal static bool HasPendingPaidCurrencyCloudSync =>
+            PlayerPrefs.GetInt(PendingPaidCurrencyCloudSyncKey, 0) != 0;
+
+        internal static void ConfirmPaidCurrencyCloudSync()
+        {
+            PlayerPrefs.DeleteKey(PendingPaidCurrencyCloudSyncKey);
+            PlayerPrefs.Save();
+        }
+
+        internal static void SetCloudSelections(GameModeType mode, string mapId, string circuitId,
+            string vehicleId, string driverId, string accessoryId, string menuBackgroundId,
+            string garageBackgroundId)
+        {
+            PlayerPrefs.SetInt(SelectedModeKey, (int)mode);
+            PlayerPrefs.SetString(SelectedMapKey, mapId ?? string.Empty);
+            PlayerPrefs.SetString(SelectedCircuitKey, circuitId ?? string.Empty);
+            PlayerPrefs.SetString(SelectedVehicleKey, vehicleId ?? string.Empty);
+            PlayerPrefs.SetString(SelectedDriverKey, driverId ?? string.Empty);
+            PlayerPrefs.SetString(SelectedCharacterAccessoryKey, accessoryId ?? "default");
+            PlayerPrefs.SetString(SelectedMenuBackgroundKey,
+                string.IsNullOrEmpty(menuBackgroundId) ? DefaultMenuBackgroundId : menuBackgroundId);
+            PlayerPrefs.SetString(SelectedGarageBackgroundKey,
+                string.IsNullOrEmpty(garageBackgroundId) ? DefaultGarageBackgroundId : garageBackgroundId);
+        }
+
+        internal static void SetCloudVehicleCustomization(VehicleDefinition vehicle, string skinId,
+            string wheelId)
+        {
+            if (vehicle == null) return;
+            PlayerPrefs.SetString($"AHR.Customize.{vehicle.vehicleId}.Skin", skinId ?? string.Empty);
+            PlayerPrefs.SetString($"AHR.Customize.{vehicle.vehicleId}.Wheel",
+                NormalizeLegacyWheelId(vehicle.vehicleId, wheelId));
+        }
+
+        internal static void SetCloudCharacterAccessoryFlip(string accessoryId, bool flipX)
+        {
+            if (string.IsNullOrWhiteSpace(accessoryId)) return;
+            PlayerPrefs.SetInt(CharacterAccessoryFlipKey(accessoryId), flipX ? 1 : 0);
+        }
+
+        internal static void SetCloudTuneLevels(VehicleDefinition vehicle, VehicleUpgradeType type,
+            int purchasedLevel, int equippedLevel)
+        {
+            if (vehicle == null) return;
+            int maximum = vehicle.GetMaxTunes(type);
+            if (maximum <= 0) return;
+            int purchased = Mathf.Clamp(purchasedLevel, 1, maximum);
+            int equipped = Mathf.Clamp(equippedLevel, 1, purchased);
+            PlayerPrefs.SetInt(UpgradeLevelKey(vehicle.vehicleId, type), purchased);
+            PlayerPrefs.SetInt(EquippedLevelKey(vehicle.vehicleId, type), equipped);
+            PlayerPrefs.SetInt(OneBasedSchemaKey(vehicle.vehicleId, type), 1);
+        }
+
+        internal static void SetCloudBlueprintCount(string bundleId, int count, int maximum)
+        {
+            if (string.IsNullOrWhiteSpace(bundleId) || maximum <= 0) return;
+            PlayerPrefs.SetInt(BlueprintKey(NormalizeLegacyBundleId(bundleId)),
+                Mathf.Clamp(count, 0, maximum));
+        }
+
+        internal static void MergeCloudTimeTrial(string circuitId, float bestTime, float bestLap)
+        {
+            if (string.IsNullOrWhiteSpace(circuitId)) return;
+            MergeLowerPositive(TimeKey(circuitId), bestTime);
+            MergeLowerPositive(LapKey(circuitId), bestLap);
+        }
+
+        private static void MergeLowerPositive(string key, float candidate)
+        {
+            if (candidate <= 0f || float.IsNaN(candidate) || float.IsInfinity(candidate)) return;
+            float current = PlayerPrefs.GetFloat(key, 0f);
+            if (current <= 0f || candidate < current) PlayerPrefs.SetFloat(key, candidate);
         }
 
         public static bool IsVehicleUnlocked(string vehicleId, bool unlockedByDefault)

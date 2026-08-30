@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using AnimeHillRacing.Chests;
 using AnimeHillRacing.Terrain;
 using AnimeHillRacing.Vehicle;
 using UnityEngine;
@@ -18,13 +19,14 @@ namespace AnimeHillRacing.Core
     /// Conservative Saved Games extension for the existing PlayerPrefs save. Billing remains the
     /// authority for real-money entitlements; this service never grants those from cloud data.
     /// </summary>
-    public sealed class GooglePlayCloudSaveService
+    public sealed class GooglePlayCloudSaveService : ICloudSaveProvider
     {
-        private const int CurrentSaveVersion = 1;
-        private const float SyncIntervalSeconds = 300f;
+        private const int CurrentSaveVersion = 2;
+        private const float SyncIntervalSeconds = 60f;
         private const string RevisionKey = "AHR.Cloud.ProgressRevision.V1";
         private const string TimestampKey = "AHR.Cloud.ProgressTimestamp.V1";
         private const string SignatureKey = "AHR.Cloud.ProgressSignature.V1";
+        private const string InitializedKey = "AHR.Cloud.Initialized.V1";
 
         private readonly GameCatalog catalog;
         private readonly StarterPackConfiguration configuration;
@@ -32,6 +34,8 @@ namespace AnimeHillRacing.Core
         private bool wasAuthenticated;
         private bool requestInFlight;
         private float nextAttemptAt;
+        private CloudSaveState state;
+        private string lastError = string.Empty;
 
         public GooglePlayCloudSaveService(GameCatalog catalog,
             StarterPackConfiguration configuration, IAuthenticationProvider authentication)
@@ -43,14 +47,43 @@ namespace AnimeHillRacing.Core
 
         public bool IsEnabled => configuration != null && configuration.enableCloudSave &&
                                  catalog != null && IsValidFilename(configuration.cloudSaveFilename);
+        public CloudSaveState State => state;
+        public string LastError => lastError;
+        public event Action StateChanged;
+
+        public void RequestSync()
+        {
+            if (!IsEnabled)
+            {
+                SetState(CloudSaveState.Disabled, string.Empty);
+                return;
+            }
+            if (Application.platform != RuntimePlatform.Android || authentication == null ||
+                !authentication.IsAuthenticated)
+            {
+                SetState(CloudSaveState.WaitingForSignIn, string.Empty);
+                return;
+            }
+            if (!requestInFlight)
+            {
+                nextAttemptAt = Time.unscaledTime + SyncIntervalSeconds;
+                Synchronize();
+            }
+        }
 
         public void Tick(float unscaledTime)
         {
-            if (!IsEnabled || Application.platform != RuntimePlatform.Android) return;
+            if (!IsEnabled)
+            {
+                SetState(CloudSaveState.Disabled, string.Empty);
+                return;
+            }
+            if (Application.platform != RuntimePlatform.Android) return;
             bool authenticated = authentication != null && authentication.IsAuthenticated;
             if (!authenticated)
             {
                 wasAuthenticated = false;
+                SetState(CloudSaveState.WaitingForSignIn, string.Empty);
                 return;
             }
 
@@ -70,11 +103,13 @@ namespace AnimeHillRacing.Core
             ISavedGameClient client = PlayGamesPlatform.Instance.SavedGame;
             if (client == null)
             {
+                SetState(CloudSaveState.Failed, "SAVED GAMES CLIENT UNAVAILABLE");
                 Debug.LogWarning("[Cloud Save] Saved Games client is unavailable");
                 return;
             }
 
             requestInFlight = true;
+            SetState(CloudSaveState.Synchronizing, string.Empty);
             CloudSnapshot local = CaptureLocalSnapshot(true);
             client.OpenWithManualConflictResolution(configuration.cloudSaveFilename,
                 DataSource.ReadCacheOrNetwork, true, ResolveConflict,
@@ -112,7 +147,7 @@ namespace AnimeHillRacing.Core
                 return;
             }
 
-            CloudSnapshot merged = Merge(first, second, true);
+            CloudSnapshot merged = Merge(first, second, true, false);
             ISavedGameMetadata baseMetadata = IsNewer(first, second) ? original : unmerged;
             resolver.ResolveConflict(baseMetadata, BuildMetadataUpdate(), Serialize(merged));
         }
@@ -143,17 +178,30 @@ namespace AnimeHillRacing.Core
                     return;
                 }
 
-                CloudSnapshot merged = Merge(local, remote, false);
+                bool firstSuccessfulSync = PlayerPrefs.GetInt(InitializedKey, 0) == 0;
+                bool pendingPaidCurrency = SaveManager.HasPendingPaidCurrencyCloudSync;
+                bool preferRemoteOnFirstSync = firstSuccessfulSync && HasMeaningfulProgress(remote) &&
+                                               !pendingPaidCurrency;
+                CloudSnapshot merged = Merge(local, remote, false, preferRemoteOnFirstSync);
+                if (firstSuccessfulSync && pendingPaidCurrency)
+                {
+                    merged.coins = Mathf.Max(local.coins, remote.coins);
+                    merged.gems = Mathf.Max(local.gems, remote.gems);
+                    merged.revision = NextRevision(Mathf.Max(local.revision, remote.revision));
+                    merged.updatedUnixSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                }
                 string remoteSignature = ContentSignature(remote);
                 string mergedSignature = ContentSignature(merged);
                 bool mustCommit = !string.Equals(remoteSignature, mergedSignature,
-                    StringComparison.Ordinal);
+                    StringComparison.Ordinal) || remote.saveVersion != CurrentSaveVersion;
 
                 ApplyMergedSnapshot(merged);
                 StoreLocalMetadata(merged, mergedSignature);
                 if (!mustCommit)
                 {
                     requestInFlight = false;
+                    MarkInitialized();
+                    SetState(CloudSaveState.Synchronized, string.Empty);
                     Debug.Log("[Cloud Save] Local progress is synchronized");
                     return;
                 }
@@ -163,9 +211,16 @@ namespace AnimeHillRacing.Core
                     {
                         requestInFlight = false;
                         if (commitStatus == SavedGameRequestStatus.Success)
+                        {
+                            MarkInitialized();
+                            SetState(CloudSaveState.Synchronized, string.Empty);
                             Debug.Log("[Cloud Save] Progress synchronized");
+                        }
                         else
+                        {
+                            SetState(CloudSaveState.Failed, "CLOUD COMMIT FAILED");
                             Debug.LogWarning("[Cloud Save] Commit failed: " + commitStatus);
+                        }
                     });
             });
         }
@@ -188,6 +243,20 @@ namespace AnimeHillRacing.Core
             snapshot.revision = Mathf.Max(0, PlayerPrefs.GetInt(RevisionKey, 0));
             long.TryParse(PlayerPrefs.GetString(TimestampKey, "0"), NumberStyles.Integer,
                 CultureInfo.InvariantCulture, out snapshot.updatedUnixSeconds);
+            snapshot.selectedMode = (int)SaveManager.SelectedGameMode;
+            snapshot.selectedMapId = SaveManager.SelectedMapId;
+            snapshot.selectedCircuitId = SaveManager.SelectedCircuitId;
+            snapshot.selectedVehicleId = SaveManager.SelectedVehicleId;
+            snapshot.selectedMenuBackgroundId = SaveManager.SelectedMenuBackgroundId;
+            snapshot.selectedGarageBackgroundId = SaveManager.SelectedGarageBackgroundId;
+
+            DriverDefinition defaultDriver = catalog.drivers != null && catalog.drivers.Length > 0
+                ? catalog.drivers[0] : null;
+            snapshot.selectedDriverId = SaveManager.GetSelectedDriverId(
+                defaultDriver != null ? defaultDriver.driverId : string.Empty);
+            DriverDefinition selectedDriver = FindDriver(snapshot.selectedDriverId) ?? defaultDriver;
+            snapshot.selectedAccessoryId = SaveManager.GetSelectedCharacterAccessoryId(
+                selectedDriver != null ? selectedDriver.DefaultAccessoryId : "default");
 
             if (catalog.maps != null)
                 for (int i = 0; i < catalog.maps.Length; i++)
@@ -204,6 +273,15 @@ namespace AnimeHillRacing.Core
                         });
                     if (!map.unlockedByDefault && SaveManager.IsMapUnlocked(map.mapId, false))
                         snapshot.unlockedMaps.Add(map.mapId);
+                    float bestTime = SaveManager.GetBestTime(map.mapId);
+                    float bestLap = SaveManager.GetBestLap(map.mapId);
+                    if (bestTime > 0f || bestLap > 0f)
+                        snapshot.timeTrials.Add(new TimeTrialEntry
+                        {
+                            circuitId = map.mapId,
+                            bestTime = SafePositive(bestTime),
+                            bestLap = SafePositive(bestLap)
+                        });
                 }
 
             if (catalog.vehicles != null)
@@ -216,7 +294,48 @@ namespace AnimeHillRacing.Core
                         snapshot.unlockedVehicles.Add(vehicle.vehicleId);
                     CaptureOptions(snapshot, vehicle, vehicle.skins, "Skin");
                     CaptureOptions(snapshot, vehicle, vehicle.wheels, "Wheels");
+                    snapshot.equippedCustomizations.Add(new EquippedCustomizationEntry
+                    {
+                        vehicleId = vehicle.vehicleId,
+                        skinId = SaveManager.GetSelectedSkinId(vehicle),
+                        wheelId = SaveManager.GetSelectedWheelId(vehicle)
+                    });
+                    VehicleUpgradeState purchased = SaveManager.LoadPurchasedUpgrades(
+                        vehicle.vehicleId, vehicle);
+                    VehicleUpgradeState equipped = SaveManager.LoadUpgrades(vehicle.vehicleId, vehicle);
+                    for (int typeValue = (int)VehicleUpgradeType.Engine;
+                         typeValue <= (int)VehicleUpgradeType.Turbo; typeValue++)
+                    {
+                        var type = (VehicleUpgradeType)typeValue;
+                        if (vehicle.GetMaxTunes(type) <= 0) continue;
+                        snapshot.vehicleTunes.Add(new VehicleTuneEntry
+                        {
+                            vehicleId = vehicle.vehicleId,
+                            type = typeValue,
+                            purchasedLevel = purchased.GetTune(type),
+                            equippedLevel = equipped.GetTune(type)
+                        });
+                    }
                 }
+
+            CaptureDriverAccessories(snapshot);
+            List<BundleDefinition> bundles = PremiumBundleCatalog.GetAll(catalog);
+            for (int i = 0; i < bundles.Count; i++)
+            {
+                BundleDefinition bundle = bundles[i];
+                if (!IsSafeInternalBundle(bundle)) continue;
+                int count = SaveManager.GetBlueprintCount(bundle.BundleId);
+                if (count > 0)
+                    snapshot.blueprints.Add(new BlueprintEntry
+                    {
+                        bundleId = bundle.BundleId,
+                        count = Mathf.Min(count, bundle.BlueprintRequirement)
+                    });
+            }
+
+            snapshot.chestSaveJson = ChestSystem.ExportCloudJson();
+            snapshot.hasChestProgress = ChestSystem.GameplayProgress > 0f ||
+                                        ChestSystem.Inventory.Count > 0;
 
             Normalize(snapshot);
             string signature = ContentSignature(snapshot);
@@ -226,7 +345,8 @@ namespace AnimeHillRacing.Core
                 bool firstObservation = string.IsNullOrEmpty(previous);
                 bool changed = !firstObservation && !string.Equals(previous, signature,
                     StringComparison.Ordinal);
-                if (changed || firstObservation && HasMeaningfulProgress(snapshot))
+                bool initialized = PlayerPrefs.GetInt(InitializedKey, 0) != 0;
+                if (initialized && (changed || firstObservation && HasMeaningfulProgress(snapshot)))
                 {
                     snapshot.revision = NextRevision(snapshot.revision);
                     snapshot.updatedUnixSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
@@ -262,6 +382,49 @@ namespace AnimeHillRacing.Core
             }
         }
 
+        private void CaptureDriverAccessories(CloudSnapshot snapshot)
+        {
+            if (catalog.drivers == null) return;
+            for (int driverIndex = 0; driverIndex < catalog.drivers.Length; driverIndex++)
+            {
+                DriverDefinition driver = catalog.drivers[driverIndex];
+                if (driver?.accessories == null) continue;
+                for (int optionIndex = 0; optionIndex < driver.accessories.Length; optionIndex++)
+                {
+                    DriverDefinition.CharacterAccessoryOption option = driver.accessories[optionIndex];
+                    if (option == null || string.IsNullOrWhiteSpace(option.accessoryId)) continue;
+                    if (!option.unlockedByDefault && SaveManager.IsCustomizationUnlocked("global",
+                            "CharacterAccessory", option.accessoryId, false))
+                        snapshot.unlockedCustomizations.Add(new CustomizationEntry
+                        {
+                            scopeId = "global",
+                            category = "CharacterAccessory",
+                            optionId = option.accessoryId
+                        });
+                    if (option.supportsFlipVariant)
+                        snapshot.accessoryFlips.Add(new AccessoryFlipEntry
+                        {
+                            accessoryId = option.accessoryId,
+                            flipX = SaveManager.GetCharacterAccessoryFlipX(option.accessoryId,
+                                option.flipX)
+                        });
+                }
+            }
+        }
+
+        private bool IsSafeInternalBundle(BundleDefinition bundle)
+        {
+            if (bundle == null) return false;
+            if (bundle.Type == BundleType.Vehicle)
+                return FindVehicle(bundle.OptionId) != null && !IsStarterVehicle(bundle.OptionId);
+            return IsSafeInternalCustomization(new CustomizationEntry
+            {
+                scopeId = bundle.ScopeId,
+                category = bundle.Category,
+                optionId = bundle.OptionId
+            });
+        }
+
         private void ApplyMergedSnapshot(CloudSnapshot snapshot)
         {
             int previousCoins = SaveManager.TotalCoins;
@@ -291,7 +454,100 @@ namespace AnimeHillRacing.Core
                         entry.optionId, false);
             }
 
+            for (int i = 0; i < snapshot.timeTrials.Count; i++)
+            {
+                TimeTrialEntry entry = snapshot.timeTrials[i];
+                MapDefinition map = FindMap(-1, entry.circuitId);
+                if (map != null && map.supportedGameMode == GameModeType.TimeTrial3D)
+                    SaveManager.MergeCloudTimeTrial(entry.circuitId, entry.bestTime, entry.bestLap);
+            }
+            for (int i = 0; i < snapshot.vehicleTunes.Count; i++)
+            {
+                VehicleTuneEntry entry = snapshot.vehicleTunes[i];
+                VehicleDefinition vehicle = FindVehicle(entry.vehicleId);
+                if (vehicle == null || entry.type < (int)VehicleUpgradeType.Engine ||
+                    entry.type > (int)VehicleUpgradeType.Turbo) continue;
+                SaveManager.SetCloudTuneLevels(vehicle, (VehicleUpgradeType)entry.type,
+                    entry.purchasedLevel, entry.equippedLevel);
+            }
+            for (int i = 0; i < snapshot.blueprints.Count; i++)
+            {
+                BlueprintEntry entry = snapshot.blueprints[i];
+                BundleDefinition bundle = PremiumBundleCatalog.Find(catalog, entry.bundleId);
+                if (IsSafeInternalBundle(bundle))
+                    SaveManager.SetCloudBlueprintCount(bundle.BundleId, entry.count,
+                        bundle.BlueprintRequirement);
+            }
+
+            if (!ChestSystem.TryImportCloudJson(snapshot.chestSaveJson, catalog))
+                Debug.LogWarning("[Cloud Save] Chest section was ignored");
+            ApplyCloudSelections(snapshot);
+
             SaveManager.CommitCloudMerge(previousCoins != snapshot.coins || previousGems != snapshot.gems);
+        }
+
+        private void ApplyCloudSelections(CloudSnapshot snapshot)
+        {
+            GameModeType mode = snapshot.selectedMode >= (int)GameModeType.Adventure2_5D &&
+                                snapshot.selectedMode <= (int)GameModeType.TimeTrial3D
+                ? (GameModeType)snapshot.selectedMode : SaveManager.SelectedGameMode;
+            string mapId = SaveManager.SelectedMapId;
+            MapDefinition selectedMap = FindMap((int)mode, snapshot.selectedMapId);
+            if (selectedMap != null && SaveManager.IsMapUnlocked(selectedMap.mapId,
+                    selectedMap.unlockedByDefault)) mapId = selectedMap.mapId;
+
+            string circuitId = SaveManager.SelectedCircuitId;
+            MapDefinition selectedCircuit = FindMap((int)GameModeType.TimeTrial3D,
+                snapshot.selectedCircuitId);
+            if (selectedCircuit != null && SaveManager.IsMapUnlocked(selectedCircuit.mapId,
+                    selectedCircuit.unlockedByDefault)) circuitId = selectedCircuit.mapId;
+
+            string vehicleId = SaveManager.SelectedVehicleId;
+            VehicleDefinition selectedVehicle = FindVehicle(snapshot.selectedVehicleId);
+            if (selectedVehicle != null && SaveManager.IsVehicleUnlocked(selectedVehicle.vehicleId,
+                    selectedVehicle.unlockedByDefault)) vehicleId = selectedVehicle.vehicleId;
+
+            DriverDefinition driver = FindDriver(snapshot.selectedDriverId) ??
+                                      FindDriver(SaveManager.GetSelectedDriverId(string.Empty));
+            string driverId = driver != null ? driver.driverId : string.Empty;
+            string accessoryId = SaveManager.GetSelectedCharacterAccessoryId(
+                driver != null ? driver.DefaultAccessoryId : "default");
+            DriverDefinition.CharacterAccessoryOption accessory = FindAccessory(
+                snapshot.selectedAccessoryId);
+            if (accessory != null && SaveManager.IsCustomizationUnlocked("global",
+                    "CharacterAccessory", accessory.accessoryId, accessory.unlockedByDefault))
+                accessoryId = accessory.accessoryId;
+
+            string menuBackground = snapshot.selectedMenuBackgroundId == "neon"
+                ? "neon" : SaveManager.DefaultMenuBackgroundId;
+            string garageBackground = snapshot.selectedGarageBackgroundId == "neon" ||
+                                      snapshot.selectedGarageBackgroundId == "anime"
+                ? snapshot.selectedGarageBackgroundId : SaveManager.DefaultGarageBackgroundId;
+            SaveManager.SetCloudSelections(mode, mapId, circuitId, vehicleId, driverId, accessoryId,
+                menuBackground, garageBackground);
+
+            for (int i = 0; i < snapshot.equippedCustomizations.Count; i++)
+            {
+                EquippedCustomizationEntry entry = snapshot.equippedCustomizations[i];
+                VehicleDefinition vehicle = FindVehicle(entry.vehicleId);
+                if (vehicle == null) continue;
+                VehicleDefinition.CustomizationOption skin = vehicle.FindSkin(entry.skinId);
+                VehicleDefinition.CustomizationOption wheel = vehicle.FindWheel(entry.wheelId);
+                string skinId = skin != null && SaveManager.IsCustomizationUnlocked(vehicle.vehicleId,
+                    "Skin", skin.optionId, skin.unlockedByDefault)
+                    ? skin.optionId : SaveManager.GetSelectedSkinId(vehicle);
+                string wheelId = wheel != null && SaveManager.IsCustomizationUnlocked(vehicle.vehicleId,
+                    "Wheels", wheel.optionId, wheel.unlockedByDefault)
+                    ? wheel.optionId : SaveManager.GetSelectedWheelId(vehicle);
+                SaveManager.SetCloudVehicleCustomization(vehicle, skinId, wheelId);
+            }
+            for (int i = 0; i < snapshot.accessoryFlips.Count; i++)
+            {
+                AccessoryFlipEntry entry = snapshot.accessoryFlips[i];
+                DriverDefinition.CharacterAccessoryOption option = FindAccessory(entry.accessoryId);
+                if (option != null && option.supportsFlipVariant)
+                    SaveManager.SetCloudCharacterAccessoryFlip(option.accessoryId, entry.flipX);
+            }
         }
 
         private MapDefinition FindMap(int mode, string mapId)
@@ -315,8 +571,35 @@ namespace AnimeHillRacing.Core
             return null;
         }
 
+        private DriverDefinition FindDriver(string driverId)
+        {
+            if (catalog?.drivers == null || string.IsNullOrWhiteSpace(driverId)) return null;
+            for (int i = 0; i < catalog.drivers.Length; i++)
+                if (catalog.drivers[i] != null && catalog.drivers[i].driverId == driverId)
+                    return catalog.drivers[i];
+            return null;
+        }
+
+        private DriverDefinition.CharacterAccessoryOption FindAccessory(string accessoryId)
+        {
+            if (catalog?.drivers == null || string.IsNullOrWhiteSpace(accessoryId)) return null;
+            for (int driverIndex = 0; driverIndex < catalog.drivers.Length; driverIndex++)
+            {
+                DriverDefinition driver = catalog.drivers[driverIndex];
+                if (driver?.accessories == null) continue;
+                for (int optionIndex = 0; optionIndex < driver.accessories.Length; optionIndex++)
+                    if (driver.accessories[optionIndex] != null &&
+                        driver.accessories[optionIndex].accessoryId == accessoryId)
+                        return driver.accessories[optionIndex];
+            }
+            return null;
+        }
+
         private bool IsSafeInternalCustomization(CustomizationEntry entry)
         {
+            if (entry == null) return false;
+            if (entry.scopeId == "global" &&
+                entry.category == "CharacterAccessory") return FindAccessory(entry.optionId) != null;
             VehicleDefinition vehicle = FindVehicle(entry.scopeId);
             if (vehicle == null || IsStarterCustomization(entry.scopeId, entry.category,
                     entry.optionId)) return false;
@@ -339,19 +622,22 @@ namespace AnimeHillRacing.Core
             configuration.exclusiveSkinId == optionId;
 
         private static CloudSnapshot Merge(CloudSnapshot first, CloudSnapshot second,
-            bool forceNewRevision)
+            bool forceNewRevision, bool preferSecondMutable)
         {
             Normalize(first);
             Normalize(second);
-            CloudSnapshot newer = IsNewer(first, second) ? first : second;
+            CloudSnapshot newer = preferSecondMutable ? second : IsNewer(first, second) ? first : second;
             var result = NewSnapshot();
-            result.coins = newer.coins;
-            result.gems = newer.gems;
+            CopyMutableState(newer, result);
             result.bestDistances = MergeDistances(first.bestDistances, second.bestDistances);
             result.unlockedMaps = MergeStrings(first.unlockedMaps, second.unlockedMaps);
             result.unlockedVehicles = MergeStrings(first.unlockedVehicles, second.unlockedVehicles);
             result.unlockedCustomizations = MergeCustomizations(first.unlockedCustomizations,
                 second.unlockedCustomizations);
+            result.timeTrials = MergeTimeTrials(first.timeTrials, second.timeTrials);
+            result.vehicleTunes = MergeVehicleTunes(first.vehicleTunes, second.vehicleTunes,
+                newer.vehicleTunes);
+            result.blueprints = MergeBlueprints(first.blueprints, second.blueprints);
 
             bool contentChanged = ContentSignature(result) != ContentSignature(newer);
             result.revision = Mathf.Max(first.revision, second.revision);
@@ -361,6 +647,180 @@ namespace AnimeHillRacing.Core
                 result.revision = NextRevision(result.revision);
                 result.updatedUnixSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             }
+            return result;
+        }
+
+        private static void CopyMutableState(CloudSnapshot source, CloudSnapshot target)
+        {
+            target.coins = source.coins;
+            target.gems = source.gems;
+            target.selectedMode = source.selectedMode;
+            target.selectedMapId = source.selectedMapId;
+            target.selectedCircuitId = source.selectedCircuitId;
+            target.selectedVehicleId = source.selectedVehicleId;
+            target.selectedDriverId = source.selectedDriverId;
+            target.selectedAccessoryId = source.selectedAccessoryId;
+            target.selectedMenuBackgroundId = source.selectedMenuBackgroundId;
+            target.selectedGarageBackgroundId = source.selectedGarageBackgroundId;
+            target.equippedCustomizations = CloneEquippedCustomizations(
+                source.equippedCustomizations);
+            target.accessoryFlips = CloneAccessoryFlips(source.accessoryFlips);
+            target.chestSaveJson = source.chestSaveJson;
+            target.hasChestProgress = source.hasChestProgress;
+        }
+
+        private static List<TimeTrialEntry> MergeTimeTrials(List<TimeTrialEntry> first,
+            List<TimeTrialEntry> second)
+        {
+            var values = new Dictionary<string, TimeTrialEntry>(StringComparer.Ordinal);
+            AddTimeTrials(values, first);
+            AddTimeTrials(values, second);
+            var result = new List<TimeTrialEntry>(values.Values);
+            result.Sort((left, right) => string.CompareOrdinal(left.circuitId, right.circuitId));
+            return result;
+        }
+
+        private static void AddTimeTrials(Dictionary<string, TimeTrialEntry> target,
+            List<TimeTrialEntry> source)
+        {
+            if (source == null) return;
+            for (int i = 0; i < source.Count; i++)
+            {
+                TimeTrialEntry entry = source[i];
+                if (entry == null || string.IsNullOrWhiteSpace(entry.circuitId)) continue;
+                float bestTime = SafePositive(entry.bestTime);
+                float bestLap = SafePositive(entry.bestLap);
+                if (!target.TryGetValue(entry.circuitId, out TimeTrialEntry current))
+                {
+                    target[entry.circuitId] = new TimeTrialEntry
+                    {
+                        circuitId = entry.circuitId,
+                        bestTime = bestTime,
+                        bestLap = bestLap
+                    };
+                    continue;
+                }
+                current.bestTime = LowerPositive(current.bestTime, bestTime);
+                current.bestLap = LowerPositive(current.bestLap, bestLap);
+            }
+        }
+
+        private static List<VehicleTuneEntry> MergeVehicleTunes(List<VehicleTuneEntry> first,
+            List<VehicleTuneEntry> second, List<VehicleTuneEntry> preferred)
+        {
+            var purchased = new Dictionary<string, VehicleTuneEntry>(StringComparer.Ordinal);
+            AddVehicleTunes(purchased, first);
+            AddVehicleTunes(purchased, second);
+            var preferredByKey = new Dictionary<string, VehicleTuneEntry>(StringComparer.Ordinal);
+            AddVehicleTunes(preferredByKey, preferred);
+            foreach (KeyValuePair<string, VehicleTuneEntry> pair in purchased)
+            {
+                VehicleTuneEntry value = pair.Value;
+                if (preferredByKey.TryGetValue(pair.Key, out VehicleTuneEntry chosen))
+                    value.equippedLevel = Mathf.Clamp(chosen.equippedLevel, 1,
+                        value.purchasedLevel);
+            }
+            var result = new List<VehicleTuneEntry>(purchased.Values);
+            result.Sort((left, right) => string.CompareOrdinal(TuneKey(left), TuneKey(right)));
+            return result;
+        }
+
+        private static void AddVehicleTunes(Dictionary<string, VehicleTuneEntry> target,
+            List<VehicleTuneEntry> source)
+        {
+            if (source == null) return;
+            for (int i = 0; i < source.Count; i++)
+            {
+                VehicleTuneEntry entry = source[i];
+                if (entry == null || string.IsNullOrWhiteSpace(entry.vehicleId) || entry.type < 0 ||
+                    entry.type > (int)VehicleUpgradeType.Turbo) continue;
+                string key = TuneKey(entry);
+                int level = Mathf.Max(1, entry.purchasedLevel);
+                if (!target.TryGetValue(key, out VehicleTuneEntry current))
+                    target[key] = new VehicleTuneEntry
+                    {
+                        vehicleId = entry.vehicleId,
+                        type = entry.type,
+                        purchasedLevel = level,
+                        equippedLevel = Mathf.Clamp(entry.equippedLevel, 1, level)
+                    };
+                else if (level > current.purchasedLevel)
+                {
+                    current.purchasedLevel = level;
+                    current.equippedLevel = Mathf.Clamp(current.equippedLevel, 1, level);
+                }
+            }
+        }
+
+        private static string TuneKey(VehicleTuneEntry entry) => entry.vehicleId + "|" + entry.type;
+
+        private static List<BlueprintEntry> MergeBlueprints(List<BlueprintEntry> first,
+            List<BlueprintEntry> second)
+        {
+            var values = new Dictionary<string, BlueprintEntry>(StringComparer.Ordinal);
+            AddBlueprints(values, first);
+            AddBlueprints(values, second);
+            var result = new List<BlueprintEntry>(values.Values);
+            result.Sort((left, right) => string.CompareOrdinal(left.bundleId, right.bundleId));
+            return result;
+        }
+
+        private static void AddBlueprints(Dictionary<string, BlueprintEntry> target,
+            List<BlueprintEntry> source)
+        {
+            if (source == null) return;
+            for (int i = 0; i < source.Count; i++)
+            {
+                BlueprintEntry entry = source[i];
+                if (entry == null || string.IsNullOrWhiteSpace(entry.bundleId) || entry.count <= 0)
+                    continue;
+                if (!target.TryGetValue(entry.bundleId, out BlueprintEntry current) ||
+                    entry.count > current.count)
+                    target[entry.bundleId] = new BlueprintEntry
+                    {
+                        bundleId = entry.bundleId,
+                        count = entry.count
+                    };
+            }
+        }
+
+        private static List<EquippedCustomizationEntry> CloneEquippedCustomizations(
+            List<EquippedCustomizationEntry> source)
+        {
+            var values = new Dictionary<string, EquippedCustomizationEntry>(StringComparer.Ordinal);
+            if (source != null)
+                for (int i = 0; i < source.Count; i++)
+                {
+                    EquippedCustomizationEntry entry = source[i];
+                    if (entry == null || string.IsNullOrWhiteSpace(entry.vehicleId)) continue;
+                    values[entry.vehicleId] = new EquippedCustomizationEntry
+                    {
+                        vehicleId = entry.vehicleId,
+                        skinId = entry.skinId ?? string.Empty,
+                        wheelId = entry.wheelId ?? string.Empty
+                    };
+                }
+            var result = new List<EquippedCustomizationEntry>(values.Values);
+            result.Sort((left, right) => string.CompareOrdinal(left.vehicleId, right.vehicleId));
+            return result;
+        }
+
+        private static List<AccessoryFlipEntry> CloneAccessoryFlips(List<AccessoryFlipEntry> source)
+        {
+            var values = new Dictionary<string, AccessoryFlipEntry>(StringComparer.Ordinal);
+            if (source != null)
+                for (int i = 0; i < source.Count; i++)
+                {
+                    AccessoryFlipEntry entry = source[i];
+                    if (entry == null || string.IsNullOrWhiteSpace(entry.accessoryId)) continue;
+                    values[entry.accessoryId] = new AccessoryFlipEntry
+                    {
+                        accessoryId = entry.accessoryId,
+                        flipX = entry.flipX
+                    };
+                }
+            var result = new List<AccessoryFlipEntry>(values.Values);
+            result.Sort((left, right) => string.CompareOrdinal(left.accessoryId, right.accessoryId));
             return result;
         }
 
@@ -460,27 +920,65 @@ namespace AnimeHillRacing.Core
 
         private static void Normalize(CloudSnapshot snapshot)
         {
+            if (snapshot == null) return;
             snapshot.coins = Mathf.Max(0, snapshot.coins);
             snapshot.gems = Mathf.Max(0, snapshot.gems);
             snapshot.revision = Mathf.Max(0, snapshot.revision);
             snapshot.updatedUnixSeconds = Math.Max(0L, snapshot.updatedUnixSeconds);
+            snapshot.selectedMapId = snapshot.selectedMapId ?? string.Empty;
+            snapshot.selectedCircuitId = snapshot.selectedCircuitId ?? string.Empty;
+            snapshot.selectedVehicleId = snapshot.selectedVehicleId ?? string.Empty;
+            snapshot.selectedDriverId = snapshot.selectedDriverId ?? string.Empty;
+            snapshot.selectedAccessoryId = snapshot.selectedAccessoryId ?? string.Empty;
+            snapshot.selectedMenuBackgroundId = snapshot.selectedMenuBackgroundId ?? string.Empty;
+            snapshot.selectedGarageBackgroundId = snapshot.selectedGarageBackgroundId ?? string.Empty;
+            snapshot.chestSaveJson = snapshot.chestSaveJson ?? string.Empty;
             snapshot.bestDistances = MergeDistances(snapshot.bestDistances, null);
             snapshot.unlockedMaps = MergeStrings(snapshot.unlockedMaps, null);
             snapshot.unlockedVehicles = MergeStrings(snapshot.unlockedVehicles, null);
             snapshot.unlockedCustomizations = MergeCustomizations(
                 snapshot.unlockedCustomizations, null);
+            snapshot.timeTrials = MergeTimeTrials(snapshot.timeTrials, null);
+            snapshot.vehicleTunes = MergeVehicleTunes(snapshot.vehicleTunes, null,
+                snapshot.vehicleTunes);
+            snapshot.blueprints = MergeBlueprints(snapshot.blueprints, null);
+            snapshot.equippedCustomizations = CloneEquippedCustomizations(
+                snapshot.equippedCustomizations);
+            snapshot.accessoryFlips = CloneAccessoryFlips(snapshot.accessoryFlips);
         }
 
         private static bool HasMeaningfulProgress(CloudSnapshot snapshot) =>
             snapshot.coins > 0 || snapshot.gems > 0 || snapshot.bestDistances.Count > 0 ||
             snapshot.unlockedMaps.Count > 0 || snapshot.unlockedVehicles.Count > 0 ||
-            snapshot.unlockedCustomizations.Count > 0;
+            snapshot.unlockedCustomizations.Count > 0 || snapshot.timeTrials.Count > 0 ||
+            snapshot.blueprints.Count > 0 || snapshot.hasChestProgress ||
+            HasPurchasedTune(snapshot.vehicleTunes) || HasFlippedAccessory(snapshot.accessoryFlips);
+
+        private static bool HasPurchasedTune(List<VehicleTuneEntry> tunes)
+        {
+            for (int i = 0; i < tunes.Count; i++)
+                if (tunes[i].purchasedLevel > 1) return true;
+            return false;
+        }
+
+        private static bool HasFlippedAccessory(List<AccessoryFlipEntry> flips)
+        {
+            for (int i = 0; i < flips.Count; i++)
+                if (flips[i].flipX) return true;
+            return false;
+        }
 
         private static string ContentSignature(CloudSnapshot snapshot)
         {
             Normalize(snapshot);
             var content = new StringBuilder(256);
             content.Append(snapshot.coins).Append('|').Append(snapshot.gems);
+            content.Append("|S:").Append(snapshot.selectedMode).Append(':')
+                .Append(snapshot.selectedMapId).Append(':').Append(snapshot.selectedCircuitId)
+                .Append(':').Append(snapshot.selectedVehicleId).Append(':')
+                .Append(snapshot.selectedDriverId).Append(':').Append(snapshot.selectedAccessoryId)
+                .Append(':').Append(snapshot.selectedMenuBackgroundId).Append(':')
+                .Append(snapshot.selectedGarageBackgroundId);
             for (int i = 0; i < snapshot.bestDistances.Count; i++)
             {
                 DistanceEntry entry = snapshot.bestDistances[i];
@@ -493,6 +991,33 @@ namespace AnimeHillRacing.Core
                 content.Append("|V:").Append(snapshot.unlockedVehicles[i]);
             for (int i = 0; i < snapshot.unlockedCustomizations.Count; i++)
                 content.Append("|C:").Append(CustomizationKey(snapshot.unlockedCustomizations[i]));
+            for (int i = 0; i < snapshot.timeTrials.Count; i++)
+            {
+                TimeTrialEntry entry = snapshot.timeTrials[i];
+                content.Append("|T:").Append(entry.circuitId).Append(':')
+                    .Append(entry.bestTime.ToString("R", CultureInfo.InvariantCulture)).Append(':')
+                    .Append(entry.bestLap.ToString("R", CultureInfo.InvariantCulture));
+            }
+            for (int i = 0; i < snapshot.vehicleTunes.Count; i++)
+            {
+                VehicleTuneEntry entry = snapshot.vehicleTunes[i];
+                content.Append("|U:").Append(TuneKey(entry)).Append(':')
+                    .Append(entry.purchasedLevel).Append(':').Append(entry.equippedLevel);
+            }
+            for (int i = 0; i < snapshot.blueprints.Count; i++)
+                content.Append("|B:").Append(snapshot.blueprints[i].bundleId).Append(':')
+                    .Append(snapshot.blueprints[i].count);
+            for (int i = 0; i < snapshot.equippedCustomizations.Count; i++)
+            {
+                EquippedCustomizationEntry entry = snapshot.equippedCustomizations[i];
+                content.Append("|E:").Append(entry.vehicleId).Append(':').Append(entry.skinId)
+                    .Append(':').Append(entry.wheelId);
+            }
+            for (int i = 0; i < snapshot.accessoryFlips.Count; i++)
+                content.Append("|F:").Append(snapshot.accessoryFlips[i].accessoryId).Append(':')
+                    .Append(snapshot.accessoryFlips[i].flipX ? '1' : '0');
+            content.Append("|H:").Append(snapshot.hasChestProgress ? '1' : '0').Append(':')
+                .Append(snapshot.chestSaveJson);
 
             ulong hash = 14695981039346656037UL;
             for (int i = 0; i < content.Length; i++)
@@ -539,7 +1064,12 @@ namespace AnimeHillRacing.Core
             bestDistances = new List<DistanceEntry>(),
             unlockedMaps = new List<string>(),
             unlockedVehicles = new List<string>(),
-            unlockedCustomizations = new List<CustomizationEntry>()
+            unlockedCustomizations = new List<CustomizationEntry>(),
+            timeTrials = new List<TimeTrialEntry>(),
+            vehicleTunes = new List<VehicleTuneEntry>(),
+            blueprints = new List<BlueprintEntry>(),
+            equippedCustomizations = new List<EquippedCustomizationEntry>(),
+            accessoryFlips = new List<AccessoryFlipEntry>()
         };
 
         private static int NextRevision(int current) => current >= int.MaxValue ? int.MaxValue : current + 1;
@@ -550,6 +1080,18 @@ namespace AnimeHillRacing.Core
             const double safeLongMaximum = 9_000_000_000_000_000_000d;
             return (long)Math.Round(Math.Min((double)distance, safeLongMaximum),
                 MidpointRounding.AwayFromZero);
+        }
+
+        private static float SafePositive(float value) =>
+            value > 0f && !float.IsNaN(value) && !float.IsInfinity(value) ? value : 0f;
+
+        private static float LowerPositive(float first, float second)
+        {
+            first = SafePositive(first);
+            second = SafePositive(second);
+            if (first <= 0f) return second;
+            if (second <= 0f) return first;
+            return Mathf.Min(first, second);
         }
 
         private static bool IsValidFilename(string filename)
@@ -577,7 +1119,24 @@ namespace AnimeHillRacing.Core
         private void FinishWithWarning(string reason)
         {
             requestInFlight = false;
+            SetState(CloudSaveState.Failed, reason.ToUpperInvariant());
             Debug.LogWarning("[Cloud Save] " + reason);
+        }
+
+        private static void MarkInitialized()
+        {
+            PlayerPrefs.SetInt(InitializedKey, 1);
+            PlayerPrefs.Save();
+            SaveManager.ConfirmPaidCurrencyCloudSync();
+        }
+
+        private void SetState(CloudSaveState next, string error)
+        {
+            string normalizedError = error ?? string.Empty;
+            bool changed = state != next || lastError != normalizedError;
+            state = next;
+            lastError = normalizedError;
+            if (changed) StateChanged?.Invoke();
         }
 
         private enum ParseStatus
@@ -596,10 +1155,25 @@ namespace AnimeHillRacing.Core
             public long updatedUnixSeconds;
             public int coins;
             public int gems;
+            public int selectedMode;
+            public string selectedMapId;
+            public string selectedCircuitId;
+            public string selectedVehicleId;
+            public string selectedDriverId;
+            public string selectedAccessoryId;
+            public string selectedMenuBackgroundId;
+            public string selectedGarageBackgroundId;
+            public string chestSaveJson;
+            public bool hasChestProgress;
             public List<DistanceEntry> bestDistances;
             public List<string> unlockedMaps;
             public List<string> unlockedVehicles;
             public List<CustomizationEntry> unlockedCustomizations;
+            public List<TimeTrialEntry> timeTrials;
+            public List<VehicleTuneEntry> vehicleTunes;
+            public List<BlueprintEntry> blueprints;
+            public List<EquippedCustomizationEntry> equippedCustomizations;
+            public List<AccessoryFlipEntry> accessoryFlips;
         }
 
         [Serializable]
@@ -616,6 +1190,45 @@ namespace AnimeHillRacing.Core
             public string scopeId;
             public string category;
             public string optionId;
+        }
+
+        [Serializable]
+        private sealed class TimeTrialEntry
+        {
+            public string circuitId;
+            public float bestTime;
+            public float bestLap;
+        }
+
+        [Serializable]
+        private sealed class VehicleTuneEntry
+        {
+            public string vehicleId;
+            public int type;
+            public int purchasedLevel;
+            public int equippedLevel;
+        }
+
+        [Serializable]
+        private sealed class BlueprintEntry
+        {
+            public string bundleId;
+            public int count;
+        }
+
+        [Serializable]
+        private sealed class EquippedCustomizationEntry
+        {
+            public string vehicleId;
+            public string skinId;
+            public string wheelId;
+        }
+
+        [Serializable]
+        private sealed class AccessoryFlipEntry
+        {
+            public string accessoryId;
+            public bool flipX;
         }
     }
 }

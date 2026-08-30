@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gameCatalog: {fileID: 11400000, guid: 4081c791343ee404cb6383de2d69f753, type: 2}
   autoAuthenticate: 1
-  enableCloudSave: 0
+  enableCloudSave: 1
   cloudSaveFilename: hill-adventurer-save-v1
   googlePlayProductId: starter_pack
   exclusiveVehicleId: formula-01

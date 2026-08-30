@@ -26,6 +26,7 @@ namespace AnimeHillRacing.Core
             DontDestroyOnLoad(root);
             instance = root.AddComponent<ExternalServicesBootstrap>();
             instance.cloudSave = new GooglePlayCloudSaveService(catalog, configuration, googlePlay);
+            ExternalServiceProviders.CloudSave = instance.cloudSave;
 
             if (configuration == null || configuration.autoAuthenticate)
                 googlePlay.Authenticate(false);
@@ -36,6 +37,16 @@ namespace AnimeHillRacing.Core
         {
             LeaderboardSyncService.Tick(Time.unscaledTime);
             cloudSave?.Tick(Time.unscaledTime);
+        }
+
+        private void OnApplicationPause(bool paused)
+        {
+            if (paused) cloudSave?.RequestSync();
+        }
+
+        private void OnApplicationFocus(bool focused)
+        {
+            if (focused) cloudSave?.RequestSync();
         }
 
         private void OnDestroy()

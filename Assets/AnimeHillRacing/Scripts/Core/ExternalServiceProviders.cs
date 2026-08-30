@@ -18,6 +18,15 @@ namespace AnimeHillRacing.Core
         Failed
     }
 
+    public enum CloudSaveState
+    {
+        Disabled,
+        WaitingForSignIn,
+        Synchronizing,
+        Synchronized,
+        Failed
+    }
+
     public enum StorePurchaseStatus
     {
         Succeeded,
@@ -56,6 +65,15 @@ namespace AnimeHillRacing.Core
         bool IsProductAvailable(string productId);
         void Purchase(string productId, Action<StorePurchaseResult> completed);
         void RestorePurchases(Action<StoreRestoreResult> completed);
+    }
+
+    public interface ICloudSaveProvider
+    {
+        bool IsEnabled { get; }
+        CloudSaveState State { get; }
+        string LastError { get; }
+        event Action StateChanged;
+        void RequestSync();
     }
 
     public readonly struct StorePurchaseResult
@@ -145,13 +163,25 @@ namespace AnimeHillRacing.Core
                     "GOOGLE PLAY BILLING NOT CONFIGURED"));
         }
 
+        private sealed class UnconfiguredCloudSave : ICloudSaveProvider
+        {
+            public bool IsEnabled => false;
+            public CloudSaveState State => CloudSaveState.Disabled;
+            public string LastError => string.Empty;
+            public event Action StateChanged { add { } remove { } }
+            public void RequestSync() { }
+        }
+
         private static readonly UnconfiguredGooglePlay UnconfiguredGooglePlayProvider =
             new UnconfiguredGooglePlay();
         private static readonly IStorePurchaseProvider UnconfiguredStoreProvider =
             new UnconfiguredPurchases();
+        private static readonly ICloudSaveProvider UnconfiguredCloudSaveProvider =
+            new UnconfiguredCloudSave();
         private static IAuthenticationProvider authentication = UnconfiguredGooglePlayProvider;
         private static ILeaderboardProvider leaderboards = UnconfiguredGooglePlayProvider;
         private static IStorePurchaseProvider store = UnconfiguredStoreProvider;
+        private static ICloudSaveProvider cloudSave = UnconfiguredCloudSaveProvider;
 
         public static IAuthenticationProvider Authentication
         {
@@ -171,12 +201,19 @@ namespace AnimeHillRacing.Core
             set => store = value ?? UnconfiguredStoreProvider;
         }
 
+        public static ICloudSaveProvider CloudSave
+        {
+            get => cloudSave;
+            set => cloudSave = value ?? UnconfiguredCloudSaveProvider;
+        }
+
         [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetProviders()
         {
             authentication = UnconfiguredGooglePlayProvider;
             leaderboards = UnconfiguredGooglePlayProvider;
             store = UnconfiguredStoreProvider;
+            cloudSave = UnconfiguredCloudSaveProvider;
         }
     }
 }

@@ -71,6 +71,7 @@ namespace AnimeHillRacing.Core
         private int finalizedRunCoins;
         private int finalizedDisplayCoins;
         private int finalizedSavedTotalCoins;
+        private bool debugTeleportRun;
 
         public const float LogicalDistanceScale = 1f;
 
@@ -106,9 +107,15 @@ namespace AnimeHillRacing.Core
         public float GameOverRemaining => (State == RunState.CrashPending || State == RunState.OutOfFuelPending)
             ? Mathf.Max(0f, gameOverDeadline - Time.time) : 0f;
         public float OutOfFuelRemaining => GameOverRemaining;
+        public bool IsDebugTeleportRun => debugTeleportRun;
 
         public void TeleportTo(float targetWorldX)
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            // A debug teleport permanently invalidates this run for progression. Set this before
+            // moving anything so Update/FinalizeResultSnapshot can never observe the jumped
+            // distance as a legitimate record, reward milestone, or leaderboard candidate.
+            debugTeleportRun = true;
             TerrainManager terrain = FindFirstObjectByType<TerrainManager>();
             if (terrain != null)
                 terrain.TeleportTo(targetWorldX);
@@ -147,6 +154,7 @@ namespace AnimeHillRacing.Core
                 hud.ResetDisplayedDistance();
                 hud.RefreshImmediate(this);
             }
+#endif
         }
 
         public static GameManager Instance { get; private set; }
@@ -257,7 +265,7 @@ namespace AnimeHillRacing.Core
                     RequestGameOver(RunEndReason.Crashed);
                 }
             }
-            while (distanceBonuses.TryClaimThrough(Distance, out int distanceAward,
+            while (!debugTeleportRun && distanceBonuses.TryClaimThrough(Distance, out int distanceAward,
                        out float distanceMilestone))
             {
                 SaveManager.AddCoins(distanceAward, false);
@@ -445,10 +453,21 @@ namespace AnimeHillRacing.Core
             finalizedDistance = Mathf.RoundToInt(LiveDistance);
             finalizedRunCoins = runCoins;
             int displayCoinsBeforeSave = SaturatingCurrencyAdd(SaveManager.TotalCoins, finalizedRunCoins);
-            BestDistance = SaveManager.SaveRun(finalizedDistance, finalizedRunCoins, Mode, MapId);
-            finalizedSavedTotalCoins = SaveManager.TotalCoins;
-            finalizedDisplayCoins = SaveManager.TemporaryUnlimitedCurrencyEnabled
-                ? displayCoinsBeforeSave : finalizedSavedTotalCoins;
+            if (debugTeleportRun)
+            {
+                // Debug traversal is observational only: persist neither its distance nor anything
+                // collected after the jump. In particular this avoids SaveRun -> RecordLocalBest ->
+                // Google Play ReportScore.
+                finalizedSavedTotalCoins = SaveManager.TotalCoins;
+                finalizedDisplayCoins = finalizedSavedTotalCoins;
+            }
+            else
+            {
+                BestDistance = SaveManager.SaveRun(finalizedDistance, finalizedRunCoins, Mode, MapId);
+                finalizedSavedTotalCoins = SaveManager.TotalCoins;
+                finalizedDisplayCoins = SaveManager.TemporaryUnlimitedCurrencyEnabled
+                    ? displayCoinsBeforeSave : finalizedSavedTotalCoins;
+            }
             resultSnapshotFinalized = true;
         }
 

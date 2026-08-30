@@ -278,12 +278,53 @@ namespace AnimeHillRacing.Terrain
     [System.Serializable]
     public sealed class CountrysideSpecialFeatureSettings
     {
+        [Header("Progressive Mini Hills")]
+        [Min(1000f), Tooltip("Distance at which Countryside mini hills reach their maximum relief.")]
+        public float peakDifficultyDistance = 10000f;
+        [Min(8f)] public float miniHillMinimumWavelength = 30f;
+        [Min(12f)] public float miniHillMaximumWavelength = 96f;
+        [Min(.05f), Tooltip("Visible rolling relief near the starting area, after the short spawn blend.")]
+        public float initialMiniHillHeight = .45f;
+        [Min(.1f), Tooltip("Maximum extra rolling relief at peak terrain difficulty.")]
+        public float peakMiniHillHeight = 3.4f;
+
+        [Header("Micro Terrain Variety")]
+        [Min(30f), Tooltip("Length of each deterministic micro-terrain section.")]
+        public float microSectionLength = 66f;
+        [Min(.05f), Tooltip("Height of small bumps, rises and dips near the start.")]
+        public float initialMicroHeight = .28f;
+        [Min(.1f), Tooltip("Height of small bumps, rises and dips at peak difficulty.")]
+        public float peakMicroHeight = 2.4f;
+        [Range(0f, 1f), Tooltip("Share of micro sections that stay mostly straight with isolated bumps.")]
+        public float miniStraightChance = .36f;
+        [Range(2, 6), Tooltip("Number of isolated bumps or small rises in a mini-straight section.")]
+        public int miniStraightBumpCount = 3;
+        [Range(.1f, .6f), Tooltip("Share of large challenge cells replaced by a true straight or straight descent near the start.")]
+        public float initialChallengeStraightChance = .34f;
+        [Range(.1f, .6f), Tooltip("Share of large challenge cells replaced by a true straight or straight descent at peak difficulty.")]
+        public float peakChallengeStraightChance = .26f;
+        [Range(0f, 1f), Tooltip("Chance that a challenge straight is a gentle linear descent instead of horizontal.")]
+        public float straightDescentChance = .42f;
+
+        [Header("Progressive Mountain Challenge")]
+        [Min(0f)] public float challengeStartDistance = 350f;
+        [Min(60f)] public float challengeMinimumCellLength = 135f;
+        [Min(80f)] public float challengeMaximumCellLength = 240f;
+        [Min(.1f)] public float initialChallengeHeight = 1.5f;
+        [Min(1f)] public float peakChallengeHeight = 68f;
+        [Range(5f, 60f)] public float initialChallengeSlope = 12f;
+        [Range(15f, 62f)] public float peakChallengeSlope = 58f;
+        [Range(0f, .5f)] public float initialDeepValleyChance = .12f;
+        [Range(.05f, .75f)] public float peakDeepValleyChance = .46f;
+        [Range(.5f, 1.5f)] public float valleyDepthMultiplier = 1.08f;
+
+        [Header("Authored Interruption Events")]
         [Min(250f)] public float eventInterval = 500f;
         [Min(0f)] public float firstEventDistance = 260f;
         [Range(0f, 1f)] public float eventChance = .88f;
         [Range(0f, 1f)] public float longFlatChance = .58f;
         [Min(5f)] public float transitionLength = 45f;
-        [Tooltip("The deterministic flat core chooses exactly one of these two lengths.")]
+        [Tooltip("Minimum and maximum length of the deterministic straight core.")]
         public Vector2 longFlatLengths = new Vector2(150f, 200f);
         [Min(10f)] public float slashFlatLead = 18f;
         [Min(30f)] public float slashLength = 96f;
@@ -517,6 +558,36 @@ namespace AnimeHillRacing.Terrain
             }
             countrysideSpecialFeatures.eventInterval = Mathf.Max(250f,
                 countrysideSpecialFeatures.eventInterval);
+            countrysideSpecialFeatures.peakDifficultyDistance = Mathf.Max(1000f,
+                countrysideSpecialFeatures.peakDifficultyDistance);
+            countrysideSpecialFeatures.miniHillMinimumWavelength = Mathf.Max(8f,
+                countrysideSpecialFeatures.miniHillMinimumWavelength);
+            countrysideSpecialFeatures.miniHillMaximumWavelength = Mathf.Max(
+                countrysideSpecialFeatures.miniHillMinimumWavelength,
+                countrysideSpecialFeatures.miniHillMaximumWavelength);
+            countrysideSpecialFeatures.initialMiniHillHeight = Mathf.Max(.05f,
+                countrysideSpecialFeatures.initialMiniHillHeight);
+            countrysideSpecialFeatures.peakMiniHillHeight = Mathf.Max(
+                countrysideSpecialFeatures.initialMiniHillHeight,
+                countrysideSpecialFeatures.peakMiniHillHeight);
+            countrysideSpecialFeatures.challengeStartDistance = Mathf.Max(0f,
+                countrysideSpecialFeatures.challengeStartDistance);
+            countrysideSpecialFeatures.challengeMinimumCellLength = Mathf.Max(60f,
+                countrysideSpecialFeatures.challengeMinimumCellLength);
+            countrysideSpecialFeatures.challengeMaximumCellLength = Mathf.Max(
+                countrysideSpecialFeatures.challengeMinimumCellLength,
+                countrysideSpecialFeatures.challengeMaximumCellLength);
+            countrysideSpecialFeatures.initialChallengeHeight = Mathf.Max(.1f,
+                countrysideSpecialFeatures.initialChallengeHeight);
+            countrysideSpecialFeatures.peakChallengeHeight = Mathf.Max(
+                countrysideSpecialFeatures.initialChallengeHeight,
+                countrysideSpecialFeatures.peakChallengeHeight);
+            countrysideSpecialFeatures.peakChallengeSlope = Mathf.Max(
+                countrysideSpecialFeatures.initialChallengeSlope,
+                countrysideSpecialFeatures.peakChallengeSlope);
+            countrysideSpecialFeatures.peakDeepValleyChance = Mathf.Max(
+                countrysideSpecialFeatures.initialDeepValleyChance,
+                countrysideSpecialFeatures.peakDeepValleyChance);
             countrysideSpecialFeatures.transitionLength = Mathf.Max(5f,
                 countrysideSpecialFeatures.transitionLength);
             countrysideSpecialFeatures.longFlatLengths.x = Mathf.Max(50f,
@@ -591,7 +662,7 @@ namespace AnimeHillRacing.Terrain
                     mountains.miniBumpMaximumWavelength);
                 mountains.peakDifficultyDistance = Mathf.Max(hardEndDistance,
                     mountains.peakDifficultyDistance);
-                mountains.exceptionalSlope = Mathf.Clamp(mountains.exceptionalSlope, 70f, 80f);
+                mountains.exceptionalSlope = Mathf.Clamp(mountains.exceptionalSlope, 35f, 62f);
             }
         }
     }

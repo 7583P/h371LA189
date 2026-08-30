@@ -81,7 +81,14 @@ namespace AnimeHillRacing.UI
 
         public void Refresh()
         {
-            if (!built) return;
+            // Google Play can finish a purchase after the shop hierarchy has been replaced or
+            // scheduled for destruction. UnityEvent/delegate callbacks may still reach this
+            // presenter during that frame, so never touch stale Unity UI objects.
+            if (!HasLiveView())
+            {
+                UnsubscribeProvider();
+                return;
+            }
             HillAdventurerUiCatalog ui = HillAdventurerUiCatalog.Instance;
             StarterPackConfiguration config = StarterPackConfiguration.Instance;
             IStorePurchaseProvider provider = ExternalServiceProviders.Store;
@@ -154,6 +161,11 @@ namespace AnimeHillRacing.UI
         private void CompletePurchase(StorePurchaseResult result)
         {
             purchasing = false;
+            if (!HasLiveView())
+            {
+                UnsubscribeProvider();
+                return;
+            }
             if (!result.Succeeded)
             {
                 statusText.text = string.IsNullOrWhiteSpace(result.Error)
@@ -171,6 +183,7 @@ namespace AnimeHillRacing.UI
 
         private void RefreshButtonOnly()
         {
+            if (!HasLiveView()) return;
             StarterPackConfiguration config = StarterPackConfiguration.Instance;
             buyButton.interactable = !SaveManager.IsStarterPackOwned && config != null &&
                                      !string.IsNullOrWhiteSpace(config.googlePlayProductId) &&
@@ -192,6 +205,14 @@ namespace AnimeHillRacing.UI
         {
             if (subscribedProvider != null) subscribedProvider.StateChanged -= Refresh;
             subscribedProvider = null;
+        }
+
+        private bool HasLiveView()
+        {
+            return this != null && built && artwork != null && artworkPending != null &&
+                   coinsIcon != null && gemsIcon != null && coinsText != null && gemsText != null &&
+                   priceText != null && statusText != null && buyButton != null &&
+                   buyButton.image != null && buyFallbackText != null;
         }
 
         private void BuildOnce()

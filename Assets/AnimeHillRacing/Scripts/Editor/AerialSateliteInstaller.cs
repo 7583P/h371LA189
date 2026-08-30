@@ -281,6 +281,7 @@ namespace AnimeHillRacing.Editor
                 if (oldRig != null) UnityEngine.Object.DestroyImmediate(oldRig.gameObject);
                 Transform rig = new GameObject("Aerial Thruster Rig").transform;
                 rig.SetParent(root.transform, false);
+                rig.localPosition = new Vector3(0f, 0f, VehicleVisual2D.VehicleForegroundZ);
                 CapsuleCollider2D cabin = rig.gameObject.AddComponent<CapsuleCollider2D>();
                 cabin.direction = CapsuleDirection2D.Vertical;
                 cabin.offset = new Vector2(.65f, .59f);
@@ -422,6 +423,7 @@ namespace AnimeHillRacing.Editor
                 definition.skins[0].optionId != "aerial-satelite-default" ||
                 definition.skins[1].optionId != "aerial-satelite-red-black-gold" ||
                 leftThruster == null || rightThruster == null ||
+                Mathf.Abs(thrusterRig.position.z - VehicleVisual2D.VehicleForegroundZ) > .001f ||
                 definition.underbodyAttachmentSprite == null ||
                 definition.underbodyAttachmentPositions == null ||
                 definition.underbodyAttachmentPositions.Length != 2 ||
@@ -452,7 +454,7 @@ namespace AnimeHillRacing.Editor
                     "Aerial Satelite must appear exactly once in GameCatalog for Garage and PreStart selection.");
 
             Debug.Log($"AERIAL_CATALOG_OK|index={aerialIndex}|vehicles={catalogVehicles.Length}|garage=visible|prestart=visible");
-            Debug.Log($"AERIAL_VISUAL_LAYOUT_OK|faces=right|thrusters={leftThruster.localPosition.x:F2},{rightThruster.localPosition.x:F2}|height={leftThruster.localPosition.y:F2}|size=medium|preview=visible");
+            Debug.Log($"AERIAL_VISUAL_LAYOUT_OK|faces=right|thrusters={leftThruster.localPosition.x:F2},{rightThruster.localPosition.x:F2}|height={leftThruster.localPosition.y:F2}|depth={thrusterRig.position.z:F2}|size=medium|preview=visible");
         }
 
         private static float[] Values(float start, float end, int count, float exponent)

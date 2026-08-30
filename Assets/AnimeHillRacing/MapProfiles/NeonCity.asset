@@ -18,7 +18,7 @@ MonoBehaviour:
   seed: 620031
   unlockedByDefault: 0
   coinPrice: 25000
-  leaderboardId: 
+  leaderboardId: CgkIv97xxuweEAIQAw
   coinRoute: {fileID: 11400000, guid: 2d8f01a9a8d293943a19b887710af661, type: 2}
   introEndDistance: 750
   easyEndDistance: 9000
@@ -116,6 +116,29 @@ MonoBehaviour:
   pointedExtremeShapeStrength: 0.32
   useCountrysideSpecialFeatures: 0
   countrysideSpecialFeatures:
+    peakDifficultyDistance: 10000
+    miniHillMinimumWavelength: 30
+    miniHillMaximumWavelength: 96
+    initialMiniHillHeight: 0.45
+    peakMiniHillHeight: 3.4
+    microSectionLength: 66
+    initialMicroHeight: 0.28
+    peakMicroHeight: 2.4
+    miniStraightChance: 0.36
+    miniStraightBumpCount: 3
+    initialChallengeStraightChance: 0.34
+    peakChallengeStraightChance: 0.26
+    straightDescentChance: 0.42
+    challengeStartDistance: 350
+    challengeMinimumCellLength: 135
+    challengeMaximumCellLength: 240
+    initialChallengeHeight: 1.5
+    peakChallengeHeight: 68
+    initialChallengeSlope: 12
+    peakChallengeSlope: 58
+    initialDeepValleyChance: 0.12
+    peakDeepValleyChance: 0.46
+    valleyDepthMultiplier: 1.08
     eventInterval: 500
     firstEventDistance: 260
     eventChance: 0.88

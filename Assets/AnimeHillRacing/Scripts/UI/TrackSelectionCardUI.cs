@@ -138,13 +138,13 @@ namespace AnimeHillRacing.UI
             RectTransform bestRect = bestDistanceText.rectTransform;
             float statusStart = statusText != null ? statusText.rectTransform.anchorMin.x : .96f;
             float buttonMax = Mathf.Clamp(statusStart - .01f, .58f, .94f);
-            float buttonMin = Mathf.Max(bestRect.anchorMin.x + .14f, buttonMax - .22f);
+            float buttonMin = Mathf.Max(bestRect.anchorMin.x + .08f, buttonMax - .30f);
             Vector2 bestMax = bestRect.anchorMax;
             bestMax.x = Mathf.Min(bestMax.x, buttonMin - .01f);
             bestRect.anchorMax = bestMax;
 
-            rect.anchorMin = new Vector2(buttonMin, Mathf.Max(0f, bestRect.anchorMin.y - .035f));
-            rect.anchorMax = new Vector2(buttonMax, Mathf.Min(1f, bestRect.anchorMax.y + .035f));
+            rect.anchorMin = new Vector2(buttonMin, Mathf.Max(0f, bestRect.anchorMin.y - .07f));
+            rect.anchorMax = new Vector2(buttonMax, Mathf.Min(1f, bestRect.anchorMax.y + .07f));
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
             Image buttonImage = buttonObject.GetComponent<Image>();

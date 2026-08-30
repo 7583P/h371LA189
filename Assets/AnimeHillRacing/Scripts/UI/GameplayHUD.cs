@@ -102,12 +102,14 @@ namespace AnimeHillRacing.UI
             debugPanel?.SetActive(false);
             // Long-distance teleport belongs to the procedural 2D gameplay. Road/3D tracks use
             // a different coordinate system and intentionally do not expose this control.
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (terrainManager != null)
             {
                 teleportMenu = GameplayTeleportMenu.Create(transform,
                     distanceText != null ? distanceText.font : null);
                 EnsureTeleportButton();
             }
+#endif
             pauseMenu = GameplayPauseMenu.Create(transform,
                 distanceText != null ? distanceText.font : null);
             EnsurePauseButton();

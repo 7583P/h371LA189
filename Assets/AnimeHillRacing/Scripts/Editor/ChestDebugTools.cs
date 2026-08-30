@@ -42,6 +42,14 @@ namespace AnimeHillRacing.Editor
             Debug.Log($"CHEST_DEBUG_BLUEPRINTS: {eligible[0].DisplayName}={total}/{eligible[0].BlueprintRequirement}, unlocked={unlocked}.");
         }
 
+        [MenuItem("Anime Hill Racing/Chests/Validate Distance Bonus")]
+        public static void ValidateDistanceBonus()
+        {
+            ValidateDistanceBonusContract();
+            Debug.Log("DISTANCE_BONUS_SEQUENCE_PASS: every 500m => " +
+                      "+100,+200,+300,+400,+500,+1000,+1500,...,+5000; capped at +5000.");
+        }
+
         [MenuItem("Anime Hill Racing/Chests/Validate Chest + Blueprint System")]
         public static void ValidateSystem()
         {
@@ -93,22 +101,7 @@ namespace AnimeHillRacing.Editor
                 economy.formulaFinalUpgradeCost != 150000 || economy.rallyFinalUpgradeCost != 100000 ||
                 economy.sportBikeFinalUpgradeCost != 200000 || economy.roundingStep != 250)
                 throw new InvalidOperationException("All vehicle tune prices must use the x10 economy.");
-            var distanceBonuses = new DistanceBonusTracker();
-            if (SaveManager.DistanceBonusMinimum != 25 || SaveManager.DistanceBonusMaximum != 500 ||
-                SaveManager.DistanceBonusIncrement != 25 ||
-                Mathf.Abs(SaveManager.DistanceBonusIntervalMeters - 500f) > .001f ||
-                !distanceBonuses.TryClaimThrough(500f, out int firstDistanceAward, out float firstMilestone) ||
-                firstDistanceAward != 25 || Mathf.Abs(firstMilestone - 500f) > .001f ||
-                DistanceBonusTracker.GetAwardAtDistance(9500f) != 475 ||
-                DistanceBonusTracker.GetAwardAtDistance(10000f) != 500 ||
-                DistanceBonusTracker.GetAwardAtDistance(10500f) != 500)
-                throw new InvalidOperationException("Distance bonus must progress +25..+500 and cap at 10000 meters.");
-            distanceBonuses.Reset(2750f);
-            if (distanceBonuses.NextDistance != 3000f || distanceBonuses.NextAward != 150 ||
-                distanceBonuses.TryClaimThrough(2999f, out _, out _) ||
-                !distanceBonuses.TryClaimThrough(3000f, out int newBestAward, out _) ||
-                newBestAward != 150)
-                throw new InvalidOperationException("Distance bonus must skip milestones at or below the personal best.");
+            ValidateDistanceBonusContract();
 
             ValidateGemSaveCompatibility();
 
@@ -197,9 +190,32 @@ namespace AnimeHillRacing.Editor
             Debug.Log($"CHEST_BLUEPRINT_AUDIT_PASS: milestone 29:59/30:00, remainder 15s, UTC offline, " +
                 $"coin ranges, Master +5, Legendary +10, normal 100, vehicle 150, " +
                 $"Shop 10K:+1/50K:+5/100K:+10/1M:+100, tune prices x10, Gems save/add/spend validated, " +
-                $"distance bonus PB-only 500m/+25..+500 validated; " +
+                $"distance bonus PB-only each 500m, +100..+500 then +500..+5000 validated; " +
                 $"Monte Carlo B/S/G/M/L={counts[0]/(float)samples:P2}/{counts[1]/(float)samples:P2}/" +
                 $"{counts[2]/(float)samples:P2}/{counts[3]/(float)samples:P2}/{counts[4]/(float)samples:P2}.");
+        }
+
+        private static void ValidateDistanceBonusContract()
+        {
+            var distanceBonuses = new DistanceBonusTracker();
+            if (SaveManager.DistanceBonusMinimum != 100 || SaveManager.DistanceBonusMaximum != 5000 ||
+                SaveManager.DistanceBonusIncrement != 100 ||
+                Mathf.Abs(SaveManager.DistanceBonusIntervalMeters - 500f) > .001f ||
+                !distanceBonuses.TryClaimThrough(500f, out int firstDistanceAward, out float firstMilestone) ||
+                firstDistanceAward != 100 || Mathf.Abs(firstMilestone - 500f) > .001f ||
+                DistanceBonusTracker.GetAwardAtDistance(2500f) != 500 ||
+                DistanceBonusTracker.GetAwardAtDistance(3000f) != 1000 ||
+                DistanceBonusTracker.GetAwardAtDistance(6500f) != 4500 ||
+                DistanceBonusTracker.GetAwardAtDistance(7000f) != 5000 ||
+                DistanceBonusTracker.GetAwardAtDistance(7500f) != 5000)
+                throw new InvalidOperationException(
+                    "Distance bonus must progress +100..+500, then +500 per milestone up to +5000.");
+            distanceBonuses.Reset(2750f);
+            if (distanceBonuses.NextDistance != 3000f || distanceBonuses.NextAward != 1000 ||
+                distanceBonuses.TryClaimThrough(2999f, out _, out _) ||
+                !distanceBonuses.TryClaimThrough(3000f, out int newBestAward, out _) ||
+                newBestAward != 1000)
+                throw new InvalidOperationException("Distance bonus must skip milestones at or below the personal best.");
         }
 
         private static void Grant(ChestType type)

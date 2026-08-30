@@ -16,7 +16,7 @@ MonoBehaviour:
   autoAuthenticate: 1
   enableCloudSave: 0
   cloudSaveFilename: hill-adventurer-save-v1
-  googlePlayProductId: 
+  googlePlayProductId: starter_pack
   exclusiveVehicleId: formula-01
   exclusiveSkinId: formula-skin-hill-adventurer-gold
   exclusiveBundleId: 

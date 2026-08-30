@@ -18,7 +18,7 @@ MonoBehaviour:
   seed: 8152026
   unlockedByDefault: 0
   coinPrice: 30000
-  leaderboardId: 
+  leaderboardId: CgkIv97xxuweEAIQBQ
   coinRoute: {fileID: 11400000, guid: 2d8f01a9a8d293943a19b887710af661, type: 2}
   introEndDistance: 390
   easyEndDistance: 1575
@@ -33,6 +33,47 @@ MonoBehaviour:
   useCityHighwayTerrain: 0
   cityFeatureLength: 120
   cityMiniRhythmStrength: 0.18
+  useCityBridges: 0
+  cityBridges:
+    cycleLength: 10000
+    minimumZonesPerCycle: 7
+    maximumZonesPerCycle: 10
+    minimumProgressiveZones: 5
+    maximumProgressiveZones: 7
+    cycleStartMargin: 320
+    cycleEndMargin: 320
+    minimumZoneSpacing: 300
+    approachBlendLength: 50
+    recoveryBlendLength: 50
+    bridgeLength: 14
+    normalWaterLength: 22
+    progressiveBaseWaterLength: 22
+    progressiveGrowthPerCycle: 10
+    waterVisualDepth: 10
+    waterSurfaceOffset: -0.45
+    waterVisualAlpha: 0.5
+    waterBedThickness: 22
+    waterEndBankWidth: 3
+    waterSpeedRetainedPerSecond: 0.4
+    waterAngularSpeedRetainedPerSecond: 0.3
+    waterBuoyancySpring: 4
+    waterVerticalDamping: 3
+    waterMaximumSinkAcceleration: 8
+    waterDriverDownClearance: 5
+    bridgeColliderThickness: 0.45
+    bridgeGroundOverlap: 1
+    closedAngleDegrees: 0
+    openAngleDegrees: 45
+    transitionSeconds: 3
+    closedHoldSeconds: 4
+    openHoldSeconds: 4
+    bridgeSprite: {fileID: 0}
+    waterSprite: {fileID: 0}
+    bridgeArtSlopeDegrees: 16.1
+    bridgeArtSurfaceOffset: -0.61
+    waterSortingOrder: 1
+    waterBedSortingOrder: 0
+    bridgeSortingOrder: 5
   difficultyCurve:
     serializedVersion: 2
     m_Curve:
@@ -85,6 +126,47 @@ MonoBehaviour:
   hillFeatureWeight: 0.45
   valleyFeatureWeight: 0.25
   technicalFeatureWeight: 0.29
+  usePointedTerrainRhythm: 0
+  pointedMiniFeatureStrength: 0.07
+  pointedFeatureAsymmetry: 0.18
+  pointedPeakMiniFeatureCount: 8
+  pointedExtremeShapeChance: 0.55
+  pointedExtremeShapeStrength: 0.32
+  useCountrysideSpecialFeatures: 0
+  countrysideSpecialFeatures:
+    peakDifficultyDistance: 10000
+    miniHillMinimumWavelength: 30
+    miniHillMaximumWavelength: 96
+    initialMiniHillHeight: 0.45
+    peakMiniHillHeight: 3.4
+    microSectionLength: 66
+    initialMicroHeight: 0.28
+    peakMicroHeight: 2.4
+    miniStraightChance: 0.36
+    miniStraightBumpCount: 3
+    initialChallengeStraightChance: 0.34
+    peakChallengeStraightChance: 0.26
+    straightDescentChance: 0.42
+    challengeStartDistance: 350
+    challengeMinimumCellLength: 135
+    challengeMaximumCellLength: 240
+    initialChallengeHeight: 1.5
+    peakChallengeHeight: 68
+    initialChallengeSlope: 12
+    peakChallengeSlope: 58
+    initialDeepValleyChance: 0.12
+    peakDeepValleyChance: 0.46
+    valleyDepthMultiplier: 1.08
+    eventInterval: 500
+    firstEventDistance: 260
+    eventChance: 0.88
+    longFlatChance: 0.58
+    transitionLength: 45
+    longFlatLengths: {x: 150, y: 200}
+    slashFlatLead: 18
+    slashLength: 96
+    slashHeight: 18
+    maximumStartJitter: 70
   maxSlopeAngle: 40
   maxHeightDeltaPerSample: 1.3984993
   minimumValleyWidth: 16
@@ -111,8 +193,10 @@ MonoBehaviour:
   terrainSurfaceContactVSamples: []
   terrainFillStartV: 0.579
   groundPhysicsMaterial: {fileID: 13400000, guid: 26ba0ca693e07af46b45d6e09338bdc9, type: 2}
+  groundPhysicsMaterial2D: {fileID: 0}
   terrainEdgeWidth: 0.18
   terrainMaximumVisualExtent: 2.5
+  terrainMaximumVisualRiseAboveSurface: 0
   terrainVisualDepth: 27
   supportsLiquidExposure: 0
   neonMaximumAmplitude: 28
@@ -162,6 +246,108 @@ MonoBehaviour:
     continuousViscosity: 2.4
     liquidDriveAcceleration: 9
     maximumSinkAcceleration: 8
+  useSpaceTerrain: 0
+  spaceChallenges:
+    eventInterval: 2000
+    warningDistance: 100
+    approachLength: 200
+    approachBlendLength: 45
+    rampLength: 15
+    rampFlatFraction: 0.08
+    rampRise: 5.2
+    landingLength: 42
+    recoveryLength: 86
+    initialGapLength: 15
+    gapIncreasePerCycle: 5
+    landingDrop: 0.35
+    planetLaunchClearance: 4.5
+    planetExitClearance: 4
+    minimumPlanetRadius: 4.8
+    maximumPlanetRadius: 10.5
+    planetRampRise: 3.8
+    planetCenterDrop: 0.82
+    blackHoleSprite: {fileID: 0}
+    baseDiameter: 5.5
+    diameterGrowthPerGapMetre: 0.14
+    maximumDiameter: 10
+    verticalOffset: -1.8
+    hazardRadiusFactor: 0.31
+    warningSprite: {fileID: 0}
+    warningWidth: 3.2
+    rampMaterial: {fileID: 0}
+  useArenaTerrain: 0
+  arena:
+    segmentLength: 104
+    recentSegmentHistory: 5
+    maximumTechnicalStreak: 3
+    recoveryInterval: 7
+    baseBumpHeight: 1.15
+    minimumBumpWavelength: 6.5
+    maximumBumpWavelength: 15
+    baseRampRise: 3.4
+    maximumRampRise: 5.8
+    minimumGapLength: 11
+    maximumGapLength: 24
+    landingSafetyLength: 22
+    tireSprite: {fileID: 0}
+    minimumTires: 2
+    maximumTires: 5
+    tireRadius: 1.05
+    tireMass: 17
+    tireFriction: 0.82
+    tireBounciness: 0.035
+    tireSurfaceClearance: 0.14
+    platformSprite: {fileID: 0}
+    easyPlatformWidth: 13
+    hardPlatformWidth: 8.5
+    maximumPlatformTilt: 25
+    platformMass: 34
+    platformAngularDamping: 3.2
+    platformWeightTorque: 2.2
+    platformCenteringTorque: 1.1
+    platformTakeoffDrop: 0.65
+    platformLandingClearance: 1.1
+    lavaSprite: {fileID: 0}
+    minimumLavaLength: 10
+    maximumLavaLength: 24
+    lavaVisualDepth: 2.8
+    lavaDragStrength: 7.5
+    lavaMaximumSpeed: 6.5
+    lavaEntrySeconds: 0.18
+    lavaRecoverySeconds: 0.85
+    lavaBankInset: 0.35
+    lavaTriggerHeightAboveSurface: 1.25
+    pickupObstacleClearance: 4
+  useMountainsTerrain: 0
+  mountains:
+    peakDifficultyDistance: 10000
+    miniBumpMinimumWavelength: 10
+    miniBumpMaximumWavelength: 24
+    initialMiniBumpHeight: 0.12
+    maximumMiniBumpHeight: 1
+    easySlopeRange: {x: 12, y: 24}
+    mediumSlopeRange: {x: 18, y: 34}
+    hardSlopeRange: {x: 26, y: 44}
+    extremeSlopeRange: {x: 34, y: 54}
+    exceptionalSlope: 58
+    exceptionalEveryCells: 9
+    crestWidthFraction: 0.06
+    recoveryWidthFraction: 0.1
+    valleyChance: 0.22
+    crestPositionVariation: 0.22
+    macroReliefHeight: 30
+    macroReliefWavelength: 1150
+    warmupMountainHeight: 4.5
+    peakMountainHeight: 72
+    initialFlatSectionChance: 0.42
+    peakFlatSectionChance: 0.16
+    peakExtremeBumpChance: 0.28
+    peakExtremeBumpHeight: 4.8
+    bumpyClimbChance: 0.38
+    hardBumpChance: 0.18
+    veryHardBumpChance: 0.72
+    veryHardBumpCooldownDistance: 1200
+    veryHardBumpHeight: 18
   rainstorm:
     permanentRain: 1
     maximumParticles: 520

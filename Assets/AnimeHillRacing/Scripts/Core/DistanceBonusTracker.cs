@@ -9,9 +9,11 @@ namespace AnimeHillRacing.Core
     public sealed class DistanceBonusTracker
     {
         public const float IntervalMeters = 500f;
-        public const int StartingCoins = 25;
-        public const int MaximumCoins = 500;
-        public const int IncrementCoins = 25;
+        public const int StartingCoins = 100;
+        public const int MaximumCoins = 5000;
+        public const int IncrementCoins = 100;
+        public const int FirstTierMaximumCoins = 500;
+        public const int SecondTierIncrementCoins = 500;
 
         private int claimedMilestones;
 
@@ -41,7 +43,12 @@ namespace AnimeHillRacing.Core
         public static int GetAwardForMilestone(int oneBasedMilestone)
         {
             int safeMilestone = Math.Max(1, oneBasedMilestone);
-            return Math.Min(MaximumCoins, StartingCoins + (safeMilestone - 1) * IncrementCoins);
+            int firstTierMilestones = FirstTierMaximumCoins / IncrementCoins;
+            if (safeMilestone <= firstTierMilestones)
+                return safeMilestone * IncrementCoins;
+            int secondTierAward = FirstTierMaximumCoins +
+                                  (safeMilestone - firstTierMilestones) * SecondTierIncrementCoins;
+            return Math.Min(MaximumCoins, secondTierAward);
         }
 
         public static int GetAwardAtDistance(float distance)

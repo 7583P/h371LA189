@@ -1,2 +1,5 @@
 lastUpgrade=20100
 proj.pluginVersion=2.1.0
+proj.AppId=1059931844415
+and.ClientId=
+android.SetupDone=true

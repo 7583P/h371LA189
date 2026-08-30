@@ -79,9 +79,36 @@ namespace AnimeHillRacing.Vehicle
                 if (rightThrusterPoint != null) rightThrusterPoint.localPosition = positions[1];
             }
 
+            EnforceThrusterForegroundDepth();
+
             float visualWidth = Mathf.Max(.05f, definition.underbodyAttachmentVisualWidth);
             ApplyVisualWidth(leftThrusterPoint, visualWidth);
             ApplyVisualWidth(rightThrusterPoint, visualWidth);
+        }
+
+        private void EnforceThrusterForegroundDepth()
+        {
+            Transform leftParent = leftThrusterPoint != null ? leftThrusterPoint.parent : null;
+            Transform rightParent = rightThrusterPoint != null ? rightThrusterPoint.parent : null;
+            Transform rig = leftParent != null && leftParent == rightParent ? leftParent : null;
+            if (rig != null)
+            {
+                Vector3 rigPosition = rig.position;
+                rigPosition.z = VehicleVisual2D.VehicleForegroundZ;
+                rig.position = rigPosition;
+                return;
+            }
+
+            SetForegroundDepth(leftThrusterPoint);
+            SetForegroundDepth(rightThrusterPoint);
+        }
+
+        private static void SetForegroundDepth(Transform point)
+        {
+            if (point == null) return;
+            Vector3 position = point.position;
+            position.z = VehicleVisual2D.VehicleForegroundZ;
+            point.position = position;
         }
 
         private static void ApplyVisualWidth(Transform point, float visualWidth)

@@ -23,6 +23,8 @@ namespace AnimeHillRacing.Core
     {
         private const int CurrentSaveVersion = 2;
         private const float SyncIntervalSeconds = 60f;
+        private const float RequestTimeoutSeconds = 30f;
+        private const float RetryDelaySeconds = 10f;
         private const string RevisionKey = "AHR.Cloud.ProgressRevision.V1";
         private const string TimestampKey = "AHR.Cloud.ProgressTimestamp.V1";
         private const string SignatureKey = "AHR.Cloud.ProgressSignature.V1";
@@ -34,6 +36,9 @@ namespace AnimeHillRacing.Core
         private bool wasAuthenticated;
         private bool requestInFlight;
         private float nextAttemptAt;
+        private float requestDeadlineAt;
+        private int requestSerial;
+        private int activeRequestSerial;
         private CloudSaveState state;
         private string lastError = string.Empty;
 
@@ -92,7 +97,19 @@ namespace AnimeHillRacing.Core
                 wasAuthenticated = true;
                 nextAttemptAt = unscaledTime;
             }
-            if (requestInFlight || unscaledTime < nextAttemptAt) return;
+            if (requestInFlight)
+            {
+                if (unscaledTime >= requestDeadlineAt)
+                {
+                    requestInFlight = false;
+                    activeRequestSerial = 0;
+                    nextAttemptAt = unscaledTime + RetryDelaySeconds;
+                    SetState(CloudSaveState.Failed, "CLOUD REQUEST TIMED OUT");
+                    Debug.LogWarning("[Cloud Save] Request timed out; progress remains saved locally");
+                }
+                return;
+            }
+            if (unscaledTime < nextAttemptAt) return;
             nextAttemptAt = unscaledTime + SyncIntervalSeconds;
             Synchronize();
         }
@@ -108,19 +125,42 @@ namespace AnimeHillRacing.Core
                 return;
             }
 
+            int requestId = ++requestSerial;
+            activeRequestSerial = requestId;
             requestInFlight = true;
+            requestDeadlineAt = Time.unscaledTime + RequestTimeoutSeconds;
             SetState(CloudSaveState.Synchronizing, string.Empty);
-            CloudSnapshot local = CaptureLocalSnapshot(true);
-            client.OpenWithManualConflictResolution(configuration.cloudSaveFilename,
-                DataSource.ReadCacheOrNetwork, true, ResolveConflict,
-                (status, metadata) => HandleOpenCompleted(client, local, status, metadata));
+            Debug.Log("[Cloud Save] Synchronization started");
+            try
+            {
+                CloudSnapshot local = CaptureLocalSnapshot(true);
+                client.OpenWithManualConflictResolution(configuration.cloudSaveFilename,
+                    DataSource.ReadCacheOrNetwork, true,
+                    (resolver, original, originalData, unmerged, unmergedData) =>
+                        ResolveConflict(requestId, resolver, original, originalData, unmerged,
+                            unmergedData),
+                    (status, metadata) =>
+                        HandleOpenCompleted(requestId, client, local, status, metadata));
+            }
+            catch (Exception exception)
+            {
+                FinishWithWarning(requestId,
+                    "start failed: " + exception.GetType().Name);
+            }
 #endif
         }
 
 #if UNITY_ANDROID
-        private void ResolveConflict(IConflictResolver resolver, ISavedGameMetadata original,
+        private void ResolveConflict(int requestId, IConflictResolver resolver,
+            ISavedGameMetadata original,
             byte[] originalData, ISavedGameMetadata unmerged, byte[] unmergedData)
         {
+            if (!IsCurrentRequest(requestId))
+            {
+                resolver.ChooseMetadata(NewerMetadata(original, unmerged));
+                return;
+            }
+
             ParseStatus originalStatus = TryDeserialize(originalData, out CloudSnapshot first);
             ParseStatus unmergedStatus = TryDeserialize(unmergedData, out CloudSnapshot second);
 
@@ -152,27 +192,35 @@ namespace AnimeHillRacing.Core
             resolver.ResolveConflict(baseMetadata, BuildMetadataUpdate(), Serialize(merged));
         }
 
-        private void HandleOpenCompleted(ISavedGameClient client, CloudSnapshot local,
-            SavedGameRequestStatus status, ISavedGameMetadata metadata)
+        private void HandleOpenCompleted(int requestId, ISavedGameClient client,
+            CloudSnapshot local, SavedGameRequestStatus status, ISavedGameMetadata metadata)
         {
+            if (!IsCurrentRequest(requestId))
+            {
+                return;
+            }
             if (status != SavedGameRequestStatus.Success || metadata == null)
             {
-                FinishWithWarning("open failed: " + status);
+                FinishWithWarning(requestId, "open failed: " + status);
                 return;
             }
 
             client.ReadBinaryData(metadata, (readStatus, data) =>
             {
+                if (!IsCurrentRequest(requestId))
+                {
+                    return;
+                }
                 if (readStatus != SavedGameRequestStatus.Success)
                 {
-                    FinishWithWarning("read failed: " + readStatus);
+                    FinishWithWarning(requestId, "read failed: " + readStatus);
                     return;
                 }
 
                 ParseStatus parseStatus = TryDeserialize(data, out CloudSnapshot remote);
                 if (!IsReadable(parseStatus))
                 {
-                    FinishWithWarning(parseStatus == ParseStatus.FutureVersion
+                    FinishWithWarning(requestId, parseStatus == ParseStatus.FutureVersion
                         ? "newer save version preserved; update the app before syncing"
                         : "cloud data is invalid and was not overwritten");
                     return;
@@ -190,26 +238,17 @@ namespace AnimeHillRacing.Core
                     merged.revision = NextRevision(Mathf.Max(local.revision, remote.revision));
                     merged.updatedUnixSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
                 }
-                string remoteSignature = ContentSignature(remote);
                 string mergedSignature = ContentSignature(merged);
-                bool mustCommit = !string.Equals(remoteSignature, mergedSignature,
-                    StringComparison.Ordinal) || remote.saveVersion != CurrentSaveVersion;
 
                 ApplyMergedSnapshot(merged);
                 StoreLocalMetadata(merged, mergedSignature);
-                if (!mustCommit)
-                {
-                    requestInFlight = false;
-                    MarkInitialized();
-                    SetState(CloudSaveState.Synchronized, string.Empty);
-                    Debug.Log("[Cloud Save] Local progress is synchronized");
-                    return;
-                }
-
+                // CommitUpdate is also the close operation for the open metadata handle. The
+                // plugin exposes no discard/close API, so even unchanged data must be committed;
+                // otherwise every later attempt can wait forever on the still-open file.
                 client.CommitUpdate(metadata, BuildMetadataUpdate(), Serialize(merged),
                     (commitStatus, _) =>
                     {
-                        requestInFlight = false;
+                        if (!CompleteRequest(requestId)) return;
                         if (commitStatus == SavedGameRequestStatus.Success)
                         {
                             MarkInitialized();
@@ -393,7 +432,8 @@ namespace AnimeHillRacing.Core
                 {
                     DriverDefinition.CharacterAccessoryOption option = driver.accessories[optionIndex];
                     if (option == null || string.IsNullOrWhiteSpace(option.accessoryId)) continue;
-                    if (!option.unlockedByDefault && SaveManager.IsCustomizationUnlocked("global",
+                    if (!option.unlockedByDefault && !IsStarterAccessory(option.accessoryId) &&
+                        SaveManager.IsCustomizationUnlocked("global",
                             "CharacterAccessory", option.accessoryId, false))
                         snapshot.unlockedCustomizations.Add(new CustomizationEntry
                         {
@@ -598,8 +638,8 @@ namespace AnimeHillRacing.Core
         private bool IsSafeInternalCustomization(CustomizationEntry entry)
         {
             if (entry == null) return false;
-            if (entry.scopeId == "global" &&
-                entry.category == "CharacterAccessory") return FindAccessory(entry.optionId) != null;
+            if (entry.scopeId == "global" && entry.category == "CharacterAccessory")
+                return !IsStarterAccessory(entry.optionId) && FindAccessory(entry.optionId) != null;
             VehicleDefinition vehicle = FindVehicle(entry.scopeId);
             if (vehicle == null || IsStarterCustomization(entry.scopeId, entry.category,
                     entry.optionId)) return false;
@@ -616,10 +656,16 @@ namespace AnimeHillRacing.Core
             !string.IsNullOrWhiteSpace(configuration.exclusiveVehicleId) &&
             configuration.exclusiveVehicleId == vehicleId;
 
-        private bool IsStarterCustomization(string vehicleId, string category, string optionId) =>
-            category == "Skin" && configuration != null &&
-            configuration.exclusiveVehicleId == vehicleId &&
-            configuration.exclusiveSkinId == optionId;
+        private bool IsStarterCustomization(string vehicleId, string category, string optionId)
+        {
+            if (configuration == null || configuration.exclusiveVehicleId != vehicleId) return false;
+            return category == "Skin" && configuration.exclusiveSkinId == optionId ||
+                   category == "Wheels" && configuration.exclusiveWheelId == optionId;
+        }
+
+        private bool IsStarterAccessory(string accessoryId) => configuration != null &&
+            !string.IsNullOrWhiteSpace(configuration.exclusiveAccessoryId) &&
+            configuration.exclusiveAccessoryId == accessoryId;
 
         private static CloudSnapshot Merge(CloudSnapshot first, CloudSnapshot second,
             bool forceNewRevision, bool preferSecondMutable)
@@ -1116,9 +1162,20 @@ namespace AnimeHillRacing.Core
             PlayerPrefs.Save();
         }
 
-        private void FinishWithWarning(string reason)
+        private bool IsCurrentRequest(int requestId) =>
+            requestInFlight && activeRequestSerial == requestId;
+
+        private bool CompleteRequest(int requestId)
         {
+            if (!IsCurrentRequest(requestId)) return false;
             requestInFlight = false;
+            activeRequestSerial = 0;
+            return true;
+        }
+
+        private void FinishWithWarning(int requestId, string reason)
+        {
+            if (!CompleteRequest(requestId)) return;
             SetState(CloudSaveState.Failed, reason.ToUpperInvariant());
             Debug.LogWarning("[Cloud Save] " + reason);
         }

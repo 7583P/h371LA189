@@ -10,6 +10,9 @@ namespace AnimeHillRacing.Pickups
         // pickup artwork between both planes prevents the complete road sprite from hiding collectibles
         // without moving their 2D/3D trigger volumes.
         public const float AdventureForegroundVisualZ = -5.75f;
+        private const float CollectionProbeRadius = .62f;
+        private static readonly Collider2D[] ContactResults2D = new Collider2D[24];
+        private static readonly Collider[] ContactResults3D = new Collider[24];
 
         private PickupPool pool;
         private Collider triggerCollider;
@@ -19,6 +22,7 @@ namespace AnimeHillRacing.Pickups
         private bool collected;
         private bool feedbackActive;
         private bool scaleCached;
+        private bool triggerCoverageConfigured;
         private float feedbackElapsed;
         private Vector3 feedbackStartPosition;
         private Vector3 baseLocalScale;
@@ -60,6 +64,7 @@ namespace AnimeHillRacing.Pickups
                 if (relay == null) relay = triggerTransform.gameObject.AddComponent<PickupTrigger2DRelay>();
                 relay.Assign(this);
             }
+            ConfigureTriggerCoverage();
             if (renderers == null)
             {
                 renderers = GetComponentsInChildren<Renderer>(true);
@@ -117,6 +122,35 @@ namespace AnimeHillRacing.Pickups
 
         internal void HandleTrigger2D(Collider2D other) => TryCollect(ResolveVehicle2D(other));
 
+        private void FixedUpdate()
+        {
+            if (collected || !gameObject.activeInHierarchy) return;
+            VehicleRuntimeBase activeVehicle = GameManager.Instance != null
+                ? GameManager.Instance.Vehicle : null;
+            if (activeVehicle != null &&
+                Mathf.Abs(activeVehicle.ProgressPosition - ProgressPosition) > 6f) return;
+            if (TryFindTouchingVehicle(transform.position, CollectionProbeRadius,
+                    out VehicleRuntimeBase touchingVehicle))
+                TryCollect(touchingVehicle);
+        }
+
+        private void ConfigureTriggerCoverage()
+        {
+            if (triggerCoverageConfigured) return;
+            triggerCoverageConfigured = true;
+
+            // Match the trigger to the complete visible pickup and leave a small contact skin. The old
+            // Coin 3D sphere was slightly smaller than its artwork and the generic 2D circle missed the
+            // corners of fuel cans during light wheel/chassis contact.
+            if (triggerCollider is SphereCollider sphere)
+                sphere.radius = Mathf.Max(sphere.radius, .48f);
+            else if (triggerCollider is BoxCollider box)
+                box.size = new Vector3(Mathf.Max(box.size.x, 1.08f),
+                    Mathf.Max(box.size.y, 1.18f), Mathf.Max(box.size.z, .72f));
+            if (triggerCollider2D is CircleCollider2D circle2D)
+                circle2D.radius = Mathf.Max(circle2D.radius, CollectionProbeRadius);
+        }
+
         private static VehicleRuntimeBase ResolveVehicle2D(Collider2D other)
         {
             if (other == null) return null;
@@ -129,6 +163,38 @@ namespace AnimeHillRacing.Pickups
             // contact collects fuel and coins exactly like chassis contact.
             Suspension2DController suspension = other.GetComponentInParent<Suspension2DController>();
             return suspension != null ? suspension.OwnerVehicle : null;
+        }
+
+        internal static bool TryFindTouchingVehicle(Vector3 worldPosition, float contactRadius,
+            out VehicleRuntimeBase vehicle)
+        {
+            vehicle = null;
+            float radius = Mathf.Max(.05f, contactRadius);
+            ContactFilter2D filter = new ContactFilter2D { useTriggers = true };
+            int count2D = Physics2D.OverlapCircle(worldPosition, radius, filter, ContactResults2D);
+            for (int i = 0; i < count2D; i++)
+            {
+                vehicle = ResolveVehicle2D(ContactResults2D[i]);
+                if (vehicle != null) return true;
+            }
+
+            int count3D = Physics.OverlapSphereNonAlloc(worldPosition, radius, ContactResults3D,
+                ~0, QueryTriggerInteraction.Collide);
+            for (int i = 0; i < count3D; i++)
+            {
+                Collider other = ContactResults3D[i];
+                if (other == null) continue;
+                vehicle = other.GetComponentInParent<VehicleRuntimeBase>();
+                if (vehicle == null && other.attachedRigidbody != null)
+                    vehicle = other.attachedRigidbody.GetComponent<VehicleRuntimeBase>();
+                if (vehicle == null)
+                {
+                    SuspensionController suspension = other.GetComponentInParent<SuspensionController>();
+                    vehicle = suspension != null ? suspension.OwnerVehicle : null;
+                }
+                if (vehicle != null) return true;
+            }
+            return false;
         }
 
         private void TryCollect(VehicleRuntimeBase vehicle)

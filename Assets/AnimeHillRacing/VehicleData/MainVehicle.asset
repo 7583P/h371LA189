@@ -28,6 +28,8 @@ MonoBehaviour:
     sprite: {fileID: 21300000, guid: a5955445e5683e7409b268573b0b0bdc, type: 3}
     unlockedByDefault: 1
     gemPrice: 0
+    purchaseCurrency: 0
+    googlePlayProductId: 
     bundleType: 0
     allowsBlueprintProgression: 1
     hasExplicitRarity: 0
@@ -40,6 +42,8 @@ MonoBehaviour:
     sprite: {fileID: 21300000, guid: 9fd49f8cefeaf6943ab915d03f1608ca, type: 3}
     unlockedByDefault: 0
     gemPrice: 1000
+    purchaseCurrency: 0
+    googlePlayProductId: 
     bundleType: 0
     allowsBlueprintProgression: 1
     hasExplicitRarity: 0
@@ -53,6 +57,8 @@ MonoBehaviour:
     sprite: {fileID: 21300000, guid: 6be7244153b471c40b29f1d49457db3b, type: 3}
     unlockedByDefault: 1
     gemPrice: 0
+    purchaseCurrency: 0
+    googlePlayProductId: 
     bundleType: 0
     allowsBlueprintProgression: 1
     hasExplicitRarity: 0
@@ -65,6 +71,8 @@ MonoBehaviour:
     sprite: {fileID: 21300000, guid: 47ef4f3c95d4b1b4eb6eb0575cd73c28, type: 3}
     unlockedByDefault: 1
     gemPrice: 0
+    purchaseCurrency: 0
+    googlePlayProductId: 
     bundleType: 0
     allowsBlueprintProgression: 1
     hasExplicitRarity: 0
@@ -77,6 +85,8 @@ MonoBehaviour:
     sprite: {fileID: 21300000, guid: 5e58201cc30a576429b3087fcdcaf19c, type: 3}
     unlockedByDefault: 0
     gemPrice: 500
+    purchaseCurrency: 0
+    googlePlayProductId: 
     bundleType: 0
     allowsBlueprintProgression: 1
     hasExplicitRarity: 0
@@ -235,8 +245,8 @@ MonoBehaviour:
   visualWidth: 3.8
   flipBodyX: 0
   bodyVisualOffset: {x: 0, y: 0.16}
-  rearWheelVisualPosition: {x: -1.1893872, y: -0.5108572}
-  frontWheelVisualPosition: {x: 1.3513471, y: -0.5108572}
+  rearWheelVisualPosition: {x: -1.2129166, y: -0.6943867}
+  frontWheelVisualPosition: {x: 1.391347, y: -0.6943867}
   wheelVisualDiameter: 0.9
   rearWheelVisualDiameter: 0
   frontWheelVisualDiameter: 0

@@ -265,16 +265,7 @@ namespace AnimeHillRacing.Core
                     RequestGameOver(RunEndReason.Crashed);
                 }
             }
-            while (!debugTeleportRun && distanceBonuses.TryClaimThrough(Distance, out int distanceAward,
-                       out float distanceMilestone))
-            {
-                SaveManager.AddCoins(distanceAward, false);
-                // Persist the reached record with the reward. A retry or scene exit before the
-                // results screen therefore cannot collect this milestone a second time.
-                BestDistance = SaveManager.SaveBestDistance(distanceMilestone, Mode, MapId);
-                lastDistanceBonus = distanceAward;
-                distanceBonusMessageUntil = Time.unscaledTime + 2.5f;
-            }
+            ClaimDistanceBonusesThrough(Distance);
             if (input != null && input.RetryPressedThisFrame)
                 Retry();
 
@@ -314,6 +305,32 @@ namespace AnimeHillRacing.Core
             lastGemAward = award;
             gemMessageUntil = Time.unscaledTime + 2.5f;
             hud?.RefreshImmediate(this);
+        }
+
+        public bool TryCollectDistanceBonusMarker(float milestoneDistance,
+            VehicleRuntimeBase collectingVehicle)
+        {
+            if (collectingVehicle == null || collectingVehicle != vehicle || debugTeleportRun ||
+                (State != RunState.Running && State != RunState.OutOfFuelPending)) return false;
+            return ClaimDistanceBonusesThrough(Mathf.Max(0f, milestoneDistance));
+        }
+
+        private bool ClaimDistanceBonusesThrough(float distance)
+        {
+            if (debugTeleportRun) return false;
+            bool claimed = false;
+            while (distanceBonuses.TryClaimThrough(distance, out int distanceAward,
+                       out float distanceMilestone))
+            {
+                SaveManager.AddCoins(distanceAward, false);
+                // Persist the reached record with the reward. A retry or scene exit before the
+                // results screen therefore cannot collect this milestone a second time.
+                BestDistance = SaveManager.SaveBestDistance(distanceMilestone, Mode, MapId);
+                lastDistanceBonus = distanceAward;
+                distanceBonusMessageUntil = Time.unscaledTime + 2.5f;
+                claimed = true;
+            }
+            return claimed;
         }
 
         public void NotifyLiquidContact(int poolId, bool inside)

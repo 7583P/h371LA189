@@ -14,6 +14,7 @@ namespace AnimeHillRacing.UI
         private Image gemsIcon;
         private Text coinsText;
         private Text gemsText;
+        private Text cosmeticsText;
         private Text priceText;
         private Text statusText;
         private Button buyButton;
@@ -102,8 +103,9 @@ namespace AnimeHillRacing.UI
             coinsIcon.enabled = coinsIcon.sprite != null;
             gemsIcon.sprite = ui != null ? ui.gemsRewardIcon : null;
             gemsIcon.enabled = gemsIcon.sprite != null;
-            coinsText.text = $"+{(config != null ? config.coinReward : 100000):N0} COINS";
+            coinsText.text = $"+{(config != null ? config.coinReward : 500000):N0} COINS";
             gemsText.text = $"+{(config != null ? config.gemReward : 1000):N0} GEMS";
+            cosmeticsText.text = "HILL ADVENTURER GOLD WHEELS\nCAP - NEON LIGHTNING";
 
             string productId = config != null ? config.googlePlayProductId : string.Empty;
             bool owned = SaveManager.IsStarterPackOwned;
@@ -133,7 +135,7 @@ namespace AnimeHillRacing.UI
             buyButton.interactable = !purchasing && !owned && productConfigured && bundleConfigured &&
                                      providerConfigured && productAvailable;
             statusText.text = owned ? "OWNED  -  REWARDS CLAIMED" : purchasing ? "CONTACTING STORE..." :
-                !bundleConfigured ? "EXCLUSIVE SKIN BUNDLE NOT CONFIGURED" :
+                !bundleConfigured ? "STARTER PACK REWARDS NOT CONFIGURED" :
                 !productConfigured ? "GOOGLE PLAY PRODUCT ID NOT CONFIGURED" :
                 !providerConfigured ? "GOOGLE PLAY BILLING NOT CONFIGURED" :
                 provider.State == ExternalStoreState.Initializing ? "LOADING GOOGLE PLAY PRICE..." :
@@ -211,7 +213,7 @@ namespace AnimeHillRacing.UI
         {
             return this != null && built && artwork != null && artworkPending != null &&
                    coinsIcon != null && gemsIcon != null && coinsText != null && gemsText != null &&
-                   priceText != null && statusText != null && buyButton != null &&
+                   cosmeticsText != null && priceText != null && statusText != null && buyButton != null &&
                    buyButton.image != null && buyFallbackText != null;
         }
 
@@ -239,7 +241,7 @@ namespace AnimeHillRacing.UI
                 new Vector2(.615f, .59f), new Vector2(.685f, .75f));
             coinsIcon.preserveAspect = true;
             coinsIcon.raycastTarget = false;
-            coinsText = CreateText("Coins Amount", transform, "+100,000 COINS", 19,
+            coinsText = CreateText("Coins Amount", transform, "+500,000 COINS", 19,
                 TextAnchor.MiddleLeft, new Vector2(.69f, .59f), new Vector2(.98f, .75f));
 
             gemsIcon = CreateImage("Gems Reward", transform,
@@ -249,10 +251,15 @@ namespace AnimeHillRacing.UI
             gemsText = CreateText("Gems Amount", transform, "+1,000 GEMS", 19,
                 TextAnchor.MiddleLeft, new Vector2(.69f, .43f), new Vector2(.98f, .59f));
 
+            cosmeticsText = CreateText("Exclusive Cosmetics", transform,
+                "HILL ADVENTURER GOLD WHEELS\nCAP - NEON LIGHTNING", 13,
+                TextAnchor.MiddleCenter, new Vector2(.61f, .34f), new Vector2(.98f, .44f));
+            cosmeticsText.color = new Color(1f, .82f, .22f);
+
             priceText = CreateText("Price", transform, "LOADING PRICE...", 22,
-                TextAnchor.MiddleCenter, new Vector2(.61f, .31f), new Vector2(.98f, .43f));
+                TextAnchor.MiddleCenter, new Vector2(.61f, .27f), new Vector2(.98f, .35f));
             statusText = CreateText("Status", transform, "GOOGLE PLAY BILLING NOT CONNECTED", 13,
-                TextAnchor.MiddleCenter, new Vector2(.60f, .22f), new Vector2(.99f, .32f));
+                TextAnchor.MiddleCenter, new Vector2(.60f, .19f), new Vector2(.99f, .27f));
             statusText.color = new Color(.68f, .78f, .9f);
 
             GameObject buttonObject = new GameObject("Buy Starter Pack", typeof(RectTransform),
@@ -260,7 +267,7 @@ namespace AnimeHillRacing.UI
             RectTransform buttonRect = buttonObject.GetComponent<RectTransform>();
             buttonRect.SetParent(transform, false);
             buttonRect.anchorMin = new Vector2(.62f, .035f);
-            buttonRect.anchorMax = new Vector2(.97f, .22f);
+            buttonRect.anchorMax = new Vector2(.97f, .19f);
             buttonRect.offsetMin = Vector2.zero;
             buttonRect.offsetMax = Vector2.zero;
             buyButton = buttonObject.GetComponent<Button>();

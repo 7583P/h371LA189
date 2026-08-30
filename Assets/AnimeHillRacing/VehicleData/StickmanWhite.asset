@@ -157,7 +157,7 @@ MonoBehaviour:
     displayName: CAP - NEON LIGHTNING
     sprite: {fileID: 21300000, guid: ea2f66b188644723b8a8822a5e1adeb5, type: 3}
     unlockedByDefault: 0
-    gemPrice: 100
+    gemPrice: 0
     visibleWidth: 0.78
     anchorOffset: {x: 0.18, y: 0.18}
     flipX: 0

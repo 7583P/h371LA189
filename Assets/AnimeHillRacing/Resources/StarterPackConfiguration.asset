@@ -19,7 +19,9 @@ MonoBehaviour:
   googlePlayProductId: starter_pack
   exclusiveVehicleId: formula-01
   exclusiveSkinId: formula-skin-hill-adventurer-gold
+  exclusiveWheelId: formula-wheel-luxury
+  exclusiveAccessoryId: baseball-cap-rainbow
   exclusiveBundleId: 
-  coinReward: 100000
+  coinReward: 500000
   gemReward: 1000
   conceptualPrice: $2.99

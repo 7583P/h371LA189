@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using AnimeHillRacing.Core;
+using AnimeHillRacing.Pickups;
 using AnimeHillRacing.UI;
 using UnityEditor;
 using UnityEditor.Build;
@@ -30,6 +31,10 @@ namespace AnimeHillRacing.EditorTools
             ExpectGameOverCountdown(errors, RunEndReason.DriverDown, 1.99f, "DRIVER DOWN\n2");
             ExpectGameOverCountdown(errors, RunEndReason.DriverDownAndOutOfFuel, .25f,
                 "DRIVER DOWN\nOUT OF FUEL\n1");
+            ExpectHeadSurfaceContact(errors, "visible gap", false, 1.08f, 1f, .015f);
+            ExpectHeadSurfaceContact(errors, "contact tolerance", true, 1.01f, 1f, .015f);
+            ExpectHeadSurfaceContact(errors, "penetration", true, .98f, 1f, .015f);
+            ValidateCoinRouteProgression(errors);
             ValidateGarageRuntimeContract(errors);
 
             if (errors.Count > 0)
@@ -55,6 +60,32 @@ namespace AnimeHillRacing.EditorTools
                 errors.Add($"Game-over countdown failed for {reason}: expected {expected}, got {actual}.");
             if (!StylizedBitmapFont.SupportsAllVisibleGlyphs(actual, false))
                 errors.Add($"Game-over countdown for {reason} contains glyphs outside the stylized atlas.");
+        }
+
+        private static void ExpectHeadSurfaceContact(List<string> errors, string scenario,
+            bool expected, float headBottomY, float surfaceY, float tolerance)
+        {
+            bool actual = AnimeHillRacing.Vehicle.DriverHeadImpact.HasAuthoritativeSurfaceContact(
+                headBottomY, surfaceY, tolerance);
+            if (actual != expected)
+                errors.Add($"Driver head contact failed for {scenario}: expected {expected}, got {actual}.");
+        }
+
+        private static void ValidateCoinRouteProgression(List<string> errors)
+        {
+            CoinRouteDefinition route = AssetDatabase.LoadAssetAtPath<CoinRouteDefinition>(
+                "Assets/AnimeHillRacing/MapProfiles/CountrysideCoinRoute.asset");
+            if (route == null)
+            {
+                errors.Add("Countryside Coin Route asset is missing.");
+                return;
+            }
+            if (Mathf.Abs(route.allFiveStartDistance - 10000f) > .001f)
+                errors.Add("Countryside Coin 05/two-row peak must be exactly 10,000 m.");
+            if (route.GetFiveCoinCount(100f, 3) != 0 ||
+                route.GetFiveCoinCount(5000f, 9) != 4 ||
+                route.GetFiveCoinCount(10000f, 12) != 12)
+                errors.Add("Countryside Coin 05 progression does not grow correctly through 10,000 m.");
         }
 
         private static void ValidateGarageRuntimeContract(List<string> errors)

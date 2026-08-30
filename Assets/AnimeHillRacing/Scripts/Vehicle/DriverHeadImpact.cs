@@ -135,11 +135,11 @@ namespace AnimeHillRacing.Vehicle
             if (!terrain.TrySampleAuthoritativeSurface(bounds.center.x, out float surfaceY, out _))
                 return;
 
-            float tolerance = Mathf.Max(.04f, Physics2D.defaultContactOffset * 2f);
-            float wheelRadius = vehicle != null && vehicle.Definition != null
-                ? Mathf.Max(.1f, vehicle.Definition.wheelRadius) : .45f;
+            // This fallback must confirm near-contact only. The previous wheel-radius allowance could
+            // report DRIVER DOWN while the visible head was still far above the terrain.
+            float tolerance = Mathf.Max(.01f, Physics2D.defaultContactOffset * 1.25f);
             float verticalDistance = bounds.min.y - surfaceY;
-            if (verticalDistance > wheelRadius + tolerance) return;
+            if (!HasAuthoritativeSurfaceContact(bounds.min.y, surfaceY, tolerance)) return;
 
             nextAllowedImpact = Time.time + .10f;
             float speed = vehicleBody2D != null
@@ -148,9 +148,17 @@ namespace AnimeHillRacing.Vehicle
             driver?.TriggerHeadImpact(speed);
 
             Debug.Log($"[DriverHeadImpact] Fatal authoritative-surface proximity | " +
-                      $"Vertical distance: {verticalDistance:0.000} | Wheel radius: {wheelRadius:0.000} | " +
+                      $"Vertical distance: {verticalDistance:0.000} | Tolerance: {tolerance:0.000} | " +
                       $"Speed: {speed:0.0}m/s", this);
             TriggerDriverDown();
+        }
+
+        public static bool HasAuthoritativeSurfaceContact(float headBottomY, float surfaceY,
+            float contactTolerance)
+        {
+            if (float.IsNaN(headBottomY) || float.IsNaN(surfaceY) ||
+                float.IsInfinity(headBottomY) || float.IsInfinity(surfaceY)) return false;
+            return headBottomY - surfaceY <= Mathf.Max(.005f, contactTolerance);
         }
 
         private void ProcessImpact3D(Collider other)

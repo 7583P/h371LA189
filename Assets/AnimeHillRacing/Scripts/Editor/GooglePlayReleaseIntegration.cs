@@ -17,6 +17,10 @@ namespace AnimeHillRacing.Editor
         private const string Package = "com.matias.hilladventurer";
         private const string StarterProduct = "starter_pack";
         private const string CloudSaveFilename = "hill-adventurer-save-v1";
+        private const string StarterVehicle = "formula-01";
+        private const string StarterSkin = "formula-skin-hill-adventurer-gold";
+        private const string StarterWheel = "formula-wheel-luxury";
+        private const string StarterAccessory = "baseball-cap-rainbow";
 
         private static readonly Dictionary<string, string> Leaderboards =
             new Dictionary<string, string>(StringComparer.Ordinal)
@@ -40,8 +44,8 @@ namespace AnimeHillRacing.Editor
         public static void BuildReleaseAabBatch()
         {
             ValidateOrThrow();
-            if (PlayerSettings.Android.bundleVersionCode != 12)
-                throw new InvalidOperationException("Expected release versionCode 12; refusing another increment.");
+            if (PlayerSettings.Android.bundleVersionCode != 14)
+                throw new InvalidOperationException("Expected release versionCode 14; refusing another increment.");
             string keystorePassword = Environment.GetEnvironmentVariable(
                 "HILL_ADVENTURER_KEYSTORE_PASSWORD");
             string keyaliasPassword = Environment.GetEnvironmentVariable(
@@ -103,6 +107,12 @@ namespace AnimeHillRacing.Editor
             if (starter == null) throw new InvalidOperationException("Missing Starter Pack configuration.");
             SerializedObject starterSerialized = new SerializedObject(starter);
             starterSerialized.FindProperty("googlePlayProductId").stringValue = StarterProduct;
+            starterSerialized.FindProperty("exclusiveVehicleId").stringValue = StarterVehicle;
+            starterSerialized.FindProperty("exclusiveSkinId").stringValue = StarterSkin;
+            starterSerialized.FindProperty("exclusiveWheelId").stringValue = StarterWheel;
+            starterSerialized.FindProperty("exclusiveAccessoryId").stringValue = StarterAccessory;
+            starterSerialized.FindProperty("coinReward").intValue = 500000;
+            starterSerialized.FindProperty("gemReward").intValue = 1000;
             starterSerialized.FindProperty("enableCloudSave").boolValue = true;
             starterSerialized.FindProperty("cloudSaveFilename").stringValue = CloudSaveFilename;
             starterSerialized.ApplyModifiedPropertiesWithoutUndo();
@@ -131,6 +141,10 @@ namespace AnimeHillRacing.Editor
                 "Assets/AnimeHillRacing/Resources/StarterPackConfiguration.asset");
             if (starter == null || starter.googlePlayProductId != StarterProduct)
                 throw new InvalidOperationException("Starter Pack Product ID mismatch.");
+            if (starter.exclusiveVehicleId != StarterVehicle || starter.exclusiveSkinId != StarterSkin ||
+                starter.exclusiveWheelId != StarterWheel || starter.exclusiveAccessoryId != StarterAccessory ||
+                starter.coinReward != 500000 || starter.gemReward != 1000)
+                throw new InvalidOperationException("Starter Pack reward configuration mismatch.");
             if (!starter.enableCloudSave || starter.cloudSaveFilename != CloudSaveFilename)
                 throw new InvalidOperationException("Google Play Saved Games configuration mismatch.");
             if (!File.Exists("Assets/Plugins/Android/GooglePlayGamesManifest.androidlib/AndroidManifest.xml"))

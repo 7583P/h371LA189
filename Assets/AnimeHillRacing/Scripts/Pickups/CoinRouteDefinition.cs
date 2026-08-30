@@ -47,7 +47,7 @@ namespace AnimeHillRacing.Pickups
         [Min(1f)] public float sparseEndDistance = 300f;
         [Min(1f)] public float growingEndDistance = 600f;
         [Min(1f)] public float variedEndDistance = 1200f;
-        [Min(1f)] public float allFiveStartDistance = 2600f;
+        [Min(1f)] public float allFiveStartDistance = 10000f;
 
         public float MaximumGroupsPer100Meters => 100f / Mathf.Max(1f, cellLength);
         public int MaximumCoinsPerGroup => 12;
@@ -72,7 +72,8 @@ namespace AnimeHillRacing.Pickups
             if (!enabled) return false;
 
             // Coin groups always hug the sampled surface in two clean rows. The lower row grows first;
-            // the upper row is introduced progressively as distance (and total coin density) increases.
+            // the upper row starts at the growing band and then adds one coin at a time until the
+            // 10,000 m peak. This avoids the old abrupt jump to two full rows near the start.
             int lowerRowCount = tier switch
             {
                 0 => 3,
@@ -80,13 +81,13 @@ namespace AnimeHillRacing.Pickups
                 2 => 5,
                 _ => 6
             };
-            int upperRowCount = tier switch
+            int upperRowCount = 0;
+            if (anchor >= sparseEndDistance)
             {
-                0 => 0,
-                1 => 2,
-                2 => 3,
-                _ => 6
-            };
+                float upperProgress = Mathf.InverseLerp(sparseEndDistance,
+                    Mathf.Max(sparseEndDistance + cellLength, allFiveStartDistance), anchor);
+                upperRowCount = Mathf.Clamp(1 + Mathf.FloorToInt(upperProgress * 5f), 1, 6);
+            }
             group = new CoinRouteGroup
             {
                 cellIndex = cellIndex,
@@ -112,10 +113,8 @@ namespace AnimeHillRacing.Pickups
             float distance = centered * Mathf.Max(.5f, coinHorizontalSpacing);
             float height = upperRow ? Mathf.Max(.2f, rowVerticalSpacing) : 0f;
             float lateral = 0f;
-            bool allFive = group.anchorDistance >= allFiveStartDistance;
-            int value = allFive ? 5 : 1;
-            if (!allFive && group.densityTier >= 1 && index == count - 1)
-                value = 5;
+            int fiveCoinCount = GetFiveCoinCount(group.anchorDistance, count);
+            int value = index >= count - fiveCoinCount ? 5 : 1;
             return new CoinRoutePoint
             {
                 distanceOffset = distance,
@@ -123,6 +122,17 @@ namespace AnimeHillRacing.Pickups
                 lateralOffset = lateral,
                 value = value
             };
+        }
+
+        public int GetFiveCoinCount(float distance, int coinCount)
+        {
+            int safeCount = Mathf.Max(1, coinCount);
+            if (distance < sparseEndDistance) return 0;
+            if (distance >= allFiveStartDistance) return safeCount;
+
+            float progress = Mathf.InverseLerp(sparseEndDistance,
+                Mathf.Max(sparseEndDistance + cellLength, allFiveStartDistance), distance);
+            return Mathf.Clamp(1 + Mathf.FloorToInt(progress * (safeCount - 1)), 1, safeCount);
         }
 
         public long GetStableCoinId(CoinRouteGroup group, int pointIndex)

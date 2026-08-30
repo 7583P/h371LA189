@@ -25,9 +25,13 @@ namespace AnimeHillRacing.Core
         public string exclusiveVehicleId;
         [Tooltip("Local skin ID shown in Starter_Pack artwork. This is not a Google Product ID.")]
         public string exclusiveSkinId;
+        [Tooltip("Local wheel ID included with the Starter Pack vehicle.")]
+        public string exclusiveWheelId;
+        [Tooltip("Global character accessory ID included with the Starter Pack.")]
+        public string exclusiveAccessoryId;
         [Tooltip("Legacy Phase 1 PremiumBundleCatalog ID. Used only when the direct local IDs above are empty.")]
         public string exclusiveBundleId;
-        [Min(0)] public int coinReward = 100000;
+        [Min(0)] public int coinReward = 500000;
         [Min(0)] public int gemReward = 1000;
         [Tooltip("Design reference only. Production UI waits for the localized Google Play price.")]
         public string conceptualPrice = "$2.99";

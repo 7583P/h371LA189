@@ -4,7 +4,8 @@ namespace AnimeHillRacing.Core
 {
     /// <summary>
     /// Distance reward sequence. A run starts after the saved personal best, so only new distance
-    /// milestones can be rewarded. Passing a marker above or below it awards without any collision.
+    /// milestones can be rewarded. Passing a marker awards normally; its visible marker may also
+    /// request the same idempotent claim when touched by the vehicle.
     /// </summary>
     public sealed class DistanceBonusTracker
     {

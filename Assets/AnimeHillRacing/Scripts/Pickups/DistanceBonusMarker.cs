@@ -1,11 +1,13 @@
 using AnimeHillRacing.Core;
+using AnimeHillRacing.Vehicle;
 using UnityEngine;
 
 namespace AnimeHillRacing.Pickups
 {
     /// <summary>
-    /// Visual-only marker for a distance milestone. There is intentionally no collider: GameManager
-    /// grants the reward as soon as maximum run progress passes ProgressPosition.
+    /// Marker for a distance milestone. The normal progress claim remains authoritative, while a
+    /// small physics proximity check lets a visible chassis/wheel touch claim it just before the
+    /// vehicle origin crosses ProgressPosition.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class DistanceBonusMarker : MonoBehaviour
@@ -89,6 +91,18 @@ namespace AnimeHillRacing.Pickups
             float wave = Mathf.Sin(Time.unscaledTime * 2.4f + animationPhase);
             transform.position = restingPosition + Vector3.up * (.10f * wave);
             transform.localScale = restingScale * (1f + .035f * wave);
+        }
+
+        private void FixedUpdate()
+        {
+            if (manager == null) manager = GameManager.Instance;
+            if (manager == null || manager.Vehicle == null ||
+                Mathf.Abs(manager.Vehicle.ProgressPosition - progressPosition) > 6f ||
+                !PickupBase.TryFindTouchingVehicle(transform.position, .72f,
+                    out VehicleRuntimeBase touchingVehicle)) return;
+
+            if (manager.TryCollectDistanceBonusMarker(progressPosition, touchingVehicle))
+                gameObject.SetActive(false);
         }
 
         private void LateUpdate()

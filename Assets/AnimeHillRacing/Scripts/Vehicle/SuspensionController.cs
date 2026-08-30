@@ -120,6 +120,9 @@ namespace AnimeHillRacing.Vehicle
         public float LastLandingImpactSpeed => lastLandingImpactSpeed;
         public Rigidbody WheelBody => wheelBody;
         public SphereCollider WheelCollider => wheelCollider;
+        public VehicleRuntimeBase OwnerVehicle => body != null
+            ? body.GetComponent<VehicleRuntimeBase>()
+            : GetComponentInParent<VehicleRuntimeBase>();
         public ConfigurableJoint SuspensionJoint => suspensionJoint;
         public Vector3 SuspensionAxisWorld => suspensionJoint != null
             ? suspensionJoint.transform.TransformDirection(suspensionJoint.secondaryAxis).normalized

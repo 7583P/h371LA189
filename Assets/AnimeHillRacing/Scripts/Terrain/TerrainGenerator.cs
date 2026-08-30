@@ -380,7 +380,8 @@ namespace AnimeHillRacing.Terrain
             float general = profile != null && profile.elevationProfile != null
                 ? profile.elevationProfile.GetHeightAtDistance(worldX)
                 : SampleProceduralProfileHeight(profile, worldX);
-            return SampleCountrysideSpecialHeight(profile, worldX, general);
+            float height = SampleCountrysideSpecialHeight(profile, worldX, general);
+            return ApplyCountrysideOpeningTerrain(profile, worldX, height);
         }
 
         public static float SampleProfileHeight(MapProfile profile, float worldX)
@@ -392,7 +393,172 @@ namespace AnimeHillRacing.Terrain
             if (profile.supportsLiquidExposure) return SampleNeonHeight(profile, worldX);
             if (profile.useSpaceTerrain) return SampleSpaceHeight(profile, worldX);
             float general = SampleProceduralProfileHeight(profile, worldX);
-            return SampleCountrysideSpecialHeight(profile, worldX, general);
+            float height = SampleCountrysideSpecialHeight(profile, worldX, general);
+            return ApplyCountrysideOpeningTerrain(profile, worldX, height);
+        }
+
+        private static float ApplyCountrysideOpeningTerrain(MapProfile profile, float worldX,
+            float generatedHeight)
+        {
+            const float unchangedTerrainStart = 2000f;
+            if (profile == null || profile.mapId != "countryside" || worldX < 0f ||
+                worldX >= unchangedTerrainStart) return generatedHeight;
+
+            float distance = Mathf.Max(0f, worldX);
+            float launchEnvelope = Smooth01(Mathf.InverseLerp(0f, 35f, distance));
+
+            // Broad hills use domain-warped noise so their height, spacing and crest position do not
+            // repeat as a visible /\ pattern. Peaks are rounded and followed by a readable descent.
+            float openingDifficulty = Smooth01(Mathf.InverseLerp(0f, unchangedTerrainStart, distance));
+            float broadWarp = (Mathf.PerlinNoise(distance * .0031f + 18.472f, 2.713f) - .5f) * 72f;
+            float broadWave = .5f + .5f * Mathf.Sin((distance + broadWarp) * TwoPi / 238f + .38f);
+            float broadNoise = Mathf.PerlinNoise(distance * .0073f + 41.83f, 5.17f);
+            float broadShape = Mathf.Clamp01(broadWave * .68f + broadNoise * .32f);
+            float broadAmplitude = Mathf.Lerp(2.6f, 5.4f, openingDifficulty);
+            float authoredOpening = profile.baseHeight +
+                                     broadShape * broadAmplitude * launchEnvelope;
+
+            // The first 500 m must already teach throttle and rotation control. Three different,
+            // guaranteed shapes prevent the opening from becoming a long sightseeing slope.
+            authoredOpening += SampleCountrysideIntroChallenges(distance) * launchEnvelope;
+
+            // 500-2000 m: guarantee a real driving challenge roughly every 157 m. Each mountain has a
+            // first climb into a shoulder, a second steeper climb on top of it, then a full descent.
+            // Seeded shoulder/apex positions and height scales keep consecutive obstacles distinct.
+            float mountainGate = Smooth01(Mathf.InverseLerp(500f, 545f, distance));
+            float mountainDifficulty = Smooth01(Mathf.InverseLerp(500f, 1850f, distance));
+            float mountainShape = SampleCountrysideStackedMountain(profile, distance);
+            float mountainAmplitude = Mathf.Lerp(6f, 15.5f, mountainDifficulty) * mountainGate;
+            authoredOpening += mountainShape * mountainAmplitude;
+            authoredOpening += SampleCountrysideOpeningMiniBumps(profile, distance);
+
+            // Rejoin the exact pre-existing profile before the protected 2000 m boundary. At and after
+            // 2000 m this method is an exact pass-through and cannot modify a single terrain sample.
+            float restoreOriginal = Smooth01(Mathf.InverseLerp(1850f, unchangedTerrainStart, distance));
+            return Mathf.Lerp(authoredOpening, generatedHeight, restoreOriginal);
+        }
+
+        private static float SampleCountrysideIntroChallenges(float distance)
+        {
+            // 45-165 m: a small climb immediately followed by a deep, visible dip and recovery.
+            if (distance >= 45f && distance < 95f)
+                return Mathf.Lerp(0f, 3.8f,
+                    Smooth01(Mathf.InverseLerp(45f, 95f, distance)));
+            if (distance >= 95f && distance < 125f)
+                return Mathf.Lerp(3.8f, -3.0f,
+                    Smooth01(Mathf.InverseLerp(95f, 125f, distance)));
+            if (distance >= 125f && distance < 165f)
+                return Mathf.Lerp(-3.0f, 0f,
+                    Smooth01(Mathf.InverseLerp(125f, 165f, distance)));
+
+            // 195-295 m: one intentionally recognizable /\ hill, softened only enough to avoid an
+            // artificial collider corner at its summit.
+            if (distance >= 195f && distance < 295f)
+            {
+                float t = Mathf.InverseLerp(195f, 295f, distance);
+                const float apex = .40f;
+                float triangle = t <= apex ? t / apex : 1f - (t - apex) / (1f - apex);
+                float naturalTriangle = Mathf.Lerp(triangle, Smooth01(triangle), .32f);
+                return naturalTriangle * 6.8f;
+            }
+
+            // 330-500 m: climb once, climb again more steeply, then descend below the approach level.
+            // The drop is strong enough to unsettle a careless vehicle but remains below later difficulty.
+            if (distance >= 330f && distance < 375f)
+                return Mathf.Lerp(0f, 3.2f,
+                    Smooth01(Mathf.InverseLerp(330f, 375f, distance)));
+            if (distance >= 375f && distance < 410f)
+                return Mathf.Lerp(3.2f, 7.8f,
+                    Smooth01(Mathf.InverseLerp(375f, 410f, distance)));
+            if (distance >= 410f && distance < 452f)
+                return Mathf.Lerp(7.8f, -3.0f,
+                    Smooth01(Mathf.InverseLerp(410f, 452f, distance)));
+            if (distance >= 452f && distance < 500f)
+                return Mathf.Lerp(-3.0f, 0f,
+                    Smooth01(Mathf.InverseLerp(452f, 500f, distance)));
+            return 0f;
+        }
+
+        private static float SampleCountrysideStackedMountain(MapProfile profile, float distance)
+        {
+            const float challengeStart = 500f;
+            const float challengeLength = 157f;
+            if (distance <= challengeStart) return 0f;
+
+            float challengePosition = (distance - challengeStart) / challengeLength;
+            int challengeIndex = Mathf.Max(0, Mathf.FloorToInt(challengePosition));
+            float t = Mathf.Clamp01(challengePosition - challengeIndex);
+            uint seed = CombinedSeed(profile);
+            float shoulderEnd = Mathf.Lerp(.42f, .53f,
+                Hash01(seed, challengeIndex * 1877 + 401));
+            float apex = Mathf.Lerp(.67f, .78f,
+                Hash01(seed, challengeIndex * 1889 + 409));
+            float shoulderHeight = Mathf.Lerp(.34f, .49f,
+                Hash01(seed, challengeIndex * 1901 + 419));
+            float heightScale = Mathf.Lerp(.84f, 1.18f,
+                Hash01(seed, challengeIndex * 1913 + 431));
+
+            float shape;
+            if (t <= shoulderEnd)
+            {
+                float climb = Smooth01(Mathf.InverseLerp(0f, shoulderEnd, t));
+                shape = Mathf.Lerp(0f, shoulderHeight, climb);
+            }
+            else if (t <= apex)
+            {
+                float steepClimb = Smooth01(Mathf.InverseLerp(shoulderEnd, apex, t));
+                shape = Mathf.Lerp(shoulderHeight, 1f, steepClimb);
+            }
+            else
+            {
+                float descent = Smooth01(Mathf.InverseLerp(apex, 1f, t));
+                shape = Mathf.Lerp(1f, 0f, descent);
+            }
+            return shape * heightScale;
+        }
+
+        private static float SampleCountrysideOpeningMiniBumps(MapProfile profile, float distance)
+        {
+            if (distance < 500f || distance >= 1850f) return 0f;
+
+            float startGate = Smooth01(Mathf.InverseLerp(500f, 515f, distance));
+            float endGate = 1f - Smooth01(Mathf.InverseLerp(1810f, 1850f, distance));
+            float difficulty = Smooth01(Mathf.InverseLerp(500f, 1850f, distance));
+
+            // The first group is guaranteed and immediately visible after 500 m: two pointed bumps
+            // separated by noticeable dips, so this boundary can never look like a straight ramp.
+            if (distance < 610f)
+            {
+                float t = Mathf.InverseLerp(500f, 610f, distance);
+                float firstGroup = PointedPulse(t, .16f, .12f, 1.35f) * 1.05f -
+                                   PointedPulse(t, .39f, .10f, 1.45f) * .72f +
+                                   PointedPulse(t, .63f, .13f, 1.32f) * 1.22f -
+                                   PointedPulse(t, .84f, .09f, 1.52f) * .58f;
+                return firstGroup * 1.45f * startGate;
+            }
+
+            // Later groups vary their centres, widths, polarity and strength per cell. The large mountain
+            // underneath supplies the main climb while these compact shapes keep its sides technically busy.
+            const float cellLength = 91f;
+            float localDistance = distance - 610f;
+            int cell = Mathf.Max(0, Mathf.FloorToInt(localDistance / cellLength));
+            float cellT = Mathf.Repeat(localDistance, cellLength) / cellLength;
+            uint seed = CombinedSeed(profile);
+            float firstCentre = Mathf.Lerp(.18f, .32f, Hash01(seed, cell * 1733 + 1741));
+            float secondCentre = Mathf.Lerp(.45f, .60f, Hash01(seed, cell * 1747 + 1753));
+            float thirdCentre = Mathf.Lerp(.72f, .86f, Hash01(seed, cell * 1759 + 1777));
+            float firstWidth = Mathf.Lerp(.085f, .145f, Hash01(seed, cell * 1783 + 1787));
+            float secondWidth = Mathf.Lerp(.075f, .13f, Hash01(seed, cell * 1789 + 1801));
+            float thirdWidth = Mathf.Lerp(.08f, .14f, Hash01(seed, cell * 1811 + 1823));
+            float middlePolarity = Hash01(seed, cell * 1831 + 1847) < .68f ? -1f : 1f;
+            float lastPolarity = Hash01(seed, cell * 1861 + 1867) < .52f ? -1f : 1f;
+            float detail = PointedPulse(cellT, firstCentre, firstWidth, 1.32f) *
+                           Mathf.Lerp(.82f, 1.18f, Hash01(seed, cell * 1871 + 1873)) +
+                           PointedPulse(cellT, secondCentre, secondWidth, 1.42f) * middlePolarity *
+                           Mathf.Lerp(.62f, 1.05f, Hash01(seed, cell * 1877 + 1879)) +
+                           PointedPulse(cellT, thirdCentre, thirdWidth, 1.38f) * lastPolarity *
+                           Mathf.Lerp(.74f, 1.12f, Hash01(seed, cell * 1889 + 1901));
+            return detail * Mathf.Lerp(1.35f, 2.85f, difficulty) * startGate * endGate;
         }
 
         private static float SampleCountrysideSpecialHeight(MapProfile profile, float worldX,
@@ -408,7 +574,7 @@ namespace AnimeHillRacing.Terrain
                 return Mathf.Lerp(layout.baselineHeight, generalHeight,
                     Smooth01(Mathf.InverseLerp(layout.coreEnd, layout.end, worldX)));
             if (layout.type == CountrysideSpecialFeatureType.LongFlat)
-                return layout.baselineHeight + SampleCountrysideLongFlatDetail(profile, worldX, layout);
+                return layout.baselineHeight;
 
             float coreMiniRelief = SampleCountrysideProgressiveMiniHills(profile, worldX) * .22f;
             if (worldX <= layout.slashStart) return layout.baselineHeight + coreMiniRelief;
@@ -417,34 +583,6 @@ namespace AnimeHillRacing.Terrain
             float slashT = Mathf.Clamp01((worldX - layout.slashStart) / slashLength);
             float triangle = slashT <= .5f ? slashT * 2f : (1f - slashT) * 2f;
             return layout.baselineHeight + coreMiniRelief * .55f + triangle * layout.peakHeight;
-        }
-
-        private static float SampleCountrysideLongFlatDetail(MapProfile profile, float worldX,
-            CountrysideSpecialFeatureLayout layout)
-        {
-            float coreLength = Mathf.Max(50f, layout.coreEnd - layout.coreStart);
-            float t = Mathf.Clamp01((worldX - layout.coreStart) / coreLength);
-            float edgeEnvelope = Smooth01(Mathf.InverseLerp(0f, .08f, t)) *
-                                 Smooth01(Mathf.InverseLerp(1f, .92f, t));
-            CountrysideSpecialFeatureSettings settings = profile.countrysideSpecialFeatures;
-            uint seed = CombinedSeed(profile);
-            int bumpCount = Mathf.Clamp(Mathf.RoundToInt(coreLength / 46f), 3, 6);
-            float detail = 0f;
-            for (int bump = 0; bump < bumpCount; bump++)
-            {
-                float centre = (bump + 1f) / (bumpCount + 1f) +
-                               (Hash01(seed, layout.index * 1571 + bump * 31 + 1601) - .5f) * .055f;
-                float halfWidth = Mathf.Lerp(.018f, .042f,
-                    Hash01(seed, layout.index * 1583 + bump * 37 + 1607));
-                float polarity = Hash01(seed, layout.index * 1597 + bump * 41 + 1613) < .78f ? 1f : -.55f;
-                float strength = Mathf.Lerp(.18f, .42f,
-                    Hash01(seed, layout.index * 1601 + bump * 43 + 1619));
-                detail += PointedPulse(t, centre, halfWidth, 1.65f) * polarity * strength;
-            }
-            float maximumDetail = Mathf.Lerp(Mathf.Max(.05f, settings.initialMicroHeight),
-                Mathf.Max(settings.initialMicroHeight, settings.peakMicroHeight),
-                Smooth01(Mathf.InverseLerp(0f, Mathf.Max(1000f, settings.peakDifficultyDistance), worldX)));
-            return detail * maximumDetail * edgeEnvelope;
         }
 
         public static bool TryGetCountrysideSpecialFeature(MapProfile profile, float worldX,

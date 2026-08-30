@@ -151,10 +151,10 @@ MonoBehaviour:
     microSectionLength: 66
     initialMicroHeight: 0.28
     peakMicroHeight: 2.4
-    miniStraightChance: 0.36
+    miniStraightChance: 0
     miniStraightBumpCount: 3
-    initialChallengeStraightChance: 0.34
-    peakChallengeStraightChance: 0.26
+    initialChallengeStraightChance: 0
+    peakChallengeStraightChance: 0
     straightDescentChance: 0.42
     challengeStartDistance: 350
     challengeMinimumCellLength: 135
@@ -171,7 +171,7 @@ MonoBehaviour:
     eventChance: 1
     longFlatChance: 1
     transitionLength: 60
-    longFlatLengths: {x: 150, y: 300}
+    longFlatLengths: {x: 150, y: 150}
     slashFlatLead: 18
     slashLength: 96
     slashHeight: 18

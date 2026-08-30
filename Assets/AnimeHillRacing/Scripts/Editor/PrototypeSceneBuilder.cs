@@ -1553,7 +1553,7 @@ namespace AnimeHillRacing.Editor
                 assets.formula.skins[2].unlockedByDefault || assets.formula.skins[2].gemPrice != 1000 ||
                 assets.formula.skins[3].optionId != "formula-skin-hill-adventurer-gold" ||
                 assets.formula.skins[3].sprite != assets.formulaHillAdventurerSkin ||
-                assets.formula.skins[3].unlockedByDefault || assets.formula.skins[3].gemPrice != 1000 ||
+                assets.formula.skins[3].unlockedByDefault || assets.formula.skins[3].gemPrice != 0 ||
                 assets.formula.skins[3].allowsBlueprintProgression ||
                 assets.formula.wheels[0].sprite != assets.formulaWheel02 ||
                 assets.formula.wheels[1].sprite != assets.formulaWheel01 ||
@@ -1561,7 +1561,8 @@ namespace AnimeHillRacing.Editor
                 assets.formula.wheels[2].optionId != "formula-wheel-luxury" ||
                 assets.formula.wheels[2].sprite != assets.luxuryWheel ||
                 assets.formula.electricSkinOverlay != assets.formulaElectricitySkin ||
-                assets.formula.wheels[2].unlockedByDefault || assets.formula.wheels[2].gemPrice != 500)
+                assets.formula.wheels[2].unlockedByDefault || assets.formula.wheels[2].gemPrice != 0 ||
+                assets.formula.wheels[2].allowsBlueprintProgression)
                 throw new System.InvalidOperationException(
                     "Formula Default/Neon/Electricity/Hill Adventurer or Ghosty/Luxury Garage contract is invalid.");
             if (assets.hillAdventurer.skins == null || assets.hillAdventurer.skins.Length != 2 ||
@@ -3101,7 +3102,7 @@ namespace AnimeHillRacing.Editor
             bool foundSingleRow = false;
             bool foundGrowingSecondRow = false;
             bool foundFullSecondRow = false;
-            int rowLastCell = route.LastCellForDistance(route.variedEndDistance + route.cellLength * 4f);
+            int rowLastCell = route.LastCellForDistance(route.allFiveStartDistance + route.cellLength * 4f);
             for (int cell = 0; cell <= rowLastCell; cell++)
             {
                 if (!route.TryGetGroup(cell, out CoinRouteGroup rowGroup)) continue;
@@ -3128,19 +3129,28 @@ namespace AnimeHillRacing.Editor
                 throw new System.InvalidOperationException(
                     "Coin Route must progress from one row to a partial second row and finally two full rows.");
             bool foundMixedGroup = false;
+            int previousFiveCount = 0;
             int firstMixedCell = route.FirstCellForDistance(route.sparseEndDistance);
             int lastMixedCell = route.LastCellForDistance(route.allFiveStartDistance - 1f);
             for (int cell = firstMixedCell; cell <= lastMixedCell; cell++)
             {
-                if (!route.TryGetGroup(cell, out CoinRouteGroup group) || group.anchorDistance >= route.allFiveStartDistance)
+                if (!route.TryGetGroup(cell, out CoinRouteGroup group) ||
+                    group.anchorDistance < route.sparseEndDistance ||
+                    group.anchorDistance >= route.allFiveStartDistance)
                     continue;
                 foundMixedGroup = true;
+                int fiveCount = 0;
                 for (int point = 0; point < group.coinCount; point++)
                 {
-                    int expected = point == group.coinCount - 1 ? 5 : 1;
-                    if (route.GetPoint(group, point).value != expected)
-                        throw new System.InvalidOperationException("Every mixed coin group must end with its only Coin 05.");
+                    int value = route.GetPoint(group, point).value;
+                    if (value == 5) fiveCount++;
+                    else if (value != 1)
+                        throw new System.InvalidOperationException("Coin progression can only contain Coin 01/Coin 05.");
                 }
+                if (fiveCount <= 0 || fiveCount >= group.coinCount || fiveCount < previousFiveCount)
+                    throw new System.InvalidOperationException(
+                        "Coin 05 count must grow progressively before the 10,000 m peak.");
+                previousFiveCount = fiveCount;
             }
             if (!foundMixedGroup)
                 throw new System.InvalidOperationException("Coin Route has no mixed Coin 01/Coin 05 phase.");
@@ -3158,10 +3168,12 @@ namespace AnimeHillRacing.Editor
             }
             if (!foundFinalGroup)
                 throw new System.InvalidOperationException("Coin Route has no all-Coin-05 final phase.");
+            if (Mathf.Abs(route.allFiveStartDistance - 10000f) > .001f)
+                throw new System.InvalidOperationException("Coin Route must reach its two-row Coin 05 peak at 10,000 m.");
             Debug.Log($"Countryside Coin Route validation | snapshot={deterministicHashA}, " +
                       $"density={earlyDensity:0.0}->{middleDensity:0.0}->{lateDensity:0.0} coins/100m, " +
                       $"rows=1->1+partial->2, maxGroups={route.MaximumGroupsPer100Meters:0.00}/100m, " +
-                      $"mixed-final=05, final-phase=all-05, deterministic=OK.");
+                      $"Coin05=progressive, peak=10000m/all-05, deterministic=OK.");
         }
 
         private static int RouteSnapshotHash(CoinRouteDefinition route, int firstCell, int lastCell)
@@ -3682,10 +3694,10 @@ namespace AnimeHillRacing.Editor
                 driver.accessories[2].sprite != assets.driverFireGlasses || normalCap.sprite == null ||
                 !normalCap.unlockedByDefault || normalCap.gemPrice != 0 || !normalCap.supportsFlipVariant ||
                 rainbowCap.sprite != normalCap.sprite || rainbowCap.unlockedByDefault ||
-                rainbowCap.gemPrice != 100 || !rainbowCap.supportsFlipVariant || !rainbowCap.animateRainbow)
+                rainbowCap.gemPrice != 0 || !rainbowCap.supportsFlipVariant || !rainbowCap.animateRainbow)
                 throw new System.InvalidOperationException(
                     "Characters requires nine stable accessories, one shared-orientation free cap and " +
-                    "the animated 100-gem Rainbow cap.");
+                    "the Starter Pack animated Neon Lightning cap.");
 
             VehicleDefinition[] vehicles = { assets.jeep, assets.formula, assets.rally, assets.sportBike };
             GaragePreviewRenderer preview = Object.FindFirstObjectByType<GaragePreviewRenderer>(FindObjectsInactive.Include);
@@ -5457,14 +5469,15 @@ namespace AnimeHillRacing.Editor
                 Customization(FormulaElectricSkinEffect.ElectricSkinId, "ELECTRICITY",
                     assets.formulaElectricitySkin, false, 1000),
                 Customization("formula-skin-hill-adventurer-gold", "HILL ADVENTURER GOLD",
-                    assets.formulaHillAdventurerSkin, false, 1000, 0f,
+                    assets.formulaHillAdventurerSkin, false, 0, 0f,
                     new Vector2(21.07f, 4.93f), new Vector2(.11f, .125f), false)
             };
             assets.formula.wheels = new[]
             {
                 Customization("formula-wheel-02", "FORMULA WHEEL 02", assets.formulaWheel02),
                 Customization("formula-wheel-01", "FORMULA GHOSTY WHEELS", assets.formulaWheel01, false, 500),
-                Customization("formula-wheel-luxury", "LUXURY WHEEL", assets.luxuryWheel, false, 500)
+                Customization("formula-wheel-luxury", "HILL ADVENTURER GOLD WHEEL", assets.luxuryWheel,
+                    false, 0, 0f, default, default, false)
             };
             assets.formula.electricSkinOverlay = assets.formulaElectricitySkin;
             assets.formula.visualWidth = 5.60f;
@@ -5867,7 +5880,7 @@ namespace AnimeHillRacing.Editor
                 new DriverDefinition.CharacterAccessoryOption
                 {
                     accessoryId = "baseball-cap-rainbow", displayName = "CAP - NEON LIGHTNING",
-                    sprite = assets.driverBaseballCap, unlockedByDefault = false, gemPrice = 100,
+                    sprite = assets.driverBaseballCap, unlockedByDefault = false, gemPrice = 0,
                     visibleWidth = .78f, anchorOffset = new Vector2(.18f, .18f),
                     animateRainbow = true, rainbowSpeed = 2.6f, rainbowFrequency = 1.15f,
                     supportsFlipVariant = true, rainbowNeonGlow = 1.6f,
@@ -5907,7 +5920,7 @@ namespace AnimeHillRacing.Editor
             assets.countrysideCoinRoute.sparseEndDistance = 300f;
             assets.countrysideCoinRoute.growingEndDistance = 600f;
             assets.countrysideCoinRoute.variedEndDistance = 1200f;
-            assets.countrysideCoinRoute.allFiveStartDistance = 2600f;
+            assets.countrysideCoinRoute.allFiveStartDistance = 10000f;
             EditorUtility.SetDirty(assets.countrysideCoinRoute);
 
             assets.countryside = LoadOrCreate<MapProfile>(Root + "/MapProfiles/Countryside.asset");

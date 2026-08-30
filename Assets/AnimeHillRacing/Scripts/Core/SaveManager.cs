@@ -319,7 +319,10 @@ namespace AnimeHillRacing.Core
         {
             error = string.Empty;
             if (!TryResolveStarterPackContent(catalog, configuration, out VehicleDefinition vehicle,
-                    out VehicleDefinition.CustomizationOption skin, out BundleDefinition legacyBundle,
+                    out VehicleDefinition.CustomizationOption skin,
+                    out VehicleDefinition.CustomizationOption wheel,
+                    out DriverDefinition.CharacterAccessoryOption accessory,
+                    out BundleDefinition legacyBundle,
                     out error)) return false;
 
             bool grantInitialRewards = !IsStarterPackInitialRewardsGranted;
@@ -332,7 +335,7 @@ namespace AnimeHillRacing.Core
                 PlayerPrefs.SetInt(StarterPackRewardsGrantedKey, 1);
                 PlayerPrefs.SetInt(PendingPaidCurrencyCloudSyncKey, 1);
             }
-            UnlockStarterPackContentWithoutSave(vehicle, skin, legacyBundle);
+            UnlockStarterPackContentWithoutSave(vehicle, skin, wheel, accessory, legacyBundle);
             PlayerPrefs.SetInt(StarterPackOwnedKey, 1);
             PlayerPrefs.Save();
             if (grantInitialRewards) CurrencyChanged?.Invoke();
@@ -341,16 +344,19 @@ namespace AnimeHillRacing.Core
 
         public static bool IsStarterPackContentConfigured(GameCatalog catalog,
             StarterPackConfiguration configuration, out string error) =>
-            TryResolveStarterPackContent(catalog, configuration, out _, out _, out _, out error);
+            TryResolveStarterPackContent(catalog, configuration, out _, out _, out _, out _, out _, out error);
 
         public static bool RestoreStarterPackOwnership(GameCatalog catalog,
             StarterPackConfiguration configuration, out string error)
         {
             if (!TryResolveStarterPackContent(catalog, configuration, out VehicleDefinition vehicle,
-                    out VehicleDefinition.CustomizationOption skin, out BundleDefinition legacyBundle,
+                    out VehicleDefinition.CustomizationOption skin,
+                    out VehicleDefinition.CustomizationOption wheel,
+                    out DriverDefinition.CharacterAccessoryOption accessory,
+                    out BundleDefinition legacyBundle,
                     out error)) return false;
 
-            UnlockStarterPackContentWithoutSave(vehicle, skin, legacyBundle);
+            UnlockStarterPackContentWithoutSave(vehicle, skin, wheel, accessory, legacyBundle);
             PlayerPrefs.SetInt(StarterPackOwnedKey, 1);
             // A store restore proves permanent ownership, but it must never replay the pack's
             // one-time currency payload on a reinstall or another device.
@@ -999,8 +1005,20 @@ namespace AnimeHillRacing.Core
         {
             // Phase 1 had a single ownership key and granted the currency in the same write. Treat
             // every existing owned save as already rewarded so an IAP restore cannot duplicate it.
-            if (!IsStarterPackOwned || PlayerPrefs.HasKey(StarterPackRewardsGrantedKey)) return;
-            PlayerPrefs.SetInt(StarterPackRewardsGrantedKey, 1);
+            if (!IsStarterPackOwned) return;
+            if (!PlayerPrefs.HasKey(StarterPackRewardsGrantedKey))
+                PlayerPrefs.SetInt(StarterPackRewardsGrantedKey, 1);
+
+            // Starter Pack contents can expand between versions. Existing legitimate owners receive
+            // newly added permanent cosmetics, but the one-time currency payload is never replayed.
+            StarterPackConfiguration configuration = StarterPackConfiguration.Instance;
+            GameCatalog catalog = configuration != null ? configuration.gameCatalog : null;
+            if (TryResolveStarterPackContent(catalog, configuration, out VehicleDefinition vehicle,
+                    out VehicleDefinition.CustomizationOption skin,
+                    out VehicleDefinition.CustomizationOption wheel,
+                    out DriverDefinition.CharacterAccessoryOption accessory,
+                    out BundleDefinition legacyBundle, out _))
+                UnlockStarterPackContentWithoutSave(vehicle, skin, wheel, accessory, legacyBundle);
             PlayerPrefs.Save();
         }
 
@@ -1054,11 +1072,16 @@ namespace AnimeHillRacing.Core
 
         private static bool TryResolveStarterPackContent(GameCatalog catalog,
             StarterPackConfiguration configuration, out VehicleDefinition vehicle,
-            out VehicleDefinition.CustomizationOption skin, out BundleDefinition legacyBundle,
+            out VehicleDefinition.CustomizationOption skin,
+            out VehicleDefinition.CustomizationOption wheel,
+            out DriverDefinition.CharacterAccessoryOption accessory,
+            out BundleDefinition legacyBundle,
             out string error)
         {
             vehicle = null;
             skin = null;
+            wheel = null;
+            accessory = null;
             legacyBundle = null;
             error = string.Empty;
             if (catalog == null || configuration == null)
@@ -1068,7 +1091,9 @@ namespace AnimeHillRacing.Core
             }
 
             bool usesDirectContent = !string.IsNullOrWhiteSpace(configuration.exclusiveVehicleId) ||
-                                     !string.IsNullOrWhiteSpace(configuration.exclusiveSkinId);
+                                     !string.IsNullOrWhiteSpace(configuration.exclusiveSkinId) ||
+                                     !string.IsNullOrWhiteSpace(configuration.exclusiveWheelId) ||
+                                     !string.IsNullOrWhiteSpace(configuration.exclusiveAccessoryId);
             if (usesDirectContent)
             {
                 if (string.IsNullOrWhiteSpace(configuration.exclusiveVehicleId) ||
@@ -1105,6 +1130,47 @@ namespace AnimeHillRacing.Core
                     error = "STARTER PACK SKIN WAS NOT FOUND ON ITS VEHICLE";
                     return false;
                 }
+
+                if (!string.IsNullOrWhiteSpace(configuration.exclusiveWheelId))
+                {
+                    if (vehicle.wheels != null)
+                        for (int i = 0; i < vehicle.wheels.Length; i++)
+                            if (vehicle.wheels[i] != null &&
+                                vehicle.wheels[i].optionId == configuration.exclusiveWheelId)
+                            {
+                                wheel = vehicle.wheels[i];
+                                break;
+                            }
+                    if (wheel == null)
+                    {
+                        error = "STARTER PACK WHEEL WAS NOT FOUND ON ITS VEHICLE";
+                        return false;
+                    }
+                }
+
+                if (!string.IsNullOrWhiteSpace(configuration.exclusiveAccessoryId))
+                {
+                    if (catalog.drivers != null)
+                        for (int driverIndex = 0; driverIndex < catalog.drivers.Length && accessory == null;
+                             driverIndex++)
+                        {
+                            DriverDefinition driver = catalog.drivers[driverIndex];
+                            if (driver?.accessories == null) continue;
+                            for (int optionIndex = 0; optionIndex < driver.accessories.Length; optionIndex++)
+                                if (driver.accessories[optionIndex] != null &&
+                                    driver.accessories[optionIndex].accessoryId ==
+                                    configuration.exclusiveAccessoryId)
+                                {
+                                    accessory = driver.accessories[optionIndex];
+                                    break;
+                                }
+                        }
+                    if (accessory == null)
+                    {
+                        error = "STARTER PACK CHARACTER ACCESSORY WAS NOT FOUND";
+                        return false;
+                    }
+                }
                 return true;
             }
 
@@ -1120,7 +1186,8 @@ namespace AnimeHillRacing.Core
         }
 
         private static void UnlockStarterPackContentWithoutSave(VehicleDefinition vehicle,
-            VehicleDefinition.CustomizationOption skin, BundleDefinition legacyBundle)
+            VehicleDefinition.CustomizationOption skin, VehicleDefinition.CustomizationOption wheel,
+            DriverDefinition.CharacterAccessoryOption accessory, BundleDefinition legacyBundle)
         {
             if (legacyBundle != null)
             {
@@ -1130,6 +1197,10 @@ namespace AnimeHillRacing.Core
             if (vehicle == null || skin == null) return;
             PlayerPrefs.SetInt(VehicleUnlockKey(vehicle.vehicleId), 1);
             PlayerPrefs.SetInt($"AHR.Customize.Unlock.{vehicle.vehicleId}.Skin.{skin.optionId}", 1);
+            if (wheel != null)
+                PlayerPrefs.SetInt($"AHR.Customize.Unlock.{vehicle.vehicleId}.Wheels.{wheel.optionId}", 1);
+            if (accessory != null)
+                PlayerPrefs.SetInt($"AHR.Customize.Unlock.global.CharacterAccessory.{accessory.accessoryId}", 1);
         }
 
         private static string GetVehicleCustomization(VehicleDefinition vehicle, string category, string fallback)

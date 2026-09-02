@@ -18,6 +18,7 @@ namespace AnimeHillRacing.Terrain
         private CityWaterBed waterBed;
         private CityWaterResistance waterResistance;
         private SpriteRenderer waterRenderer;
+        private readonly List<CityBoatPlatform> boats = new List<CityBoatPlatform>(3);
         private CityBridgeSettings settings;
         private float animationPhaseOffset;
 
@@ -137,6 +138,7 @@ namespace AnimeHillRacing.Terrain
                 bedSurfaceY, layout.baselineHeight, trackWidth);
             waterResistance.Configure(settings, layout.waterStart, layout.waterEnd,
                 waterSurfaceY, bedSurfaceY, trackWidth);
+            ConfigureBoats(profile, layout, waterSurfaceY);
 
             float period = AnimationPeriod;
             animationPhaseOffset = period > .001f
@@ -149,6 +151,46 @@ namespace AnimeHillRacing.Terrain
 
         private float AnimationPeriod => settings == null ? 0f :
             settings.closedHoldSeconds + settings.openHoldSeconds + settings.transitionSeconds * 2f;
+
+        private void ConfigureBoats(MapProfile profile, CityBridgeZoneLayout layout, float waterSurfaceY)
+        {
+            int count = settings.boatSprites != null && settings.boatSprites.Length > 0
+                ? TerrainGenerator.GetCityBoatCount(profile, layout.cycleIndex, layout.zoneIndex) : 0;
+            float usableStart = layout.waterStart + 1.1f;
+            float usableEnd = layout.waterEnd - 1.1f;
+            float usableWidth = Mathf.Max(1f, usableEnd - usableStart);
+            float slotWidth = usableWidth / Mathf.Max(1, count);
+            for (int i = 0; i < count; i++)
+            {
+                CityBoatPlatform boat = EnsureBoat(i);
+                float jitter = TerrainGenerator.GetCityBoatRandom01(profile, layout.cycleIndex,
+                    layout.zoneIndex, i, 17) * 2f - 1f;
+                float x = usableStart + slotWidth * (i + .5f) + jitter * slotWidth * .10f;
+                int spriteIndex = Mathf.Min(settings.boatSprites.Length - 1,
+                    Mathf.FloorToInt(TerrainGenerator.GetCityBoatRandom01(profile, layout.cycleIndex,
+                        layout.zoneIndex, i, 29) * settings.boatSprites.Length));
+                float requestedWidth = Mathf.Lerp(settings.minimumBoatWidth, settings.maximumBoatWidth,
+                    TerrainGenerator.GetCityBoatRandom01(profile, layout.cycleIndex,
+                        layout.zoneIndex, i, 41));
+                float width = Mathf.Min(requestedWidth, slotWidth * .82f);
+                bool flip = TerrainGenerator.GetCityBoatRandom01(profile, layout.cycleIndex,
+                    layout.zoneIndex, i, 53) > .5f;
+                boat.Configure(settings, settings.boatSprites[spriteIndex],
+                    new Vector2(x, waterSurfaceY), Mathf.Max(2.8f, width), flip);
+            }
+            for (int i = count; i < boats.Count; i++) boats[i]?.Deactivate();
+        }
+
+        private CityBoatPlatform EnsureBoat(int index)
+        {
+            while (boats.Count <= index)
+            {
+                GameObject boatObject = new GameObject($"Floating Boat {boats.Count + 1}");
+                boatObject.transform.SetParent(transform, false);
+                boats.Add(boatObject.AddComponent<CityBoatPlatform>());
+            }
+            return boats[index];
+        }
 
         private void FixedUpdate()
         {
@@ -185,6 +227,7 @@ namespace AnimeHillRacing.Terrain
 
         public void Deactivate()
         {
+            for (int i = 0; i < boats.Count; i++) boats[i]?.Deactivate();
             settings = null;
             gameObject.SetActive(false);
         }

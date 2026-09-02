@@ -150,10 +150,15 @@ namespace AnimeHillRacing.Editor
         private const string SpaceStarfieldPath = "Assets/Art/Backgrounds/Space/Space_Stars.png";
         private const string ArenaMapPath = Root + "/MapProfiles/Arena.asset";
         private const string CityRoot = "Assets/Art/Backgrounds/City";
-        private const string CitySkyPath = CityRoot + "/Sky.png";
+        private const string CitySkyPath = CityRoot + "/SkyWithClouds.png";
         private const string CityBackgroundPath = CityRoot + "/Background.png";
         private const string CityTerrainPath = CityRoot + "/Terrain.png";
         private const string CityGroundPath = CityRoot + "/Ground.png";
+        private const string CityBridgePath = CityRoot + "/Bridge.png";
+        private const string CityWaterPath = CityRoot + "/Water.png";
+        private const string CityBoatSmallPath = CityRoot + "/Boats/CityBoat_Small.png";
+        private const string CityBoatMediumPath = CityRoot + "/Boats/CityBoat_Medium.png";
+        private const string CityBoatLargePath = CityRoot + "/Boats/CityBoat_Large.png";
         private static Font font;
 
         private sealed class BuiltAssets
@@ -219,7 +224,9 @@ namespace AnimeHillRacing.Editor
             public Sprite cityBackground;
             public Sprite cityTerrain;
             public Sprite cityGround;
-            public Sprite[] cityClouds;
+            public Sprite cityBridge;
+            public Sprite cityWater;
+            public Sprite[] cityBoats;
             public Sprite mainMenuBackground;
             public Sprite homeButton;
             public Sprite raceButton;
@@ -282,6 +289,181 @@ namespace AnimeHillRacing.Editor
             public PhysicsMaterial tirePhysics;
         }
 
+        /// <summary>
+        /// CreateAssets intentionally rebuilds the authored base customization arrays. Keep the
+        /// data-only Glitch entries (including their hand-tuned visual poses) outside that rewrite
+        /// and merge them back before any scene or asset is saved.
+        /// </summary>
+        private sealed class GlitchCustomizationSnapshot
+        {
+            private sealed class VehicleSnapshot
+            {
+                public string assetPath;
+                public VehicleDefinition.CustomizationOption[] skins;
+                public VehicleDefinition.CustomizationOption[] wheels;
+            }
+
+            private readonly List<VehicleSnapshot> vehicles = new List<VehicleSnapshot>();
+
+            public static GlitchCustomizationSnapshot Capture()
+            {
+                var snapshot = new GlitchCustomizationSnapshot();
+                string[] guids = AssetDatabase.FindAssets("t:VehicleDefinition",
+                    new[] { Root + "/VehicleData" });
+                for (int i = 0; i < guids.Length; i++)
+                {
+                    string path = AssetDatabase.GUIDToAssetPath(guids[i]);
+                    VehicleDefinition vehicle =
+                        AssetDatabase.LoadAssetAtPath<VehicleDefinition>(path);
+                    if (vehicle == null) continue;
+                    VehicleDefinition.CustomizationOption[] skins = CaptureOptions(
+                        vehicle.skins, GlitchCrystalTideEffect.SkinPrefix);
+                    VehicleDefinition.CustomizationOption[] wheels = CaptureOptions(
+                        vehicle.wheels, GlitchCrystalTideEffect.WheelPrefix);
+                    if (skins.Length == 0 && wheels.Length == 0) continue;
+                    snapshot.vehicles.Add(new VehicleSnapshot
+                    {
+                        assetPath = path,
+                        skins = skins,
+                        wheels = wheels
+                    });
+                }
+                return snapshot;
+            }
+
+            public void Restore()
+            {
+                for (int i = 0; i < vehicles.Count; i++)
+                {
+                    VehicleSnapshot saved = vehicles[i];
+                    VehicleDefinition vehicle =
+                        AssetDatabase.LoadAssetAtPath<VehicleDefinition>(saved.assetPath);
+                    if (vehicle == null)
+                        throw new System.InvalidOperationException(
+                            $"Glitch pose vehicle asset disappeared during rebuild: {saved.assetPath}");
+                    vehicle.skins = MergeOptions(vehicle.skins, saved.skins,
+                        GlitchCrystalTideEffect.SkinPrefix);
+                    vehicle.wheels = MergeOptions(vehicle.wheels, saved.wheels,
+                        GlitchCrystalTideEffect.WheelPrefix);
+                    EditorUtility.SetDirty(vehicle);
+                }
+            }
+
+            public void ValidateOrThrow()
+            {
+                for (int i = 0; i < vehicles.Count; i++)
+                {
+                    VehicleSnapshot saved = vehicles[i];
+                    VehicleDefinition vehicle =
+                        AssetDatabase.LoadAssetAtPath<VehicleDefinition>(saved.assetPath);
+                    if (vehicle == null)
+                        throw new System.InvalidOperationException(
+                            $"Glitch pose vehicle asset is missing after rebuild: {saved.assetPath}");
+                    ValidateOptions(vehicle.skins, saved.skins, saved.assetPath, "skin");
+                    ValidateOptions(vehicle.wheels, saved.wheels, saved.assetPath, "wheel");
+                }
+            }
+
+            private static VehicleDefinition.CustomizationOption[] CaptureOptions(
+                VehicleDefinition.CustomizationOption[] source, string prefix)
+            {
+                var result = new List<VehicleDefinition.CustomizationOption>();
+                if (source == null) return result.ToArray();
+                for (int i = 0; i < source.Length; i++)
+                    if (HasPrefix(source[i], prefix)) result.Add(Clone(source[i]));
+                return result.ToArray();
+            }
+
+            private static VehicleDefinition.CustomizationOption[] MergeOptions(
+                VehicleDefinition.CustomizationOption[] current,
+                VehicleDefinition.CustomizationOption[] saved, string prefix)
+            {
+                var merged = new List<VehicleDefinition.CustomizationOption>();
+                if (current != null)
+                    for (int i = 0; i < current.Length; i++)
+                        if (!HasPrefix(current[i], prefix)) merged.Add(current[i]);
+                if (saved != null)
+                    for (int i = 0; i < saved.Length; i++) merged.Add(Clone(saved[i]));
+                return merged.ToArray();
+            }
+
+            private static void ValidateOptions(
+                VehicleDefinition.CustomizationOption[] current,
+                VehicleDefinition.CustomizationOption[] saved, string assetPath, string kind)
+            {
+                for (int i = 0; i < saved.Length; i++)
+                {
+                    VehicleDefinition.CustomizationOption expected = saved[i];
+                    VehicleDefinition.CustomizationOption actual = FindExact(current,
+                        expected.optionId);
+                    if (actual == null || !SameVisualPose(actual, expected))
+                        throw new System.InvalidOperationException(
+                            $"Build All Game Scenes changed the saved Glitch {kind} pose " +
+                            $"'{expected.optionId}' in {assetPath}.");
+                }
+            }
+
+            private static VehicleDefinition.CustomizationOption FindExact(
+                VehicleDefinition.CustomizationOption[] options, string optionId)
+            {
+                if (options == null) return null;
+                for (int i = 0; i < options.Length; i++)
+                    if (options[i] != null && options[i].optionId == optionId) return options[i];
+                return null;
+            }
+
+            private static bool SameVisualPose(VehicleDefinition.CustomizationOption left,
+                VehicleDefinition.CustomizationOption right) =>
+                left.sprite == right.sprite &&
+                Mathf.Approximately(left.visibleDiameter, right.visibleDiameter) &&
+                Approximately(left.visibleSize, right.visibleSize) &&
+                Approximately(left.visualOffset, right.visualOffset) &&
+                left.overrideGlitchTransform == right.overrideGlitchTransform &&
+                Approximately(left.glitchManualSize, right.glitchManualSize) &&
+                Approximately(left.glitchManualOffset, right.glitchManualOffset) &&
+                left.overrideGlitchWheelTransform == right.overrideGlitchWheelTransform &&
+                Mathf.Approximately(left.glitchRearWheelScale, right.glitchRearWheelScale) &&
+                Mathf.Approximately(left.glitchFrontWheelScale, right.glitchFrontWheelScale) &&
+                Approximately(left.glitchRearWheelOffset, right.glitchRearWheelOffset) &&
+                Approximately(left.glitchFrontWheelOffset, right.glitchFrontWheelOffset);
+
+            private static bool Approximately(Vector2 left, Vector2 right) =>
+                Mathf.Approximately(left.x, right.x) && Mathf.Approximately(left.y, right.y);
+
+            private static bool HasPrefix(VehicleDefinition.CustomizationOption option,
+                string prefix) => option != null && !string.IsNullOrEmpty(option.optionId) &&
+                                  option.optionId.StartsWith(prefix, System.StringComparison.Ordinal);
+
+            private static VehicleDefinition.CustomizationOption Clone(
+                VehicleDefinition.CustomizationOption source) =>
+                new VehicleDefinition.CustomizationOption
+                {
+                    optionId = source.optionId,
+                    displayName = source.displayName,
+                    sprite = source.sprite,
+                    unlockedByDefault = source.unlockedByDefault,
+                    requiredBestDistance = source.requiredBestDistance,
+                    gemPrice = source.gemPrice,
+                    purchaseCurrency = source.purchaseCurrency,
+                    googlePlayProductId = source.googlePlayProductId,
+                    bundleType = source.bundleType,
+                    allowsBlueprintProgression = source.allowsBlueprintProgression,
+                    hasExplicitRarity = source.hasExplicitRarity,
+                    rarity = source.rarity,
+                    visibleDiameter = source.visibleDiameter,
+                    visibleSize = source.visibleSize,
+                    visualOffset = source.visualOffset,
+                    overrideGlitchTransform = source.overrideGlitchTransform,
+                    glitchManualSize = source.glitchManualSize,
+                    glitchManualOffset = source.glitchManualOffset,
+                    overrideGlitchWheelTransform = source.overrideGlitchWheelTransform,
+                    glitchRearWheelScale = source.glitchRearWheelScale,
+                    glitchFrontWheelScale = source.glitchFrontWheelScale,
+                    glitchRearWheelOffset = source.glitchRearWheelOffset,
+                    glitchFrontWheelOffset = source.glitchFrontWheelOffset
+                };
+        }
+
         [MenuItem("Anime Hill Racing/Build All Game Scenes _F8")]
         public static void BuildAllGameScenes()
         {
@@ -291,9 +473,12 @@ namespace AnimeHillRacing.Editor
                 return;
             }
             string previousScenePath = SceneManager.GetActiveScene().path;
+            GlitchCustomizationSnapshot glitchSnapshot = GlitchCustomizationSnapshot.Capture();
+            bool completed = false;
             try
             {
-                BuildAllGameScenesInternal();
+                BuildAllGameScenesInternal(glitchSnapshot);
+                completed = true;
             }
             catch
             {
@@ -303,6 +488,16 @@ namespace AnimeHillRacing.Editor
                 if (!string.IsNullOrEmpty(recoveryPath))
                     EditorSceneManager.OpenScene(recoveryPath, OpenSceneMode.Single);
                 throw;
+            }
+            finally
+            {
+                // A failed rebuild must not leave the in-memory VehicleDefinitions with their
+                // Glitch arrays (and therefore their saved poses) removed.
+                if (!completed)
+                {
+                    glitchSnapshot.Restore();
+                    AssetDatabase.SaveAssets();
+                }
             }
         }
 
@@ -456,12 +651,20 @@ namespace AnimeHillRacing.Editor
                       outputDirectory);
         }
 
-        private static void BuildAllGameScenesInternal()
+        private static void BuildAllGameScenesInternal(
+            GlitchCustomizationSnapshot glitchSnapshot)
         {
             EnsureFolders();
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
             BuiltAssets assets = CreateAssets();
             ValidateCustomizationContract(assets);
+            // Validate the freshly generated base catalog first, then restore the data-only Glitch
+            // entries before any scene consumes or saves the vehicle definitions.
+            glitchSnapshot.Restore();
+            GlitchPhaseCatalogInstaller.EnsureConfigured();
+            glitchSnapshot.ValidateOrThrow();
+            GlitchPhaseCosmeticsValidation.ValidateOrThrow();
+            AssetDatabase.SaveAssets();
             ValidateCountrysideTerrainContract(assets.countryside);
             ValidateSharedAuthoredTrackDimensions();
             ValidateNorthPoleContract(assets);
@@ -2368,19 +2571,29 @@ namespace AnimeHillRacing.Editor
                 profile.supportsLiquidExposure || !profile.useSeparateTerrainMaterials ||
                 !profile.fitAuthoredTerrainTexture ||
                 Mathf.Abs(profile.terrainFillStartV - profile.terrainSurfaceContactV) > .0001f ||
-                profile.hardEndDistance != 7500f || environment == null || environment.sky != assets.citySky ||
+                profile.hardEndDistance != 10000f || environment == null || environment.sky != assets.citySky ||
                 environment.mountains != assets.cityBackground || environment.clouds == null ||
-                environment.clouds.Length != 15 || profile.terrainMaterial != assets.cityTerrainMaterial ||
+                environment.clouds.Length != 0 || profile.terrainMaterial != assets.cityTerrainMaterial ||
                 profile.terrainEdgeMaterial != assets.cityGroundMaterial ||
                 profile.terrainMaterial.mainTexture != assets.cityTerrain.texture ||
-                profile.terrainEdgeMaterial.mainTexture != assets.cityGround.texture)
+                profile.terrainEdgeMaterial.mainTexture != assets.cityGround.texture ||
+                !profile.useCityBridges || profile.cityBridges == null ||
+                profile.cityBridges.boatSprites == null || profile.cityBridges.boatSprites.Length != 3)
                 throw new System.InvalidOperationException("City profile, visuals, clouds or terrain materials are incomplete.");
             float d0 = profile.EvaluateDifficulty(0f);
             float d3750 = profile.EvaluateDifficulty(3750f);
-            float d7500 = profile.EvaluateDifficulty(7500f);
+            float d10000 = profile.EvaluateDifficulty(10000f);
             float d12000 = profile.EvaluateDifficulty(12000f);
-            if (!(d0 < d3750 && d3750 < d7500) || !Mathf.Approximately(d7500, d12000))
-                throw new System.InvalidOperationException("City difficulty must grow through 7500 m and remain capped.");
+            if (!(d0 < d3750 && d3750 < d10000) || !Mathf.Approximately(d10000, d12000))
+                throw new System.InvalidOperationException("City difficulty must grow through 10000 m and remain capped.");
+            for (int cycle = 0; cycle <= 3; cycle++)
+            {
+                int zones = TerrainGenerator.GetCityBridgeZoneCount(profile, cycle);
+                int boatZones = TerrainGenerator.GetCityBoatZoneCount(profile, cycle);
+                if (zones < 10 || zones > 15 || boatZones < 5 || boatZones > 10)
+                    throw new System.InvalidOperationException(
+                        $"City distribution failed in cycle {cycle}: {zones} water, {boatZones} with boats.");
+            }
             float maximumRawSlope = 0f;
             float maximumRawSlopeDistance = 0f;
             for (float x = 0f; x <= 8000f; x += 1f)
@@ -2443,7 +2656,7 @@ namespace AnimeHillRacing.Editor
             }
             Object.DestroyImmediate(visualMesh);
             Object.DestroyImmediate(colliderMesh);
-            if (maximumAlignmentError > .0001f || minimumGroundDepth <= .05f || maximumFinalSlope > 34.05f)
+            if (maximumAlignmentError > .0001f || minimumGroundDepth <= .05f || maximumFinalSlope > 36.05f)
                 throw new System.InvalidOperationException(
                     $"City surface contract failed: alignment={maximumAlignmentError:0.000000}m, " +
                     $"Ground depth={minimumGroundDepth:0.000}m, slope={maximumFinalSlope:0.00} degrees.");
@@ -5177,8 +5390,9 @@ namespace AnimeHillRacing.Editor
                  CountrysideSkyPath, CountrysideMountainsPath, CountrysideSunPath, CountrysideTerrainPath, CountrysideGroundPath,
                  NorthPoleSkyPath, NorthPolePanoramaPath, NorthPoleNearPinesPath,
                  NorthPoleTerrainPath, NorthPoleGroundPath,
-                 CitySkyPath, CityBackgroundPath,
-                CityTerrainPath, CityGroundPath, FuelCanPath, Coin01Path, Coin05Path,
+                 CitySkyPath, CityBackgroundPath, CityTerrainPath, CityGroundPath,
+                 CityBridgePath, CityWaterPath, CityBoatSmallPath, CityBoatMediumPath,
+                 CityBoatLargePath, FuelCanPath, Coin01Path, Coin05Path,
                 BronzeChestClosedPath, BronzeChestOpenPath, SilverChestClosedPath, SilverChestOpenPath,
                 GoldChestClosedPath, GoldChestOpenPath, MasterChestClosedPath, MasterChestOpenPath,
                 LegendaryChestClosedPath, LegendaryChestOpenPath, CoinsChestPath, ChestShelfPath };
@@ -5193,8 +5407,6 @@ namespace AnimeHillRacing.Editor
                     spritePaths[i] == HillAdventurerPurpleSkinPath ? 4096 :
                     spritePaths[i] == FuelCanPath || spritePaths[i] == Coin01Path || spritePaths[i] == Coin05Path ? 512 :
                     spritePaths[i].StartsWith(ChestRoot) ? 2048 : 2048);
-            for (int i = 1; i <= 15; i++)
-                ConfigureFormulaSprite($"{CityRoot}/Clouds/Cloud_{i:00}.png", 2048);
             assets.jeepBody = AssetDatabase.LoadAssetAtPath<Sprite>(JeepBodyPath);
             assets.jeepRetroSkin = AssetDatabase.LoadAssetAtPath<Sprite>(JeepRetroSkinPath);
             assets.jeepWheel01 = AssetDatabase.LoadAssetAtPath<Sprite>(JeepWheel01Path);
@@ -5251,10 +5463,14 @@ namespace AnimeHillRacing.Editor
             assets.cityBackground = AssetDatabase.LoadAssetAtPath<Sprite>(CityBackgroundPath);
             assets.cityTerrain = AssetDatabase.LoadAssetAtPath<Sprite>(CityTerrainPath);
             assets.cityGround = AssetDatabase.LoadAssetAtPath<Sprite>(CityGroundPath);
-            assets.cityClouds = new Sprite[15];
-            for (int i = 0; i < assets.cityClouds.Length; i++)
-                assets.cityClouds[i] = AssetDatabase.LoadAssetAtPath<Sprite>(
-                    $"{CityRoot}/Clouds/Cloud_{i + 1:00}.png");
+            assets.cityBridge = AssetDatabase.LoadAssetAtPath<Sprite>(CityBridgePath);
+            assets.cityWater = AssetDatabase.LoadAssetAtPath<Sprite>(CityWaterPath);
+            assets.cityBoats = new[]
+            {
+                AssetDatabase.LoadAssetAtPath<Sprite>(CityBoatSmallPath),
+                AssetDatabase.LoadAssetAtPath<Sprite>(CityBoatMediumPath),
+                AssetDatabase.LoadAssetAtPath<Sprite>(CityBoatLargePath)
+            };
             assets.mainMenuBackground = AssetDatabase.LoadAssetAtPath<Sprite>(MainMenuBackgroundPath);
             assets.homeButton = AssetDatabase.LoadAssetAtPath<Sprite>(HomeButtonPath);
             assets.raceButton = AssetDatabase.LoadAssetAtPath<Sprite>(RaceButtonPath);
@@ -6115,17 +6331,8 @@ namespace AnimeHillRacing.Editor
             assets.cityEnvironment.environmentId = "city";
             assets.cityEnvironment.sky = assets.citySky;
             assets.cityEnvironment.mountains = assets.cityBackground;
-            assets.cityEnvironment.clouds = assets.cityClouds;
-            assets.cityEnvironment.cloudParallaxX = .09f;
-            assets.cityEnvironment.cloudSpacing = 19f;
-            assets.cityEnvironment.cloudSpacingJitter = 4.5f;
-            assets.cityEnvironment.cloudHeightRange = new Vector2(3.4f, 8.8f);
-            assets.cityEnvironment.cloudVisualWidthRange = new Vector2(3.8f, 7.5f);
-            assets.cityEnvironment.cloudDriftSpeedRange = new Vector2(.08f, .24f);
-            assets.cityEnvironment.cloudOpacityRange = new Vector2(.56f, .9f);
-            assets.cityEnvironment.cloudBobAmplitude = .22f;
-            assets.cityEnvironment.cloudBobPeriodRange = new Vector2(18f, 34f);
-            assets.cityEnvironment.pooledClouds = 8;
+            assets.cityEnvironment.clouds = new Sprite[0];
+            assets.cityEnvironment.pooledClouds = 0;
             assets.cityEnvironment.mountainParallaxX = .18f;
             assets.cityEnvironment.mountainParallaxY = .04f;
             assets.cityEnvironment.lockVerticalToCamera = true;
@@ -6146,21 +6353,85 @@ namespace AnimeHillRacing.Editor
             assets.city.coinRoute = assets.countrysideCoinRoute;
             assets.city.elevationProfile = null;
             assets.city.baseHeight = 0f;
-            assets.city.amplitude = 18f;
+            assets.city.amplitude = 21.5f;
             assets.city.frequency = .012f;
             assets.city.smoothing = .72f;
             assets.city.hillSize = 1.15f;
             assets.city.useCityHighwayTerrain = true;
             assets.city.cityFeatureLength = 48f;
-            assets.city.cityMiniRhythmStrength = .16f;
-            assets.city.introductoryAmplitude = .38f;
-            assets.city.introEndDistance = 525f;
-            assets.city.easyEndDistance = 2250f;
-            assets.city.normalEndDistance = 4950f;
-            assets.city.hardEndDistance = 7500f;
+            assets.city.cityMiniRhythmStrength = .22f;
+            assets.city.useCityBridges = true;
+            assets.city.cityBridges ??= new CityBridgeSettings();
+            CityBridgeSettings cityBridges = assets.city.cityBridges;
+            cityBridges.cycleLength = CityBridgeSettings.RequiredCycleLength;
+            cityBridges.minimumZonesPerCycle = CityBridgeSettings.RequiredMinimumZones;
+            cityBridges.maximumZonesPerCycle = CityBridgeSettings.RequiredMaximumZones;
+            cityBridges.minimumProgressiveZones = CityBridgeSettings.RequiredMinimumProgressiveZones;
+            cityBridges.maximumProgressiveZones = CityBridgeSettings.RequiredMaximumProgressiveZones;
+            cityBridges.minimumBoatZonesPerCycle = CityBridgeSettings.RequiredMinimumBoatZones;
+            cityBridges.maximumBoatZonesPerCycle = CityBridgeSettings.RequiredMaximumBoatZones;
+            cityBridges.cycleStartMargin = 320f;
+            cityBridges.cycleEndMargin = 320f;
+            cityBridges.minimumZoneSpacing = 300f;
+            cityBridges.approachBlendLength = 50f;
+            cityBridges.recoveryBlendLength = 50f;
+            cityBridges.crestApproachChance = .36f;
+            cityBridges.crestApproachRise = 3.2f;
+            cityBridges.bridgeLength = 14f;
+            cityBridges.normalWaterLength = 22f;
+            cityBridges.progressiveBaseWaterLength = 22f;
+            cityBridges.progressiveGrowthPerCycle = CityBridgeSettings.RequiredProgressiveGrowth;
+            cityBridges.waterVisualDepth = 10f;
+            cityBridges.waterSurfaceOffset = -.45f;
+            cityBridges.waterVisualAlpha = .5f;
+            cityBridges.waterBedThickness = 22f;
+            cityBridges.waterEndBankWidth = 3f;
+            cityBridges.waterSpeedRetainedPerSecond = .4f;
+            cityBridges.waterAngularSpeedRetainedPerSecond = .3f;
+            cityBridges.waterBuoyancySpring = 4f;
+            cityBridges.waterVerticalDamping = 3f;
+            cityBridges.waterMaximumSinkAcceleration = 8f;
+            cityBridges.waterDriverDownClearance = 5f;
+            cityBridges.bridgeColliderThickness = .45f;
+            cityBridges.bridgeGroundOverlap = 1f;
+            cityBridges.exitRampLength = 14f;
+            cityBridges.exitRampRise = 1.8f;
+            cityBridges.closedAngleDegrees = 0f;
+            cityBridges.openAngleDegrees = CityBridgeSettings.RequiredBridgeAngle;
+            cityBridges.transitionSeconds = CityBridgeSettings.RequiredTransitionSeconds;
+            cityBridges.closedHoldSeconds = 0f;
+            cityBridges.openHoldSeconds = 0f;
+            cityBridges.minimumBoatsPerZone = 1;
+            cityBridges.maximumBoatsPerZone = 3;
+            cityBridges.minimumBoatWidth = 5.2f;
+            cityBridges.maximumBoatWidth = 9.5f;
+            cityBridges.boatColliderThickness = .48f;
+            cityBridges.boatDeckHeightFraction = .18f;
+            cityBridges.boatMass = 90f;
+            cityBridges.boatVerticalSpring = 24f;
+            cityBridges.boatVerticalDamping = 8f;
+            cityBridges.boatCenteringTorque = 1.15f;
+            cityBridges.boatAngularDamping = .12f;
+            cityBridges.boatMaximumTilt = 15f;
+            cityBridges.boatMaximumSink = 1.25f;
+            cityBridges.boatMaximumRise = .65f;
+            cityBridges.boatLaunchImpulse = 1.8f;
+            cityBridges.boatSprites = assets.cityBoats;
+            cityBridges.bridgeSprite = assets.cityBridge;
+            cityBridges.waterSprite = assets.cityWater;
+            cityBridges.bridgeArtSlopeDegrees = 16.1f;
+            cityBridges.bridgeArtSurfaceOffset = -.61f;
+            cityBridges.waterSortingOrder = 1;
+            cityBridges.waterBedSortingOrder = 0;
+            cityBridges.bridgeSortingOrder = 5;
+            assets.city.introductoryAmplitude = .34f;
+            assets.city.introEndDistance = 600f;
+            assets.city.easyEndDistance = 3000f;
+            assets.city.normalEndDistance = 6500f;
+            assets.city.hardEndDistance = 10000f;
             assets.city.difficultyCurve = new AnimationCurve(
-                new Keyframe(0f, 0f), new Keyframe(.25f, .22f),
-                new Keyframe(.60f, .62f), new Keyframe(1f, 1f));
+                new Keyframe(0f, 0f), new Keyframe(.25f, .20f),
+                new Keyframe(.60f, .58f), new Keyframe(1f, 1f));
             assets.city.maximumDifficulty = 1f;
             assets.city.sectionLength = 72f;
             assets.city.recoveryEverySections = 5;
@@ -6170,8 +6441,8 @@ namespace AnimeHillRacing.Editor
             assets.city.hillFeatureWeight = .54f;
             assets.city.valleyFeatureWeight = .27f;
             assets.city.technicalFeatureWeight = .17f;
-            assets.city.maxSlopeAngle = 34f;
-            assets.city.maxHeightDeltaPerSample = Mathf.Tan(34f * Mathf.Deg2Rad) * (80f / 48f);
+            assets.city.maxSlopeAngle = 36f;
+            assets.city.maxHeightDeltaPerSample = Mathf.Tan(36f * Mathf.Deg2Rad) * (80f / 48f);
             assets.city.minimumValleyWidth = 18f;
             assets.city.minimumLandingLength = 16f;
             assets.city.maximumCrestSharpness = 7f;

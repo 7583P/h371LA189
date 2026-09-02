@@ -20,24 +20,24 @@ MonoBehaviour:
   coinPrice: 10000
   leaderboardId: CgkIv97xxuweEAIQAg
   coinRoute: {fileID: 11400000, guid: 2d8f01a9a8d293943a19b887710af661, type: 2}
-  introEndDistance: 525
-  easyEndDistance: 2250
-  normalEndDistance: 4950
-  hardEndDistance: 7500
+  introEndDistance: 600
+  easyEndDistance: 3000
+  normalEndDistance: 6500
+  hardEndDistance: 10000
   elevationProfile: {fileID: 0}
   baseHeight: 0
-  amplitude: 18
+  amplitude: 21.5
   frequency: 0.012
   smoothing: 0.72
   hillSize: 1.15
   useCityHighwayTerrain: 1
   cityFeatureLength: 48
-  cityMiniRhythmStrength: 0.16
+  cityMiniRhythmStrength: 0.22
   useCityBridges: 1
   cityBridges:
     cycleLength: 10000
-    minimumZonesPerCycle: 7
-    maximumZonesPerCycle: 10
+    minimumZonesPerCycle: 10
+    maximumZonesPerCycle: 15
     minimumProgressiveZones: 5
     maximumProgressiveZones: 7
     cycleStartMargin: 320
@@ -45,6 +45,8 @@ MonoBehaviour:
     minimumZoneSpacing: 300
     approachBlendLength: 50
     recoveryBlendLength: 50
+    crestApproachChance: 0.36
+    crestApproachRise: 3.2
     bridgeLength: 14
     normalWaterLength: 22
     progressiveBaseWaterLength: 22
@@ -62,11 +64,34 @@ MonoBehaviour:
     waterDriverDownClearance: 5
     bridgeColliderThickness: 0.45
     bridgeGroundOverlap: 1
+    exitRampLength: 14
+    exitRampRise: 1.8
     closedAngleDegrees: 0
     openAngleDegrees: 45
     transitionSeconds: 3
-    closedHoldSeconds: 4
-    openHoldSeconds: 4
+    closedHoldSeconds: 0
+    openHoldSeconds: 0
+    minimumBoatZonesPerCycle: 5
+    maximumBoatZonesPerCycle: 10
+    minimumBoatsPerZone: 1
+    maximumBoatsPerZone: 3
+    minimumBoatWidth: 5.2
+    maximumBoatWidth: 9.5
+    boatColliderThickness: 0.48
+    boatDeckHeightFraction: 0.18
+    boatMass: 90
+    boatVerticalSpring: 24
+    boatVerticalDamping: 8
+    boatCenteringTorque: 1.15
+    boatAngularDamping: 0.12
+    boatMaximumTilt: 15
+    boatMaximumSink: 1.25
+    boatMaximumRise: 0.65
+    boatLaunchImpulse: 1.8
+    boatSprites:
+    - {fileID: 21300000, guid: c2100000000000000000000000000001, type: 3}
+    - {fileID: 21300000, guid: c2100000000000000000000000000002, type: 3}
+    - {fileID: 21300000, guid: c2100000000000000000000000000003, type: 3}
     bridgeSprite: {fileID: 21300000, guid: 0e36158ade9b6ff479dc3e45e5ced674, type: 3}
     waterSprite: {fileID: 21300000, guid: b1000000000000000000000000000002, type: 3}
     bridgeArtSlopeDegrees: 16.1
@@ -88,7 +113,7 @@ MonoBehaviour:
       outWeight: 0
     - serializedVersion: 3
       time: 0.25
-      value: 0.22
+      value: 0.2
       inSlope: 0
       outSlope: 0
       tangentMode: 0
@@ -97,7 +122,7 @@ MonoBehaviour:
       outWeight: 0
     - serializedVersion: 3
       time: 0.6
-      value: 0.62
+      value: 0.58
       inSlope: 0
       outSlope: 0
       tangentMode: 0
@@ -117,7 +142,7 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   maximumDifficulty: 1
-  introductoryAmplitude: 0.38
+  introductoryAmplitude: 0.34
   sectionLength: 72
   recoveryEverySections: 5
   technicalSectionChance: 0.42
@@ -167,8 +192,8 @@ MonoBehaviour:
     slashLength: 96
     slashHeight: 18
     maximumStartJitter: 70
-  maxSlopeAngle: 34
-  maxHeightDeltaPerSample: 1.1241808
+  maxSlopeAngle: 36
+  maxHeightDeltaPerSample: 1.2109042
   minimumValleyWidth: 18
   minimumLandingLength: 16
   maximumCrestSharpness: 7

@@ -27,7 +27,7 @@ namespace AnimeHillRacing.Editor
             {
                 if (EditorApplication.isPlayingOrWillChangePlaymode ||
                     AssetDatabase.LoadAssetAtPath<MapProfile>(ProfilePath) != null ||
-                    !File.Exists(CityRoot + "/Sky.png")) return;
+                    !File.Exists(CityRoot + "/SkyWithClouds.png")) return;
                 InstallOrRepairCity();
             };
         }
@@ -41,34 +41,34 @@ namespace AnimeHillRacing.Editor
                 return;
             }
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
-            ConfigureSprite(CityRoot + "/Sky.png", 2048, TextureWrapMode.Clamp);
+            ConfigureSprite(CityRoot + "/SkyWithClouds.png", 4096, TextureWrapMode.Clamp);
             ConfigureSprite(CityRoot + "/Background.png", 4096, TextureWrapMode.Repeat);
             ConfigureSprite(CityRoot + "/Terrain.png", 4096, TextureWrapMode.Repeat);
             ConfigureSprite(CityRoot + "/Ground.png", 4096, TextureWrapMode.Repeat);
             ConfigureSprite(CityRoot + "/Bridge.png", 4096, TextureWrapMode.Clamp);
             ConfigureSprite(CityRoot + "/Water.png", 4096, TextureWrapMode.Clamp);
+            ConfigureSprite(CityRoot + "/Boats/CityBoat_Small.png", 2048, TextureWrapMode.Clamp);
+            ConfigureSprite(CityRoot + "/Boats/CityBoat_Medium.png", 2048, TextureWrapMode.Clamp);
+            ConfigureSprite(CityRoot + "/Boats/CityBoat_Large.png", 2048, TextureWrapMode.Clamp);
 
-            var clouds = new List<Sprite>(15);
-            for (int i = 1; i <= 15; i++)
-            {
-                string path = $"{CityRoot}/Clouds/Cloud_{i:00}.png";
-                ConfigureSprite(path, 2048, TextureWrapMode.Clamp);
-                Sprite cloud = AssetDatabase.LoadAssetAtPath<Sprite>(path);
-                if (cloud != null) clouds.Add(cloud);
-            }
-
-            Sprite sky = AssetDatabase.LoadAssetAtPath<Sprite>(CityRoot + "/Sky.png");
+            Sprite sky = AssetDatabase.LoadAssetAtPath<Sprite>(CityRoot + "/SkyWithClouds.png");
             Sprite background = AssetDatabase.LoadAssetAtPath<Sprite>(CityRoot + "/Background.png");
             Sprite terrain = AssetDatabase.LoadAssetAtPath<Sprite>(CityRoot + "/Terrain.png");
             Sprite ground = AssetDatabase.LoadAssetAtPath<Sprite>(CityRoot + "/Ground.png");
             Sprite bridge = AssetDatabase.LoadAssetAtPath<Sprite>(CityRoot + "/Bridge.png");
             Sprite water = AssetDatabase.LoadAssetAtPath<Sprite>(CityRoot + "/Water.png");
+            Sprite[] boats =
+            {
+                AssetDatabase.LoadAssetAtPath<Sprite>(CityRoot + "/Boats/CityBoat_Small.png"),
+                AssetDatabase.LoadAssetAtPath<Sprite>(CityRoot + "/Boats/CityBoat_Medium.png"),
+                AssetDatabase.LoadAssetAtPath<Sprite>(CityRoot + "/Boats/CityBoat_Large.png")
+            };
             if (sky == null || background == null || terrain == null || ground == null || bridge == null ||
-                water == null || clouds.Count != 15)
+                water == null || boats[0] == null || boats[1] == null || boats[2] == null)
                 throw new System.InvalidOperationException(
                     $"City source import is incomplete: sky={sky != null}, background={background != null}, " +
                     $"terrain={terrain != null}, ground={ground != null}, bridge={bridge != null}, " +
-                    $"water={water != null}, clouds={clouds.Count}/15.");
+                    $"water={water != null}, boats={boats[0] != null}/{boats[1] != null}/{boats[2] != null}.");
 
             Material terrainMaterial = LoadOrCreateMaterial(TerrainMaterialPath, terrain.texture);
             Material groundMaterial = LoadOrCreateMaterial(GroundMaterialPath, ground.texture);
@@ -76,17 +76,8 @@ namespace AnimeHillRacing.Editor
             environment.environmentId = "city";
             environment.sky = sky;
             environment.mountains = background;
-            environment.clouds = clouds.ToArray();
-            environment.cloudParallaxX = .09f;
-            environment.cloudSpacing = 19f;
-            environment.cloudSpacingJitter = 4.5f;
-            environment.cloudHeightRange = new Vector2(3.4f, 8.8f);
-            environment.cloudVisualWidthRange = new Vector2(3.8f, 7.5f);
-            environment.cloudDriftSpeedRange = new Vector2(.08f, .24f);
-            environment.cloudOpacityRange = new Vector2(.56f, .9f);
-            environment.cloudBobAmplitude = .22f;
-            environment.cloudBobPeriodRange = new Vector2(18f, 34f);
-            environment.pooledClouds = 8;
+            environment.clouds = new Sprite[0];
+            environment.pooledClouds = 0;
             environment.mountainParallaxX = .18f;
             environment.mountainParallaxY = .04f;
             environment.lockVerticalToCamera = true;
@@ -107,13 +98,13 @@ namespace AnimeHillRacing.Editor
             profile.coinRoute = AssetDatabase.LoadAssetAtPath<CoinRouteDefinition>(CoinRoutePath);
             profile.elevationProfile = null;
             profile.baseHeight = 0f;
-            profile.amplitude = 18f;
+            profile.amplitude = 21.5f;
             profile.frequency = .012f;
             profile.smoothing = .72f;
             profile.hillSize = 1.15f;
             profile.useCityHighwayTerrain = true;
             profile.cityFeatureLength = 48f;
-            profile.cityMiniRhythmStrength = .16f;
+            profile.cityMiniRhythmStrength = .22f;
             profile.useCityBridges = true;
             profile.cityBridges ??= new CityBridgeSettings();
             profile.cityBridges.cycleLength = CityBridgeSettings.RequiredCycleLength;
@@ -126,6 +117,8 @@ namespace AnimeHillRacing.Editor
             profile.cityBridges.minimumZoneSpacing = 300f;
             profile.cityBridges.approachBlendLength = 50f;
             profile.cityBridges.recoveryBlendLength = 50f;
+            profile.cityBridges.crestApproachChance = .36f;
+            profile.cityBridges.crestApproachRise = 3.2f;
             profile.cityBridges.bridgeLength = 14f;
             profile.cityBridges.normalWaterLength = 22f;
             profile.cityBridges.progressiveBaseWaterLength = 22f;
@@ -143,11 +136,31 @@ namespace AnimeHillRacing.Editor
             profile.cityBridges.waterDriverDownClearance = 5f;
             profile.cityBridges.bridgeColliderThickness = .45f;
             profile.cityBridges.bridgeGroundOverlap = 1f;
+            profile.cityBridges.exitRampLength = 14f;
+            profile.cityBridges.exitRampRise = 1.8f;
             profile.cityBridges.closedAngleDegrees = 0f;
             profile.cityBridges.openAngleDegrees = CityBridgeSettings.RequiredBridgeAngle;
             profile.cityBridges.transitionSeconds = CityBridgeSettings.RequiredTransitionSeconds;
-            profile.cityBridges.closedHoldSeconds = 4f;
-            profile.cityBridges.openHoldSeconds = 4f;
+            profile.cityBridges.closedHoldSeconds = 0f;
+            profile.cityBridges.openHoldSeconds = 0f;
+            profile.cityBridges.minimumBoatZonesPerCycle = CityBridgeSettings.RequiredMinimumBoatZones;
+            profile.cityBridges.maximumBoatZonesPerCycle = CityBridgeSettings.RequiredMaximumBoatZones;
+            profile.cityBridges.minimumBoatsPerZone = 1;
+            profile.cityBridges.maximumBoatsPerZone = 3;
+            profile.cityBridges.minimumBoatWidth = 5.2f;
+            profile.cityBridges.maximumBoatWidth = 9.5f;
+            profile.cityBridges.boatColliderThickness = .48f;
+            profile.cityBridges.boatDeckHeightFraction = .18f;
+            profile.cityBridges.boatMass = 90f;
+            profile.cityBridges.boatVerticalSpring = 24f;
+            profile.cityBridges.boatVerticalDamping = 8f;
+            profile.cityBridges.boatCenteringTorque = 1.15f;
+            profile.cityBridges.boatAngularDamping = .12f;
+            profile.cityBridges.boatMaximumTilt = 15f;
+            profile.cityBridges.boatMaximumSink = 1.25f;
+            profile.cityBridges.boatMaximumRise = .65f;
+            profile.cityBridges.boatLaunchImpulse = 1.8f;
+            profile.cityBridges.boatSprites = boats;
             profile.cityBridges.bridgeSprite = bridge;
             profile.cityBridges.waterSprite = water;
             profile.cityBridges.bridgeArtSlopeDegrees = 16.1f;
@@ -155,14 +168,14 @@ namespace AnimeHillRacing.Editor
             profile.cityBridges.waterSortingOrder = 1;
             profile.cityBridges.waterBedSortingOrder = 0;
             profile.cityBridges.bridgeSortingOrder = 5;
-            profile.introductoryAmplitude = .38f;
-            profile.introEndDistance = 525f;
-            profile.easyEndDistance = 2250f;
-            profile.normalEndDistance = 4950f;
-            profile.hardEndDistance = 7500f;
+            profile.introductoryAmplitude = .34f;
+            profile.introEndDistance = 600f;
+            profile.easyEndDistance = 3000f;
+            profile.normalEndDistance = 6500f;
+            profile.hardEndDistance = 10000f;
             profile.difficultyCurve = new AnimationCurve(
-                new Keyframe(0f, 0f), new Keyframe(.25f, .22f),
-                new Keyframe(.60f, .62f), new Keyframe(1f, 1f));
+                new Keyframe(0f, 0f), new Keyframe(.25f, .20f),
+                new Keyframe(.60f, .58f), new Keyframe(1f, 1f));
             profile.maximumDifficulty = 1f;
             profile.sectionLength = 72f;
             profile.recoveryEverySections = 5;
@@ -172,8 +185,8 @@ namespace AnimeHillRacing.Editor
             profile.hillFeatureWeight = .54f;
             profile.valleyFeatureWeight = .27f;
             profile.technicalFeatureWeight = .17f;
-            profile.maxSlopeAngle = 34f;
-            profile.maxHeightDeltaPerSample = Mathf.Tan(34f * Mathf.Deg2Rad) * (80f / 48f);
+            profile.maxSlopeAngle = 36f;
+            profile.maxHeightDeltaPerSample = Mathf.Tan(36f * Mathf.Deg2Rad) * (80f / 48f);
             profile.minimumValleyWidth = 18f;
             profile.minimumLandingLength = 16f;
             profile.maximumCrestSharpness = 7f;
@@ -218,7 +231,7 @@ namespace AnimeHillRacing.Editor
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
             ValidateInstalledCity(profile, environment, catalog);
-            Debug.Log("CITY_MAP_INSTALL_PASS: City, Highway terrain, 15 individual clouds, materials and selector catalog installed.");
+            Debug.Log("CITY_MAP_INSTALL_PASS: City, 10-15 water zones, floating boats and integrated anime cloud sky installed.");
         }
 
         private static void ValidateInstalledCity(MapProfile profile, EnvironmentDefinition environment,
@@ -226,7 +239,7 @@ namespace AnimeHillRacing.Editor
         {
             float d0 = profile.EvaluateDifficulty(0f);
             float d3750 = profile.EvaluateDifficulty(3750f);
-            float d7500 = profile.EvaluateDifficulty(7500f);
+            float d10000 = profile.EvaluateDifficulty(10000f);
             float d12000 = profile.EvaluateDifficulty(12000f);
             if (!profile.useCityHighwayTerrain || profile.supportsLiquidExposure ||
                 Mathf.Abs(profile.terrainFillStartV - profile.terrainSurfaceContactV) > .0001f ||
@@ -237,10 +250,11 @@ namespace AnimeHillRacing.Editor
                 profile.terrainEdgeMaterial.GetFloat("_DepthWrite") < .5f ||
                 !profile.terrainEdgeMaterial.HasProperty("_HorizontalInset") ||
                 Mathf.Abs(profile.terrainEdgeMaterial.GetFloat("_HorizontalInset") - .008f) > .0001f ||
-                !(d0 < d3750 && d3750 < d7500) || !Mathf.Approximately(d7500, d12000) ||
-                environment.clouds == null || environment.clouds.Length != 15 ||
+                !(d0 < d3750 && d3750 < d10000) || !Mathf.Approximately(d10000, d12000) ||
+                environment.clouds == null || environment.clouds.Length != 0 ||
                 !profile.useCityBridges || profile.cityBridges == null ||
                 profile.cityBridges.bridgeSprite == null || profile.cityBridges.waterSprite == null ||
+                profile.cityBridges.boatSprites == null || profile.cityBridges.boatSprites.Length != 3 ||
                 catalog.FindMap("city", GameModeType.Adventure2_5D) != profile)
                 throw new System.InvalidOperationException("City integration validation failed.");
             ValidateBridgeLayout(profile);
@@ -258,18 +272,22 @@ namespace AnimeHillRacing.Editor
             for (int cycle = 0; cycle <= 3; cycle++)
                 cycleSummary.Add($"{cycle * 10} km: {TerrainGenerator.GetCityBridgeZoneCount(profile, cycle)} " +
                                  $"zones / {TerrainGenerator.GetCityProgressiveBridgeZoneCount(profile, cycle)} " +
-                                 "progressive");
+                                 $"progressive / {TerrainGenerator.GetCityBoatZoneCount(profile, cycle)} boats zones");
             Debug.Log("City bridge verification passed — " + string.Join(", ", cycleSummary));
         }
 
         private static void ValidateBridgeLayout(MapProfile profile)
         {
             if (profile == null || !profile.useCityBridges || profile.cityBridges == null ||
-                profile.cityBridges.bridgeSprite == null || profile.cityBridges.waterSprite == null)
+                profile.cityBridges.bridgeSprite == null || profile.cityBridges.waterSprite == null ||
+                profile.cityBridges.boatSprites == null || profile.cityBridges.boatSprites.Length != 3)
                 throw new System.InvalidOperationException("City bridge assets or settings are missing.");
             CityBridgeSettings settings = profile.cityBridges;
             if (AssetDatabase.GetAssetPath(settings.bridgeSprite) != CityRoot + "/Bridge.png" ||
                 AssetDatabase.GetAssetPath(settings.waterSprite) != CityRoot + "/Water.png" ||
+                AssetDatabase.GetAssetPath(settings.boatSprites[0]) != CityRoot + "/Boats/CityBoat_Small.png" ||
+                AssetDatabase.GetAssetPath(settings.boatSprites[1]) != CityRoot + "/Boats/CityBoat_Medium.png" ||
+                AssetDatabase.GetAssetPath(settings.boatSprites[2]) != CityRoot + "/Boats/CityBoat_Large.png" ||
                 Mathf.Abs(settings.waterVisualDepth - 10f) > .001f ||
                 Mathf.Abs(settings.waterVisualAlpha - .5f) > .001f ||
                 settings.waterBedThickness + .01f < profile.terrainVisualDepth ||
@@ -291,12 +309,16 @@ namespace AnimeHillRacing.Editor
             {
                 int count = TerrainGenerator.GetCityBridgeZoneCount(profile, cycle);
                 int progressive = TerrainGenerator.GetCityProgressiveBridgeZoneCount(profile, cycle);
-                if (count < 7 || count > 10 || progressive < 5 || progressive > 7)
+                int boatZones = TerrainGenerator.GetCityBoatZoneCount(profile, cycle);
+                if (count < 10 || count > 15 || progressive < 5 || progressive > 7 ||
+                    boatZones < 5 || boatZones > 10)
                     throw new System.InvalidOperationException(
-                        $"City bridge distribution failed in cycle {cycle}: {count} total, {progressive} progressive.");
+                        $"City bridge distribution failed in cycle {cycle}: {count} total, " +
+                        $"{progressive} progressive, {boatZones} with boats.");
 
                 float previousEnd = cycle * CityBridgeSettings.RequiredCycleLength;
                 int countedProgressive = 0;
+                int countedBoatZones = 0;
                 for (int slot = 0; slot < count; slot++)
                 {
                     CityBridgeZoneLayout zone = TerrainGenerator.GetCityBridgeZone(profile, cycle, slot);
@@ -306,9 +328,17 @@ namespace AnimeHillRacing.Editor
                             $"City bridge spacing failed in cycle {cycle}, slot {slot}: {separation:F2} m.");
                     if (!(zone.approachStart < zone.gapStart && zone.gapStart < zone.waterStart &&
                           zone.waterStart < zone.waterEnd && zone.waterEnd <= zone.gapEnd &&
-                          zone.gapEnd < zone.recoveryEnd))
+                          zone.gapEnd < zone.exitRampEnd && zone.exitRampEnd < zone.recoveryEnd))
                         throw new System.InvalidOperationException(
                             $"City bridge geometry order failed in cycle {cycle}, slot {slot}.");
+                    int boats = TerrainGenerator.GetCityBoatCount(profile, cycle, slot);
+                    if (boats > 0)
+                    {
+                        countedBoatZones++;
+                        if (boats < 1 || boats > 3)
+                            throw new System.InvalidOperationException(
+                                $"City boat count failed in cycle {cycle}, slot {slot}: {boats}.");
+                    }
                     previousEnd = zone.recoveryEnd;
                     if (zone.isProgressive)
                     {
@@ -329,6 +359,10 @@ namespace AnimeHillRacing.Editor
                 if (countedProgressive != progressive)
                     throw new System.InvalidOperationException(
                         $"City progressive count mismatch in cycle {cycle}.");
+                if (countedBoatZones != boatZones)
+                    throw new System.InvalidOperationException(
+                        $"City boat-zone count mismatch in cycle {cycle}: " +
+                        $"{countedBoatZones} != {boatZones}.");
                 float cycleLimit = (cycle + 1) * CityBridgeSettings.RequiredCycleLength -
                                    settings.cycleEndMargin;
                 if (previousEnd > cycleLimit + .01f)
@@ -337,7 +371,9 @@ namespace AnimeHillRacing.Editor
             }
             if (!Mathf.Approximately(profile.cityBridges.transitionSeconds, 3f) ||
                 !Mathf.Approximately(profile.cityBridges.openAngleDegrees, 45f) ||
-                !Mathf.Approximately(profile.cityBridges.closedAngleDegrees, 0f))
+                !Mathf.Approximately(profile.cityBridges.closedAngleDegrees, 0f) ||
+                profile.cityBridges.closedHoldSeconds > .001f ||
+                profile.cityBridges.openHoldSeconds > .001f)
                 throw new System.InvalidOperationException("City bridge animation contract is invalid.");
         }
 

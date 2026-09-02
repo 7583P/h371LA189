@@ -296,10 +296,12 @@ namespace AnimeHillRacing.Terrain
     public sealed class CityBridgeSettings
     {
         public const float RequiredCycleLength = 10000f;
-        public const int RequiredMinimumZones = 7;
-        public const int RequiredMaximumZones = 10;
+        public const int RequiredMinimumZones = 10;
+        public const int RequiredMaximumZones = 15;
         public const int RequiredMinimumProgressiveZones = 5;
         public const int RequiredMaximumProgressiveZones = 7;
+        public const int RequiredMinimumBoatZones = 5;
+        public const int RequiredMaximumBoatZones = 10;
         public const float RequiredProgressiveGrowth = 10f;
         public const float RequiredBridgeAngle = 45f;
         public const float RequiredTransitionSeconds = 3f;
@@ -315,6 +317,8 @@ namespace AnimeHillRacing.Terrain
         [Min(50f)] public float minimumZoneSpacing = 300f;
         [Min(5f)] public float approachBlendLength = 50f;
         [Min(5f)] public float recoveryBlendLength = 50f;
+        [Range(0f, 1f)] public float crestApproachChance = .36f;
+        [Min(0f)] public float crestApproachRise = 3.2f;
 
         [Header("Bridge / Water Geometry")]
         [Min(4f)] public float bridgeLength = 14f;
@@ -335,12 +339,36 @@ namespace AnimeHillRacing.Terrain
         [Min(.08f)] public float bridgeColliderThickness = .45f;
         [Range(0f, 2f)] public float bridgeGroundOverlap = 1f;
 
+        [Header("Water Exit Ramp")]
+        [Min(3f)] public float exitRampLength = 14f;
+        [Min(.2f)] public float exitRampRise = 1.8f;
+
         [Header("Bridge Animation")]
         [Range(0f, 45f)] public float closedAngleDegrees;
         [Range(0f, 45f)] public float openAngleDegrees = RequiredBridgeAngle;
         [Min(.1f)] public float transitionSeconds = RequiredTransitionSeconds;
-        [Min(0f)] public float closedHoldSeconds = 4f;
-        [Min(0f)] public float openHoldSeconds = 4f;
+        [Min(0f)] public float closedHoldSeconds;
+        [Min(0f)] public float openHoldSeconds;
+
+        [Header("Floating Boat Platforms")]
+        public int minimumBoatZonesPerCycle = RequiredMinimumBoatZones;
+        public int maximumBoatZonesPerCycle = RequiredMaximumBoatZones;
+        [Range(1, 3)] public int minimumBoatsPerZone = 1;
+        [Range(1, 3)] public int maximumBoatsPerZone = 3;
+        [Min(2f)] public float minimumBoatWidth = 5.2f;
+        [Min(3f)] public float maximumBoatWidth = 9.5f;
+        [Min(.1f)] public float boatColliderThickness = .48f;
+        [Range(-.5f, .5f)] public float boatDeckHeightFraction = .18f;
+        [Min(.1f)] public float boatMass = 90f;
+        [Min(1f)] public float boatVerticalSpring = 24f;
+        [Min(.1f)] public float boatVerticalDamping = 8f;
+        [Min(.1f)] public float boatCenteringTorque = 1.15f;
+        [Min(.01f)] public float boatAngularDamping = .12f;
+        [Range(4f, 25f)] public float boatMaximumTilt = 15f;
+        [Min(.1f)] public float boatMaximumSink = 1.25f;
+        [Min(.1f)] public float boatMaximumRise = .65f;
+        [Min(0f)] public float boatLaunchImpulse = 1.8f;
+        public Sprite[] boatSprites = new Sprite[0];
 
         [Header("Authored Visuals")]
         public Sprite bridgeSprite;
@@ -633,6 +661,8 @@ namespace AnimeHillRacing.Terrain
                 cityBridges.minimumProgressiveZones = CityBridgeSettings.RequiredMinimumProgressiveZones;
                 cityBridges.maximumProgressiveZones = CityBridgeSettings.RequiredMaximumProgressiveZones;
                 cityBridges.progressiveGrowthPerCycle = CityBridgeSettings.RequiredProgressiveGrowth;
+                cityBridges.minimumBoatZonesPerCycle = CityBridgeSettings.RequiredMinimumBoatZones;
+                cityBridges.maximumBoatZonesPerCycle = CityBridgeSettings.RequiredMaximumBoatZones;
                 cityBridges.closedAngleDegrees = 0f;
                 cityBridges.openAngleDegrees = CityBridgeSettings.RequiredBridgeAngle;
                 cityBridges.transitionSeconds = CityBridgeSettings.RequiredTransitionSeconds;
@@ -657,6 +687,24 @@ namespace AnimeHillRacing.Terrain
                 cityBridges.minimumZoneSpacing = Mathf.Max(50f, cityBridges.minimumZoneSpacing);
                 cityBridges.approachBlendLength = Mathf.Max(5f, cityBridges.approachBlendLength);
                 cityBridges.recoveryBlendLength = Mathf.Max(5f, cityBridges.recoveryBlendLength);
+                cityBridges.exitRampLength = Mathf.Max(3f, cityBridges.exitRampLength);
+                cityBridges.exitRampRise = Mathf.Max(.2f, cityBridges.exitRampRise);
+                cityBridges.crestApproachRise = Mathf.Max(0f, cityBridges.crestApproachRise);
+                cityBridges.minimumBoatsPerZone = Mathf.Clamp(cityBridges.minimumBoatsPerZone, 1, 3);
+                cityBridges.maximumBoatsPerZone = Mathf.Clamp(cityBridges.maximumBoatsPerZone,
+                    cityBridges.minimumBoatsPerZone, 3);
+                cityBridges.minimumBoatWidth = Mathf.Max(2f, cityBridges.minimumBoatWidth);
+                cityBridges.maximumBoatWidth = Mathf.Max(cityBridges.minimumBoatWidth,
+                    cityBridges.maximumBoatWidth);
+                cityBridges.boatColliderThickness = Mathf.Max(.1f,
+                    cityBridges.boatColliderThickness);
+                cityBridges.boatMass = Mathf.Max(.1f, cityBridges.boatMass);
+                cityBridges.boatVerticalSpring = Mathf.Max(1f, cityBridges.boatVerticalSpring);
+                cityBridges.boatVerticalDamping = Mathf.Max(.1f, cityBridges.boatVerticalDamping);
+                cityBridges.boatCenteringTorque = Mathf.Max(.1f, cityBridges.boatCenteringTorque);
+                cityBridges.boatAngularDamping = Mathf.Max(.01f, cityBridges.boatAngularDamping);
+                cityBridges.boatMaximumSink = Mathf.Max(.1f, cityBridges.boatMaximumSink);
+                cityBridges.boatMaximumRise = Mathf.Max(.1f, cityBridges.boatMaximumRise);
             }
             countrysideSpecialFeatures.eventInterval = Mathf.Max(250f,
                 countrysideSpecialFeatures.eventInterval);

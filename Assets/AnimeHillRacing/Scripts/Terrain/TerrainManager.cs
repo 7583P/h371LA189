@@ -23,6 +23,9 @@ namespace AnimeHillRacing.Terrain
         private int minimumLoadedIndex;
         private int maximumLoadedIndex;
         private readonly ProgressiveFuelSequence fuelSequence = new ProgressiveFuelSequence();
+        private readonly LastHorizonFuelSequence lastHorizonFuelSequence = new LastHorizonFuelSequence();
+        private readonly List<LastHorizonFuelPoint> lastHorizonFuelBuffer =
+            new List<LastHorizonFuelPoint>(4);
         private readonly RandomGemRouteSequence gemSequence = new RandomGemRouteSequence();
         private readonly List<GemRoutePoint> gemPointBuffer = new List<GemRoutePoint>(2);
         private MeshCollider authoritativeTerrainCollider;
@@ -52,6 +55,20 @@ namespace AnimeHillRacing.Terrain
             new Dictionary<int, ArenaSegmentEvent>();
         private readonly HashSet<int> requiredArenaEvents = new HashSet<int>();
         private readonly List<int> arenaEventKeyBuffer = new List<int>(8);
+        private readonly List<LastHorizonObstacleEvent> lastHorizonObstaclePool =
+            new List<LastHorizonObstacleEvent>(10);
+        private readonly Dictionary<int, LastHorizonObstacleEvent> activeLastHorizonObstacles =
+            new Dictionary<int, LastHorizonObstacleEvent>();
+        private readonly HashSet<int> requiredLastHorizonObstacles = new HashSet<int>();
+        private readonly List<int> lastHorizonObstacleKeyBuffer = new List<int>(8);
+        private readonly List<LastHorizonSpecialPhaseEvent> lastHorizonSpecialPhasePool =
+            new List<LastHorizonSpecialPhaseEvent>(6);
+        private readonly Dictionary<long, LastHorizonSpecialPhaseEvent> activeLastHorizonSpecialPhases =
+            new Dictionary<long, LastHorizonSpecialPhaseEvent>();
+        private readonly HashSet<long> requiredLastHorizonSpecialPhases = new HashSet<long>();
+        private readonly List<long> lastHorizonSpecialPhaseKeyBuffer = new List<long>(6);
+        private readonly List<LastHorizonSpecialPhaseLayout> lastHorizonSpecialPhaseLayoutBuffer =
+            new List<LastHorizonSpecialPhaseLayout>(8);
 
         public static TerrainManager Instance { get; private set; }
 
@@ -64,15 +81,18 @@ namespace AnimeHillRacing.Terrain
             ? TerrainGenerator.GetSectionKind(mapProfile,
                 Mathf.FloorToInt(VehicleWorldX / Mathf.Max(1f, mapProfile.sectionLength)))
             : TerrainSectionKind.Fast;
-        public float CurrentFuelSpacing => fuelSequence.CurrentSpacing;
-        public float NextFuelSequencePosition => fuelSequence.NextPosition;
+        public float CurrentFuelSpacing => mapProfile != null && mapProfile.useLastHorizonTerrain
+            ? lastHorizonFuelSequence.CurrentSpacing : fuelSequence.CurrentSpacing;
+        public float NextFuelSequencePosition => mapProfile != null && mapProfile.useLastHorizonTerrain
+            ? lastHorizonFuelSequence.NextPosition : fuelSequence.NextPosition;
         public float CurrentMountainsTargetSlope => mapProfile != null && mapProfile.useMountainsTerrain
             ? TerrainGenerator.GetMountainsTargetSlope(mapProfile, VehicleWorldX) : 0f;
         public EdgeCollider2D AuthoritativeCollider2D => authoritativeTerrainCollider2D;
         private float VehicleWorldX => vehicle != null && vehicle.Body2D != null
             ? vehicle.Body2D.position.x
             : vehicle != null ? vehicle.transform.position.x : 0f;
-        private int RuntimeSamples => mapProfile != null && mapProfile.useMountainsTerrain
+        private int RuntimeSamples => mapProfile != null && mapProfile.useLastHorizonTerrain
+            ? Mathf.Max(samples, 128) : mapProfile != null && mapProfile.useMountainsTerrain
             ? Mathf.Max(samples, 192) : mapProfile != null && mapProfile.useSpaceTerrain
                 ? Mathf.Max(samples, 96) : mapProfile != null && mapProfile.useArenaTerrain
                 ? Mathf.Max(samples, 80) : samples;
@@ -93,6 +113,7 @@ namespace AnimeHillRacing.Terrain
             pickupPool?.Initialize();
             EnsureAuthoritativeTerrainCollider();
             fuelSequence.Reset(0f, mapProfile.initialFuelGap, mapProfile.fuelGapIncrease);
+            lastHorizonFuelSequence.Reset(mapProfile);
             int gemRouteSeed = unchecked((mapProfile.seed * 397) ^ System.Environment.TickCount ^ GetInstanceID());
             gemSequence.Reset(0f, gemRouteSeed);
             int count = chunksBehind + chunksAhead + 1;
@@ -123,6 +144,10 @@ namespace AnimeHillRacing.Terrain
             RefreshSpaceEvents();
             PrewarmArenaEvents(6);
             RefreshArenaEvents();
+            PrewarmLastHorizonObstacles(10);
+            PrewarmLastHorizonSpecialPhases(6);
+            RefreshLastHorizonSpecialPhases();
+            RefreshLastHorizonObstacles();
         }
 
         private void Update()
@@ -172,9 +197,14 @@ namespace AnimeHillRacing.Terrain
                 }
             }
 
-            float targetY = TrySampleAuthoritativeSurface(targetWorldX, out float surfaceY, out _)
-                ? surfaceY + 2.5f
-                : TerrainGenerator.SampleHeight(mapProfile, targetWorldX) + 2.5f;
+            float targetY;
+            if (TerrainGenerator.TrySampleLastHorizonSpecialPickupSurface(mapProfile, targetWorldX,
+                    out float specialSurfaceY, out _))
+                targetY = specialSurfaceY + 2.5f;
+            else
+                targetY = TrySampleAuthoritativeSurface(targetWorldX, out float surfaceY, out _)
+                    ? surfaceY + 2.5f
+                    : TerrainGenerator.SampleHeight(mapProfile, targetWorldX) + 2.5f;
             if (activeVehicle != null)
             {
                 activeVehicle.TeleportToPosition(new Vector3(targetWorldX, targetY, 0f));
@@ -187,6 +217,8 @@ namespace AnimeHillRacing.Terrain
             RefreshCityBridges();
             RefreshSpaceEvents();
             RefreshArenaEvents();
+            RefreshLastHorizonSpecialPhases();
+            RefreshLastHorizonObstacles();
         }
 
         private void FixedUpdate()
@@ -322,6 +354,8 @@ namespace AnimeHillRacing.Terrain
                 RefreshCityBridges();
                 RefreshSpaceEvents();
                 RefreshArenaEvents();
+                RefreshLastHorizonSpecialPhases();
+                RefreshLastHorizonObstacles();
             }
         }
 
@@ -339,6 +373,8 @@ namespace AnimeHillRacing.Terrain
             RefreshCityBridges();
             RefreshSpaceEvents();
             RefreshArenaEvents();
+            RefreshLastHorizonSpecialPhases();
+            RefreshLastHorizonObstacles();
         }
 
         private void RegenerateLoadedSurfacesAscending()
@@ -611,6 +647,7 @@ namespace AnimeHillRacing.Terrain
                     if (x < start || x >= end || TerrainGenerator.IsLiquidPool(mapProfile, x) ||
                         TerrainGenerator.IsTerrainGap(mapProfile, x) ||
                         TerrainGenerator.IsArenaReservedObstacleZone(mapProfile, x) ||
+                        TerrainGenerator.IsLastHorizonObstacleReserved(mapProfile, x) ||
                         !chunk.TrySampleSurface(x, out float y, out _)) continue;
                     CoinPickup pickup = pickupPool.SpawnCoin(point.value,
                         new Vector3(x, y + route.surfaceOffset + point.heightOffset, 0f), x,
@@ -645,6 +682,11 @@ namespace AnimeHillRacing.Terrain
         {
             if (pickupPool == null || index < 0)
                 return;
+            if (mapProfile != null && mapProfile.useLastHorizonTerrain)
+            {
+                SpawnLastHorizonFuel(chunk, index);
+                return;
+            }
             float start = index * chunkLength;
             float end = start + chunkLength;
             fuelSequence.AdvancePast(start);
@@ -661,6 +703,28 @@ namespace AnimeHillRacing.Terrain
                 PickupBase pickup = pickupPool.Spawn(PickupKind.Fuel, position, position.x);
                 chunk.TrackPickup(pickup);
                 fuelSequence.Advance(position.x);
+            }
+        }
+
+        private void SpawnLastHorizonFuel(TerrainChunk chunk, int index)
+        {
+            float start = index * chunkLength;
+            float end = start + chunkLength;
+            lastHorizonFuelSequence.GetPoints(start, end, lastHorizonFuelBuffer);
+            for (int i = 0; i < lastHorizonFuelBuffer.Count; i++)
+            {
+                LastHorizonFuelPoint point = lastHorizonFuelBuffer[i];
+                float pickupClearance;
+                if (!TerrainGenerator.TrySampleLastHorizonSpecialPickupSurface(mapProfile,
+                        point.Position, out float surfaceY, out pickupClearance))
+                {
+                    if (!chunk.TrySampleSurface(point.Position, out surfaceY, out _)) continue;
+                    pickupClearance = .68f;
+                }
+                PickupBase pickup = pickupPool.SpawnFuel(
+                    new Vector3(point.Position, surfaceY + pickupClearance, 0f), point.Position,
+                    point.StableId);
+                chunk.TrackPickup(pickup);
             }
         }
 
@@ -681,7 +745,8 @@ namespace AnimeHillRacing.Terrain
                     float candidateX = Mathf.Clamp(targetDistance + offset, chunkStart + 2f, chunkEnd - 2f);
                     if (TerrainGenerator.IsLiquidPool(mapProfile, candidateX) ||
                         TerrainGenerator.IsTerrainGap(mapProfile, candidateX) ||
-                        TerrainGenerator.IsArenaReservedObstacleZone(mapProfile, candidateX)) continue;
+                        TerrainGenerator.IsArenaReservedObstacleZone(mapProfile, candidateX) ||
+                        TerrainGenerator.IsLastHorizonObstacleReserved(mapProfile, candidateX)) continue;
                     if (!chunk.TrySampleSurface(candidateX, out float candidateY, out float slope))
                         continue;
                     float absoluteSlope = Mathf.Abs(slope);
@@ -736,6 +801,8 @@ namespace AnimeHillRacing.Terrain
                     if (TerrainGenerator.IsLiquidPool(mapProfile, candidateX) ||
                         TerrainGenerator.IsTerrainGap(mapProfile, candidateX) ||
                         TerrainGenerator.IsArenaReservedObstacleZone(mapProfile, candidateX) ||
+                        TerrainGenerator.IsLastHorizonObstacleReserved(mapProfile, candidateX) ||
+                        pickupPool.IsFuelReserved(candidateX) ||
                         !chunk.TrySampleSurface(candidateX, out float surfaceY, out _))
                         continue;
                     return new Vector3(candidateX, surfaceY + 1.25f, 0f);
@@ -1001,6 +1068,134 @@ namespace AnimeHillRacing.Terrain
                     return arenaEventPool[i];
             PrewarmArenaEvents(arenaEventPool.Count + 1);
             return arenaEventPool[arenaEventPool.Count - 1];
+        }
+
+        private void PrewarmLastHorizonSpecialPhases(int count)
+        {
+            if (mapProfile == null || !mapProfile.useLastHorizonTerrain) return;
+            while (lastHorizonSpecialPhasePool.Count < count)
+            {
+                GameObject phaseObject = new GameObject(
+                    "Last Horizon Special Phase - Available Pooled Instance");
+                phaseObject.transform.SetParent(transform, false);
+                LastHorizonSpecialPhaseEvent phase =
+                    phaseObject.AddComponent<LastHorizonSpecialPhaseEvent>();
+                phaseObject.SetActive(false);
+                lastHorizonSpecialPhasePool.Add(phase);
+            }
+        }
+
+        private void RefreshLastHorizonSpecialPhases()
+        {
+            if (mapProfile == null || !mapProfile.useLastHorizonTerrain || mapProfile.lastHorizon == null)
+            {
+                for (int i = 0; i < lastHorizonSpecialPhasePool.Count; i++)
+                    lastHorizonSpecialPhasePool[i]?.Deactivate();
+                activeLastHorizonSpecialPhases.Clear();
+                return;
+            }
+
+            float loadedStart = minimumLoadedIndex * chunkLength;
+            float loadedEnd = (maximumLoadedIndex + 1) * chunkLength;
+            float padding = Mathf.Max(40f, mapProfile.lastHorizon.specialPhaseTransitionLength);
+            TerrainGenerator.GetLastHorizonSpecialPhases(mapProfile, loadedStart - padding,
+                loadedEnd + padding, lastHorizonSpecialPhaseLayoutBuffer);
+            requiredLastHorizonSpecialPhases.Clear();
+            for (int i = 0; i < lastHorizonSpecialPhaseLayoutBuffer.Count; i++)
+            {
+                LastHorizonSpecialPhaseLayout layout = lastHorizonSpecialPhaseLayoutBuffer[i];
+                if (layout.end < loadedStart - padding || layout.start > loadedEnd + padding) continue;
+                requiredLastHorizonSpecialPhases.Add(layout.key);
+                if (activeLastHorizonSpecialPhases.ContainsKey(layout.key)) continue;
+                LastHorizonSpecialPhaseEvent phase = GetAvailableLastHorizonSpecialPhase();
+                phase.Configure(mapProfile, layout, width, gameManager);
+                activeLastHorizonSpecialPhases.Add(layout.key, phase);
+            }
+
+            lastHorizonSpecialPhaseKeyBuffer.Clear();
+            foreach (KeyValuePair<long, LastHorizonSpecialPhaseEvent> pair in activeLastHorizonSpecialPhases)
+                if (!requiredLastHorizonSpecialPhases.Contains(pair.Key))
+                    lastHorizonSpecialPhaseKeyBuffer.Add(pair.Key);
+            for (int i = 0; i < lastHorizonSpecialPhaseKeyBuffer.Count; i++)
+            {
+                long key = lastHorizonSpecialPhaseKeyBuffer[i];
+                activeLastHorizonSpecialPhases[key].Deactivate();
+                activeLastHorizonSpecialPhases.Remove(key);
+            }
+        }
+
+        private LastHorizonSpecialPhaseEvent GetAvailableLastHorizonSpecialPhase()
+        {
+            for (int i = 0; i < lastHorizonSpecialPhasePool.Count; i++)
+                if (lastHorizonSpecialPhasePool[i] != null &&
+                    !lastHorizonSpecialPhasePool[i].gameObject.activeSelf)
+                    return lastHorizonSpecialPhasePool[i];
+            PrewarmLastHorizonSpecialPhases(lastHorizonSpecialPhasePool.Count + 1);
+            return lastHorizonSpecialPhasePool[lastHorizonSpecialPhasePool.Count - 1];
+        }
+
+        private void PrewarmLastHorizonObstacles(int count)
+        {
+            if (mapProfile == null || !mapProfile.useLastHorizonTerrain) return;
+            while (lastHorizonObstaclePool.Count < count)
+            {
+                GameObject obstacleObject = new GameObject(
+                    "Last Horizon Obstacle - Available Pooled Instance");
+                obstacleObject.transform.SetParent(transform, false);
+                LastHorizonObstacleEvent obstacle = obstacleObject.AddComponent<LastHorizonObstacleEvent>();
+                obstacleObject.SetActive(false);
+                lastHorizonObstaclePool.Add(obstacle);
+            }
+        }
+
+        private void RefreshLastHorizonObstacles()
+        {
+            if (mapProfile == null || !mapProfile.useLastHorizonTerrain || mapProfile.lastHorizon == null)
+            {
+                for (int i = 0; i < lastHorizonObstaclePool.Count; i++)
+                    lastHorizonObstaclePool[i]?.Deactivate();
+                activeLastHorizonObstacles.Clear();
+                return;
+            }
+
+            float loadedStart = minimumLoadedIndex * chunkLength;
+            float loadedEnd = (maximumLoadedIndex + 1) * chunkLength;
+            float cellLength = Mathf.Max(180f, mapProfile.lastHorizon.obstacleCellLength);
+            int firstCell = Mathf.Max(0, Mathf.FloorToInt((loadedStart - cellLength) / cellLength));
+            int lastCell = Mathf.Max(0, Mathf.CeilToInt((loadedEnd + cellLength) / cellLength));
+            requiredLastHorizonObstacles.Clear();
+            for (int cell = firstCell; cell <= lastCell; cell++)
+            {
+                if (!TerrainGenerator.TryGetLastHorizonObstacle(mapProfile, cell,
+                        out LastHorizonObstacleLayout layout)) continue;
+                if (layout.End < loadedStart || layout.Start > loadedEnd) continue;
+                requiredLastHorizonObstacles.Add(cell);
+                if (activeLastHorizonObstacles.ContainsKey(cell)) continue;
+                LastHorizonObstacleEvent obstacle = GetAvailableLastHorizonObstacle();
+                obstacle.Configure(mapProfile, layout);
+                activeLastHorizonObstacles.Add(cell, obstacle);
+            }
+
+            lastHorizonObstacleKeyBuffer.Clear();
+            foreach (KeyValuePair<int, LastHorizonObstacleEvent> pair in activeLastHorizonObstacles)
+                if (!requiredLastHorizonObstacles.Contains(pair.Key))
+                    lastHorizonObstacleKeyBuffer.Add(pair.Key);
+            for (int i = 0; i < lastHorizonObstacleKeyBuffer.Count; i++)
+            {
+                int key = lastHorizonObstacleKeyBuffer[i];
+                activeLastHorizonObstacles[key].Deactivate();
+                activeLastHorizonObstacles.Remove(key);
+            }
+        }
+
+        private LastHorizonObstacleEvent GetAvailableLastHorizonObstacle()
+        {
+            for (int i = 0; i < lastHorizonObstaclePool.Count; i++)
+                if (lastHorizonObstaclePool[i] != null &&
+                    !lastHorizonObstaclePool[i].gameObject.activeSelf)
+                    return lastHorizonObstaclePool[i];
+            PrewarmLastHorizonObstacles(lastHorizonObstaclePool.Count + 1);
+            return lastHorizonObstaclePool[lastHorizonObstaclePool.Count - 1];
         }
 
         private void OnDestroy()

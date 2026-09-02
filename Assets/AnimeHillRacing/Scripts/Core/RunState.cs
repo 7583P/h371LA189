@@ -17,6 +17,7 @@ namespace AnimeHillRacing.Core
         DriverDown,
         OutOfFuel,
         DriverDownAndOutOfFuel,
-        Finished
+        Finished,
+        CrashedAndOutOfFuel
     }
 }

@@ -19,8 +19,8 @@ MonoBehaviour:
     openingSeconds: 7200
     minimumCoins: 1200
     maximumCoins: 1500
-    minimumGems: 0
-    maximumGems: 0
+    minimumGems: 1
+    maximumGems: 3
     blueprintReward: 0
     hasExplicitRewardRarity: 0
     rewardRarity: 0
@@ -33,8 +33,8 @@ MonoBehaviour:
     openingSeconds: 14400
     minimumCoins: 2500
     maximumCoins: 3700
-    minimumGems: 0
-    maximumGems: 0
+    minimumGems: 2
+    maximumGems: 5
     blueprintReward: 0
     hasExplicitRewardRarity: 0
     rewardRarity: 0
@@ -47,8 +47,8 @@ MonoBehaviour:
     openingSeconds: 21600
     minimumCoins: 5000
     maximumCoins: 7500
-    minimumGems: 0
-    maximumGems: 0
+    minimumGems: 6
+    maximumGems: 12
     blueprintReward: 0
     hasExplicitRewardRarity: 0
     rewardRarity: 0
@@ -61,8 +61,8 @@ MonoBehaviour:
     openingSeconds: 43200
     minimumCoins: 15000
     maximumCoins: 20000
-    minimumGems: 0
-    maximumGems: 0
+    minimumGems: 20
+    maximumGems: 35
     blueprintReward: 5
     hasExplicitRewardRarity: 0
     rewardRarity: 0
@@ -75,8 +75,8 @@ MonoBehaviour:
     openingSeconds: 86400
     minimumCoins: 30000
     maximumCoins: 50000
-    minimumGems: 0
-    maximumGems: 0
+    minimumGems: 50
+    maximumGems: 70
     blueprintReward: 10
     hasExplicitRewardRarity: 0
     rewardRarity: 0

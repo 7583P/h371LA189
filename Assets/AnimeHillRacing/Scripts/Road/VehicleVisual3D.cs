@@ -52,8 +52,9 @@ namespace AnimeHillRacing.Road
                     FormulaElectricSkinEffect.Apply(bodyRenderers[i], definition, skin);
                     HillAdventurerSkinEffect.Apply(bodyRenderers[i], definition, skin);
                     SportBikeNeonFlowEffect.ApplySkin(bodyRenderers[i], definition, skin);
+                    GlitchCrystalTideEffect.ApplySkin(bodyRenderers[i], skin);
                 }
-            ApplyAuthoredWheelPositions();
+            ApplyAuthoredWheelPositions(wheel);
             int wheelSortingOrder = Mathf.Max(VehicleVisual2D.MinimumWheelSortingOrder,
                 FormulaElectricSkinEffect.ResolveWheelSortingOrder(definition, skin));
             if (wheelRenderers != null && wheel != null)
@@ -67,8 +68,9 @@ namespace AnimeHillRacing.Road
                     bool front = frontWheels != null && i < frontWheels.Length && frontWheels[i];
                     float diameter = front ? definition.FrontWheelDiameter : definition.RearWheelDiameter;
                     renderer.transform.localScale = Vector3.one *
-                        definition.WheelCustomizationScale(wheel, diameter);
+                        definition.WheelCustomizationScale(wheel, diameter, front);
                     SportBikeNeonFlowEffect.ApplyWheel(renderer, definition, wheel);
+                    GlitchCrystalTideEffect.ApplyWheel(renderer, wheel);
                 }
             if (articulatedDriver != null)
             {
@@ -81,7 +83,7 @@ namespace AnimeHillRacing.Road
             }
         }
 
-        private void ApplyAuthoredWheelPositions()
+        private void ApplyAuthoredWheelPositions(VehicleDefinition.CustomizationOption wheelOption)
         {
             if (definition == null || wheels == null) return;
             if (baseLocalPositions == null || baseLocalPositions.Length != wheels.Length)
@@ -95,6 +97,7 @@ namespace AnimeHillRacing.Road
                 if (wheel == null) continue;
                 bool front = frontWheels != null && i < frontWheels.Length && frontWheels[i];
                 Vector2 authored = front ? definition.frontWheelVisualPosition : definition.rearWheelVisualPosition;
+                authored += definition.WheelCustomizationOffset(wheelOption, front);
                 Vector3 localPosition = wheel.localPosition;
                 localPosition.y = authored.y;
                 localPosition.z = authored.x;

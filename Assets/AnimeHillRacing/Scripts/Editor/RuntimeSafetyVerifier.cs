@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using AnimeHillRacing.Core;
 using AnimeHillRacing.Pickups;
 using AnimeHillRacing.UI;
+using AnimeHillRacing.Vehicle;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEngine;
@@ -31,9 +32,10 @@ namespace AnimeHillRacing.EditorTools
             ExpectGameOverCountdown(errors, RunEndReason.DriverDown, 1.99f, "DRIVER DOWN\n2");
             ExpectGameOverCountdown(errors, RunEndReason.DriverDownAndOutOfFuel, .25f,
                 "DRIVER DOWN\nOUT OF FUEL\n1");
-            ExpectHeadSurfaceContact(errors, "visible gap", false, 1.08f, 1f, .015f);
-            ExpectHeadSurfaceContact(errors, "contact tolerance", true, 1.01f, 1f, .015f);
-            ExpectHeadSurfaceContact(errors, "penetration", true, .98f, 1f, .015f);
+            ExpectGameOverCountdown(errors, RunEndReason.Crashed, 1.99f, "CRASHED\n2");
+            ExpectGameOverCountdown(errors, RunEndReason.CrashedAndOutOfFuel, .25f,
+                "CRASHED\nOUT OF FUEL\n1");
+            ValidateDriverDownContactContract(errors);
             ValidateCoinRouteProgression(errors);
             ValidateGarageRuntimeContract(errors);
 
@@ -62,13 +64,19 @@ namespace AnimeHillRacing.EditorTools
                 errors.Add($"Game-over countdown for {reason} contains glyphs outside the stylized atlas.");
         }
 
-        private static void ExpectHeadSurfaceContact(List<string> errors, string scenario,
-            bool expected, float headBottomY, float surfaceY, float tolerance)
+        private static void ValidateDriverDownContactContract(List<string> errors)
         {
-            bool actual = AnimeHillRacing.Vehicle.DriverHeadImpact.HasAuthoritativeSurfaceContact(
-                headBottomY, surfaceY, tolerance);
-            if (actual != expected)
-                errors.Add($"Driver head contact failed for {scenario}: expected {expected}, got {actual}.");
+            const System.Reflection.BindingFlags privateInstance =
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+            if (typeof(DriverHeadImpact).GetMethod("FixedUpdate", privateInstance) != null)
+                errors.Add("DriverHeadImpact must not infer DriverDown from a FixedUpdate proximity query.");
+            if (typeof(CrashDetector).GetMethod("NotifyDriverDown") != null)
+                errors.Add("CrashDetector exposes a non-head DriverDown entry point.");
+            if (typeof(CrashDetector).GetMethod("NotifyDriverHeadGroundImpact") == null)
+                errors.Add("CrashDetector is missing its head-contact-only DriverDown entry point.");
+            if (Mathf.Abs(ArticulatedDriver2D.DriverDownHeadAngle - 22.5f) > .001f ||
+                typeof(ArticulatedDriver2D).GetMethod("TriggerDriverDownReaction") == null)
+                errors.Add("DriverDown must apply the dedicated 22.5-degree inertial head reaction.");
         }
 
         private static void ValidateCoinRouteProgression(List<string> errors)

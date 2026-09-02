@@ -33,6 +33,16 @@ namespace AnimeHillRacing.Core
         // Keep the switch visible to the existing economy code, but ship against real balances.
         public static bool TemporaryUnlimitedCurrencyEnabled => false;
         public const int UnlimitedCurrencyDisplayAmount = 999_999_999;
+#if UNITY_EDITOR
+        // Editor progression is granted as a real local balance by EditorMaximumProgressionGrant.
+        // Keeping this override disabled makes spending and balance labels behave normally in tests.
+        public static bool TemporaryMillionCoinsEnabled => false;
+#else
+        public static bool TemporaryMillionCoinsEnabled => false;
+#endif
+        public const int TemporaryCoinDisplayAmount = 1_000_000;
+        private static bool HasTemporaryCoins =>
+            TemporaryUnlimitedCurrencyEnabled || TemporaryMillionCoinsEnabled;
         public const string DefaultMenuBackgroundId = "default";
         public const string DefaultGarageBackgroundId = "default";
 
@@ -40,6 +50,41 @@ namespace AnimeHillRacing.Core
         public const int DistanceBonusMaximum = DistanceBonusTracker.MaximumCoins;
         public const int DistanceBonusIncrement = DistanceBonusTracker.IncrementCoins;
         public const float DistanceBonusIntervalMeters = DistanceBonusTracker.IntervalMeters;
+
+#if UNITY_EDITOR
+        public const int EditorMaximumCurrencyAmount = 999_999_999;
+
+        public readonly struct EditorMaximumProgressionResult
+        {
+            public readonly int Maps;
+            public readonly int Vehicles;
+            public readonly int Drivers;
+            public readonly int Skins;
+            public readonly int Wheels;
+            public readonly int Accessories;
+            public readonly int TuneCategories;
+            public readonly int BlueprintBundles;
+
+            public EditorMaximumProgressionResult(int maps, int vehicles, int drivers, int skins,
+                int wheels, int accessories, int tuneCategories, int blueprintBundles)
+            {
+                Maps = maps;
+                Vehicles = vehicles;
+                Drivers = drivers;
+                Skins = skins;
+                Wheels = wheels;
+                Accessories = accessories;
+                TuneCategories = tuneCategories;
+                BlueprintBundles = blueprintBundles;
+            }
+
+            public override string ToString() =>
+                $"coins={EditorMaximumCurrencyAmount:N0}, gems={EditorMaximumCurrencyAmount:N0}, " +
+                $"maps={Maps}, vehicles={Vehicles}, drivers={Drivers}, skins={Skins}, wheels={Wheels}, " +
+                $"accessories={Accessories}, maxed tune categories={TuneCategories}, " +
+                $"completed blueprint bundles={BlueprintBundles}, starter pack=owned";
+        }
+#endif
 
         private const string TotalCoinsKey = "AHR.TotalCoins";
         private const string TotalGemsKey = "AHR.TotalGems";
@@ -54,6 +99,7 @@ namespace AnimeHillRacing.Core
         private const string SelectedMenuBackgroundKey = "AHR.Menu.Background";
         private const string SelectedGarageBackgroundKey = "AHR.Garage.Background";
         private const string MasterAudioEnabledKey = "AHR.Settings.MasterAudioEnabled";
+        private const string HighestAdventureBestDistanceKey = "AHR.Progress.HighestAdventureBestDistance.V1";
         private const string FormulaWheelMigrationKey = "AHR.Migration.FormulaDefaultWheel02.V1";
         private const string PurchasableContentMigrationKey = "AHR.Migration.PurchasableContent.V1";
         private const string EconomyMigrationKey = "AHR.Migration.Economy.Gems.V1";
@@ -62,18 +108,23 @@ namespace AnimeHillRacing.Core
             "AHR.Store.StarterPack.InitialRewardsGranted.V1";
         private const string PendingPaidCurrencyCloudSyncKey =
             "AHR.Cloud.PendingPaidCurrencySync.V1";
+        private const string PurchasedGemTransactionKeyPrefix =
+            "AHR.Store.Gems.Transaction.V1.";
         private const string FormulaLegacyWheelId = "formula-wheel-rainbow";
         private const string FormulaLuxuryWheelId = "formula-wheel-luxury";
         private const string RallyLegacyWheelId = "rally-wheel-rainbow";
         private const string RallyLuxuryWheelId = "rally-wheel-luxury";
 
-        public static int TotalCoins => TemporaryUnlimitedCurrencyEnabled
-            ? UnlimitedCurrencyDisplayAmount : StoredTotalCoins;
+        public static int TotalCoins => TemporaryMillionCoinsEnabled
+            ? TemporaryCoinDisplayAmount
+            : TemporaryUnlimitedCurrencyEnabled ? UnlimitedCurrencyDisplayAmount : StoredTotalCoins;
         public static int TotalGems => TemporaryUnlimitedCurrencyEnabled
             ? UnlimitedCurrencyDisplayAmount : StoredTotalGems;
         public static bool IsStarterPackOwned => PlayerPrefs.GetInt(StarterPackOwnedKey, 0) != 0;
         public static bool IsStarterPackInitialRewardsGranted =>
             PlayerPrefs.GetInt(StarterPackRewardsGrantedKey, 0) != 0;
+        public static float HighestAdventureBestDistance =>
+            Mathf.Max(0f, PlayerPrefs.GetFloat(HighestAdventureBestDistanceKey, 0f));
         public static event System.Action CurrencyChanged;
         public static GameModeType SelectedGameMode
         {
@@ -246,7 +297,7 @@ namespace AnimeHillRacing.Core
         }
 
         public static bool IsCustomizationUnlocked(string scopeId, string category, string optionId,
-            bool unlockedByDefault)
+            bool unlockedByDefault, float requiredBestDistance = 0f)
         {
             string normalizedId = category == "Wheels" ? NormalizeLegacyWheelId(scopeId, optionId) : optionId;
             string key = $"AHR.Customize.Unlock.{scopeId}.{category}.{normalizedId}";
@@ -262,7 +313,10 @@ namespace AnimeHillRacing.Core
                     return unlocked != 0;
                 }
             }
-            return PlayerPrefs.HasKey(key) ? PlayerPrefs.GetInt(key, 0) != 0 : unlockedByDefault;
+            bool permanentlyUnlocked = PlayerPrefs.HasKey(key)
+                ? PlayerPrefs.GetInt(key, 0) != 0 : unlockedByDefault;
+            return permanentlyUnlocked || requiredBestDistance > 0f &&
+                HighestAdventureBestDistance >= requiredBestDistance;
         }
 
         public static void UnlockCustomization(string scopeId, string category, string optionId)
@@ -280,6 +334,31 @@ namespace AnimeHillRacing.Core
             PlayerPrefs.SetInt(TotalGemsKey, (int)System.Math.Min(int.MaxValue, total));
             if (persistImmediately) PlayerPrefs.Save();
             CurrencyChanged?.Invoke();
+        }
+
+        public static bool TryGrantPurchasedGems(string productId, string transactionId, int amount,
+            out string error)
+        {
+            error = string.Empty;
+            if (string.IsNullOrWhiteSpace(productId) || string.IsNullOrWhiteSpace(transactionId) || amount <= 0)
+            {
+                error = "GEM PURCHASE TRANSACTION IS INVALID";
+                return false;
+            }
+
+            string transactionKey = PurchasedGemTransactionKeyPrefix +
+                Hash128.Compute(productId + "|" + transactionId);
+            // Google Play may redeliver an unacknowledged order after an interruption. Returning
+            // success lets IAP confirm it, while this ledger prevents a second currency grant.
+            if (PlayerPrefs.GetInt(transactionKey, 0) != 0) return true;
+
+            long total = (long)StoredTotalGems + amount;
+            PlayerPrefs.SetInt(TotalGemsKey, (int)System.Math.Min(int.MaxValue, total));
+            PlayerPrefs.SetInt(transactionKey, 1);
+            PlayerPrefs.SetInt(PendingPaidCurrencyCloudSyncKey, 1);
+            PlayerPrefs.Save();
+            CurrencyChanged?.Invoke();
+            return true;
         }
 
         public static void AddCoins(int amount, bool persistImmediately = true)
@@ -303,9 +382,32 @@ namespace AnimeHillRacing.Core
             return true;
         }
 
+        public static bool TryPurchaseCoinPack(int coinAmount, int gemCost, out string error)
+        {
+            error = string.Empty;
+            if (coinAmount <= 0 || gemCost <= 0)
+            {
+                error = "COIN PACK CONFIGURATION IS INVALID";
+                return false;
+            }
+            if (!TemporaryUnlimitedCurrencyEnabled && StoredTotalGems < gemCost)
+            {
+                error = "NOT ENOUGH GEMS";
+                return false;
+            }
+
+            if (!TemporaryUnlimitedCurrencyEnabled)
+                PlayerPrefs.SetInt(TotalGemsKey, StoredTotalGems - gemCost);
+            long coins = (long)StoredTotalCoins + coinAmount;
+            PlayerPrefs.SetInt(TotalCoinsKey, (int)System.Math.Min(int.MaxValue, coins));
+            PlayerPrefs.Save();
+            CurrencyChanged?.Invoke();
+            return true;
+        }
+
         public static bool TrySpendCoins(int amount, bool persistImmediately = true)
         {
-            if (amount <= 0 || TemporaryUnlimitedCurrencyEnabled) return amount > 0;
+            if (amount <= 0 || HasTemporaryCoins) return amount > 0;
             int balance = StoredTotalCoins;
             if (balance < amount) return false;
             PlayerPrefs.SetInt(TotalCoinsKey, balance - amount);
@@ -393,6 +495,100 @@ namespace AnimeHillRacing.Core
             return true;
         }
 
+#if UNITY_EDITOR
+        /// <summary>
+        /// Grants a complete local progression profile for development inside the Unity Editor.
+        /// This code is removed from player builds and deliberately leaves race records untouched.
+        /// </summary>
+        public static EditorMaximumProgressionResult GrantEditorMaximumProgression(GameCatalog catalog)
+        {
+            if (catalog == null) throw new System.ArgumentNullException(nameof(catalog));
+
+            PlayerPrefs.SetInt(TotalCoinsKey, EditorMaximumCurrencyAmount);
+            PlayerPrefs.SetInt(TotalGemsKey, EditorMaximumCurrencyAmount);
+
+            int mapCount = 0;
+            if (catalog.maps != null)
+                for (int i = 0; i < catalog.maps.Length; i++)
+                {
+                    MapDefinition map = catalog.maps[i];
+                    if (map != null && GrantPermanentMap(map.mapId, false)) mapCount++;
+                }
+
+            int vehicleCount = 0;
+            int skinCount = 0;
+            int wheelCount = 0;
+            int tuneCategoryCount = 0;
+            if (catalog.vehicles != null)
+                for (int i = 0; i < catalog.vehicles.Length; i++)
+                {
+                    VehicleDefinition vehicle = catalog.vehicles[i];
+                    if (vehicle == null || !GrantPermanentVehicle(vehicle.vehicleId, false)) continue;
+                    vehicleCount++;
+                    skinCount += GrantEditorOptions(vehicle.vehicleId, "Skin", vehicle.skins);
+                    wheelCount += GrantEditorOptions(vehicle.vehicleId, "Wheels", vehicle.wheels);
+
+                    foreach (VehicleUpgradeType type in
+                             System.Enum.GetValues(typeof(VehicleUpgradeType)))
+                    {
+                        int maximum = vehicle.GetMaxTunes(type);
+                        if (maximum <= 0) continue;
+                        SetCloudTuneLevels(vehicle, type, maximum, maximum);
+                        tuneCategoryCount++;
+                    }
+                }
+
+            int driverCount = 0;
+            int accessoryCount = 0;
+            if (catalog.drivers != null)
+                for (int i = 0; i < catalog.drivers.Length; i++)
+                {
+                    DriverDefinition driver = catalog.drivers[i];
+                    if (driver == null) continue;
+                    if (GrantPermanentCustomization("global", "Driver", driver.driverId, false))
+                        driverCount++;
+                    if (driver.accessories == null) continue;
+                    for (int j = 0; j < driver.accessories.Length; j++)
+                    {
+                        DriverDefinition.CharacterAccessoryOption accessory = driver.accessories[j];
+                        if (accessory != null && GrantPermanentCustomization("global",
+                                "CharacterAccessory", accessory.accessoryId, false)) accessoryCount++;
+                    }
+                }
+
+            System.Collections.Generic.List<BundleDefinition> bundles =
+                PremiumBundleCatalog.GetAll(catalog);
+            for (int i = 0; i < bundles.Count; i++)
+            {
+                BundleDefinition bundle = bundles[i];
+                SetCloudBlueprintCount(bundle.BundleId, bundle.BlueprintRequirement,
+                    bundle.BlueprintRequirement);
+            }
+
+            PlayerPrefs.SetInt(StarterPackOwnedKey, 1);
+            PlayerPrefs.SetInt(StarterPackRewardsGrantedKey, 1);
+            PlayerPrefs.Save();
+            CurrencyChanged?.Invoke();
+
+            return new EditorMaximumProgressionResult(mapCount, vehicleCount, driverCount,
+                skinCount, wheelCount, accessoryCount, tuneCategoryCount, bundles.Count);
+        }
+
+        private static int GrantEditorOptions(string vehicleId, string category,
+            VehicleDefinition.CustomizationOption[] options)
+        {
+            if (options == null) return 0;
+            int count = 0;
+            for (int i = 0; i < options.Length; i++)
+            {
+                VehicleDefinition.CustomizationOption option = options[i];
+                if (option != null && GrantPermanentCustomization(vehicleId, category,
+                        option.optionId, false)) count++;
+            }
+            return count;
+        }
+#endif
+
         internal static void SetCloudCurrencyBalances(int coins, int gems)
         {
             PlayerPrefs.SetInt(TotalCoinsKey, Mathf.Max(0, coins));
@@ -404,6 +600,7 @@ namespace AnimeHillRacing.Core
             string key = BestKey(mode, mapId);
             float best = Mathf.Max(PlayerPrefs.GetFloat(key, 0f), Mathf.Max(0f, distance));
             PlayerPrefs.SetFloat(key, best);
+            RecordHighestAdventureBestDistance(best, mode);
             LeaderboardSyncService.RecordLocalBest(mode, mapId, best);
             return best;
         }
@@ -495,6 +692,26 @@ namespace AnimeHillRacing.Core
             return PlayerPrefs.HasKey(key) ? PlayerPrefs.GetInt(key, 0) != 0 : unlockedByDefault;
         }
 
+        public static float SynchronizeHighestAdventureBestDistance(GameCatalog catalog)
+        {
+            float previous = HighestAdventureBestDistance;
+            float highest = previous;
+            if (catalog?.maps != null)
+                for (int i = 0; i < catalog.maps.Length; i++)
+                {
+                    MapDefinition map = catalog.maps[i];
+                    if (map == null || map.supportedGameMode == GameModeType.TimeTrial3D ||
+                        string.IsNullOrWhiteSpace(map.mapId)) continue;
+                    highest = Mathf.Max(highest, GetBestDistance(map.supportedGameMode, map.mapId));
+                }
+            if (highest > previous)
+            {
+                PlayerPrefs.SetFloat(HighestAdventureBestDistanceKey, highest);
+                PlayerPrefs.Save();
+            }
+            return highest;
+        }
+
         public static bool IsMapUnlocked(string mapId, bool unlockedByDefault)
         {
             EnsurePurchasableContentMigration();
@@ -544,7 +761,7 @@ namespace AnimeHillRacing.Core
                 return false;
             }
 
-            if (!TemporaryUnlimitedCurrencyEnabled)
+            if (!HasTemporaryCoins)
                 PlayerPrefs.SetInt(TotalCoinsKey, StoredTotalCoins - price);
             PlayerPrefs.SetInt(unlockKey, 1);
             PlayerPrefs.Save();
@@ -628,7 +845,7 @@ namespace AnimeHillRacing.Core
                 return false;
             }
 
-            if (!TemporaryUnlimitedCurrencyEnabled)
+            if (!HasTemporaryCoins)
                 PlayerPrefs.SetInt(TotalCoinsKey, StoredTotalCoins - coinPrice);
             AddBlueprints(bundle, blueprintAmount, out _, false);
             PlayerPrefs.Save();
@@ -680,6 +897,7 @@ namespace AnimeHillRacing.Core
             string key = BestKey(mode, mapId);
             float best = Mathf.Max(PlayerPrefs.GetFloat(key, 0f), Mathf.Max(0f, distance));
             PlayerPrefs.SetFloat(key, best);
+            RecordHighestAdventureBestDistance(best, mode);
             PlayerPrefs.Save();
             LeaderboardSyncService.RecordLocalBest(mode, mapId, best);
             return best;
@@ -690,6 +908,7 @@ namespace AnimeHillRacing.Core
             string key = BestKey(mode, mapId);
             float best = Mathf.Max(PlayerPrefs.GetFloat(key, 0f), distance);
             PlayerPrefs.SetFloat(key, best);
+            RecordHighestAdventureBestDistance(best, mode);
             long total = (long)StoredTotalCoins + Mathf.Max(0, runCoins);
             PlayerPrefs.SetInt(TotalCoinsKey, (int)System.Math.Min(int.MaxValue, total));
             PlayerPrefs.Save();
@@ -838,7 +1057,7 @@ namespace AnimeHillRacing.Core
                 result = TunePurchaseResult.NotEnoughCoins;
                 return false;
             }
-            if (!TemporaryUnlimitedCurrencyEnabled)
+            if (!HasTemporaryCoins)
                 PlayerPrefs.SetInt(TotalCoinsKey, StoredTotalCoins - cost);
             resultingTune = current + 1;
             PlayerPrefs.SetInt(UpgradeLevelKey(definition.vehicleId, type), resultingTune);
@@ -999,6 +1218,13 @@ namespace AnimeHillRacing.Core
 
         private static int StoredTotalCoins => Mathf.Max(0, PlayerPrefs.GetInt(TotalCoinsKey, 0));
         private static int StoredTotalGems => Mathf.Max(0, PlayerPrefs.GetInt(TotalGemsKey, 0));
+
+        private static void RecordHighestAdventureBestDistance(float distance, GameModeType mode)
+        {
+            if (mode == GameModeType.TimeTrial3D) return;
+            float highest = Mathf.Max(HighestAdventureBestDistance, Mathf.Max(0f, distance));
+            PlayerPrefs.SetFloat(HighestAdventureBestDistanceKey, highest);
+        }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void EnsureStarterPackGrantMigration()

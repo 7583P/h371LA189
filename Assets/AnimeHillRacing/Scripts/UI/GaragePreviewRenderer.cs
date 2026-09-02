@@ -27,6 +27,7 @@ namespace AnimeHillRacing.UI
         private bool animateElectricSkin;
         private bool animateHillAdventurerSkin;
         private bool animateSportBikeNeonFlow;
+        private bool animateGlitchCrystalTide;
         private SpriteRenderer[] underbodyAttachments = new SpriteRenderer[0];
 
         public SpriteRenderer BodyRenderer => body;
@@ -89,6 +90,7 @@ namespace AnimeHillRacing.UI
             appliedAccessoryId = null;
             appliedAccessoryFlipX = false;
             animateSportBikeNeonFlow = false;
+            animateGlitchCrystalTide = false;
             lastTargetSize = Vector2.zero;
             warmUpFrames = 4;
         }
@@ -104,6 +106,7 @@ namespace AnimeHillRacing.UI
         {
             if (targetImage == null) return;
             if (animateElectricSkin || animateHillAdventurerSkin || animateSportBikeNeonFlow ||
+                animateGlitchCrystalTide ||
                 (driver != null && driver.AnimatedAccessoryActive))
             {
                 RenderNow();
@@ -221,6 +224,7 @@ namespace AnimeHillRacing.UI
             animateElectricSkin = FormulaElectricSkinEffect.Apply(body, vehicle, skin);
             HillAdventurerSkinEffect.Apply(body, vehicle, skin);
             SportBikeNeonFlowEffect.ApplySkin(body, vehicle, skin);
+            GlitchCrystalTideEffect.ApplySkin(body, skin);
             animateHillAdventurerSkin = HillAdventurerSkinEffect.IsHillAdventurer(vehicle, skin);
             int wheelSortingOrder = Mathf.Max(VehicleVisual2D.MinimumWheelSortingOrder,
                 FormulaElectricSkinEffect.ResolveWheelSortingOrder(vehicle, skin));
@@ -231,10 +235,11 @@ namespace AnimeHillRacing.UI
                 driver.EnforceRenderingRelativeToVehicle(body);
             }
             ApplyWheel(rearWheel, wheelOption, vehicle.rearWheelVisualPosition, vehicle.RearWheelDiameter,
-                wheelSortingOrder);
+                wheelSortingOrder, false);
             ApplyWheel(frontWheel, wheelOption, vehicle.frontWheelVisualPosition, vehicle.FrontWheelDiameter,
-                wheelSortingOrder);
+                wheelSortingOrder, true);
             animateSportBikeNeonFlow = SportBikeNeonFlowEffect.IsAnimated(vehicle, skin, wheelOption);
+            animateGlitchCrystalTide = GlitchCrystalTideEffect.IsAnimated(skin, wheelOption);
             ApplyUnderbodyAttachments(vehicle);
             CenterCompositeHorizontally();
             warmUpFrames = 3;
@@ -322,18 +327,21 @@ namespace AnimeHillRacing.UI
         }
 
         private void ApplyWheel(SpriteRenderer renderer, VehicleDefinition.CustomizationOption option,
-            Vector2 position, float diameter, int sortingOrder)
+            Vector2 position, float diameter, int sortingOrder, bool front)
         {
             if (renderer == null) return;
             if (renderer.sharedMaterial == null)
                 renderer.sharedMaterial = HillAdventurerSkinEffect.GetDefaultSpriteMaterial();
             renderer.sprite = option != null ? option.sprite : null;
-            renderer.transform.localPosition = new Vector3(position.x, position.y, -.02f);
+            Vector2 cosmeticOffset = appliedVehicle.WheelCustomizationOffset(option, front);
+            renderer.transform.localPosition = new Vector3(position.x + cosmeticOffset.x,
+                position.y + cosmeticOffset.y, -.02f);
             if (body != null) renderer.sortingLayerID = body.sortingLayerID;
             renderer.sortingOrder = sortingOrder;
             renderer.transform.localScale = Vector3.one *
-                                            appliedVehicle.WheelCustomizationScale(option, diameter);
+                                            appliedVehicle.WheelCustomizationScale(option, diameter, front);
             SportBikeNeonFlowEffect.ApplyWheel(renderer, appliedVehicle, option);
+            GlitchCrystalTideEffect.ApplyWheel(renderer, option);
         }
 
         private void ApplyUnderbodyAttachments(VehicleDefinition vehicle)
@@ -357,7 +365,13 @@ namespace AnimeHillRacing.UI
                 float scale = VehicleDefinition.SpriteWidthScale(vehicle.underbodyAttachmentSprite,
                     vehicle.underbodyAttachmentVisualWidth);
                 renderer.transform.localScale = Vector3.one * scale;
-                if (body != null) renderer.sharedMaterial = body.sharedMaterial;
+                if (body != null)
+                {
+                    renderer.sharedMaterial = body.sharedMaterial;
+                    var bodyProperties = new MaterialPropertyBlock();
+                    body.GetPropertyBlock(bodyProperties);
+                    renderer.SetPropertyBlock(bodyProperties);
+                }
             }
         }
 

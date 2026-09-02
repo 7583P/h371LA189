@@ -577,8 +577,8 @@ namespace AnimeHillRacing.Editor
                 ? workingRearWheelDiameter : vehicle.wheelVisualDiameter;
             float frontDiameter = workingFrontWheelDiameter > .001f
                 ? workingFrontWheelDiameter : vehicle.wheelVisualDiameter;
-            float rearScale = vehicle.WheelCustomizationScale(wheel, rearDiameter);
-            float frontScale = vehicle.WheelCustomizationScale(wheel, frontDiameter);
+            float rearScale = vehicle.WheelCustomizationScale(wheel, rearDiameter, false);
+            float frontScale = vehicle.WheelCustomizationScale(wheel, frontDiameter, true);
             DrawSprite(wheel.sprite, workingRearWheelPosition, Vector2.one * rearScale, 0f, false,
                 origin, pixelsPerUnit, new Color(1f, 1f, 1f, .9f));
             DrawSprite(wheel.sprite, workingFrontWheelPosition, Vector2.one * frontScale, 0f, false,

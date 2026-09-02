@@ -102,10 +102,11 @@ namespace AnimeHillRacing.Vehicle
             FormulaElectricSkinEffect.Apply(bodyRenderer, definition, skin);
             HillAdventurerSkinEffect.Apply(bodyRenderer, definition, skin);
             SportBikeNeonFlowEffect.ApplySkin(bodyRenderer, definition, skin);
+            GlitchCrystalTideEffect.ApplySkin(bodyRenderer, skin);
             int wheelSortingOrder = Mathf.Max(MinimumWheelSortingOrder,
                 FormulaElectricSkinEffect.ResolveWheelSortingOrder(definition, skin));
-            ApplyWheel(frontWheelRenderer, wheel, definition.FrontWheelDiameter, wheelSortingOrder);
-            ApplyWheel(rearWheelRenderer, wheel, definition.RearWheelDiameter, wheelSortingOrder);
+            ApplyWheel(frontWheelRenderer, wheel, definition.FrontWheelDiameter, wheelSortingOrder, true);
+            ApplyWheel(rearWheelRenderer, wheel, definition.RearWheelDiameter, wheelSortingOrder, false);
             EnforceVehicleForegroundDepth();
             if (articulatedDriver != null)
             {
@@ -141,10 +142,11 @@ namespace AnimeHillRacing.Vehicle
             FormulaElectricSkinEffect.Apply(bodyRenderer, definition, skin);
             HillAdventurerSkinEffect.Apply(bodyRenderer, definition, skin);
             SportBikeNeonFlowEffect.ApplySkin(bodyRenderer, definition, skin);
+            GlitchCrystalTideEffect.ApplySkin(bodyRenderer, skin);
             int wheelSortingOrder = Mathf.Max(MinimumWheelSortingOrder,
                 FormulaElectricSkinEffect.ResolveWheelSortingOrder(definition, skin));
-            ApplyWheel(frontWheelRenderer, wheel, definition.FrontWheelDiameter, wheelSortingOrder);
-            ApplyWheel(rearWheelRenderer, wheel, definition.RearWheelDiameter, wheelSortingOrder);
+            ApplyWheel(frontWheelRenderer, wheel, definition.FrontWheelDiameter, wheelSortingOrder, true);
+            ApplyWheel(rearWheelRenderer, wheel, definition.RearWheelDiameter, wheelSortingOrder, false);
             EnforceVehicleForegroundDepth();
             if (articulatedDriver != null)
             {
@@ -368,15 +370,23 @@ namespace AnimeHillRacing.Vehicle
         }
 
         private void ApplyWheel(SpriteRenderer renderer, VehicleDefinition.CustomizationOption option,
-            float diameter, int sortingOrder)
+            float diameter, int sortingOrder, bool front)
         {
             if (renderer == null) return;
             renderer.sprite = option != null ? option.sprite : null;
             if (bodyRenderer != null) renderer.sortingLayerID = bodyRenderer.sortingLayerID;
             renderer.sortingOrder = sortingOrder;
             renderer.transform.localScale = Vector3.one *
-                                            definition.WheelCustomizationScale(option, diameter);
+                                            definition.WheelCustomizationScale(option, diameter, front);
+            Vector2 authoredPosition = front
+                ? definition.frontWheelVisualPosition : definition.rearWheelVisualPosition;
+            Vector2 cosmeticOffset = definition.WheelCustomizationOffset(option, front);
+            Vector3 localPosition = renderer.transform.localPosition;
+            localPosition.x = authoredPosition.x + cosmeticOffset.x;
+            localPosition.y = authoredPosition.y + cosmeticOffset.y;
+            renderer.transform.localPosition = localPosition;
             SportBikeNeonFlowEffect.ApplyWheel(renderer, definition, option);
+            GlitchCrystalTideEffect.ApplyWheel(renderer, option);
         }
     }
 }

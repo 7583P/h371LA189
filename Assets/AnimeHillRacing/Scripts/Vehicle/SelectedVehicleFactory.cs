@@ -74,6 +74,8 @@ namespace AnimeHillRacing.Vehicle
             DriverDefinition selectedDriver = catalog.FindDriver(SaveManager.GetSelectedDriverId(defaultDriverId));
             instance.GetComponentInChildren<VehicleVisual2D>(true)?.ApplyCustomization(selectedDriver);
             instance.GetComponentInChildren<VehicleVisual3D>(true)?.ApplyCustomization(selectedDriver);
+            if (mode == GameModeType.Adventure2_5D)
+                LastHorizonVehicleAppearance.Apply(instance, terrainProfile);
 
             VehicleController climb = SpawnedVehicle as VehicleController;
             if (climb != null)

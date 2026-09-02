@@ -24,4 +24,4 @@ MonoBehaviour:
   exclusiveBundleId: 
   coinReward: 500000
   gemReward: 1000
-  conceptualPrice: $2.99
+  conceptualPrice:

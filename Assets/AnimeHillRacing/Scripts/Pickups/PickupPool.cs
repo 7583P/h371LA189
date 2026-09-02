@@ -24,6 +24,7 @@ namespace AnimeHillRacing.Pickups
         private readonly Dictionary<int, CoinPickup> coinTemplates = new Dictionary<int, CoinPickup>();
         private readonly HashSet<long> collectedCoinIds = new HashSet<long>();
         private readonly HashSet<long> collectedGemIds = new HashSet<long>();
+        private readonly HashSet<long> collectedFuelIds = new HashSet<long>();
         private readonly Queue<FuelPickup> fuels = new Queue<FuelPickup>();
         private readonly Queue<GemPickup> gems = new Queue<GemPickup>();
         private readonly List<FuelPickup> activeFuel = new List<FuelPickup>();
@@ -209,6 +210,17 @@ namespace AnimeHillRacing.Pickups
             return pickup;
         }
 
+        public FuelPickup SpawnFuel(Vector3 position, float progressPosition, long deterministicId)
+        {
+            Initialize();
+            if (fuelPrefab == null || (deterministicId != 0L && collectedFuelIds.Contains(deterministicId)))
+                return null;
+            FuelPickup pickup = fuels.Count > 0 ? fuels.Dequeue() : Create(fuelPrefab);
+            pickup.Spawn(this, position, progressPosition, deterministicId);
+            activeFuel.Add(pickup);
+            return pickup;
+        }
+
         public GemPickup SpawnGem(Vector3 position, float progressPosition, long deterministicId)
         {
             Initialize();
@@ -247,6 +259,8 @@ namespace AnimeHillRacing.Pickups
                 collectedCoinIds.Add(pickup.SpawnId);
             else if (pickup != null && pickup.Kind == PickupKind.Gem && pickup.SpawnId != 0L)
                 collectedGemIds.Add(pickup.SpawnId);
+            else if (pickup != null && pickup.Kind == PickupKind.Fuel && pickup.SpawnId != 0L)
+                collectedFuelIds.Add(pickup.SpawnId);
         }
 
         public bool TryGetNextFuelDistance(float vehicleProgress, out float distance)
@@ -264,6 +278,22 @@ namespace AnimeHillRacing.Pickups
                 if (delta >= -.5f && delta < distance) distance = Mathf.Max(0f, delta);
             }
             return !float.IsPositiveInfinity(distance);
+        }
+
+        public bool IsFuelReserved(float progressPosition, float clearance = 2.25f)
+        {
+            float safeClearance = Mathf.Max(.25f, clearance);
+            for (int i = activeFuel.Count - 1; i >= 0; i--)
+            {
+                FuelPickup fuel = activeFuel[i];
+                if (fuel == null || !fuel.IsAvailable)
+                {
+                    activeFuel.RemoveAt(i);
+                    continue;
+                }
+                if (Mathf.Abs(fuel.ProgressPosition - progressPosition) < safeClearance) return true;
+            }
+            return false;
         }
 
         public void Release(PickupBase pickup)

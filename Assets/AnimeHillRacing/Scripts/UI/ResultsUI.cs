@@ -33,8 +33,12 @@ namespace AnimeHillRacing.UI
             string reason;
             if (manager.EndReason == RunEndReason.DriverDownAndOutOfFuel)
                 reason = "Driver Down & Out Of Fuel";
+            else if (manager.EndReason == RunEndReason.CrashedAndOutOfFuel)
+                reason = "CRASHED & OUT OF FUEL";
             else if (manager.EndReason == RunEndReason.OutOfFuel)
                 reason = "OUT OF FUEL";
+            else if (manager.EndReason == RunEndReason.Crashed)
+                reason = "CRASHED";
             else
                 reason = "DRIVER DOWN";
             if (titleText != null) titleText.text = reason;
@@ -100,6 +104,16 @@ namespace AnimeHillRacing.UI
             Outline outline = backgroundRoot.GetComponent<Outline>();
             if (outline != null)
                 outline.effectColor = new Color(0f, 0f, 0f, ResultsBackgroundAlpha);
+
+            if (resultsText != null)
+            {
+                // This panel already has enough authored width. Best-fit can recalculate the entire
+                // multiline block from one long value and produce inconsistent glyph indentation.
+                resultsText.resizeTextForBestFit = false;
+                resultsText.fontSize = 27;
+                resultsText.horizontalOverflow = HorizontalWrapMode.Wrap;
+                resultsText.verticalOverflow = VerticalWrapMode.Overflow;
+            }
 
             Transform photoFrame = backgroundRoot.transform.Find("Result Photo Frame");
             if (photoFrame is RectTransform frameRect)

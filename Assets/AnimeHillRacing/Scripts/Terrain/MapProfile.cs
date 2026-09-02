@@ -195,6 +195,103 @@ namespace AnimeHillRacing.Terrain
             new[] { 430f, 1280f, 2040f, 2770f, 3460f, 4140f, 4980f, 5530f };
     }
 
+    public enum LastHorizonObstacleType
+    {
+        None,
+        Seesaw,
+        LiftPlatform,
+        Rollers,
+        TiltingPlatform,
+        Ramp
+    }
+
+    public enum LastHorizonSpecialPhaseType
+    {
+        None,
+        RoofTunnel,
+        DescendingVoidPlatforms,
+        MovingExtremeTerrain,
+        RoofTransportCrusher
+    }
+
+    [System.Serializable]
+    public sealed class LastHorizonSettings
+    {
+        public const float RequiredCycleLength = 10000f;
+        public const float RequiredSystemLength = 20000f;
+
+        [Header("Two-Cycle Terrain Grammar (10 km + 10 km)")]
+        [Min(100f)] public float cycleLength = RequiredCycleLength;
+        [Min(120f)] public float segmentLength = 250f;
+        [Min(40f)] public float launchSafetyLength = 160f;
+        [Min(1f)] public float cycleOneMaximumRelief = 58f;
+        [Min(1f)] public float cycleTwoMaximumRelief = 72f;
+        [Min(0f)] public float macroRelief = 12f;
+
+        [Header("Exclusive Ragnarok Phases")]
+        [Range(2, 3)] public int minimumRoofZonesPerCycle = 2;
+        [Range(2, 3)] public int maximumRoofZonesPerCycle = 3;
+        public Vector2 roofLengthRange = new Vector2(200f, 5000f);
+        [Min(4f)] public float roofVehicleClearance = 6.4f;
+        [Min(.2f)] public float roofThickness = 2.8f;
+        [Min(1f)] public float roofSampleSpacing = 6f;
+        [Min(24f)] public float roofTransportGapLength = 52f;
+        [Min(6f)] public float roofTransportPlatformWidth = 12f;
+        [Min(.2f)] public float roofTransportPlatformThickness = .8f;
+        [Range(2, 5)] public int roofCrusherBlockCount = 3;
+        [Min(1.5f)] public float roofCrusherBlockSize = 3.2f;
+        [Min(5000f)] public float movingTerrainInterval = 6000f;
+        public Vector2 movingTerrainLengthRange = new Vector2(360f, 620f);
+        [Min(7000f)] public float voidPlatformInterval = 8000f;
+        public Vector2 voidPlatformLengthRange = new Vector2(420f, 760f);
+        [Min(20f)] public float specialPhaseTransitionLength = 52f;
+        [Min(20f)] public float specialPhaseSeparation = 150f;
+
+        [Header("Descending Void Platforms")]
+        [Min(4f)] public float voidPlatformWidth = 12f;
+        [Min(1f)] public float voidPlatformGap = 6f;
+        [Min(.2f)] public float voidPlatformThickness = .7f;
+        [Min(.5f)] public float voidPlatformMaximumDrop = 12f;
+        [Range(4, 16)] public int voidDecorativePlatformCount = 8;
+
+        [Header("Moving Extreme Terrain")]
+        [Min(.1f)] public float movingHorizontalTravel = 1.15f;
+        [Min(.1f)] public float movingVerticalTravel = .7f;
+        [Min(1f)] public float movingTerrainPeriod = 5.5f;
+        [Range(65f, 80f)] public float extremeBumpAngle = 80f;
+        [Min(.1f)] public float extremeBumpHeight = .55f;
+        [Min(4f)] public float extremeBumpSpacing = 12f;
+
+        [Header("Deterministic Fuel")]
+        public Vector2 normalFuelGapRange = new Vector2(200f, 500f);
+        [Min(1000f)] public float cycleResetFuelInterval = RequiredSystemLength;
+        public Vector2 scarcityFuelGapRange = new Vector2(500f, 1000f);
+        [Min(4f)] public float fuelSafetySearchRadius = 30f;
+        [Min(.5f)] public float fuelSafetySearchStep = 2f;
+
+        [Header("Pooled Obstacles")]
+        [Min(180f)] public float obstacleCellLength = 300f;
+        [Range(0f, 1f)] public float cycleOneObstacleChance = .42f;
+        [Range(0f, 1f)] public float cycleTwoObstacleChance = .72f;
+        [Min(20f)] public float obstacleStartSafety = 260f;
+        [Min(3f)] public float safeVehicleLength = 5.5f;
+        [Min(2f)] public float safeVehicleHeight = 3.6f;
+        [Min(.5f)] public float obstacleSafetyMargin = 2.5f;
+        [Min(5f)] public float seesawWidth = 14f;
+        [Range(5f, 25f)] public float seesawMaximumAngle = 17f;
+        [Min(5f)] public float liftWidth = 12f;
+        [Min(.2f)] public float liftTravel = 1.6f;
+        [Min(1f)] public float liftPeriod = 5.5f;
+        [Min(5f)] public float tiltingPlatformWidth = 13f;
+        [Range(3f, 22f)] public float tiltingPlatformMaximumAngle = 12f;
+        [Min(1f)] public float tiltingPlatformPeriod = 4.25f;
+        [Range(1, 4)] public int maximumRollers = 4;
+        [Min(.35f)] public float rollerRadius = .85f;
+        public Sprite seesawSprite;
+        public Sprite liftPlatformSprite;
+        public Sprite rollerSprite;
+    }
+
     [System.Serializable]
     public sealed class CityBridgeSettings
     {
@@ -498,6 +595,10 @@ namespace AnimeHillRacing.Terrain
         public bool useMountainsTerrain;
         public MountainsSettings mountains = new MountainsSettings();
 
+        [Header("Optional Last Horizon Terrain")]
+        public bool useLastHorizonTerrain;
+        public LastHorizonSettings lastHorizon = new LastHorizonSettings();
+
         [Header("Optional Rainstorm")]
         public RainstormSettings rainstorm = new RainstormSettings();
 
@@ -520,6 +621,7 @@ namespace AnimeHillRacing.Terrain
             spaceChallenges ??= new SpaceChallengeSettings();
             arena ??= new ArenaSettings();
             mountains ??= new MountainsSettings();
+            lastHorizon ??= new LastHorizonSettings();
             rainstorm ??= new RainstormSettings();
             countrysideSpecialFeatures ??= new CountrysideSpecialFeatureSettings();
             if (useCityBridges)
@@ -651,6 +753,91 @@ namespace AnimeHillRacing.Terrain
                     Mathf.Max(4f, arena.hardPlatformWidth));
                 arena.maximumLavaLength = Mathf.Max(arena.minimumLavaLength, arena.maximumLavaLength);
             }
+            if (useLastHorizonTerrain)
+            {
+                useSpaceTerrain = false;
+                supportsLiquidExposure = false;
+                useCityHighwayTerrain = false;
+                useCityBridges = false;
+                useArenaTerrain = false;
+                useMountainsTerrain = false;
+                lastHorizon.cycleLength = LastHorizonSettings.RequiredCycleLength;
+                lastHorizon.segmentLength = Mathf.Max(120f, lastHorizon.segmentLength);
+                lastHorizon.launchSafetyLength = Mathf.Max(40f, lastHorizon.launchSafetyLength);
+                lastHorizon.safeVehicleLength = Mathf.Max(3f,
+                    lastHorizon.safeVehicleLength);
+                lastHorizon.safeVehicleHeight = Mathf.Max(2f,
+                    lastHorizon.safeVehicleHeight);
+                lastHorizon.minimumRoofZonesPerCycle = Mathf.Clamp(
+                    lastHorizon.minimumRoofZonesPerCycle, 2, 3);
+                lastHorizon.maximumRoofZonesPerCycle = Mathf.Clamp(
+                    lastHorizon.maximumRoofZonesPerCycle,
+                    lastHorizon.minimumRoofZonesPerCycle, 3);
+                lastHorizon.roofLengthRange = OrderedRange(lastHorizon.roofLengthRange,
+                    200f, 5000f, 200f, 5000f);
+                lastHorizon.roofVehicleClearance = Mathf.Max(lastHorizon.safeVehicleHeight + .8f,
+                    lastHorizon.roofVehicleClearance);
+                lastHorizon.roofThickness = Mathf.Max(.2f, lastHorizon.roofThickness);
+                lastHorizon.roofSampleSpacing = Mathf.Max(1f, lastHorizon.roofSampleSpacing);
+                lastHorizon.roofTransportGapLength = Mathf.Clamp(
+                    lastHorizon.roofTransportGapLength, 24f, 64f);
+                lastHorizon.roofTransportPlatformWidth = Mathf.Clamp(
+                    lastHorizon.roofTransportPlatformWidth, 6f,
+                    lastHorizon.roofTransportGapLength - 4f);
+                lastHorizon.roofTransportPlatformThickness = Mathf.Max(.2f,
+                    lastHorizon.roofTransportPlatformThickness);
+                lastHorizon.roofCrusherBlockCount = Mathf.Clamp(
+                    lastHorizon.roofCrusherBlockCount, 2, 5);
+                lastHorizon.roofCrusherBlockSize = Mathf.Max(1.5f,
+                    lastHorizon.roofCrusherBlockSize);
+                lastHorizon.movingTerrainInterval = Mathf.Clamp(lastHorizon.movingTerrainInterval,
+                    5000f, 7000f);
+                lastHorizon.movingTerrainLengthRange = OrderedRange(
+                    lastHorizon.movingTerrainLengthRange, 360f, 620f, 240f, 900f);
+                lastHorizon.voidPlatformInterval = Mathf.Clamp(lastHorizon.voidPlatformInterval,
+                    7000f, 10000f);
+                lastHorizon.voidPlatformLengthRange = OrderedRange(
+                    lastHorizon.voidPlatformLengthRange, 420f, 760f, 300f, 1200f);
+                lastHorizon.specialPhaseTransitionLength = Mathf.Max(20f,
+                    lastHorizon.specialPhaseTransitionLength);
+                lastHorizon.specialPhaseSeparation = Mathf.Max(20f,
+                    lastHorizon.specialPhaseSeparation);
+                lastHorizon.voidPlatformWidth = Mathf.Max(4f, lastHorizon.voidPlatformWidth);
+                lastHorizon.voidPlatformGap = Mathf.Max(1f, lastHorizon.voidPlatformGap);
+                lastHorizon.voidPlatformThickness = Mathf.Max(.2f,
+                    lastHorizon.voidPlatformThickness);
+                lastHorizon.voidPlatformMaximumDrop = Mathf.Max(.5f,
+                    lastHorizon.voidPlatformMaximumDrop);
+                lastHorizon.movingHorizontalTravel = Mathf.Max(.1f,
+                    lastHorizon.movingHorizontalTravel);
+                lastHorizon.movingVerticalTravel = Mathf.Max(.1f,
+                    lastHorizon.movingVerticalTravel);
+                lastHorizon.movingTerrainPeriod = Mathf.Max(1f,
+                    lastHorizon.movingTerrainPeriod);
+                lastHorizon.extremeBumpAngle = Mathf.Clamp(lastHorizon.extremeBumpAngle, 65f, 80f);
+                lastHorizon.extremeBumpHeight = Mathf.Max(.1f,
+                    lastHorizon.extremeBumpHeight);
+                lastHorizon.extremeBumpSpacing = Mathf.Max(4f,
+                    lastHorizon.extremeBumpSpacing);
+                lastHorizon.normalFuelGapRange = OrderedRange(lastHorizon.normalFuelGapRange, 200f, 500f,
+                    1f, 1000f);
+                lastHorizon.cycleResetFuelInterval = LastHorizonSettings.RequiredSystemLength;
+                lastHorizon.scarcityFuelGapRange = OrderedRange(lastHorizon.scarcityFuelGapRange,
+                    500f, 1000f, 1f, 1000f);
+                lastHorizon.scarcityFuelGapRange.y = Mathf.Min(1000f,
+                    lastHorizon.scarcityFuelGapRange.y);
+                lastHorizon.fuelSafetySearchStep = Mathf.Max(.5f,
+                    lastHorizon.fuelSafetySearchStep);
+                lastHorizon.obstacleCellLength = Mathf.Max(180f,
+                    lastHorizon.obstacleCellLength);
+                lastHorizon.seesawWidth = Mathf.Max(lastHorizon.safeVehicleLength * 2f +
+                    lastHorizon.obstacleSafetyMargin, lastHorizon.seesawWidth);
+                lastHorizon.liftWidth = Mathf.Max(lastHorizon.safeVehicleLength * 1.5f +
+                    lastHorizon.obstacleSafetyMargin, lastHorizon.liftWidth);
+                lastHorizon.tiltingPlatformWidth = Mathf.Max(lastHorizon.safeVehicleLength * 1.5f +
+                    lastHorizon.obstacleSafetyMargin, lastHorizon.tiltingPlatformWidth);
+                lastHorizon.maximumRollers = Mathf.Clamp(lastHorizon.maximumRollers, 1, 4);
+            }
             if (useMountainsTerrain)
             {
                 useSpaceTerrain = false;
@@ -664,6 +851,16 @@ namespace AnimeHillRacing.Terrain
                     mountains.peakDifficultyDistance);
                 mountains.exceptionalSlope = Mathf.Clamp(mountains.exceptionalSlope, 35f, 62f);
             }
+        }
+
+        private static Vector2 OrderedRange(Vector2 value, float fallbackMin, float fallbackMax,
+            float absoluteMin, float absoluteMax)
+        {
+            float minimum = value.x > 0f ? value.x : fallbackMin;
+            float maximum = value.y > 0f ? value.y : fallbackMax;
+            minimum = Mathf.Clamp(minimum, absoluteMin, absoluteMax);
+            maximum = Mathf.Clamp(maximum, minimum, absoluteMax);
+            return new Vector2(minimum, maximum);
         }
     }
 }

@@ -22,6 +22,9 @@ namespace AnimeHillRacing.UI
         [SerializeField] private ChestRewardModalUI rewardModal;
         [SerializeField] private Button previousPageButton;
         [SerializeField] private Button nextPageButton;
+        private Button contentsButton;
+        private GameObject contentsIndexRoot;
+        private Text contentsIndexText;
         private static readonly Color GreenProgressColor = new Color(0.16f, 0.86f, 0.32f, 1f);
         private float nextRefresh;
         private bool outlineConfigured;
@@ -33,11 +36,13 @@ namespace AnimeHillRacing.UI
         private void Awake()
         {
             ConfigureVisualStyles();
+            EnsureContentsIndexUI();
         }
 
         private void OnEnable()
         {
             ConfigureVisualStyles();
+            EnsureContentsIndexUI();
             ChestSystem.RefreshOpeningStates(DateTime.UtcNow);
             ShowFirstUnseenChest();
             Refresh();
@@ -132,6 +137,19 @@ namespace AnimeHillRacing.UI
 
         public void PreviousPage() => SetPage(currentPage - 1);
         public void NextPage() => SetPage(currentPage + 1);
+        public void ShowContentsIndex()
+        {
+            EnsureContentsIndexUI();
+            RefreshContentsIndex();
+            if (contentsIndexRoot == null) return;
+            contentsIndexRoot.SetActive(true);
+            contentsIndexRoot.transform.SetAsLastSibling();
+        }
+
+        public void HideContentsIndex()
+        {
+            if (contentsIndexRoot != null) contentsIndexRoot.SetActive(false);
+        }
 
         public void SetPage(int page)
         {
@@ -199,6 +217,142 @@ namespace AnimeHillRacing.UI
                 modalGo.transform.SetParent(transform, false);
                 rewardModal = modalGo.GetComponent<ChestRewardModalUI>();
             }
+        }
+
+        private void EnsureContentsIndexUI()
+        {
+            if (!Application.isPlaying || contentsIndexRoot != null) return;
+            Canvas canvas = GetComponentInParent<Canvas>();
+            if (canvas == null) return;
+            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+
+            GameObject buttonObject = new GameObject("Chest Contents Button", typeof(RectTransform),
+                typeof(CanvasRenderer), typeof(Image), typeof(Button));
+            RectTransform buttonRect = buttonObject.GetComponent<RectTransform>();
+            buttonRect.SetParent(transform, false);
+            buttonRect.anchorMin = buttonRect.anchorMax = new Vector2(1f, 1f);
+            buttonRect.pivot = new Vector2(1f, 1f);
+            buttonRect.anchoredPosition = new Vector2(-18f, -18f);
+            buttonRect.sizeDelta = new Vector2(220f, 56f);
+            Image buttonImage = buttonObject.GetComponent<Image>();
+            buttonImage.color = new Color(.02f, .36f, .62f, .98f);
+            contentsButton = buttonObject.GetComponent<Button>();
+            contentsButton.targetGraphic = buttonImage;
+            contentsButton.onClick.AddListener(ShowContentsIndex);
+            Text buttonLabel = CreateIndexText("Label", buttonObject.transform, font, "CHEST CONTENTS",
+                19, FontStyle.Bold, Vector2.zero, Vector2.one);
+            buttonLabel.color = Color.white;
+
+            contentsIndexRoot = new GameObject("Chest Contents Index", typeof(RectTransform),
+                typeof(CanvasRenderer), typeof(Image));
+            RectTransform rootRect = contentsIndexRoot.GetComponent<RectTransform>();
+            rootRect.SetParent(canvas.transform, false);
+            Stretch(rootRect, Vector2.zero, Vector2.one);
+            Image blocker = contentsIndexRoot.GetComponent<Image>();
+            blocker.color = new Color(0f, .01f, .03f, .84f);
+            blocker.raycastTarget = true;
+
+            GameObject panel = new GameObject("Panel", typeof(RectTransform), typeof(CanvasRenderer),
+                typeof(Image));
+            RectTransform panelRect = panel.GetComponent<RectTransform>();
+            panelRect.SetParent(contentsIndexRoot.transform, false);
+            Stretch(panelRect, new Vector2(.12f, .07f), new Vector2(.88f, .93f));
+            panel.GetComponent<Image>().color = new Color(.025f, .07f, .13f, .995f);
+            Outline outline = panel.AddComponent<Outline>();
+            outline.effectColor = new Color(.18f, .75f, 1f, .95f);
+            outline.effectDistance = new Vector2(3f, -3f);
+
+            Text title = CreateIndexText("Title", panel.transform, font, "CHEST CONTENTS", 31,
+                FontStyle.Bold, new Vector2(.05f, .895f), new Vector2(.82f, .985f));
+            title.alignment = TextAnchor.MiddleLeft;
+            title.color = new Color(.32f, .9f, 1f);
+            contentsIndexText = CreateIndexText("Contents", panel.transform, font, string.Empty, 20,
+                FontStyle.Bold, new Vector2(.05f, .08f), new Vector2(.95f, .89f));
+            contentsIndexText.alignment = TextAnchor.MiddleLeft;
+            contentsIndexText.horizontalOverflow = HorizontalWrapMode.Wrap;
+            contentsIndexText.verticalOverflow = VerticalWrapMode.Overflow;
+
+            Button close = CreateIndexButton("Close", panel.transform, font, "X",
+                new Vector2(.86f, .90f), new Vector2(.96f, .98f), new Color(.62f, .12f, .16f, 1f));
+            close.onClick.AddListener(HideContentsIndex);
+            RefreshContentsIndex();
+            contentsIndexRoot.SetActive(false);
+        }
+
+        private void RefreshContentsIndex()
+        {
+            if (contentsIndexText == null) return;
+            if (catalog?.chestCatalog?.chests == null)
+            {
+                contentsIndexText.text = "CHEST INFORMATION IS LOADING...";
+                return;
+            }
+
+            var lines = new System.Text.StringBuilder();
+            ChestDefinition[] definitions = catalog.chestCatalog.chests;
+            for (int i = 0; i < definitions.Length; i++)
+            {
+                ChestDefinition value = definitions[i];
+                if (value == null) continue;
+                int hours = Mathf.Max(1, value.openingSeconds) / 3600;
+                string blueprints = value.blueprintReward > 0
+                    ? $"  •  {value.blueprintReward:N0} BLUEPRINTS"
+                    : "  •  NO BLUEPRINTS";
+                if (lines.Length > 0) lines.Append("\n\n");
+                lines.Append(value.displayName).Append("   •   OPEN ").Append(hours).Append("H\n")
+                    .Append(value.minimumCoins.ToString("N0")).Append("-")
+                    .Append(value.maximumCoins.ToString("N0")).Append(" COINS  •  ")
+                    .Append(value.minimumGems.ToString("N0")).Append("-")
+                    .Append(value.maximumGems.ToString("N0")).Append(" GEMS")
+                    .Append(blueprints);
+            }
+            contentsIndexText.text = lines.ToString();
+        }
+
+        private static Text CreateIndexText(string name, Transform parent, Font font, string value,
+            int size, FontStyle style, Vector2 anchorMin, Vector2 anchorMax)
+        {
+            GameObject result = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
+            RectTransform rect = result.GetComponent<RectTransform>();
+            rect.SetParent(parent, false);
+            Stretch(rect, anchorMin, anchorMax);
+            Text text = result.GetComponent<Text>();
+            text.font = font;
+            text.text = value;
+            text.fontSize = size;
+            text.fontStyle = style;
+            text.alignment = TextAnchor.MiddleCenter;
+            text.color = Color.white;
+            text.resizeTextForBestFit = true;
+            text.resizeTextMinSize = 11;
+            text.resizeTextMaxSize = size;
+            text.raycastTarget = false;
+            return text;
+        }
+
+        private static Button CreateIndexButton(string name, Transform parent, Font font, string label,
+            Vector2 anchorMin, Vector2 anchorMax, Color color)
+        {
+            GameObject result = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer),
+                typeof(Image), typeof(Button));
+            RectTransform rect = result.GetComponent<RectTransform>();
+            rect.SetParent(parent, false);
+            Stretch(rect, anchorMin, anchorMax);
+            Image image = result.GetComponent<Image>();
+            image.color = color;
+            Button button = result.GetComponent<Button>();
+            button.targetGraphic = image;
+            CreateIndexText("Label", result.transform, font, label, 24, FontStyle.Bold,
+                Vector2.zero, Vector2.one);
+            return button;
+        }
+
+        private static void Stretch(RectTransform rect, Vector2 anchorMin, Vector2 anchorMax)
+        {
+            rect.anchorMin = anchorMin;
+            rect.anchorMax = anchorMax;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
         }
 
         private void Refresh()
@@ -303,6 +457,8 @@ namespace AnimeHillRacing.UI
             previousPageButton = previousPage;
             nextPageButton = nextPage;
             ConfigureVisualStyles();
+            EnsureContentsIndexUI();
+            RefreshContentsIndex();
             if (Application.isPlaying) Refresh();
         }
     }

@@ -382,8 +382,8 @@ namespace AnimeHillRacing.Editor
             {
                 v.rearWheelVisualPosition = new Vector2(-1.75f, -0.28f);
                 v.frontWheelVisualPosition = new Vector2(1.75f, -0.28f);
-                v.rearWheelVisualDiameter = 0f;
-                v.frontWheelVisualDiameter = 0f;
+                v.rearWheelVisualDiameter = 1.112685f;
+                v.frontWheelVisualDiameter = 1.112685f;
             }
             v.halfWheelbase = 1.75f;
 

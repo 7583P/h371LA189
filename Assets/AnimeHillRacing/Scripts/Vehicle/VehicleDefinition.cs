@@ -44,6 +44,8 @@ namespace AnimeHillRacing.Vehicle
             public string displayName;
             public Sprite sprite;
             public bool unlockedByDefault = true;
+            [Min(0f), Tooltip("Highest best distance required on any Adventure track. Zero disables distance unlocking.")]
+            public float requiredBestDistance;
             [Min(0)] public int gemPrice;
             [Tooltip("Gems keeps the existing internal economy flow. RealMoney uses the configured Google Play non-consumable.")]
             public CustomizationPurchaseCurrency purchaseCurrency = CustomizationPurchaseCurrency.Gems;
@@ -60,6 +62,23 @@ namespace AnimeHillRacing.Vehicle
             public Vector2 visibleSize;
             [Tooltip("Alpha-bounded center offset in world units from sprite pivot to align different skins.")]
             public Vector2 visualOffset;
+
+            [HideInInspector]
+            public bool overrideGlitchTransform;
+            [HideInInspector]
+            public Vector2 glitchManualSize;
+            [HideInInspector]
+            public Vector2 glitchManualOffset;
+            [HideInInspector]
+            public bool overrideGlitchWheelTransform;
+            [HideInInspector]
+            public float glitchRearWheelScale = 1f;
+            [HideInInspector]
+            public float glitchFrontWheelScale = 1f;
+            [HideInInspector]
+            public Vector2 glitchRearWheelOffset;
+            [HideInInspector]
+            public Vector2 glitchFrontWheelOffset;
 
             public AnimeHillRacing.Core.ItemRarity ResolveRarity(bool isDefaultItem) =>
                 AnimeHillRacing.Core.ItemRarityUtility.Resolve(hasExplicitRarity, rarity, isDefaultItem);
@@ -424,10 +443,32 @@ namespace AnimeHillRacing.Vehicle
         public Vector3 BodyCustomizationScale(CustomizationOption option)
         {
             CustomizationOption defaultOption = skins != null && skins.Length > 0 ? skins[0] : null;
-            Vector2 defaultVisible = VisibleSize(defaultOption);
-            Vector2 selectedVisible = VisibleSize(option);
             float legacyDefaultScale = SpriteWidthScale(defaultOption != null ? defaultOption.sprite : null,
                 visualWidth);
+            if (GlitchCrystalTideEffect.IsGlitchSkin(option))
+            {
+                // Glitch art contains phase-dependent plaques, glows and detached sparkles. Their
+                // alpha bounds are not a stable alignment reference. Map the complete Glitch canvas
+                // onto the complete default-skin canvas so every phase inherits this vehicle's exact
+                // default width and height, independently of how the effect touches the PNG edges.
+                Vector2 defaultCanvas = SpriteCanvasSize(defaultOption);
+                Vector2 selectedCanvas = SpriteCanvasSize(option);
+                Vector3 automaticScale = new Vector3(
+                    defaultCanvas.x * legacyDefaultScale / Mathf.Max(.001f, selectedCanvas.x),
+                    defaultCanvas.y * legacyDefaultScale / Mathf.Max(.001f, selectedCanvas.y), 1f);
+                if (!option.overrideGlitchTransform) return automaticScale;
+
+                Vector2 automaticSize = Vector2.Scale(selectedCanvas,
+                    new Vector2(automaticScale.x, automaticScale.y));
+                Vector2 requestedSize = option.glitchManualSize;
+                float targetWidth = ValidManualDimension(requestedSize.x, automaticSize.x);
+                float targetHeight = ValidManualDimension(requestedSize.y, automaticSize.y);
+                return new Vector3(
+                    targetWidth / Mathf.Max(.001f, selectedCanvas.x),
+                    targetHeight / Mathf.Max(.001f, selectedCanvas.y), 1f);
+            }
+            Vector2 defaultVisible = VisibleSize(defaultOption);
+            Vector2 selectedVisible = VisibleSize(option);
             Vector2 targetVisible = defaultVisible * legacyDefaultScale;
             return new Vector3(
                 targetVisible.x / Mathf.Max(.001f, selectedVisible.x),
@@ -436,6 +477,16 @@ namespace AnimeHillRacing.Vehicle
 
         public Vector3 BodyCustomizationOffset(CustomizationOption option)
         {
+            // A Glitch phase occupies the same full rendered box as the default skin, so its sprite
+            // pivot must also use the exact authored default body position.
+            if (GlitchCrystalTideEffect.IsGlitchSkin(option))
+            {
+                Vector2 manualOffset = option.overrideGlitchTransform
+                    ? ValidManualOffset(option.glitchManualOffset) : Vector2.zero;
+                return new Vector3(bodyVisualOffset.x + manualOffset.x,
+                    bodyVisualOffset.y + manualOffset.y, 0f);
+            }
+
             CustomizationOption defaultOption = skins != null && skins.Length > 0 ? skins[0] : null;
             Vector2 defaultOffset = defaultOption != null ? defaultOption.visualOffset : Vector2.zero;
             Vector2 selectedOffset = option != null ? option.visualOffset : Vector2.zero;
@@ -448,14 +499,53 @@ namespace AnimeHillRacing.Vehicle
             return new Vector3(offsetX, offsetY, 0f);
         }
 
-        public float WheelCustomizationScale(CustomizationOption option, float canonicalDiameter)
+        private static Vector2 SpriteCanvasSize(CustomizationOption option) =>
+            option?.sprite != null ? option.sprite.bounds.size : VisibleSize(option);
+
+        private static float ValidManualDimension(float requested, float automatic) =>
+            float.IsNaN(requested) || float.IsInfinity(requested) || requested <= .001f
+                ? automatic : requested;
+
+        private static Vector2 ValidManualOffset(Vector2 requested) => new Vector2(
+            float.IsNaN(requested.x) || float.IsInfinity(requested.x) ? 0f : requested.x,
+            float.IsNaN(requested.y) || float.IsInfinity(requested.y) ? 0f : requested.y);
+
+        public float WheelCustomizationScale(CustomizationOption option, float canonicalDiameter,
+            bool front = false)
         {
             CustomizationOption defaultOption = wheels != null && wheels.Length > 0 ? wheels[0] : null;
-            float defaultVisibleDiameter = VisibleDiameter(defaultOption);
-            float selectedVisibleDiameter = VisibleDiameter(option);
             float legacyDefaultScale = WheelVisualScale(defaultOption, canonicalDiameter);
-            return defaultVisibleDiameter * legacyDefaultScale /
-                   Mathf.Max(.001f, selectedVisibleDiameter);
+            float automaticScale;
+            if (GlitchCrystalTideEffect.IsGlitchWheel(option))
+            {
+                // Match the complete rendered height of this vehicle's default wheel. The shared
+                // Glitch wheel remains uniformly scaled, centered on the original authored axle.
+                float defaultHeight = SpriteCanvasSize(defaultOption).y * legacyDefaultScale;
+                automaticScale = defaultHeight / Mathf.Max(.001f, SpriteCanvasSize(option).y);
+            }
+            else
+            {
+                float defaultVisibleDiameter = VisibleDiameter(defaultOption);
+                float selectedVisibleDiameter = VisibleDiameter(option);
+                automaticScale = defaultVisibleDiameter * legacyDefaultScale /
+                                 Mathf.Max(.001f, selectedVisibleDiameter);
+            }
+
+            if (!GlitchCrystalTideEffect.IsGlitchWheel(option) ||
+                !option.overrideGlitchWheelTransform) return automaticScale;
+            float requestedMultiplier = front
+                ? option.glitchFrontWheelScale : option.glitchRearWheelScale;
+            float multiplier = float.IsNaN(requestedMultiplier) || float.IsInfinity(requestedMultiplier) ||
+                               requestedMultiplier <= .01f ? 1f : requestedMultiplier;
+            return automaticScale * multiplier;
+        }
+
+        public Vector2 WheelCustomizationOffset(CustomizationOption option, bool front)
+        {
+            if (!GlitchCrystalTideEffect.IsGlitchWheel(option) ||
+                !option.overrideGlitchWheelTransform) return Vector2.zero;
+            return ValidManualOffset(front
+                ? option.glitchFrontWheelOffset : option.glitchRearWheelOffset);
         }
 
         public static Vector2 VisibleSize(CustomizationOption option)

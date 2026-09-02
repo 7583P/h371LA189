@@ -30,7 +30,8 @@ namespace AnimeHillRacing.Core
         private enum EntitlementKind
         {
             StarterPack,
-            Skin
+            Skin,
+            GemPack
         }
 
         private sealed class Entitlement
@@ -38,6 +39,8 @@ namespace AnimeHillRacing.Core
             public EntitlementKind Kind;
             public string VehicleId;
             public string SkinId;
+            public int GemAmount;
+            public StoreProductType ProductType;
         }
 
         private readonly GameCatalog catalog;
@@ -60,11 +63,19 @@ namespace AnimeHillRacing.Core
         public bool Contains(string productId) =>
             !string.IsNullOrWhiteSpace(productId) && entitlements.ContainsKey(productId);
 
-        public bool TryFulfillNewPurchase(string productId, out string error)
+        public bool IsConsumable(string productId) =>
+            !string.IsNullOrWhiteSpace(productId) &&
+            entitlements.TryGetValue(productId, out Entitlement entitlement) &&
+            entitlement.ProductType == StoreProductType.Consumable;
+
+        public bool TryFulfillNewPurchase(string productId, string transactionId, out string error)
         {
             if (!TryGet(productId, out Entitlement entitlement, out error)) return false;
             if (entitlement.Kind == EntitlementKind.StarterPack)
                 return SaveManager.TryGrantStarterPack(catalog, starterPack, out error);
+            if (entitlement.Kind == EntitlementKind.GemPack)
+                return SaveManager.TryGrantPurchasedGems(productId, transactionId,
+                    entitlement.GemAmount, out error);
             if (SaveManager.GrantPermanentCustomization(entitlement.VehicleId, "Skin",
                     entitlement.SkinId)) return true;
             error = "IAP SKIN ENTITLEMENT CONFIGURATION IS INVALID";
@@ -74,6 +85,11 @@ namespace AnimeHillRacing.Core
         public bool TryRestorePermanentEntitlement(string productId, out string error)
         {
             if (!TryGet(productId, out Entitlement entitlement, out error)) return false;
+            if (entitlement.ProductType == StoreProductType.Consumable)
+            {
+                error = "CONSUMABLE PRODUCTS ARE NOT RESTORED";
+                return false;
+            }
             if (entitlement.Kind == EntitlementKind.StarterPack)
                 return SaveManager.RestoreStarterPackOwnership(catalog, starterPack, out error);
             if (SaveManager.GrantPermanentCustomization(entitlement.VehicleId, "Skin",
@@ -87,8 +103,21 @@ namespace AnimeHillRacing.Core
             if (starterPack != null && !string.IsNullOrWhiteSpace(starterPack.googlePlayProductId))
                 Add(starterPack.googlePlayProductId, new Entitlement
                 {
-                    Kind = EntitlementKind.StarterPack
-                });
+                    Kind = EntitlementKind.StarterPack,
+                    ProductType = StoreProductType.NonConsumable
+                }, StoreProductType.NonConsumable);
+
+            IReadOnlyList<GemPackProduct> gemPacks = GemPackCatalog.Products;
+            for (int packIndex = 0; packIndex < gemPacks.Count; packIndex++)
+            {
+                GemPackProduct pack = gemPacks[packIndex];
+                Add(pack.ProductId, new Entitlement
+                {
+                    Kind = EntitlementKind.GemPack,
+                    GemAmount = pack.GemAmount,
+                    ProductType = StoreProductType.Consumable
+                }, StoreProductType.Consumable);
+            }
 
             if (catalog?.vehicles == null) return;
             for (int vehicleIndex = 0; vehicleIndex < catalog.vehicles.Length; vehicleIndex++)
@@ -110,13 +139,14 @@ namespace AnimeHillRacing.Core
                     {
                         Kind = EntitlementKind.Skin,
                         VehicleId = vehicle.vehicleId,
-                        SkinId = skin.optionId
-                    });
+                        SkinId = skin.optionId,
+                        ProductType = StoreProductType.NonConsumable
+                    }, StoreProductType.NonConsumable);
                 }
             }
         }
 
-        private void Add(string productId, Entitlement entitlement)
+        private void Add(string productId, Entitlement entitlement, StoreProductType productType)
         {
             if (entitlements.ContainsKey(productId))
             {
@@ -125,7 +155,7 @@ namespace AnimeHillRacing.Core
                 return;
             }
             entitlements.Add(productId, entitlement);
-            products.Add(new RealMoneyProductDefinition(productId, StoreProductType.NonConsumable));
+            products.Add(new RealMoneyProductDefinition(productId, productType));
         }
 
         private bool TryGet(string productId, out Entitlement entitlement, out string error)

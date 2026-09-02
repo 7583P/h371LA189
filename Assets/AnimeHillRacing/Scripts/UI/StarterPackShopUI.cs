@@ -273,7 +273,7 @@ namespace AnimeHillRacing.UI
             buyButton = buttonObject.GetComponent<Button>();
             buyButton.targetGraphic = buttonObject.GetComponent<Image>();
             buyButton.onClick.AddListener(Buy);
-            buyFallbackText = CreateText("Buy Label", buttonObject.transform, "BUY STARTER PACK", 17,
+            buyFallbackText = CreateText("Buy Label", buttonObject.transform, "BUY", 17,
                 TextAnchor.MiddleCenter, Vector2.zero, Vector2.one);
             buyFallbackText.fontStyle = FontStyle.Bold;
             built = true;

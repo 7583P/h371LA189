@@ -1,0 +1,11 @@
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\editor-check\obj\Debug\EditorCheck.csproj.AssemblyReference.cache
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\editor-check\obj\Debug\EditorCheck.GeneratedMSBuildEditorConfig.editorconfig
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\editor-check\obj\Debug\EditorCheck.AssemblyInfoInputs.cache
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\editor-check\obj\Debug\EditorCheck.AssemblyInfo.cs
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\editor-check\obj\Debug\EditorCheck.csproj.CoreCompileInputs.cache
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\editor-check\obj\Debug\EditorCheck.sourcelink.json
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\editor-check\bin\EditorCheck.deps.json
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\editor-check\bin\EditorCheck.dll
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\editor-check\bin\EditorCheck.pdb
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\editor-check\obj\Debug\EditorCheck.dll
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\editor-check\obj\Debug\EditorCheck.pdb

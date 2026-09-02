@@ -183,6 +183,8 @@ namespace AnimeHillRacing.UI
         private Button[] optionReadyButtons;
         private Image[] shopAccessoryRarityFrames;
         private StarterPackShopUI starterPackShop;
+        private GemPackShopUI gemPackShop;
+        private CoinPackShopUI coinPackShop;
         private GooglePlayStatusUI googlePlayStatus;
 
         private Sprite ResolvedVehicleLockSprite => vehicleLockSprite != null
@@ -202,6 +204,7 @@ namespace AnimeHillRacing.UI
             ExternalServiceProviders.Store.StateChanged -= HandleStoreStateChanged;
             if (Application.isPlaying) ExternalServiceProviders.Store.StateChanged += HandleStoreStateChanged;
             if (catalog == null) return;
+            SaveManager.SynchronizeHighestAdventureBestDistance(catalog);
             startInFlight = false;
             purchaseInFlight = false;
             lastPurchaseAttemptFrame = -1;
@@ -213,9 +216,12 @@ namespace AnimeHillRacing.UI
             EnsureTuneAdjustmentButtons();
             EnsureTuneCardButtons();
             EnsureAccessoryPaginationControls();
+            EnsureGarageTextLayout();
             EnsureVehiclePurchaseControls();
             EnsureOptionStateVisuals();
             if (Application.isPlaying) starterPackShop = StarterPackShopUI.Attach(storePanel, catalog);
+            if (Application.isPlaying) gemPackShop = GemPackShopUI.Attach(storePanel);
+            if (Application.isPlaying) coinPackShop = CoinPackShopUI.Attach(storePanel);
             if (Application.isPlaying) googlePlayStatus = GooglePlayStatusUI.Attach(settingsPanel);
             FindSavedVehicle();
             section = GameSession.RequestedGarageSection;
@@ -253,14 +259,12 @@ namespace AnimeHillRacing.UI
         public void Back() => SceneManager.LoadScene("PreStart");
         public void PreviousVehicle() => CycleVehicle(-1);
         public void NextVehicle() => CycleVehicle(1);
-        public void ShowWheels() { category = Category.Wheels; Refresh(); }
-        public void ShowDrivers() { category = Category.Driver; Refresh(); }
+        public void ShowWheels() { category = Category.Wheels; SetCustomizationPageToSelectedOption(); Refresh(); }
+        public void ShowDrivers() { category = Category.Driver; SetCustomizationPageToSelectedOption(); Refresh(); }
         public void ShowCharacters()
         {
             category = Category.Characters;
-            int selectedIndex = SelectedAccessoryIndex();
-            int pageSize = Mathf.Max(1, optionButtons?.Length ?? 0);
-            customizationAccessoryPage = selectedIndex >= 0 ? selectedIndex / pageSize : 0;
+            SetCustomizationPageToSelectedOption();
             Refresh();
         }
         public void ShowTuning() => SetSection(GarageSection.Tuning);
@@ -284,6 +288,7 @@ namespace AnimeHillRacing.UI
         public void ShowSkins()
         {
             category = Category.Skin;
+            SetCustomizationPageToSelectedOption();
             SetSection(GarageSection.Skins);
         }
 
@@ -831,9 +836,7 @@ namespace AnimeHillRacing.UI
 
         private void SelectOption(int slot)
         {
-            int index = category == Category.Characters
-                ? customizationAccessoryPage * Mathf.Max(1, optionButtons?.Length ?? 0) + slot
-                : slot;
+            int index = customizationAccessoryPage * Mathf.Max(1, optionButtons?.Length ?? 0) + slot;
             VehicleDefinition vehicle = CurrentVehicle;
             if (category == Category.Tuning || vehicle == null || !IsVehicleUnlocked(vehicle) ||
                 !TryGetOption(index, out string id, out _, out bool unlocked, out int gemPrice)) return;
@@ -1345,6 +1348,59 @@ namespace AnimeHillRacing.UI
             }
         }
 
+        private void EnsureGarageTextLayout()
+        {
+            ConfigureEconomyBalanceText(tuningCoins, 27);
+            ConfigureEconomyBalanceText(gemsBalance, 24);
+            int count = optionLabels?.Length ?? 0;
+            for (int i = 0; i < count; i++)
+            {
+                Text label = optionLabels[i];
+                if (label == null) continue;
+                RectTransform rect = label.rectTransform;
+                rect.anchorMin = new Vector2(.035f, .025f);
+                rect.anchorMax = new Vector2(.965f, .365f);
+                rect.offsetMin = Vector2.zero;
+                rect.offsetMax = Vector2.zero;
+                label.alignment = TextAnchor.MiddleCenter;
+                label.fontSize = 17;
+                label.resizeTextForBestFit = true;
+                label.resizeTextMinSize = 10;
+                label.resizeTextMaxSize = 17;
+                label.horizontalOverflow = HorizontalWrapMode.Wrap;
+                label.verticalOverflow = VerticalWrapMode.Truncate;
+                label.lineSpacing = .88f;
+            }
+            int imageCount = optionImages?.Length ?? 0;
+            for (int i = 0; i < imageCount; i++)
+            {
+                Image image = optionImages[i];
+                if (image == null) continue;
+                RectTransform rect = image.rectTransform;
+                rect.anchorMin = new Vector2(.10f, .38f);
+                rect.anchorMax = new Vector2(.90f, .91f);
+                rect.offsetMin = Vector2.zero;
+                rect.offsetMax = Vector2.zero;
+            }
+        }
+
+        private static void ConfigureEconomyBalanceText(Text label, int maximumFontSize)
+        {
+            if (label == null) return;
+            RectTransform rect = label.rectTransform;
+            rect.anchorMin = new Vector2(.24f, .08f);
+            rect.anchorMax = new Vector2(.95f, .92f);
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            label.alignment = TextAnchor.MiddleRight;
+            label.resizeTextForBestFit = true;
+            label.resizeTextMinSize = 15;
+            label.resizeTextMaxSize = maximumFontSize;
+            label.horizontalOverflow = HorizontalWrapMode.Wrap;
+            label.verticalOverflow = VerticalWrapMode.Truncate;
+            label.lineSpacing = .9f;
+        }
+
         private static Image EnsureStateImage(Transform parent, string objectName, Vector2 anchorMin,
             Vector2 anchorMax, string fallbackLabel)
         {
@@ -1660,14 +1716,12 @@ namespace AnimeHillRacing.UI
             string selected = section == GarageSection.Skins ? SelectedOptionId() : string.Empty;
             int optionPageSize = Mathf.Max(1, optionButtons?.Length ?? 0);
             int optionPages = Mathf.Max(1, Mathf.CeilToInt(count / (float)optionPageSize));
-            customizationAccessoryPage = category == Category.Characters
-                ? Mathf.Clamp(customizationAccessoryPage, 0, optionPages - 1) : 0;
+            customizationAccessoryPage = Mathf.Clamp(customizationAccessoryPage, 0, optionPages - 1);
             RefreshAccessoryPager(customizationAccessoryPager, customizationAccessoryPageText,
-                customizationAccessoryPage, category == Category.Characters ? count : 0, optionPageSize);
+                customizationAccessoryPage, section == GarageSection.Skins ? count : 0, optionPageSize);
             for (int i = 0; i < (optionButtons != null ? optionButtons.Length : 0); i++)
             {
-                int optionIndex = category == Category.Characters
-                    ? customizationAccessoryPage * optionPageSize + i : i;
+                int optionIndex = customizationAccessoryPage * optionPageSize + i;
                 bool visible = optionIndex < count;
                 optionButtons[i].gameObject.SetActive(visible);
                 if (!visible) continue;
@@ -1707,13 +1761,18 @@ namespace AnimeHillRacing.UI
                 }
                 if (optionLabels != null && i < optionLabels.Length && optionLabels[i] != null)
                 {
+                    float requiredDistance = RequiredDistanceForOption(optionIndex);
                     string action = category == Category.Skin
                         ? isSelected ? "EQUIPPED" : unlocked ? "OWNED  •  READY" :
                             realMoney ? RealMoneyPriceLabel(storeProvider, realMoneySkin,
-                                realMoneyAvailable) : gemPrice > 0 ? $"{gemPrice:N0} GEMS" : "LOCKED"
+                                realMoneyAvailable) : requiredDistance > 0f
+                                ? $"UNLOCK AT {requiredDistance:N0} M"
+                                : gemPrice > 0 ? $"{gemPrice:N0} GEMS" : "LOCKED"
                         : isSelected ? SelectedAccessoryAction(accessory) : unlocked
-                            ? "SELECT" : gemPrice > 0 ? $"{gemPrice:N0} GEMS" : "LOCKED";
-                    optionLabels[i].text = OptionName(optionIndex) + "\n" + action;
+                            ? "SELECT" : requiredDistance > 0f
+                                ? $"UNLOCK AT {requiredDistance:N0} M"
+                                : gemPrice > 0 ? $"{gemPrice:N0} GEMS" : "LOCKED";
+                    optionLabels[i].text = FormatOptionCardName(OptionName(optionIndex)) + "\n" + action;
                 }
                 RefreshOptionStateVisual(i, optionIndex, unlocked, isSelected, vehicleUnlocked);
                 RefreshOptionBlueprintProgress(i, optionIndex, unlocked);
@@ -1781,6 +1840,12 @@ namespace AnimeHillRacing.UI
                 backgroundId != AnimeBackgroundId) backgroundId = DefaultBackgroundId;
             SaveManager.SelectedGarageBackgroundId = backgroundId;
             RefreshGarageBackground();
+        }
+
+        public void RefreshVehicleDefinitionPreview()
+        {
+            preview?.Invalidate();
+            Refresh();
         }
 
         private void RefreshSectionIsolation()
@@ -2594,8 +2659,32 @@ namespace AnimeHillRacing.UI
             if (item == null) return false;
             id = item.optionId; icon = item.sprite;
             gemPrice = item.gemPrice;
-            unlocked = SaveManager.IsCustomizationUnlocked(vehicle.vehicleId, category.ToString(), id, item.unlockedByDefault);
+            unlocked = SaveManager.IsCustomizationUnlocked(vehicle.vehicleId, category.ToString(), id,
+                item.unlockedByDefault, item.requiredBestDistance);
             return true;
+        }
+
+        private float RequiredDistanceForOption(int index)
+        {
+            VehicleDefinition vehicle = CurrentVehicle;
+            if (vehicle == null || index < 0) return 0f;
+            VehicleDefinition.CustomizationOption[] options = category == Category.Skin
+                ? vehicle.skins : category == Category.Wheels ? vehicle.wheels : null;
+            return options != null && index < options.Length && options[index] != null
+                ? options[index].requiredBestDistance : 0f;
+        }
+
+        private void SetCustomizationPageToSelectedOption()
+        {
+            customizationAccessoryPage = 0;
+            int pageSize = Mathf.Max(1, optionButtons?.Length ?? 0);
+            string selectedId = SelectedOptionId();
+            for (int i = 0; i < OptionCount(); i++)
+                if (TryGetOption(i, out string optionId, out _, out _, out _) && optionId == selectedId)
+                {
+                    customizationAccessoryPage = i / pageSize;
+                    return;
+                }
         }
 
         private bool TryGetRealMoneySkin(int index,
@@ -2647,6 +2736,20 @@ namespace AnimeHillRacing.UI
             VehicleDefinition.CustomizationOption item = category == Category.Skin
                 ? CurrentVehicle.skins[index] : CurrentVehicle.wheels[index];
             return item.displayName;
+        }
+
+        private static string FormatOptionCardName(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return "---";
+            const string prefix = "Glitch Phase ";
+            if (!value.StartsWith(prefix, System.StringComparison.OrdinalIgnoreCase))
+                return value.ToUpperInvariant();
+            string[] range = value.Substring(prefix.Length).Split('-');
+            if (range.Length != 2 ||
+                !long.TryParse(range[0].Replace(",", string.Empty).Trim(), out long start) ||
+                !long.TryParse(range[1].Replace(",", string.Empty).Trim(), out long end))
+                return value.ToUpperInvariant();
+            return $"GLITCH PHASE\n{start:N0} - {end:N0} M";
         }
 
         private DriverDefinition SelectedDriver()

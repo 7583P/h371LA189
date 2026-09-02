@@ -153,9 +153,11 @@ namespace AnimeHillRacing.UI
 
             statusText = CreateText("Status", transform, "PLAY GAMES: NOT CONNECTED", 14,
                 TextAnchor.MiddleLeft, new Vector2(.025f, .08f), new Vector2(.48f, .92f));
+            Sprite googlePlayConnectSprite = Resources.Load<Sprite>("UI/GooglePlayConnectButton");
             connectButton = CreateButton("Connect", transform, new Vector2(.50f, .12f),
-                new Vector2(.70f, .88f), out connectLabel);
+                new Vector2(.70f, .88f), out connectLabel, googlePlayConnectSprite);
             connectLabel.text = "CONNECT";
+            connectLabel.enabled = googlePlayConnectSprite == null;
             connectButton.onClick.AddListener(Connect);
             restoreButton = CreateButton("Restore Purchases", transform, new Vector2(.72f, .12f),
                 new Vector2(.98f, .88f), out Text restoreLabel);
@@ -165,7 +167,7 @@ namespace AnimeHillRacing.UI
         }
 
         private static Button CreateButton(string name, Transform parent, Vector2 anchorMin,
-            Vector2 anchorMax, out Text label)
+            Vector2 anchorMax, out Text label, Sprite sprite = null)
         {
             GameObject instance = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer),
                 typeof(Image), typeof(Button));
@@ -176,7 +178,9 @@ namespace AnimeHillRacing.UI
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
             Image image = instance.GetComponent<Image>();
-            image.color = new Color(.08f, .38f, .62f, .96f);
+            image.sprite = sprite;
+            image.preserveAspect = sprite != null;
+            image.color = sprite != null ? Color.white : new Color(.08f, .38f, .62f, .96f);
             Button button = instance.GetComponent<Button>();
             button.targetGraphic = image;
             label = CreateText("Label", instance.transform, name.ToUpperInvariant(), 13,

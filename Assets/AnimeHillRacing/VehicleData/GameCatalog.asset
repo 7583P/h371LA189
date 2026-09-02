@@ -22,6 +22,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 233edfec9bb52bf4c9ee7abea81a0f1a, type: 2}
   - {fileID: 11400000, guid: 5ace0000000000000000000000000021, type: 2}
   - {fileID: 11400000, guid: a24e83bdab6f43b5899a0fb747ddc110, type: 2}
+  - {fileID: 11400000, guid: 8a000000000000000000000000000031, type: 2}
   vehicles:
   - {fileID: 11400000, guid: 340e0c4e2683f9749ba26de83aa837be, type: 2}
   - {fileID: 11400000, guid: b4a11ad1000000000000000000000001, type: 2}

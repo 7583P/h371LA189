@@ -33,8 +33,8 @@ namespace AnimeHillRacing.Core
         public string exclusiveBundleId;
         [Min(0)] public int coinReward = 500000;
         [Min(0)] public int gemReward = 1000;
-        [Tooltip("Design reference only. Production UI waits for the localized Google Play price.")]
-        public string conceptualPrice = "$2.99";
+        [Tooltip("Legacy planning note only. Runtime prices always come localized from Google Play Billing.")]
+        public string conceptualPrice = string.Empty;
 
         private static StarterPackConfiguration cached;
 

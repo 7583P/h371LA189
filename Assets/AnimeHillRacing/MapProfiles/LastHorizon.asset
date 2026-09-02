@@ -1,0 +1,404 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1276f9d865d95324183cc1cdbf2fbc9c, type: 3}
+  m_Name: LastHorizon
+  m_EditorClassIdentifier: Assembly-CSharp::AnimeHillRacing.Terrain.MapProfile
+  mapId: last-horizon
+  displayName: LAST HORIZON
+  supportedGameMode: 0
+  seed: 312499
+  unlockedByDefault: 0
+  coinPrice: 100000
+  leaderboardId: CgkIv97xxuweEAIQCA
+  coinRoute: {fileID: 11400000, guid: 2d8f01a9a8d293943a19b887710af661, type: 2}
+  introEndDistance: 500
+  easyEndDistance: 2000
+  normalEndDistance: 5000
+  hardEndDistance: 10000
+  elevationProfile: {fileID: 0}
+  baseHeight: 0
+  amplitude: 72
+  frequency: 0.014
+  smoothing: 0.65
+  hillSize: 1
+  useCityHighwayTerrain: 0
+  cityFeatureLength: 120
+  cityMiniRhythmStrength: 0.18
+  useCityBridges: 0
+  cityBridges:
+    cycleLength: 10000
+    minimumZonesPerCycle: 7
+    maximumZonesPerCycle: 10
+    minimumProgressiveZones: 5
+    maximumProgressiveZones: 7
+    cycleStartMargin: 320
+    cycleEndMargin: 320
+    minimumZoneSpacing: 300
+    approachBlendLength: 50
+    recoveryBlendLength: 50
+    bridgeLength: 14
+    normalWaterLength: 22
+    progressiveBaseWaterLength: 22
+    progressiveGrowthPerCycle: 10
+    waterVisualDepth: 10
+    waterSurfaceOffset: -0.45
+    waterVisualAlpha: 0.5
+    waterBedThickness: 22
+    waterEndBankWidth: 3
+    waterSpeedRetainedPerSecond: 0.4
+    waterAngularSpeedRetainedPerSecond: 0.3
+    waterBuoyancySpring: 4
+    waterVerticalDamping: 3
+    waterMaximumSinkAcceleration: 8
+    waterDriverDownClearance: 5
+    bridgeColliderThickness: 0.45
+    bridgeGroundOverlap: 1
+    closedAngleDegrees: 0
+    openAngleDegrees: 45
+    transitionSeconds: 3
+    closedHoldSeconds: 4
+    openHoldSeconds: 4
+    bridgeSprite: {fileID: 0}
+    waterSprite: {fileID: 0}
+    bridgeArtSlopeDegrees: 16.1
+    bridgeArtSurfaceOffset: -0.61
+    waterSortingOrder: 1
+    waterBedSortingOrder: 0
+    bridgeSortingOrder: 5
+  difficultyCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 1
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 1
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  maximumDifficulty: 1
+  introductoryAmplitude: 0.18
+  sectionLength: 250
+  recoveryEverySections: 5
+  technicalSectionChance: 0.24
+  technicalDetailStrength: 0.55
+  flatFeatureWeight: 0.2
+  hillFeatureWeight: 0.45
+  valleyFeatureWeight: 0.2
+  technicalFeatureWeight: 0.15
+  usePointedTerrainRhythm: 0
+  pointedMiniFeatureStrength: 0.07
+  pointedFeatureAsymmetry: 0.18
+  pointedPeakMiniFeatureCount: 8
+  pointedExtremeShapeChance: 0.55
+  pointedExtremeShapeStrength: 0.32
+  useCountrysideSpecialFeatures: 0
+  countrysideSpecialFeatures:
+    peakDifficultyDistance: 10000
+    miniHillMinimumWavelength: 30
+    miniHillMaximumWavelength: 96
+    initialMiniHillHeight: 0.45
+    peakMiniHillHeight: 3.4
+    microSectionLength: 66
+    initialMicroHeight: 0.28
+    peakMicroHeight: 2.4
+    miniStraightChance: 0.36
+    miniStraightBumpCount: 3
+    initialChallengeStraightChance: 0.34
+    peakChallengeStraightChance: 0.26
+    straightDescentChance: 0.42
+    challengeStartDistance: 350
+    challengeMinimumCellLength: 135
+    challengeMaximumCellLength: 240
+    initialChallengeHeight: 1.5
+    peakChallengeHeight: 68
+    initialChallengeSlope: 12
+    peakChallengeSlope: 58
+    initialDeepValleyChance: 0.12
+    peakDeepValleyChance: 0.46
+    valleyDepthMultiplier: 1.08
+    eventInterval: 500
+    firstEventDistance: 260
+    eventChance: 0.88
+    longFlatChance: 0.58
+    transitionLength: 45
+    longFlatLengths: {x: 150, y: 200}
+    slashFlatLead: 18
+    slashLength: 96
+    slashHeight: 18
+    maximumStartJitter: 70
+  maxSlopeAngle: 48
+  maxHeightDeltaPerSample: 5
+  minimumValleyWidth: 36
+  minimumLandingLength: 30
+  maximumCrestSharpness: 9
+  smoothingPasses: 1
+  coinDensityPer100m: 8
+  initialFuelGap: 200
+  fuelGapIncrease: 0
+  fuelPlacementSearchRadius: 30
+  fuelPlacementSearchStep: 2
+  fuelMaximumPlacementSlope: 20
+  environment: {fileID: 11400000, guid: 8a000000000000000000000000000030, type: 2}
+  selectionPreview: {fileID: 21300000, guid: 8a000000000000000000000000000014, type: 3}
+  useVehicleContactLineOcclusion: 1
+  terrainMaterial: {fileID: 2100000, guid: 8a000000000000000000000000000021, type: 2}
+  terrainEdgeMaterial: {fileID: 2100000, guid: 8a000000000000000000000000000021, type: 2}
+  useSeparateTerrainMaterials: 1
+  fitAuthoredTerrainTexture: 0
+  terrainTextureRepeatWidth: 40
+  terrainWallUvRange: {x: 0, y: 1}
+  terrainSurfaceUvRange: {x: 0.2, y: 0.677}
+  terrainSurfaceContactV: 0.54
+  terrainSurfaceContactVSamples: []
+  terrainFillStartV: 0.54
+  groundPhysicsMaterial: {fileID: 13400000, guid: fdedc5efa6298df4c9ca2b981075128e, type: 2}
+  groundPhysicsMaterial2D: {fileID: 6200000, guid: 40a6d01f10a17944a93d40786678a90b, type: 2}
+  terrainEdgeWidth: 0.24
+  terrainMaximumVisualExtent: 0
+  terrainMaximumVisualRiseAboveSurface: 0
+  terrainVisualDepth: 420
+  supportsLiquidExposure: 0
+  neonMaximumAmplitude: 28
+  neonAmplitudeSaturationCycles: 3
+  liquidChallenges:
+    cycleLength: 6000
+    challengesPerCycle: 8
+    cycleStartSafetyMargin: 260
+    structuralRunUpPositions:
+    - 430
+    - 1280
+    - 2040
+    - 2770
+    - 3460
+    - 4140
+    - 4980
+    - 5530
+    runUpLength: 42
+    rampTransitionLength: 6
+    rampHorizontalLength: 12
+    rampAngleDegrees: 20
+    landingLength: 26
+    recoveryLength: 48
+    postRecoveryBlendLength: 50
+    basePoolLength: 18
+    minimumPoolLength: 16
+    maximumPoolLength: 34
+    cycleGrowth: 0.85
+    growthSaturation: 2.5
+    deterministicLengthVariation: 0.12
+    visualDepth: 7
+    exitRampHorizontalLength: 12
+    surfaceOffset: 0.15
+    cautionSprite: {fileID: 0}
+    cautionDistanceBeforeRamp: 10
+    cautionBelowSurface: 1.65
+    cautionWidth: 3.2
+    cautionSortingOrder: 4
+    liquidSprite: {fileID: 0}
+    liquidSortingOrder: 3
+    normalAlpha: 1
+    submergedAlpha: 0.65
+    alphaLerpSpeed: 7
+    exposureLimitSeconds: 10
+    entrySpeedRemaining: 0.1
+    entrySlowdownSeconds: 0.35
+    continuousViscosity: 2.4
+    liquidDriveAcceleration: 9
+    maximumSinkAcceleration: 8
+  useSpaceTerrain: 0
+  spaceChallenges:
+    eventInterval: 2000
+    warningDistance: 100
+    approachLength: 200
+    approachBlendLength: 45
+    rampLength: 15
+    rampFlatFraction: 0.08
+    rampRise: 5.2
+    landingLength: 42
+    recoveryLength: 86
+    initialGapLength: 10
+    gapIncreasePerCycle: 5
+    landingDrop: 0.35
+    planetLaunchClearance: 4.5
+    planetExitClearance: 4
+    minimumPlanetRadius: 4.8
+    maximumPlanetRadius: 10.5
+    planetRampRise: 3.8
+    planetCenterDrop: 0.82
+    blackHoleSprite: {fileID: 0}
+    baseDiameter: 5.5
+    diameterGrowthPerGapMetre: 0.14
+    maximumDiameter: 10
+    verticalOffset: -1.8
+    hazardRadiusFactor: 0.31
+    warningSprite: {fileID: 0}
+    warningWidth: 3.2
+    rampMaterial: {fileID: 0}
+  useArenaTerrain: 0
+  arena:
+    segmentLength: 104
+    recentSegmentHistory: 5
+    maximumTechnicalStreak: 3
+    recoveryInterval: 7
+    baseBumpHeight: 1.15
+    minimumBumpWavelength: 6.5
+    maximumBumpWavelength: 15
+    baseRampRise: 3.4
+    maximumRampRise: 5.8
+    minimumGapLength: 11
+    maximumGapLength: 24
+    landingSafetyLength: 22
+    tireSprite: {fileID: 0}
+    minimumTires: 2
+    maximumTires: 5
+    tireRadius: 1.05
+    tireMass: 17
+    tireFriction: 0.82
+    tireBounciness: 0.035
+    tireSurfaceClearance: 0.14
+    platformSprite: {fileID: 0}
+    easyPlatformWidth: 13
+    hardPlatformWidth: 8.5
+    maximumPlatformTilt: 25
+    platformMass: 34
+    platformAngularDamping: 3.2
+    platformWeightTorque: 2.2
+    platformCenteringTorque: 1.1
+    platformTakeoffDrop: 0.65
+    platformLandingClearance: 1.1
+    lavaSprite: {fileID: 0}
+    minimumLavaLength: 10
+    maximumLavaLength: 24
+    lavaVisualDepth: 2.8
+    lavaDragStrength: 7.5
+    lavaMaximumSpeed: 6.5
+    lavaEntrySeconds: 0.18
+    lavaRecoverySeconds: 0.85
+    lavaBankInset: 0.35
+    lavaTriggerHeightAboveSurface: 1.25
+    pickupObstacleClearance: 4
+  useMountainsTerrain: 0
+  mountains:
+    peakDifficultyDistance: 10000
+    miniBumpMinimumWavelength: 10
+    miniBumpMaximumWavelength: 24
+    initialMiniBumpHeight: 0.12
+    maximumMiniBumpHeight: 1
+    easySlopeRange: {x: 12, y: 24}
+    mediumSlopeRange: {x: 18, y: 34}
+    hardSlopeRange: {x: 26, y: 44}
+    extremeSlopeRange: {x: 34, y: 54}
+    exceptionalSlope: 58
+    exceptionalEveryCells: 9
+    crestWidthFraction: 0.06
+    recoveryWidthFraction: 0.1
+    valleyChance: 0.22
+    crestPositionVariation: 0.22
+    macroReliefHeight: 30
+    macroReliefWavelength: 1150
+    warmupMountainHeight: 4.5
+    peakMountainHeight: 72
+    initialFlatSectionChance: 0.42
+    peakFlatSectionChance: 0.16
+    peakExtremeBumpChance: 0.28
+    peakExtremeBumpHeight: 4.8
+    bumpyClimbChance: 0.38
+    hardBumpChance: 0.18
+    veryHardBumpChance: 0.72
+    veryHardBumpCooldownDistance: 1200
+    veryHardBumpHeight: 18
+  useLastHorizonTerrain: 1
+  lastHorizon:
+    cycleLength: 10000
+    segmentLength: 250
+    launchSafetyLength: 160
+    cycleOneMaximumRelief: 58
+    cycleTwoMaximumRelief: 72
+    macroRelief: 12
+    minimumRoofZonesPerCycle: 2
+    maximumRoofZonesPerCycle: 3
+    roofLengthRange: {x: 200, y: 5000}
+    roofVehicleClearance: 6.4
+    roofThickness: 2.8
+    roofSampleSpacing: 6
+    roofTransportGapLength: 52
+    roofTransportPlatformWidth: 12
+    roofTransportPlatformThickness: 0.8
+    roofCrusherBlockCount: 3
+    roofCrusherBlockSize: 3.2
+    movingTerrainInterval: 6000
+    movingTerrainLengthRange: {x: 360, y: 620}
+    voidPlatformInterval: 8000
+    voidPlatformLengthRange: {x: 420, y: 760}
+    specialPhaseTransitionLength: 52
+    specialPhaseSeparation: 150
+    voidPlatformWidth: 12
+    voidPlatformGap: 6
+    voidPlatformThickness: 0.7
+    voidPlatformMaximumDrop: 12
+    voidDecorativePlatformCount: 8
+    movingHorizontalTravel: 1.15
+    movingVerticalTravel: 0.7
+    movingTerrainPeriod: 5.5
+    extremeBumpAngle: 80
+    extremeBumpHeight: 0.55
+    extremeBumpSpacing: 12
+    normalFuelGapRange: {x: 200, y: 500}
+    cycleResetFuelInterval: 20000
+    scarcityFuelGapRange: {x: 500, y: 1000}
+    fuelSafetySearchRadius: 30
+    fuelSafetySearchStep: 2
+    obstacleCellLength: 260
+    cycleOneObstacleChance: 0.58
+    cycleTwoObstacleChance: 0.84
+    obstacleStartSafety: 260
+    safeVehicleLength: 5.8
+    safeVehicleHeight: 4.2
+    obstacleSafetyMargin: 2.8
+    seesawWidth: 15.2
+    seesawMaximumAngle: 17
+    liftWidth: 14
+    liftTravel: 1.6
+    liftPeriod: 5.5
+    tiltingPlatformWidth: 14
+    tiltingPlatformMaximumAngle: 12
+    tiltingPlatformPeriod: 4.25
+    maximumRollers: 4
+    rollerRadius: 0.85
+    seesawSprite: {fileID: 21300000, guid: 8a000000000000000000000000000011, type: 3}
+    liftPlatformSprite: {fileID: 21300000, guid: 8a000000000000000000000000000012, type: 3}
+    rollerSprite: {fileID: 21300000, guid: 8a000000000000000000000000000013, type: 3}
+  rainstorm:
+    permanentRain: 0
+    maximumParticles: 520
+    emissionRate: 145
+    fallVelocity: {x: -4.8, y: -21}
+    streakLength: 0.72
+    streakWidth: 0.035
+    surfaceGripMultiplier: 0.58
+    lightningEventsPerMinute: 4
+    lightningFlashDuration: 0.38
+    lightningFlashAlpha: 0.42

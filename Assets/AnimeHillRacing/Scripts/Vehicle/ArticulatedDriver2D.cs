@@ -11,6 +11,9 @@ namespace AnimeHillRacing.Vehicle
         public const int MaximumDriverSortingOrder = 9;
         public const int ForegroundDriverSortingBase = 20;
         public const int AccessorySortingOrder = 40;
+        public const float DriverDownHeadAngle = 22.5f;
+        private const float DriverDownReactionDuration = .18f;
+        private const float DriverDownInertiaSmoothTime = .14f;
 
         [SerializeField] private SpriteRenderer torso;
         [SerializeField] private SpriteRenderer head;
@@ -36,6 +39,16 @@ namespace AnimeHillRacing.Vehicle
         private float previousAngularVelocity;
         private Quaternion torsoBaseRotation;
         private Quaternion headBaseRotation;
+        private Vector3 headBasePosition;
+        private float driverDownElapsed;
+        private float driverDownSignedAngle;
+        private float driverDownStartAngle;
+        private float driverDownCurrentAngle;
+        private float driverDownAngleVelocity;
+        private Vector3 driverDownStartPosition;
+        private Vector3 driverDownCurrentPosition;
+        private Vector3 driverDownPositionVelocity;
+        private bool driverDownReactionActive;
         private int resolvedAccessorySortingOrder = AccessorySortingOrder;
         private Material defaultAccessoryMaterial;
         private bool accessoryMaterialCaptured;
@@ -60,12 +73,59 @@ namespace AnimeHillRacing.Vehicle
         private void LateUpdate()
         {
             if (!physicalReaction || (vehicleBody == null && vehicleBody2D == null) || headTransform == null) return;
-            float angular = vehicleBody != null ? vehicleBody.angularVelocity.z * Mathf.Rad2Deg : (vehicleBody2D != null ? vehicleBody2D.angularVelocity : 0f);
-            float angularAcceleration = (angular - previousAngularVelocity) / Mathf.Max(.001f, Time.deltaTime);
+            float deltaTime = Mathf.Max(.001f, Time.deltaTime);
+            float angular = vehicleBody != null
+                ? Vector3.Dot(vehicleBody.angularVelocity, transform.forward) * Mathf.Rad2Deg
+                : vehicleBody2D != null ? vehicleBody2D.angularVelocity : 0f;
+            float angularAcceleration = (angular - previousAngularVelocity) / deltaTime;
             previousAngularVelocity = angular;
-            Vector3 currentVelocity = vehicleBody != null ? vehicleBody.linearVelocity : (vehicleBody2D != null ? (Vector3)vehicleBody2D.linearVelocity : Vector3.zero);
-            Vector3 acceleration = (currentVelocity - previousVelocity) / Mathf.Max(.001f, Time.deltaTime);
+            Vector3 currentVelocity = vehicleBody != null ? vehicleBody.linearVelocity
+                : vehicleBody2D != null ? (Vector3)vehicleBody2D.linearVelocity : Vector3.zero;
+            Vector3 acceleration = (currentVelocity - previousVelocity) / deltaTime;
             previousVelocity = currentVelocity;
+            if (driverDownReactionActive)
+            {
+                driverDownElapsed += Time.deltaTime;
+                float progress = Mathf.Clamp01(driverDownElapsed / DriverDownReactionDuration);
+                float eased = progress * progress * (3f - 2f * progress);
+                if (progress < 1f)
+                {
+                    driverDownCurrentAngle = Mathf.Lerp(driverDownStartAngle,
+                        driverDownSignedAngle, eased);
+                    float normalizedAngle = driverDownCurrentAngle / DriverDownHeadAngle;
+                    driverDownCurrentPosition = Vector3.Lerp(driverDownStartPosition,
+                        DriverDownHeadPosition(normalizedAngle, .08f), eased);
+                }
+                else
+                {
+                    // Once the initial impact pose is visible, the head behaves like a loose mass:
+                    // gravity, chassis acceleration and angular velocity can carry it either way.
+                    Vector3 desiredUp = Vector3.up * 9.81f - acceleration * .72f;
+                    desiredUp = Vector3.ProjectOnPlane(desiredUp, transform.forward);
+                    if (desiredUp.sqrMagnitude < .001f) desiredUp = transform.up;
+                    float gravityRelativeAngle = Vector3.SignedAngle(transform.up,
+                        desiredUp.normalized, transform.forward);
+                    float residualImpact = driverDownSignedAngle * Mathf.Lerp(1f, .25f,
+                        Mathf.Clamp01((driverDownElapsed - DriverDownReactionDuration) / 1.35f));
+                    float inertialTarget = gravityRelativeAngle - angular * .085f + residualImpact;
+                    inertialTarget = Mathf.Clamp(inertialTarget,
+                        -DriverDownHeadAngle, DriverDownHeadAngle);
+                    driverDownCurrentAngle = Mathf.SmoothDamp(driverDownCurrentAngle,
+                        inertialTarget, ref driverDownAngleVelocity, DriverDownInertiaSmoothTime,
+                        150f, deltaTime);
+                    float normalizedAngle = driverDownCurrentAngle / DriverDownHeadAngle;
+                    Vector3 targetPosition = DriverDownHeadPosition(normalizedAngle,
+                        .045f + Mathf.Clamp01(acceleration.magnitude / 22f) * .035f);
+                    driverDownCurrentPosition = Vector3.SmoothDamp(driverDownCurrentPosition,
+                        targetPosition, ref driverDownPositionVelocity,
+                        DriverDownInertiaSmoothTime, .9f, deltaTime);
+                }
+
+                headTransform.localRotation = headBaseRotation * Quaternion.Euler(0f, 0f,
+                    driverDownCurrentAngle);
+                headTransform.localPosition = driverDownCurrentPosition;
+                return;
+            }
             Transform vehicleTransform = vehicleBody != null ? vehicleBody.transform : (vehicleBody2D != null ? vehicleBody2D.transform : transform.root);
             float longitudinalReaction = -Vector3.Dot(acceleration, vehicleTransform.right) * .12f;
             float landingReaction = -acceleration.y * .022f;
@@ -90,6 +150,25 @@ namespace AnimeHillRacing.Vehicle
             impactImpulse = direction * Mathf.Clamp(impactSpeed * 2.2f, 5f, 16f);
             wobbleVelocity += direction * Mathf.Clamp(impactSpeed * 18f, 35f, 150f);
         }
+
+        public void TriggerDriverDownReaction(float signedAngle)
+        {
+            if (!physicalReaction || headTransform == null) return;
+            driverDownSignedAngle = signedAngle < 0f
+                ? -DriverDownHeadAngle : DriverDownHeadAngle;
+            driverDownElapsed = 0f;
+            driverDownStartAngle = wobbleAngle;
+            driverDownCurrentAngle = driverDownStartAngle;
+            driverDownAngleVelocity = wobbleVelocity;
+            driverDownStartPosition = headTransform.localPosition;
+            driverDownCurrentPosition = driverDownStartPosition;
+            driverDownPositionVelocity = Vector3.zero;
+            driverDownReactionActive = true;
+        }
+
+        private Vector3 DriverDownHeadPosition(float normalizedAngle, float verticalDrop) =>
+            headBasePosition + new Vector3(-Mathf.Clamp(normalizedAngle, -1f, 1f) * .12f,
+                -verticalDrop, 0f);
 
         public void Apply(DriverDefinition driver, VehicleDefinition.DriverPose pose, Rigidbody body,
             bool enablePhysicalReaction)
@@ -157,6 +236,16 @@ namespace AnimeHillRacing.Vehicle
             headTransform = head != null ? head.transform : null;
             torsoBaseRotation = torsoTransform != null ? torsoTransform.localRotation : Quaternion.identity;
             headBaseRotation = headTransform != null ? headTransform.localRotation : Quaternion.identity;
+            headBasePosition = headTransform != null ? headTransform.localPosition : Vector3.zero;
+            driverDownReactionActive = false;
+            driverDownElapsed = 0f;
+            driverDownSignedAngle = 0f;
+            driverDownStartAngle = 0f;
+            driverDownCurrentAngle = 0f;
+            driverDownAngleVelocity = 0f;
+            driverDownStartPosition = headBasePosition;
+            driverDownCurrentPosition = headBasePosition;
+            driverDownPositionVelocity = Vector3.zero;
             reactiveLimbs[0] = leftForearm != null ? leftForearm.transform : null;
             reactiveLimbs[1] = rightForearm != null ? rightForearm.transform : null;
             reactiveLimbs[2] = leftLowerLeg != null ? leftLowerLeg.transform : null;

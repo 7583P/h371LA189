@@ -27,6 +27,7 @@ MonoBehaviour:
     displayName: FORMULA DEFAULT
     sprite: {fileID: 21300000, guid: f1c3d179f9b0f854b8643ac778fbc4fa, type: 3}
     unlockedByDefault: 1
+    requiredBestDistance: 0
     gemPrice: 0
     purchaseCurrency: 0
     googlePlayProductId: 
@@ -37,10 +38,19 @@ MonoBehaviour:
     visibleDiameter: 0
     visibleSize: {x: 30.949997, y: 6.770312}
     visualOffset: {x: 0, y: 0}
+    overrideGlitchTransform: 0
+    glitchManualSize: {x: 0, y: 0}
+    glitchManualOffset: {x: 0, y: 0}
+    overrideGlitchWheelTransform: 0
+    glitchRearWheelScale: 1
+    glitchFrontWheelScale: 1
+    glitchRearWheelOffset: {x: 0, y: 0}
+    glitchFrontWheelOffset: {x: 0, y: 0}
   - optionId: formula-skin-neon
     displayName: NEON SKIN
     sprite: {fileID: 21300000, guid: 614393b68a324819adb2dbd1d6509e3c, type: 3}
     unlockedByDefault: 0
+    requiredBestDistance: 0
     gemPrice: 1000
     purchaseCurrency: 0
     googlePlayProductId: 
@@ -51,10 +61,19 @@ MonoBehaviour:
     visibleDiameter: 0
     visibleSize: {x: 21.571524, y: 5.005781}
     visualOffset: {x: 0, y: 0}
+    overrideGlitchTransform: 0
+    glitchManualSize: {x: 0, y: 0}
+    glitchManualOffset: {x: 0, y: 0}
+    overrideGlitchWheelTransform: 0
+    glitchRearWheelScale: 1
+    glitchFrontWheelScale: 1
+    glitchRearWheelOffset: {x: 0, y: 0}
+    glitchFrontWheelOffset: {x: 0, y: 0}
   - optionId: formula-skin-electricity
     displayName: ELECTRICITY
     sprite: {fileID: 21300000, guid: e91b5cf2d3564b2fbc32e54d21f25b04, type: 3}
     unlockedByDefault: 0
+    requiredBestDistance: 0
     gemPrice: 1000
     purchaseCurrency: 0
     googlePlayProductId: 
@@ -65,10 +84,19 @@ MonoBehaviour:
     visibleDiameter: 0
     visibleSize: {x: 21.72, y: 5.9708786}
     visualOffset: {x: 0, y: 0}
+    overrideGlitchTransform: 0
+    glitchManualSize: {x: 0, y: 0}
+    glitchManualOffset: {x: 0, y: 0}
+    overrideGlitchWheelTransform: 0
+    glitchRearWheelScale: 1
+    glitchFrontWheelScale: 1
+    glitchRearWheelOffset: {x: 0, y: 0}
+    glitchFrontWheelOffset: {x: 0, y: 0}
   - optionId: formula-skin-hill-adventurer-gold
     displayName: HILL ADVENTURER GOLD
     sprite: {fileID: 21300000, guid: fee74c575422423bb2fb2a79f3f25eae, type: 3}
     unlockedByDefault: 0
+    requiredBestDistance: 0
     gemPrice: 0
     purchaseCurrency: 0
     googlePlayProductId: 
@@ -79,11 +107,20 @@ MonoBehaviour:
     visibleDiameter: 0
     visibleSize: {x: 21.07, y: 4.93}
     visualOffset: {x: 0.11, y: 0.125}
+    overrideGlitchTransform: 0
+    glitchManualSize: {x: 0, y: 0}
+    glitchManualOffset: {x: 0, y: 0}
+    overrideGlitchWheelTransform: 0
+    glitchRearWheelScale: 1
+    glitchFrontWheelScale: 1
+    glitchRearWheelOffset: {x: 0, y: 0}
+    glitchFrontWheelOffset: {x: 0, y: 0}
   wheels:
   - optionId: formula-wheel-02
     displayName: FORMULA WHEEL 02
     sprite: {fileID: 21300000, guid: 0effc5efe71db0748aa1b5d5cadea74a, type: 3}
     unlockedByDefault: 1
+    requiredBestDistance: 0
     gemPrice: 0
     purchaseCurrency: 0
     googlePlayProductId: 
@@ -94,10 +131,19 @@ MonoBehaviour:
     visibleDiameter: 0
     visibleSize: {x: 14.31, y: 14.63}
     visualOffset: {x: 0, y: 0}
+    overrideGlitchTransform: 0
+    glitchManualSize: {x: 0, y: 0}
+    glitchManualOffset: {x: 0, y: 0}
+    overrideGlitchWheelTransform: 0
+    glitchRearWheelScale: 1
+    glitchFrontWheelScale: 1
+    glitchRearWheelOffset: {x: 0, y: 0}
+    glitchFrontWheelOffset: {x: 0, y: 0}
   - optionId: formula-wheel-01
     displayName: FORMULA GHOSTY WHEELS
     sprite: {fileID: 21300000, guid: aca3fba5216593a40975e31bd6558040, type: 3}
     unlockedByDefault: 0
+    requiredBestDistance: 0
     gemPrice: 500
     purchaseCurrency: 0
     googlePlayProductId: 
@@ -108,10 +154,19 @@ MonoBehaviour:
     visibleDiameter: 0
     visibleSize: {x: 14.4, y: 14.56}
     visualOffset: {x: 0, y: 0}
+    overrideGlitchTransform: 0
+    glitchManualSize: {x: 0, y: 0}
+    glitchManualOffset: {x: 0, y: 0}
+    overrideGlitchWheelTransform: 0
+    glitchRearWheelScale: 1
+    glitchFrontWheelScale: 1
+    glitchRearWheelOffset: {x: 0, y: 0}
+    glitchFrontWheelOffset: {x: 0, y: 0}
   - optionId: formula-wheel-luxury
     displayName: HILL ADVENTURER GOLD WHEEL
     sprite: {fileID: 21300000, guid: 2a500d5d83da46f8b00460275d612656, type: 3}
     unlockedByDefault: 0
+    requiredBestDistance: 0
     gemPrice: 0
     purchaseCurrency: 0
     googlePlayProductId: 
@@ -122,6 +177,14 @@ MonoBehaviour:
     visibleDiameter: 0
     visibleSize: {x: 14.63, y: 14.32}
     visualOffset: {x: 0, y: 0}
+    overrideGlitchTransform: 0
+    glitchManualSize: {x: 0, y: 0}
+    glitchManualOffset: {x: 0, y: 0}
+    overrideGlitchWheelTransform: 0
+    glitchRearWheelScale: 1
+    glitchFrontWheelScale: 1
+    glitchRearWheelOffset: {x: 0, y: 0}
+    glitchFrontWheelOffset: {x: 0, y: 0}
   electricSkinOverlay: {fileID: 21300000, guid: e91b5cf2d3564b2fbc32e54d21f25b04, type: 3}
   preserveDriverPose: 1
   preserveWheelVisualPositions: 1
@@ -276,7 +339,7 @@ MonoBehaviour:
   rearWheelVisualPosition: {x: -1.75, y: -0.28}
   frontWheelVisualPosition: {x: 1.75, y: -0.28}
   wheelVisualDiameter: 1.08
-  rearWheelVisualDiameter: 1.0692
+  rearWheelVisualDiameter: 1.112685
   frontWheelVisualDiameter: 1.112685
   underbodyAttachmentSprite: {fileID: 0}
   underbodyAttachmentPositions: []

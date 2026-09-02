@@ -1267,7 +1267,6 @@ MonoBehaviour:
   driver: {fileID: 9107564457317744681}
   vehicleBody: {fileID: 0}
   vehicleBody2D: {fileID: 624989750826317082}
-  fatalSurfaceUpDot: 0.35
 --- !u!58 &396160006680771387
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -1663,7 +1662,7 @@ SpriteRenderer:
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
-  m_Size: {x: 12.54, y: 12.54}
+  m_Size: {x: 1, y: 1}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 0

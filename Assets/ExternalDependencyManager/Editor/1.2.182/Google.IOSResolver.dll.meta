@@ -10,7 +10,8 @@ PluginImporter:
   serializedVersion: 3
   iconMap: {}
   executionOrder: {}
-  defineConstraints: []
+  defineConstraints:
+  - UNITY_IOS
   isPreloaded: 0
   isOverridable: 0
   isExplicitlyReferenced: 0

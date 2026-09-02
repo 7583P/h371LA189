@@ -407,11 +407,12 @@ namespace AnimeHillRacing.Core
             {
                 VehicleDefinition.CustomizationOption option = options[i];
                 if (option == null || option.unlockedByDefault ||
+                    option.requiredBestDistance > 0f ||
                     string.IsNullOrWhiteSpace(option.optionId) ||
                     option.purchaseCurrency == CustomizationPurchaseCurrency.RealMoney ||
                     IsStarterCustomization(vehicle.vehicleId, category, option.optionId)) continue;
                 if (SaveManager.IsCustomizationUnlocked(vehicle.vehicleId, category,
-                        option.optionId, false))
+                        option.optionId, false, option.requiredBestDistance))
                     snapshot.unlockedCustomizations.Add(new CustomizationEntry
                     {
                         scopeId = vehicle.vehicleId,
@@ -574,10 +575,10 @@ namespace AnimeHillRacing.Core
                 VehicleDefinition.CustomizationOption skin = vehicle.FindSkin(entry.skinId);
                 VehicleDefinition.CustomizationOption wheel = vehicle.FindWheel(entry.wheelId);
                 string skinId = skin != null && SaveManager.IsCustomizationUnlocked(vehicle.vehicleId,
-                    "Skin", skin.optionId, skin.unlockedByDefault)
+                    "Skin", skin.optionId, skin.unlockedByDefault, skin.requiredBestDistance)
                     ? skin.optionId : SaveManager.GetSelectedSkinId(vehicle);
                 string wheelId = wheel != null && SaveManager.IsCustomizationUnlocked(vehicle.vehicleId,
-                    "Wheels", wheel.optionId, wheel.unlockedByDefault)
+                    "Wheels", wheel.optionId, wheel.unlockedByDefault, wheel.requiredBestDistance)
                     ? wheel.optionId : SaveManager.GetSelectedWheelId(vehicle);
                 SaveManager.SetCloudVehicleCustomization(vehicle, skinId, wheelId);
             }

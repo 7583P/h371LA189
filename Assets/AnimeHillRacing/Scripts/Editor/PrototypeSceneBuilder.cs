@@ -5487,8 +5487,8 @@ namespace AnimeHillRacing.Editor
             {
                 assets.formula.rearWheelVisualPosition = new Vector2(-1.75f, -.28f);
                 assets.formula.frontWheelVisualPosition = new Vector2(1.75f, -.28f);
-                assets.formula.rearWheelVisualDiameter = 0f;
-                assets.formula.frontWheelVisualDiameter = 0f;
+                assets.formula.rearWheelVisualDiameter = 1.112685f;
+                assets.formula.frontWheelVisualDiameter = 1.112685f;
             }
             assets.formula.wheelVisualDiameter = 1.08f;
             if (!assets.formula.preserveDriverPose || assets.formula.driverPose == null)
@@ -5693,7 +5693,7 @@ namespace AnimeHillRacing.Editor
                 assets.sportBike.rearWheelVisualPosition = new Vector2(-1.40f, -.48f);
                 assets.sportBike.frontWheelVisualPosition = new Vector2(1.37f, -.49f);
                 assets.sportBike.rearWheelVisualDiameter = .96f;
-                assets.sportBike.frontWheelVisualDiameter = .90f;
+                assets.sportBike.frontWheelVisualDiameter = .96f;
             }
             assets.sportBike.wheelVisualDiameter = .93f;
             if (!assets.sportBike.preserveDriverPose || assets.sportBike.driverPose == null)
@@ -6376,15 +6376,15 @@ namespace AnimeHillRacing.Editor
             assets.chestCatalog.coinsChestSprite = assets.coinsChest;
             assets.chestCatalog.chests = new[]
             {
-                Chest(ChestType.Bronze, "BRONZE CHEST", 90, 2, 1200, 1500, 0,
+                Chest(ChestType.Bronze, "BRONZE CHEST", 90, 2, 1200, 1500, 1, 3, 0,
                     assets.bronzeChestClosed, assets.bronzeChestOpen, new Color(.70f, .38f, .15f)),
-                Chest(ChestType.Silver, "SILVER CHEST", 70, 4, 2500, 3700, 0,
+                Chest(ChestType.Silver, "SILVER CHEST", 70, 4, 2500, 3700, 2, 5, 0,
                     assets.silverChestClosed, assets.silverChestOpen, new Color(.75f, .84f, .94f)),
-                Chest(ChestType.Gold, "GOLD CHEST", 50, 6, 5000, 7500, 0,
+                Chest(ChestType.Gold, "GOLD CHEST", 50, 6, 5000, 7500, 6, 12, 0,
                     assets.goldChestClosed, assets.goldChestOpen, new Color(1f, .72f, .12f)),
-                Chest(ChestType.Master, "MASTER CHEST", 10, 12, 15000, 20000, 5,
+                Chest(ChestType.Master, "MASTER CHEST", 10, 12, 15000, 20000, 20, 35, 5,
                     assets.masterChestClosed, assets.masterChestOpen, new Color(.62f, .20f, 1f)),
-                Chest(ChestType.Legendary, "LEGENDARY CHEST", 1, 24, 30000, 50000, 10,
+                Chest(ChestType.Legendary, "LEGENDARY CHEST", 1, 24, 30000, 50000, 50, 70, 10,
                     assets.legendaryChestClosed, assets.legendaryChestOpen, new Color(1f, .20f, .62f))
             };
             EditorUtility.SetDirty(assets.chestCatalog);
@@ -6394,12 +6394,15 @@ namespace AnimeHillRacing.Editor
                 Root + "/MapProfiles/Rainyer.asset");
             MapDefinition mountains = AssetDatabase.LoadAssetAtPath<MapDefinition>(
                 Root + "/MapProfiles/Mountains.asset");
+            MapDefinition lastHorizon = AssetDatabase.LoadAssetAtPath<MapDefinition>(
+                Root + "/MapProfiles/LastHorizon.asset");
             var maps = new System.Collections.Generic.List<MapDefinition>
             {
                 assets.countryside, assets.northPole, assets.space, assets.neonCity, assets.city
             };
             if (rainyer != null) maps.Add(rainyer);
             if (mountains != null) maps.Add(mountains);
+            if (lastHorizon != null) maps.Add(lastHorizon);
             maps.Add(assets.countrysideRoad);
             maps.Add(assets.testCircuit);
             assets.catalog.maps = maps.ToArray();
@@ -6423,12 +6426,14 @@ namespace AnimeHillRacing.Editor
         }
 
         private static ChestDefinition Chest(ChestType type, string name, int weight, int hours,
-            int minimumCoins, int maximumCoins, int blueprints, Sprite closed, Sprite open, Color accent)
+            int minimumCoins, int maximumCoins, int minimumGems, int maximumGems, int blueprints,
+            Sprite closed, Sprite open, Color accent)
         {
             return new ChestDefinition
             {
                 type = type, displayName = name, rarityWeight = weight, openingSeconds = hours * 60 * 60,
-                minimumCoins = minimumCoins, maximumCoins = maximumCoins, blueprintReward = blueprints,
+                minimumCoins = minimumCoins, maximumCoins = maximumCoins,
+                minimumGems = minimumGems, maximumGems = maximumGems, blueprintReward = blueprints,
                 closedSprite = closed, openSprite = open, accentColor = accent
             };
         }
@@ -6694,15 +6699,22 @@ namespace AnimeHillRacing.Editor
             CreateSpriteImage("Coin Icon", coinCard.transform, assets.coin01, new Vector2(.5f, .5f),
                 new Vector2(-112f, 0f), new Vector2(52f, 52f));
             Text tuningCoins = CreateText("Tuning Coins", coinCard.transform, "COINS  0", 27,
-                TextAnchor.MiddleRight, Vector2.zero, Vector2.one, new Vector2(-15f, 0f), new Vector2(-30f, 0f));
+                TextAnchor.MiddleRight, new Vector2(.24f, .08f), new Vector2(.95f, .92f),
+                Vector2.zero, Vector2.zero);
+            tuningCoins.resizeTextForBestFit = true;
+            tuningCoins.resizeTextMinSize = 15;
+            tuningCoins.resizeTextMaxSize = 27;
             GameObject gemsCard = CreateHudCard("Gems Card", safe, Vector2.one,
                 new Vector2(-175f, -132f), new Vector2(300f, 62f));
             Text gemMark = CreateText("Gem Mark", gemsCard.transform, "◆", 32, TextAnchor.MiddleCenter,
                 Vector2.zero, new Vector2(.26f, 1f), Vector2.zero, Vector2.zero);
             gemMark.color = new Color(.18f, .92f, 1f);
             Text gemsBalance = CreateText("Gems Balance", gemsCard.transform, "GEMS  0", 24,
-                TextAnchor.MiddleRight, new Vector2(.18f, 0f), Vector2.one,
-                new Vector2(-15f, 0f), new Vector2(-30f, 0f));
+                TextAnchor.MiddleRight, new Vector2(.24f, .08f), new Vector2(.95f, .92f),
+                Vector2.zero, Vector2.zero);
+            gemsBalance.resizeTextForBestFit = true;
+            gemsBalance.resizeTextMinSize = 15;
+            gemsBalance.resizeTextMaxSize = 24;
             Text vehicleName = CreateText("Vehicle Name", safe, "JEEP", 38, TextAnchor.MiddleCenter,
                 new Vector2(.04f, .80f), new Vector2(.48f, .91f), Vector2.zero, Vector2.zero);
             RawImage previewImage = UIObject("Live Composed Preview", safe, new Vector2(.04f, .25f),
@@ -6750,8 +6762,15 @@ namespace AnimeHillRacing.Editor
                 optionImages[i] = CreateImage("Icon", optionButtons[i].transform, Color.white,
                     new Vector2(.12f, .34f), new Vector2(.88f, .92f), Vector2.zero, Vector2.zero).GetComponent<Image>();
                 optionImages[i].raycastTarget = false; optionImages[i].preserveAspect = true;
-                optionLabels[i] = CreateText("Status", optionButtons[i].transform, "OPTION", 19, TextAnchor.MiddleCenter,
-                    new Vector2(.04f, .10f), new Vector2(.96f, .32f), Vector2.zero, Vector2.zero);
+                optionLabels[i] = CreateText("Status", optionButtons[i].transform, "OPTION", 17,
+                    TextAnchor.MiddleCenter, new Vector2(.035f, .025f), new Vector2(.965f, .365f),
+                    Vector2.zero, Vector2.zero);
+                optionLabels[i].resizeTextForBestFit = true;
+                optionLabels[i].resizeTextMinSize = 10;
+                optionLabels[i].resizeTextMaxSize = 17;
+                optionLabels[i].horizontalOverflow = HorizontalWrapMode.Wrap;
+                optionLabels[i].verticalOverflow = VerticalWrapMode.Truncate;
+                optionLabels[i].lineSpacing = .88f;
                 GameObject blueprintProgress = CreateImage("Blueprint Progress", optionButtons[i].transform,
                     new Color(.025f, .055f, .09f, .98f), new Vector2(.07f, .025f), new Vector2(.93f, .105f),
                     Vector2.zero, Vector2.zero);

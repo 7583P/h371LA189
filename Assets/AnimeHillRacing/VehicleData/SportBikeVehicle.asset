@@ -27,6 +27,7 @@ MonoBehaviour:
     displayName: SPORT BIKE DEFAULT
     sprite: {fileID: 21300000, guid: 6099276ba1a7a944fbcc9f946e5ff2c4, type: 3}
     unlockedByDefault: 1
+    requiredBestDistance: 0
     gemPrice: 0
     purchaseCurrency: 0
     googlePlayProductId: 
@@ -37,10 +38,19 @@ MonoBehaviour:
     visibleDiameter: 0
     visibleSize: {x: 14.94, y: 7.86}
     visualOffset: {x: -0.02, y: 0.075}
+    overrideGlitchTransform: 0
+    glitchManualSize: {x: 0, y: 0}
+    glitchManualOffset: {x: 0, y: 0}
+    overrideGlitchWheelTransform: 0
+    glitchRearWheelScale: 1
+    glitchFrontWheelScale: 1
+    glitchRearWheelOffset: {x: 0, y: 0}
+    glitchFrontWheelOffset: {x: 0, y: 0}
   - optionId: sport-bike-sun-ray
     displayName: SUN RAY
     sprite: {fileID: 21300000, guid: 3f8a87a88228171449eb0652c185cff4, type: 3}
     unlockedByDefault: 0
+    requiredBestDistance: 0
     gemPrice: 1000
     purchaseCurrency: 0
     googlePlayProductId: 
@@ -51,10 +61,19 @@ MonoBehaviour:
     visibleDiameter: 0
     visibleSize: {x: 15.09, y: 8.04}
     visualOffset: {x: 0.005, y: 0.185}
+    overrideGlitchTransform: 0
+    glitchManualSize: {x: 0, y: 0}
+    glitchManualOffset: {x: 0, y: 0}
+    overrideGlitchWheelTransform: 0
+    glitchRearWheelScale: 1
+    glitchFrontWheelScale: 1
+    glitchRearWheelOffset: {x: 0, y: 0}
+    glitchFrontWheelOffset: {x: 0, y: 0}
   - optionId: sport-bike-retro-luxe
     displayName: RETRO LUXE
     sprite: {fileID: 21300000, guid: d8c55f6a4d23486aa292c9f31e9f674b, type: 3}
     unlockedByDefault: 0
+    requiredBestDistance: 0
     gemPrice: 1000
     purchaseCurrency: 0
     googlePlayProductId: 
@@ -65,10 +84,19 @@ MonoBehaviour:
     visibleDiameter: 0
     visibleSize: {x: 15.01, y: 7.93}
     visualOffset: {x: -0.025, y: 0.085}
+    overrideGlitchTransform: 0
+    glitchManualSize: {x: 0, y: 0}
+    glitchManualOffset: {x: 0, y: 0}
+    overrideGlitchWheelTransform: 0
+    glitchRearWheelScale: 1
+    glitchFrontWheelScale: 1
+    glitchRearWheelOffset: {x: 0, y: 0}
+    glitchFrontWheelOffset: {x: 0, y: 0}
   - optionId: sport-bike-skin-neon-flow
     displayName: NEON FLOW
     sprite: {fileID: 21300000, guid: a42ebc936bd64aaab890a1eb35e61c91, type: 3}
     unlockedByDefault: 0
+    requiredBestDistance: 0
     gemPrice: 1000
     purchaseCurrency: 0
     googlePlayProductId: 
@@ -79,11 +107,20 @@ MonoBehaviour:
     visibleDiameter: 0
     visibleSize: {x: 15.35, y: 9.09}
     visualOffset: {x: 0.01, y: 0.205}
+    overrideGlitchTransform: 0
+    glitchManualSize: {x: 0, y: 0}
+    glitchManualOffset: {x: 0, y: 0}
+    overrideGlitchWheelTransform: 0
+    glitchRearWheelScale: 1
+    glitchFrontWheelScale: 1
+    glitchRearWheelOffset: {x: 0, y: 0}
+    glitchFrontWheelOffset: {x: 0, y: 0}
   wheels:
   - optionId: sport-bike-wheel-01
     displayName: BIKE WHEEL 01
     sprite: {fileID: 21300000, guid: 64f1868895c2c5a4db3ad493639e6eb9, type: 3}
     unlockedByDefault: 1
+    requiredBestDistance: 0
     gemPrice: 0
     purchaseCurrency: 0
     googlePlayProductId: 
@@ -94,10 +131,19 @@ MonoBehaviour:
     visibleDiameter: 9.94
     visibleSize: {x: 9.76, y: 9.82}
     visualOffset: {x: 0, y: 0}
+    overrideGlitchTransform: 0
+    glitchManualSize: {x: 0, y: 0}
+    glitchManualOffset: {x: 0, y: 0}
+    overrideGlitchWheelTransform: 0
+    glitchRearWheelScale: 1
+    glitchFrontWheelScale: 1
+    glitchRearWheelOffset: {x: 0, y: 0}
+    glitchFrontWheelOffset: {x: 0, y: 0}
   - optionId: sport-bike-wheel-02
     displayName: BIKE WHEEL 02
     sprite: {fileID: 21300000, guid: af538f9d995160d4694bb0730040cc10, type: 3}
     unlockedByDefault: 1
+    requiredBestDistance: 0
     gemPrice: 0
     purchaseCurrency: 0
     googlePlayProductId: 
@@ -108,10 +154,19 @@ MonoBehaviour:
     visibleDiameter: 10.1
     visibleSize: {x: 9.89, y: 10.03}
     visualOffset: {x: 0, y: 0}
+    overrideGlitchTransform: 0
+    glitchManualSize: {x: 0, y: 0}
+    glitchManualOffset: {x: 0, y: 0}
+    overrideGlitchWheelTransform: 0
+    glitchRearWheelScale: 1
+    glitchFrontWheelScale: 1
+    glitchRearWheelOffset: {x: 0, y: 0}
+    glitchFrontWheelOffset: {x: 0, y: 0}
   - optionId: sport-bike-gold-wheel
     displayName: GOLD WHEEL
     sprite: {fileID: 21300000, guid: 3cc7d30b0562aa14086730a762a3630c, type: 3}
     unlockedByDefault: 0
+    requiredBestDistance: 0
     gemPrice: 500
     purchaseCurrency: 0
     googlePlayProductId: 
@@ -122,10 +177,19 @@ MonoBehaviour:
     visibleDiameter: 14.08
     visibleSize: {x: 14.08, y: 14.06}
     visualOffset: {x: 0, y: 0}
+    overrideGlitchTransform: 0
+    glitchManualSize: {x: 0, y: 0}
+    glitchManualOffset: {x: 0, y: 0}
+    overrideGlitchWheelTransform: 0
+    glitchRearWheelScale: 1
+    glitchFrontWheelScale: 1
+    glitchRearWheelOffset: {x: 0, y: 0}
+    glitchFrontWheelOffset: {x: 0, y: 0}
   - optionId: sport-bike-wheel-ghosty
     displayName: SPORT BIKE GHOSTY WHEEL
     sprite: {fileID: 21300000, guid: 529eb95340d64bc38e96a34f19afc3be, type: 3}
     unlockedByDefault: 0
+    requiredBestDistance: 0
     gemPrice: 500
     purchaseCurrency: 0
     googlePlayProductId: 
@@ -136,10 +200,19 @@ MonoBehaviour:
     visibleDiameter: 14.56
     visibleSize: {x: 14.4, y: 14.56}
     visualOffset: {x: 0, y: 0}
+    overrideGlitchTransform: 0
+    glitchManualSize: {x: 0, y: 0}
+    glitchManualOffset: {x: 0, y: 0}
+    overrideGlitchWheelTransform: 0
+    glitchRearWheelScale: 1
+    glitchFrontWheelScale: 1
+    glitchRearWheelOffset: {x: 0, y: 0}
+    glitchFrontWheelOffset: {x: 0, y: 0}
   - optionId: sport-bike-wheel-neon-flow
     displayName: NEON FLOW WHEEL
     sprite: {fileID: 21300000, guid: b61f522a87a84c518c8445026ca6cf51, type: 3}
     unlockedByDefault: 0
+    requiredBestDistance: 0
     gemPrice: 500
     purchaseCurrency: 0
     googlePlayProductId: 
@@ -150,6 +223,14 @@ MonoBehaviour:
     visibleDiameter: 7.44
     visibleSize: {x: 7.36, y: 7.44}
     visualOffset: {x: 0, y: 0}
+    overrideGlitchTransform: 0
+    glitchManualSize: {x: 0, y: 0}
+    glitchManualOffset: {x: 0, y: 0}
+    overrideGlitchWheelTransform: 0
+    glitchRearWheelScale: 1
+    glitchFrontWheelScale: 1
+    glitchRearWheelOffset: {x: 0, y: 0}
+    glitchFrontWheelOffset: {x: 0, y: 0}
   electricSkinOverlay: {fileID: 0}
   preserveDriverPose: 1
   preserveWheelVisualPositions: 1
@@ -305,7 +386,7 @@ MonoBehaviour:
   frontWheelVisualPosition: {x: 1.37, y: -0.49}
   wheelVisualDiameter: 0.93
   rearWheelVisualDiameter: 0.96
-  frontWheelVisualDiameter: 0.9
+  frontWheelVisualDiameter: 0.96
   underbodyAttachmentSprite: {fileID: 0}
   underbodyAttachmentPositions: []
   underbodyAttachmentVisualWidth: 0

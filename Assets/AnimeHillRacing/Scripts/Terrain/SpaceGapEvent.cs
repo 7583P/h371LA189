@@ -320,7 +320,7 @@ namespace AnimeHillRacing.Terrain
         {
             VehicleRuntimeBase candidate = other != null ? other.GetComponentInParent<VehicleRuntimeBase>() : null;
             if (candidate != null && candidate.Body != null && other.attachedRigidbody == candidate.Body)
-                TriggerDriverDown();
+                TriggerAbyssCrash();
         }
 
         private void OnTriggerStay(Collider other) => OnTriggerEnter(other);
@@ -332,15 +332,15 @@ namespace AnimeHillRacing.Terrain
                                            other.GetComponentInParent<Suspension2DController>();
             if (wheel == null || wheel.WheelCollider != other ||
                 other.attachedRigidbody != wheel.WheelBody || wheel.OwnerVehicle == null) return;
-            TriggerDriverDown();
+            TriggerAbyssCrash();
         }
 
-        private void TriggerDriverDown()
+        private void TriggerAbyssCrash()
         {
             if (triggered) return;
             triggered = true;
             if (gameManager == null) gameManager = FindFirstObjectByType<GameManager>();
-            gameManager?.RequestGameOver(RunEndReason.DriverDown);
+            gameManager?.RequestGameOver(RunEndReason.Crashed);
         }
 
         public void Deactivate()

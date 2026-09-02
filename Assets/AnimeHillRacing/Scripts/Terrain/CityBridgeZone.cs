@@ -568,7 +568,7 @@ namespace AnimeHillRacing.Terrain
 
                 if (!driverDownVehicles.Contains(vehicle) &&
                     HasFatalWheelSubmersion(vehicle, waterSurfaceY, settings.waterDriverDownClearance))
-                    TriggerDriverDown(vehicle);
+                    TriggerSubmersionCrash(vehicle);
             }
         }
 
@@ -608,12 +608,12 @@ namespace AnimeHillRacing.Terrain
                 : float.NegativeInfinity;
         }
 
-        private void TriggerDriverDown(VehicleRuntimeBase vehicle)
+        private void TriggerSubmersionCrash(VehicleRuntimeBase vehicle)
         {
             CrashDetector crashDetector = vehicle != null ? vehicle.GetComponent<CrashDetector>() : null;
-            if (crashDetector == null || !crashDetector.NotifyDriverDown()) return;
+            if (crashDetector == null || !crashDetector.NotifyCrash()) return;
             driverDownVehicles.Add(vehicle);
-            Debug.Log($"[CityWater] Driver Down: a wheel descended " +
+            Debug.Log($"[CityWater] Submersion crash: a wheel descended " +
                       $"{settings.waterDriverDownClearance:0.0} m below the water surface.", vehicle);
         }
 

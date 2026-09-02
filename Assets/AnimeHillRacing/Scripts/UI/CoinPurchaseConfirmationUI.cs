@@ -58,6 +58,20 @@ namespace AnimeHillRacing.UI
             transform.SetAsLastSibling();
         }
 
+        public void ShowCoinPack(int coinAmount, int gemCost, bool affordable, Action onConfirmed)
+        {
+            if (titleText == null) BuildVisualTree();
+            confirmationAction = onConfirmed;
+            confirmationInFlight = false;
+            titleText.text = $"BUY +{coinAmount:N0} COINS?";
+            itemText.text = "COIN PACK";
+            costText.text = $"COST  {gemCost:N0} GEMS";
+            statusText.text = affordable ? string.Empty : "NOT ENOUGH GEMS";
+            yesButton.interactable = affordable;
+            gameObject.SetActive(true);
+            transform.SetAsLastSibling();
+        }
+
         public void SetFailure(string message, bool canRetry)
         {
             confirmationInFlight = false;

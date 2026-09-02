@@ -57,11 +57,11 @@ namespace AnimeHillRacing.Editor
             ChestCatalog catalog = gameCatalog.chestCatalog;
             if (catalog == null || catalog.TotalRarityWeight != 221)
                 throw new InvalidOperationException("Chest weights must total 221.");
-            ValidateDefinition(catalog, ChestType.Bronze, 90, 2, 1200, 1500, 0);
-            ValidateDefinition(catalog, ChestType.Silver, 70, 4, 2500, 3700, 0);
-            ValidateDefinition(catalog, ChestType.Gold, 50, 6, 5000, 7500, 0);
-            ValidateDefinition(catalog, ChestType.Master, 10, 12, 15000, 20000, 5);
-            ValidateDefinition(catalog, ChestType.Legendary, 1, 24, 30000, 50000, 10);
+            ValidateDefinition(catalog, ChestType.Bronze, 90, 2, 1200, 1500, 1, 3, 0);
+            ValidateDefinition(catalog, ChestType.Silver, 70, 4, 2500, 3700, 2, 5, 0);
+            ValidateDefinition(catalog, ChestType.Gold, 50, 6, 5000, 7500, 6, 12, 0);
+            ValidateDefinition(catalog, ChestType.Master, 10, 12, 15000, 20000, 20, 35, 5);
+            ValidateDefinition(catalog, ChestType.Legendary, 1, 24, 30000, 50000, 50, 70, 10);
 
             float progress = 1799f;
             if (ChestProgressMath.Advance(ref progress, .9f, 1800f) != 0 ||
@@ -188,7 +188,7 @@ namespace AnimeHillRacing.Editor
                     throw new InvalidOperationException($"Monte Carlo distribution failed for {(ChestType)i}: {actual:P2} vs {expected:P2}.");
             }
             Debug.Log($"CHEST_BLUEPRINT_AUDIT_PASS: milestone 29:59/30:00, remainder 15s, UTC offline, " +
-                $"coin ranges, Master +5, Legendary +10, normal 100, vehicle 150, " +
+                $"coin ranges, Gem ranges 1-3/2-5/6-12/20-35/50-70, Master +5, Legendary +10, normal 100, vehicle 150, " +
                 $"Shop 10K:+1/50K:+5/100K:+10/1M:+100, tune prices x10, Gems save/add/spend validated, " +
                 $"distance bonus PB-only each 500m, +100..+500 then +500..+5000 validated; " +
                 $"Monte Carlo B/S/G/M/L={counts[0]/(float)samples:P2}/{counts[1]/(float)samples:P2}/" +
@@ -259,11 +259,12 @@ namespace AnimeHillRacing.Editor
         }
 
         private static void ValidateDefinition(ChestCatalog catalog, ChestType type, int weight, int hours,
-            int minimumCoins, int maximumCoins, int blueprints)
+            int minimumCoins, int maximumCoins, int minimumGems, int maximumGems, int blueprints)
         {
             ChestDefinition value = catalog.Find(type);
             if (value == null || value.rarityWeight != weight || value.openingSeconds != hours * 3600 ||
                 value.minimumCoins != minimumCoins || value.maximumCoins != maximumCoins ||
+                value.minimumGems != minimumGems || value.maximumGems != maximumGems ||
                 value.blueprintReward != blueprints || value.closedSprite == null || value.openSprite == null)
                 throw new InvalidOperationException($"{type} chest definition is invalid.");
         }

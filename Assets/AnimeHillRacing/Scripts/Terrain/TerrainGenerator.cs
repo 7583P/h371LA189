@@ -146,9 +146,58 @@ namespace AnimeHillRacing.Terrain
         public bool HasTires => tireCount > 0;
     }
 
+    public struct LastHorizonObstacleLayout
+    {
+        public int cellIndex;
+        public int cycleType;
+        public int repetitionIndex;
+        public LastHorizonObstacleType type;
+        public float centerX;
+        public float surfaceY;
+        public float width;
+        public float phase;
+        public int rollerCount;
+
+        public float Start => centerX - width * .5f;
+        public float End => centerX + width * .5f;
+        public bool IsValid => type != LastHorizonObstacleType.None;
+    }
+
+    public struct LastHorizonSpecialPhaseLayout
+    {
+        public long key;
+        public int cycleIndex;
+        public int sequenceIndex;
+        public LastHorizonSpecialPhaseType type;
+        public float start;
+        public float end;
+        public float phase;
+        public float transitionLength;
+
+        public float Length => Mathf.Max(0f, end - start);
+        public float GapStart => type == LastHorizonSpecialPhaseType.RoofTransportCrusher
+            ? (start + end) * .5f - Mathf.Min(Length * .3f,
+                Mathf.Clamp(transitionLength, 24f, 64f)) * .5f
+            : start + Mathf.Min(transitionLength, Length * .25f);
+        public float GapEnd => type == LastHorizonSpecialPhaseType.RoofTransportCrusher
+            ? (start + end) * .5f + Mathf.Min(Length * .3f,
+                Mathf.Clamp(transitionLength, 24f, 64f)) * .5f
+            : end - Mathf.Min(transitionLength, Length * .25f);
+        public bool CreatesTerrainGap => type == LastHorizonSpecialPhaseType.DescendingVoidPlatforms ||
+                                         type == LastHorizonSpecialPhaseType.MovingExtremeTerrain ||
+                                         type == LastHorizonSpecialPhaseType.RoofTransportCrusher;
+        public bool IsValid => type != LastHorizonSpecialPhaseType.None && end > start;
+        public bool Contains(float worldX) => worldX >= start && worldX < end;
+        public bool ContainsGap(float worldX) => CreatesTerrainGap &&
+                                                 worldX >= GapStart && worldX < GapEnd;
+    }
+
     public static class TerrainGenerator
     {
         private const float TwoPi = Mathf.PI * 2f;
+        private static readonly Dictionary<long, LastHorizonSpecialPhaseLayout[]>
+            LastHorizonSpecialPhaseCache =
+                new Dictionary<long, LastHorizonSpecialPhaseLayout[]>();
         // Rainyer, Neon City, Mountains and Space use complete 2048 px Ground modules imported at
         // 100 PPU. Keeping their repeat at the native 20.48 m prevents horizontal stretching and
         // makes the sampled painted contact curve use the same source-pixel scale as the artwork.
@@ -367,6 +416,8 @@ namespace AnimeHillRacing.Terrain
 
         public static float SampleHeight(MapProfile profile, float worldX)
         {
+            if (profile != null && profile.useLastHorizonTerrain)
+                return SampleLastHorizonHeight(profile, worldX);
             if (profile != null && profile.useMountainsTerrain)
                 return SampleMountainsHeight(profile, worldX);
             if (profile != null && profile.useArenaTerrain)
@@ -387,6 +438,7 @@ namespace AnimeHillRacing.Terrain
         public static float SampleProfileHeight(MapProfile profile, float worldX)
         {
             if (profile == null) return 0f;
+            if (profile.useLastHorizonTerrain) return SampleLastHorizonHeight(profile, worldX);
             if (profile.useMountainsTerrain) return SampleMountainsHeight(profile, worldX);
             if (profile.useArenaTerrain) return SampleArenaHeight(profile, worldX);
             if (profile.useCityHighwayTerrain) return SampleCityHighwayHeight(profile, worldX);
@@ -1199,6 +1251,584 @@ namespace AnimeHillRacing.Terrain
             float b = Hash01(seed, (lower + 1) * 1597 + salt) * 2f - 1f;
             return Mathf.Lerp(a, b, t);
         }
+
+        public static void GetLastHorizonSpecialPhases(MapProfile profile, float start, float end,
+            List<LastHorizonSpecialPhaseLayout> results)
+        {
+            if (results == null) return;
+            results.Clear();
+            if (profile == null || !profile.useLastHorizonTerrain || profile.lastHorizon == null ||
+                end < 0f || end < start) return;
+
+            int firstCycle = Mathf.Max(0, Mathf.FloorToInt(Mathf.Max(0f, start) /
+                LastHorizonSettings.RequiredCycleLength));
+            int lastCycle = Mathf.Max(firstCycle, Mathf.FloorToInt(Mathf.Max(0f, end) /
+                LastHorizonSettings.RequiredCycleLength));
+            for (int cycle = firstCycle; cycle <= lastCycle; cycle++)
+            {
+                LastHorizonSpecialPhaseLayout[] phases = GetLastHorizonSpecialPhasesForCycle(profile, cycle);
+                for (int i = 0; i < phases.Length; i++)
+                    if (phases[i].end >= start && phases[i].start <= end)
+                        results.Add(phases[i]);
+            }
+            results.Sort((a, b) => a.start.CompareTo(b.start));
+        }
+
+        public static bool TryGetLastHorizonSpecialPhase(MapProfile profile, float worldX,
+            out LastHorizonSpecialPhaseLayout phase)
+        {
+            phase = default;
+            if (profile == null || !profile.useLastHorizonTerrain || profile.lastHorizon == null ||
+                worldX < 0f) return false;
+            int cycle = Mathf.FloorToInt(worldX / LastHorizonSettings.RequiredCycleLength);
+            LastHorizonSpecialPhaseLayout[] phases = GetLastHorizonSpecialPhasesForCycle(profile, cycle);
+            for (int i = 0; i < phases.Length; i++)
+                if (phases[i].Contains(worldX))
+                {
+                    phase = phases[i];
+                    return true;
+                }
+            return false;
+        }
+
+        public static bool TrySampleLastHorizonSpecialPickupSurface(MapProfile profile, float worldX,
+            out float surfaceY, out float pickupClearance)
+        {
+            surfaceY = 0f;
+            pickupClearance = .68f;
+            if (!TryGetLastHorizonSpecialPhase(profile, worldX,
+                    out LastHorizonSpecialPhaseLayout phase) || !phase.ContainsGap(worldX)) return false;
+
+            LastHorizonSettings settings = profile.lastHorizon;
+            switch (phase.type)
+            {
+                case LastHorizonSpecialPhaseType.DescendingVoidPlatforms:
+                {
+                    float progress = Mathf.InverseLerp(phase.GapStart, phase.GapEnd, worldX);
+                    float entryY = SampleLastHorizonHeight(profile, phase.GapStart);
+                    float exitY = SampleLastHorizonHeight(profile, phase.GapEnd);
+                    float descent = Mathf.Pow(
+                                        Mathf.Max(0f, Mathf.Sin(Mathf.PI * progress)), .78f) *
+                                    Mathf.Max(.5f, settings.voidPlatformMaximumDrop);
+                    surfaceY = Mathf.Lerp(entryY, exitY, progress) - descent;
+                    pickupClearance = 1.35f;
+                    return true;
+                }
+                case LastHorizonSpecialPhaseType.MovingExtremeTerrain:
+                    // The moving surface oscillates around the normal height. Extra clearance keeps
+                    // the can reachable throughout its full vertical travel and over the small spikes.
+                    surfaceY = SampleLastHorizonHeight(profile, worldX);
+                    pickupClearance = Mathf.Max(1.6f,
+                        settings.movingVerticalTravel + settings.extremeBumpHeight + .45f);
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        public static bool IsLastHorizonSpecialPhaseReserved(MapProfile profile, float worldX,
+            float margin = 0f)
+        {
+            if (profile == null || !profile.useLastHorizonTerrain || profile.lastHorizon == null ||
+                worldX < 0f) return false;
+            float safeMargin = Mathf.Max(0f, margin);
+            int centerCycle = Mathf.FloorToInt(worldX / LastHorizonSettings.RequiredCycleLength);
+            for (int cycle = Mathf.Max(0, centerCycle - 1); cycle <= centerCycle + 1; cycle++)
+            {
+                LastHorizonSpecialPhaseLayout[] phases = GetLastHorizonSpecialPhasesForCycle(profile, cycle);
+                for (int i = 0; i < phases.Length; i++)
+                    if (worldX >= phases[i].start - safeMargin && worldX <= phases[i].end + safeMargin)
+                        return true;
+            }
+            return false;
+        }
+
+        private static LastHorizonSpecialPhaseLayout[] GetLastHorizonSpecialPhasesForCycle(
+            MapProfile profile, int cycleIndex)
+        {
+            long cacheKey = ((long)profile.GetInstanceID() << 32) ^ (uint)cycleIndex;
+            if (LastHorizonSpecialPhaseCache.TryGetValue(cacheKey,
+                    out LastHorizonSpecialPhaseLayout[] cached)) return cached;
+
+            LastHorizonSettings settings = profile.lastHorizon;
+            uint seed = CombinedSeed(profile);
+            float cycleStart = cycleIndex * LastHorizonSettings.RequiredCycleLength;
+            float cycleEnd = cycleStart + LastHorizonSettings.RequiredCycleLength;
+            float transition = Mathf.Max(20f, settings.specialPhaseTransitionLength);
+            var phases = new List<LastHorizonSpecialPhaseLayout>(8);
+
+            AddRecurringLastHorizonPhases(phases, seed, cycleIndex, cycleStart, cycleEnd,
+                Mathf.Clamp(settings.movingTerrainInterval, 5000f, 7000f), 2000f,
+                settings.movingTerrainLengthRange, LastHorizonSpecialPhaseType.MovingExtremeTerrain,
+                transition, 4211);
+            AddRecurringLastHorizonPhases(phases, seed, cycleIndex, cycleStart, cycleEnd,
+                Mathf.Clamp(settings.voidPlatformInterval, 7000f, 10000f), 5000f,
+                settings.voidPlatformLengthRange, LastHorizonSpecialPhaseType.DescendingVoidPlatforms,
+                transition, 5279);
+            phases.Sort((a, b) => a.start.CompareTo(b.start));
+
+            var free = new List<Vector2>(6);
+            float cursor = cycleStart + (cycleIndex == 0
+                ? Mathf.Max(320f, settings.launchSafetyLength + 140f) : 320f);
+            float limit = cycleEnd - 320f;
+            float separation = Mathf.Max(20f, settings.specialPhaseSeparation);
+            for (int i = 0; i < phases.Count; i++)
+            {
+                float blockedStart = Mathf.Max(cycleStart, phases[i].start - separation);
+                float blockedEnd = Mathf.Min(cycleEnd, phases[i].end + separation);
+                if (blockedEnd <= cursor) continue;
+                if (blockedStart - cursor >= 240f) free.Add(new Vector2(cursor, blockedStart));
+                cursor = Mathf.Max(cursor, blockedEnd);
+            }
+            if (limit - cursor >= 240f) free.Add(new Vector2(cursor, limit));
+
+            int minimumRoofs = Mathf.Clamp(settings.minimumRoofZonesPerCycle, 2, 3);
+            int maximumRoofs = Mathf.Clamp(settings.maximumRoofZonesPerCycle, minimumRoofs, 3);
+            int roofCount = minimumRoofs;
+            if (maximumRoofs > minimumRoofs && Hash01(seed, cycleIndex * 6151 + 601) >= .45f)
+                roofCount++;
+            AddLastHorizonRoofPhases(phases, free, settings, seed, cycleIndex, roofCount, transition);
+            phases.Sort((a, b) => a.start.CompareTo(b.start));
+            cached = phases.ToArray();
+            LastHorizonSpecialPhaseCache[cacheKey] = cached;
+            return cached;
+        }
+
+        private static void AddRecurringLastHorizonPhases(List<LastHorizonSpecialPhaseLayout> phases,
+            uint seed, int cycleIndex, float cycleStart, float cycleEnd, float interval, float offset,
+            Vector2 lengthRange, LastHorizonSpecialPhaseType type, float transition, int salt)
+        {
+            float minimumLength = Mathf.Max(transition * 2f + 80f,
+                Mathf.Min(lengthRange.x, lengthRange.y));
+            float maximumLength = Mathf.Max(minimumLength, Mathf.Max(lengthRange.x, lengthRange.y));
+            int first = Mathf.FloorToInt((cycleStart - offset) / interval) - 1;
+            int last = Mathf.CeilToInt((cycleEnd - offset) / interval) + 1;
+            for (int sequence = Mathf.Max(0, first); sequence <= last; sequence++)
+            {
+                float phaseStart = offset + sequence * interval;
+                if (phaseStart < cycleStart || phaseStart >= cycleEnd) continue;
+                float length = Mathf.Lerp(minimumLength, maximumLength,
+                    Hash01(seed, sequence * 6203 + salt));
+                float phaseEnd = Mathf.Min(cycleEnd - 120f, phaseStart + length);
+                if (phaseEnd - phaseStart < minimumLength * .8f) continue;
+                phases.Add(new LastHorizonSpecialPhaseLayout
+                {
+                    key = LastHorizonPhaseKey(type, sequence),
+                    cycleIndex = cycleIndex,
+                    sequenceIndex = sequence,
+                    type = type,
+                    start = phaseStart,
+                    end = phaseEnd,
+                    phase = Hash01(seed, sequence * 6221 + salt + 17) * TwoPi,
+                    transitionLength = transition
+                });
+            }
+        }
+
+        private static void AddLastHorizonRoofPhases(List<LastHorizonSpecialPhaseLayout> phases,
+            List<Vector2> free, LastHorizonSettings settings, uint seed, int cycleIndex,
+            int roofCount, float transition)
+        {
+            float minimumLength = Mathf.Clamp(Mathf.Min(settings.roofLengthRange.x,
+                settings.roofLengthRange.y), 200f, 5000f);
+            float maximumLength = Mathf.Clamp(Mathf.Max(settings.roofLengthRange.x,
+                settings.roofLengthRange.y), minimumLength, 5000f);
+            free.RemoveAll(gap => gap.y - gap.x < minimumLength + 40f);
+            free.Sort((a, b) => (b.y - b.x).CompareTo(a.y - a.x));
+            int count = Mathf.Min(roofCount, free.Count);
+            for (int roof = 0; roof < count; roof++)
+            {
+                Vector2 gap = free[roof];
+                float available = Mathf.Max(minimumLength, gap.y - gap.x - 40f);
+                float roofMaximum = Mathf.Min(maximumLength, available);
+                float lengthRoll = Hash01(seed, cycleIndex * 6271 + roof * 89 + 701);
+                float length = Mathf.Lerp(minimumLength, roofMaximum, lengthRoll * lengthRoll);
+                float slack = Mathf.Max(0f, gap.y - gap.x - length - 40f);
+                float start = gap.x + 20f + slack *
+                    Hash01(seed, cycleIndex * 6287 + roof * 97 + 719);
+                int sequence = cycleIndex * 3 + roof;
+                LastHorizonSpecialPhaseType type = roof % 2 == 1
+                    ? LastHorizonSpecialPhaseType.RoofTransportCrusher
+                    : LastHorizonSpecialPhaseType.RoofTunnel;
+                phases.Add(new LastHorizonSpecialPhaseLayout
+                {
+                    key = LastHorizonPhaseKey(type, sequence),
+                    cycleIndex = cycleIndex,
+                    sequenceIndex = sequence,
+                    type = type,
+                    start = start,
+                    end = start + length,
+                    phase = Hash01(seed, cycleIndex * 6301 + roof * 101 + 733) * TwoPi,
+                    transitionLength = type == LastHorizonSpecialPhaseType.RoofTransportCrusher
+                        ? Mathf.Clamp(settings.roofTransportGapLength, 24f, 64f)
+                        : transition
+                });
+            }
+        }
+
+        private static long LastHorizonPhaseKey(LastHorizonSpecialPhaseType type, int sequence) =>
+            ((long)(int)type << 56) ^ (uint)sequence;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ClearLastHorizonSpecialPhaseCache() => LastHorizonSpecialPhaseCache.Clear();
+
+        public static int GetLastHorizonCycleType(float distance)
+        {
+            int cycle = Mathf.FloorToInt(Mathf.Max(0f, distance) /
+                                         LastHorizonSettings.RequiredCycleLength);
+            return PositiveModulo(cycle, 2);
+        }
+
+        public static int GetLastHorizonRepetitionIndex(float distance) => Mathf.Max(0,
+            Mathf.FloorToInt(Mathf.Max(0f, distance) / LastHorizonSettings.RequiredSystemLength));
+
+        public static int GetLastHorizonSegmentVariant(MapProfile profile, float distance)
+        {
+            if (profile == null) return 0;
+            LastHorizonSettings settings = profile.lastHorizon ?? new LastHorizonSettings();
+            float clampedDistance = Mathf.Max(0f, distance);
+            int cycleType = GetLastHorizonCycleType(clampedDistance);
+            int repetition = GetLastHorizonRepetitionIndex(clampedDistance);
+            float cycleLocal = Mathf.Repeat(clampedDistance, LastHorizonSettings.RequiredCycleLength);
+            int localSegment = Mathf.FloorToInt(cycleLocal / Mathf.Max(120f, settings.segmentLength));
+            const int segmentsPerChapter = 4;
+            const int chapterFamilyCount = 4;
+            int chapter = localSegment / segmentsPerChapter;
+            int chapterStage = PositiveModulo(localSegment, segmentsPerChapter);
+            uint seed = CombinedSeed(profile);
+
+            // A chapter always progresses through approach -> main feature -> variation -> recovery.
+            // Its family rotates on every 20 km repetition, so the route is coherent at short range
+            // without replaying the same mountain/mesa/valley/playground on the next system pass.
+            int previousOffset = -1;
+            int selectedOffset = 0;
+            for (int occurrence = 0; occurrence <= repetition; occurrence++)
+            {
+                int salt = cycleType * 100003 + occurrence * 7919 + 1709;
+                int offset = Mathf.Min(chapterFamilyCount - 1,
+                    Mathf.FloorToInt(Hash01(seed, salt) * chapterFamilyCount));
+                if (offset == previousOffset)
+                {
+                    int rotation = 1 + Mathf.FloorToInt(Hash01(seed, salt + 3571) *
+                                                         (chapterFamilyCount - 1));
+                    offset = (offset + rotation) % chapterFamilyCount;
+                }
+                previousOffset = offset;
+                selectedOffset = offset;
+            }
+            int family = PositiveModulo(chapter + selectedOffset, chapterFamilyCount);
+            return family * segmentsPerChapter + chapterStage;
+        }
+
+        public static float SampleLastHorizonHeight(MapProfile profile, float worldX)
+        {
+            if (profile == null) return 0f;
+            LastHorizonSettings settings = profile.lastHorizon ?? new LastHorizonSettings();
+            float distance = Mathf.Max(0f, worldX);
+            float cycleLength = LastHorizonSettings.RequiredCycleLength;
+            int cycleType = GetLastHorizonCycleType(distance);
+            int repetition = GetLastHorizonRepetitionIndex(distance);
+            float cycleLocal = Mathf.Repeat(distance, cycleLength);
+            float segmentLength = Mathf.Max(120f, settings.segmentLength);
+            int localSegment = Mathf.FloorToInt(cycleLocal / segmentLength);
+            float segmentT = Mathf.Repeat(cycleLocal, segmentLength) / segmentLength;
+            int variant = GetLastHorizonSegmentVariant(profile, distance);
+            uint seed = CombinedSeed(profile);
+            int segmentSalt = cycleType * 100003 + localSegment * 4099 + repetition * 7919;
+            float amplitudeVariation = Mathf.Lerp(.62f, 1.04f,
+                Hash01(seed, segmentSalt + 2203));
+            float maximumRelief = cycleType == 0
+                ? Mathf.Max(1f, settings.cycleOneMaximumRelief)
+                : Mathf.Max(1f, settings.cycleTwoMaximumRelief);
+            float shape = cycleType == 0
+                ? EvaluateLastHorizonCycleOne(variant, segmentT,
+                    Hash01(seed, segmentSalt + 2297))
+                : EvaluateLastHorizonCycleTwo(variant, segmentT,
+                    Hash01(seed, segmentSalt + 2333));
+
+            // Every 10 km identity block receives broad, repetition-specific relief that fades to
+            // zero at both cycle boundaries. It changes the skyline without creating a seam at 10/20 km.
+            float cycleEnvelope = Mathf.Pow(Mathf.Sin(Mathf.PI * cycleLocal / cycleLength), 2f);
+            float phaseA = Hash01(seed, cycleType * 503 + repetition * 881 + 31) * TwoPi;
+            float phaseB = Hash01(seed, cycleType * 557 + repetition * 929 + 47) * TwoPi;
+            float broad = (Mathf.Sin(cycleLocal * TwoPi / 2180f + phaseA) * .66f +
+                           Mathf.Sin(cycleLocal * TwoPi / 970f + phaseB) * .34f) *
+                          Mathf.Max(0f, settings.macroRelief) * cycleEnvelope;
+            float continuousBase = profile.baseHeight +
+                Mathf.Sin((distance + profile.seed * .031f) * TwoPi / 6200f) * 4.5f +
+                Mathf.Sin((distance + profile.seed * .071f) * TwoPi / 2670f) * 2f;
+            float generated = continuousBase + broad + shape * maximumRelief * amplitudeVariation;
+
+            float launchBlend = Smooth01(Mathf.InverseLerp(0f,
+                Mathf.Max(40f, settings.launchSafetyLength), distance));
+            float launch = profile.baseHeight + Mathf.Sin(distance * TwoPi / 92f) * .18f;
+            return Mathf.Lerp(launch, generated, launchBlend);
+        }
+
+        private static float EvaluateLastHorizonCycleOne(int variant, float t, float detail)
+        {
+            float x = Mathf.Clamp01(t);
+            float envelope = Mathf.Pow(Mathf.Max(0f, Mathf.Sin(Mathf.PI * x)), 1.15f);
+            switch (variant)
+            {
+                // Mountain-pass chapter: foothills, summit, ridgeline and a soft recovery valley.
+                case 0:
+                    return Mathf.Pow(Mathf.Max(0f, Mathf.Sin(Mathf.PI * x)), 1.45f) * .42f;
+                case 1: return LastHorizonAsymmetricPulse(x, .62f, .70f);
+                case 2:
+                    return LastHorizonPlateau(x, .20f, .80f) * .76f +
+                           envelope * Mathf.Sin(6f * Mathf.PI * x + detail * TwoPi) * .055f;
+                case 3:
+                    return -LastHorizonAsymmetricPulse(x, .40f, 1.05f) * .36f +
+                           Mathf.Sin(TwoPi * x) * envelope * .08f;
+
+                // Mesa chapter: long ramps, fast plateaus, terraces and a controlled descent.
+                case 4: return LastHorizonPlateau(x, .30f, .74f) * .62f;
+                case 5:
+                    return LastHorizonPlateau(x, .12f, .88f) * .18f +
+                           envelope * Mathf.Sin(8f * Mathf.PI * x) * .025f;
+                case 6:
+                    return LastHorizonTerraces(x) * .70f +
+                           envelope * Mathf.Sin(6f * Mathf.PI * x + detail) * .035f;
+                case 7: return -LastHorizonAsymmetricPulse(x, .68f, .72f) * .30f;
+
+                // Valley chapter: entry drop, deep bowl, camelbacks and a breathing sprint.
+                case 8: return -LastHorizonAsymmetricPulse(x, .70f, .92f) * .38f;
+                case 9:
+                    return -Mathf.Pow(Mathf.Max(0f, Mathf.Sin(Mathf.PI * x)), .78f) * .86f +
+                           Mathf.Pow(Mathf.Sin(TwoPi * x), 2f) * .12f;
+                case 10: return LastHorizonWhoops(x, 2f, 1.55f) * .58f;
+                case 11: return Mathf.Sin(4f * Mathf.PI * x) * envelope * .055f;
+
+                // Playground chapter: whoops, alternating humps, tabletop and obstacle staging flat.
+                case 12: return LastHorizonWhoops(x, 5f, 1.65f) * .23f;
+                case 13:
+                    return envelope * (Mathf.Sin(4f * Mathf.PI * x) * .25f +
+                                       Mathf.Sin(8f * Mathf.PI * x + detail * TwoPi) * .10f);
+                case 14: return LastHorizonPlateau(x, .24f, .68f) * .68f;
+                default: return Mathf.Sin(TwoPi * x) * envelope * .035f;
+            }
+        }
+
+        private static float EvaluateLastHorizonCycleTwo(int variant, float t, float detail)
+        {
+            float x = Mathf.Clamp01(t);
+            float envelope = Mathf.Pow(Mathf.Max(0f, Mathf.Sin(Mathf.PI * x)), 1.2f);
+            switch (variant)
+            {
+                // Technical pass: broken foothills, asymmetric summit, narrow ridge, recovery.
+                case 0:
+                    return envelope * (Mathf.Sin(4f * Mathf.PI * x) * .27f +
+                                       Mathf.Sin(10f * Mathf.PI * x + detail * TwoPi) * .09f);
+                case 1:
+                    return LastHorizonAsymmetricPulse(x, .38f, .48f) * .82f -
+                           LastHorizonAsymmetricPulse(x, .78f, 1.25f) * .28f;
+                case 2:
+                    return LastHorizonPlateau(x, .34f, .63f) * .82f +
+                           envelope * Mathf.Sin(8f * Mathf.PI * x) * .06f;
+                case 3: return -LastHorizonAsymmetricPulse(x, .56f, .92f) * .32f;
+
+                // Mechanical mesa: steeper tables, split deck, stairs and downhill rhythm.
+                case 4: return LastHorizonPlateau(x, .18f, .74f) * .78f;
+                case 5:
+                    return (LastHorizonPlateau(x, .10f, .43f) * .48f +
+                            LastHorizonPlateau(Mathf.Clamp01((x - .42f) / .58f), .22f, .78f) * .62f) *
+                           envelope;
+                case 6:
+                    return LastHorizonTerraces(x) * .82f +
+                           LastHorizonWhoops(x, 4f, 2f) * .08f;
+                case 7:
+                    return -LastHorizonAsymmetricPulse(x, .72f, .58f) * .42f +
+                           envelope * Mathf.Sin(6f * Mathf.PI * x) * .10f;
+
+                // Ravine chapter: bowls and counter-crests with safe exits.
+                case 8:
+                    return -Mathf.Pow(Mathf.Max(0f, Mathf.Sin(Mathf.PI * x)), .64f) * .92f;
+                case 9:
+                    return envelope * (Mathf.Sin(TwoPi * x) * .72f -
+                                       Mathf.Sin(4f * Mathf.PI * x + detail) * .16f);
+                case 10: return LastHorizonWhoops(x, 2f, 1.25f) * .72f - envelope * .20f;
+                case 11: return Mathf.Sin(4f * Mathf.PI * x) * envelope * .09f;
+
+                // Technical playground: denser but bounded obstacles separated by a staging flat.
+                case 12: return LastHorizonWhoops(x, 6f, 1.85f) * .28f;
+                case 13:
+                    return envelope * (Mathf.Sin(5f * Mathf.PI * x) * .32f +
+                                       Mathf.Sin(9f * Mathf.PI * x + detail * TwoPi) * .14f);
+                case 14:
+                    return LastHorizonPlateau(x, .20f, .72f) * .58f +
+                           LastHorizonWhoops(x, 3f, 2.2f) * .12f;
+                default: return Mathf.Sin(6f * Mathf.PI * x) * envelope * .035f;
+            }
+        }
+
+        private static float LastHorizonPlateau(float t, float riseEnd, float fallStart)
+        {
+            float x = Mathf.Clamp01(t);
+            float rise = Smooth01(Mathf.InverseLerp(0f, Mathf.Max(.01f, riseEnd), x));
+            float fall = 1f - Smooth01(Mathf.InverseLerp(Mathf.Min(.99f, fallStart), 1f, x));
+            return rise * fall;
+        }
+
+        private static float LastHorizonTerraces(float t)
+        {
+            float x = Mathf.Clamp01(t);
+            float climb = (Smooth01(Mathf.InverseLerp(.05f, .16f, x)) +
+                           Smooth01(Mathf.InverseLerp(.20f, .31f, x)) +
+                           Smooth01(Mathf.InverseLerp(.35f, .46f, x))) / 3f;
+            float descent = ((1f - Smooth01(Mathf.InverseLerp(.54f, .65f, x))) +
+                             (1f - Smooth01(Mathf.InverseLerp(.69f, .80f, x))) +
+                             (1f - Smooth01(Mathf.InverseLerp(.84f, .95f, x)))) / 3f;
+            return Mathf.Min(climb, descent);
+        }
+
+        private static float LastHorizonWhoops(float t, float count, float power)
+        {
+            float x = Mathf.Clamp01(t);
+            float envelope = Mathf.Pow(Mathf.Max(0f, Mathf.Sin(Mathf.PI * x)), 1.15f);
+            float wave = Mathf.Abs(Mathf.Sin(Mathf.Max(1f, count) * Mathf.PI * x));
+            return Mathf.Pow(wave, Mathf.Max(.25f, power)) * envelope;
+        }
+
+        private static float LastHorizonAsymmetricPulse(float t, float centre, float power)
+        {
+            float distance = t < centre
+                ? (centre - t) / Mathf.Max(.001f, centre)
+                : (t - centre) / Mathf.Max(.001f, 1f - centre);
+            return Mathf.Pow(Mathf.Clamp01(1f - distance), Mathf.Max(.25f, power));
+        }
+
+        public static bool TryGetLastHorizonObstacle(MapProfile profile, int cellIndex,
+            out LastHorizonObstacleLayout layout)
+        {
+            layout = default;
+            if (profile == null || !profile.useLastHorizonTerrain || profile.lastHorizon == null ||
+                cellIndex < 0) return false;
+            LastHorizonSettings settings = profile.lastHorizon;
+            float cellLength = Mathf.Max(180f, settings.obstacleCellLength);
+            uint seed = CombinedSeed(profile);
+            float cellStart = cellIndex * cellLength;
+            float center = cellStart + cellLength * Mathf.Lerp(.32f, .68f,
+                Hash01(seed, cellIndex * 3571 + 101));
+            if (center < settings.obstacleStartSafety) return false;
+            if (IsLastHorizonSpecialPhaseReserved(profile, center,
+                    Mathf.Max(20f, settings.specialPhaseSeparation))) return false;
+            float cycleLocal = Mathf.Repeat(center, LastHorizonSettings.RequiredCycleLength);
+            if (cycleLocal < 90f || cycleLocal > LastHorizonSettings.RequiredCycleLength - 90f)
+                return false;
+            int cycleType = GetLastHorizonCycleType(center);
+            float chance = cycleType == 0 ? settings.cycleOneObstacleChance : settings.cycleTwoObstacleChance;
+            int terrainVariant = GetLastHorizonSegmentVariant(profile, center);
+            int chapterStage = PositiveModulo(terrainVariant, 4);
+            // Staging/recovery pieces intentionally host more physical interactions. Major summit and
+            // ravine pieces keep a lower density so the authored terrain remains readable and fair.
+            chance += chapterStage == 3 ? .14f : chapterStage == 1 ? -.08f : 0f;
+            if (Hash01(seed, cellIndex * 3581 + 113) >= Mathf.Clamp01(chance)) return false;
+
+            float typeRoll = Hash01(seed, cellIndex * 3593 + 127);
+            LastHorizonObstacleType type = cycleType == 0
+                ? (typeRoll < .38f ? LastHorizonObstacleType.Seesaw :
+                    typeRoll < .60f ? LastHorizonObstacleType.Rollers :
+                    typeRoll < .76f ? LastHorizonObstacleType.LiftPlatform :
+                    typeRoll < .90f ? LastHorizonObstacleType.TiltingPlatform :
+                    LastHorizonObstacleType.Ramp)
+                : (typeRoll < .25f ? LastHorizonObstacleType.Seesaw :
+                    typeRoll < .47f ? LastHorizonObstacleType.LiftPlatform :
+                    typeRoll < .70f ? LastHorizonObstacleType.Rollers :
+                    typeRoll < .86f ? LastHorizonObstacleType.TiltingPlatform :
+                    LastHorizonObstacleType.Ramp);
+            int rollerCount = type == LastHorizonObstacleType.Rollers
+                ? 2 + Mathf.FloorToInt(Hash01(seed, cellIndex * 3613 + 139) *
+                                       Mathf.Max(1, settings.maximumRollers - 1)) : 0;
+            rollerCount = Mathf.Clamp(rollerCount, 0, Mathf.Max(1, settings.maximumRollers));
+            float width = type == LastHorizonObstacleType.Seesaw ? settings.seesawWidth :
+                type == LastHorizonObstacleType.LiftPlatform ? settings.liftWidth :
+                type == LastHorizonObstacleType.TiltingPlatform ? settings.tiltingPlatformWidth :
+                type == LastHorizonObstacleType.Ramp ? settings.seesawWidth :
+                rollerCount * settings.rollerRadius * 2.35f + settings.safeVehicleLength;
+            width = Mathf.Max(width, settings.safeVehicleLength + settings.obstacleSafetyMargin * 2f);
+            center = FindLastHorizonObstacleSupport(profile, settings, center, cellStart,
+                cellStart + cellLength, width, cycleType);
+            float phaseMargin = Mathf.Max(20f, settings.specialPhaseSeparation);
+            if (IsLastHorizonSpecialPhaseReserved(profile, center - width * .5f, phaseMargin) ||
+                IsLastHorizonSpecialPhaseReserved(profile, center, phaseMargin) ||
+                IsLastHorizonSpecialPhaseReserved(profile, center + width * .5f, phaseMargin)) return false;
+            layout = new LastHorizonObstacleLayout
+            {
+                cellIndex = cellIndex,
+                cycleType = cycleType,
+                repetitionIndex = GetLastHorizonRepetitionIndex(center),
+                type = type,
+                centerX = center,
+                surfaceY = SampleLastHorizonHeight(profile, center),
+                width = width,
+                phase = Hash01(seed, cellIndex * 3631 + 151) * TwoPi,
+                rollerCount = rollerCount
+            };
+            return true;
+        }
+
+        private static float FindLastHorizonObstacleSupport(MapProfile profile,
+            LastHorizonSettings settings, float proposedCenter, float cellStart, float cellEnd,
+            float width, int cycleType)
+        {
+            float halfWidth = width * .5f;
+            float inset = halfWidth + Mathf.Max(2f, settings.obstacleSafetyMargin);
+            float minimum = cellStart + inset;
+            float maximum = cellEnd - inset;
+            if (maximum <= minimum) return proposedCenter;
+
+            float bestCenter = Mathf.Clamp(proposedCenter, minimum, maximum);
+            float bestScore = float.MaxValue;
+            const float searchStep = 24f;
+            for (int search = 0; search <= 8; search++)
+            {
+                float offset = search == 0 ? 0f : ((search + 1) / 2) * searchStep *
+                    (search % 2 == 1 ? -1f : 1f);
+                float candidate = Mathf.Clamp(proposedCenter + offset, minimum, maximum);
+                if (GetLastHorizonCycleType(candidate) != cycleType) continue;
+                float cycleLocal = Mathf.Repeat(candidate, LastHorizonSettings.RequiredCycleLength);
+                if (cycleLocal < 90f + halfWidth ||
+                    cycleLocal > LastHorizonSettings.RequiredCycleLength - 90f - halfWidth) continue;
+
+                float left = SampleLastHorizonHeight(profile, candidate - halfWidth);
+                float middle = SampleLastHorizonHeight(profile, candidate);
+                float right = SampleLastHorizonHeight(profile, candidate + halfWidth);
+                float leftAngle = Mathf.Abs(Mathf.Atan2(middle - left, halfWidth) * Mathf.Rad2Deg);
+                float rightAngle = Mathf.Abs(Mathf.Atan2(right - middle, halfWidth) * Mathf.Rad2Deg);
+                float score = Mathf.Max(leftAngle, rightAngle) + Mathf.Abs(left - right) * 1.5f;
+                if (score >= bestScore) continue;
+                bestScore = score;
+                bestCenter = candidate;
+                if (score <= 10f) break;
+            }
+            return bestCenter;
+        }
+
+        public static bool TryGetLastHorizonObstacleNearDistance(MapProfile profile, float worldX,
+            out LastHorizonObstacleLayout layout)
+        {
+            layout = default;
+            if (profile == null || !profile.useLastHorizonTerrain || profile.lastHorizon == null)
+                return false;
+            float cellLength = Mathf.Max(180f, profile.lastHorizon.obstacleCellLength);
+            int cell = Mathf.FloorToInt(Mathf.Max(0f, worldX) / cellLength);
+            for (int offset = -1; offset <= 1; offset++)
+            {
+                if (!TryGetLastHorizonObstacle(profile, cell + offset, out LastHorizonObstacleLayout candidate))
+                    continue;
+                float margin = Mathf.Max(.5f, profile.lastHorizon.obstacleSafetyMargin);
+                if (worldX >= candidate.Start - margin && worldX <= candidate.End + margin)
+                {
+                    layout = candidate;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public static bool IsLastHorizonObstacleReserved(MapProfile profile, float worldX) =>
+            TryGetLastHorizonObstacleNearDistance(profile, worldX, out _);
 
         private static float SampleProceduralProfileHeight(MapProfile profile, float worldX)
         {
@@ -2026,6 +2656,10 @@ namespace AnimeHillRacing.Terrain
 
         public static bool IsTerrainGap(MapProfile profile, float worldX)
         {
+            if (profile != null && profile.useLastHorizonTerrain &&
+                TryGetLastHorizonSpecialPhase(profile, worldX,
+                    out LastHorizonSpecialPhaseLayout lastHorizonPhase) &&
+                lastHorizonPhase.ContainsGap(worldX)) return true;
             if (profile != null && profile.useArenaTerrain) return IsArenaGap(profile, worldX);
             if (profile != null && profile.useCityBridges &&
                 TryGetCityBridgeGapAtDistance(profile, worldX, out _)) return true;

@@ -238,6 +238,11 @@ namespace AnimeHillRacing.UI
                         continue;
                     }
                 }
+                if (character == '\n')
+                {
+                    currentLine = null;
+                    continue;
+                }
                 if (char.IsWhiteSpace(character)) continue;
                 if (!TryTakeVisibleQuad(generatedVertices, ref quadIndex, unitsPerPixel, roundingOffset,
                     out UIVertex[] quad))
@@ -247,8 +252,7 @@ namespace AnimeHillRacing.UI
                 GetQuadBounds(quad, out float minX, out float maxX, out float minY, out float maxY);
                 float height = Mathf.Max(.0001f, maxY - minY);
                 float centerY = (minY + maxY) * .5f;
-                if (currentLine == null || Mathf.Abs(currentLine.centerY - centerY) >
-                    Mathf.Max(currentLine.referenceHeight, height) * .45f)
+                if (currentLine == null || BeginsWrappedLine(currentLine, minX, centerY, height))
                 {
                     currentLine = new LineLayout { centerY = centerY, referenceHeight = height };
                     lines.Add(currentLine);
@@ -272,6 +276,20 @@ namespace AnimeHillRacing.UI
 
             for (int i = 0; i < lines.Count; i++)
                 AddReflowedLine(vertexHelper, lines[i], extents.x);
+        }
+
+        private static bool BeginsWrappedLine(LineLayout currentLine, float sourceMinX,
+            float centerY, float height)
+        {
+            if (currentLine == null || currentLine.glyphs.Count == 0) return true;
+            GlyphLayout previous = currentLine.glyphs[currentLine.glyphs.Count - 1];
+            float referenceHeight = Mathf.Max(currentLine.referenceHeight, height);
+            bool movedToAnotherBaseline = Mathf.Abs(currentLine.centerY - centerY) >
+                                          referenceHeight * .45f;
+            bool resetToLineStart = sourceMinX < previous.sourceMinX - referenceHeight * .15f;
+            // Short punctuation such as ',' sits on a lower visual centre than digits. A baseline
+            // change alone must not split it into an independently aligned pseudo-line.
+            return movedToAnotherBaseline && resetToLineStart;
         }
 
         private static Color32 Multiply(Color32 left, Color right)

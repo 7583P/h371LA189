@@ -22,6 +22,18 @@ namespace AnimeHillRacing.Editor
         private const string StarterWheel = "formula-wheel-luxury";
         private const string StarterAccessory = "baseball-cap-rainbow";
 
+        private static readonly string[] GemProductIds =
+        {
+            "gems_300", "gems_900", "gems_2000", "gems_5000",
+            "gems_10000", "gems_25000", "gems_50000", "gems_100000"
+        };
+
+        private static readonly int[] GemAmounts =
+            { 300, 900, 2000, 5000, 10000, 25000, 50000, 100000 };
+
+        private static readonly string[] GemReferenceUsdPrices =
+            { "$0.99", "$2.59", "$4.99", "$9.99", "$15.99", "$29.99", "$49.99", "$79.99" };
+
         private static readonly Dictionary<string, string> Leaderboards =
             new Dictionary<string, string>(StringComparer.Ordinal)
             {
@@ -31,7 +43,8 @@ namespace AnimeHillRacing.Editor
                 { "Mountains", "CgkIv97xxuweEAIQBA" },
                 { "Rainyer", "CgkIv97xxuweEAIQBQ" },
                 { "Space", "CgkIv97xxuweEAIQBg" },
-                { "NorthPole", "CgkIv97xxuweEAIQBw" }
+                { "NorthPole", "CgkIv97xxuweEAIQBw" },
+                { "LastHorizon", "CgkIv97xxuweEAIQCA" }
             };
 
         public static void ConfigureAndValidateBatch()
@@ -147,6 +160,14 @@ namespace AnimeHillRacing.Editor
                 throw new InvalidOperationException("Starter Pack reward configuration mismatch.");
             if (!starter.enableCloudSave || starter.cloudSaveFilename != CloudSaveFilename)
                 throw new InvalidOperationException("Google Play Saved Games configuration mismatch.");
+            IReadOnlyList<GemPackProduct> gemPacks = GemPackCatalog.Products;
+            if (gemPacks.Count != GemProductIds.Length)
+                throw new InvalidOperationException("Gem product count mismatch.");
+            for (int i = 0; i < gemPacks.Count; i++)
+                if (gemPacks[i].ProductId != GemProductIds[i] ||
+                    gemPacks[i].GemAmount != GemAmounts[i] ||
+                    gemPacks[i].ReferenceUsdPrice != GemReferenceUsdPrices[i])
+                    throw new InvalidOperationException("Gem product mismatch at index " + i + ".");
             if (!File.Exists("Assets/Plugins/Android/GooglePlayGamesManifest.androidlib/AndroidManifest.xml"))
                 throw new InvalidOperationException("Generated GPGS Android manifest missing.");
         }

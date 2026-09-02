@@ -276,8 +276,8 @@ namespace AnimeHillRacing.Core
             }
             else if (State == RunState.CrashPending)
             {
-                if (vehicle.FuelNormalized <= 0f && EndReason != RunEndReason.DriverDownAndOutOfFuel)
-                    EndReason = RunEndReason.DriverDownAndOutOfFuel;
+                if (vehicle.FuelNormalized <= 0f)
+                    EndReason = WithOutOfFuel(EndReason);
             }
             else if (State == RunState.Running && vehicle.FuelNormalized <= 0f)
             {
@@ -358,19 +358,16 @@ namespace AnimeHillRacing.Core
                 }
                 else if (State == RunState.CrashPending)
                 {
-                    EndReason = RunEndReason.DriverDownAndOutOfFuel;
+                    EndReason = WithOutOfFuel(EndReason);
                 }
                 return;
             }
 
             if (State == RunState.Results) return;
 
-            bool isDriverDown = reason == RunEndReason.DriverDown || reason == RunEndReason.Crashed;
-
             if (State == RunState.OutOfFuelPending)
             {
-                // Both occurred: Driver crashed while running out of fuel
-                EndReason = RunEndReason.DriverDownAndOutOfFuel;
+                EndReason = WithOutOfFuel(reason);
                 State = RunState.CrashPending;
                 DisableDrivingAndControls();
                 // Crucial: Keep the running countdown without resetting it!
@@ -380,16 +377,14 @@ namespace AnimeHillRacing.Core
             if (State == RunState.CrashPending)
             {
                 if (vehicle != null && vehicle.FuelNormalized <= 0f)
-                {
-                    EndReason = RunEndReason.DriverDownAndOutOfFuel;
-                }
+                    EndReason = WithOutOfFuel(EndReason);
                 return;
             }
 
             // Normal crash start
             State = RunState.CrashPending;
             bool outOfFuel = vehicle != null && vehicle.FuelNormalized <= 0f;
-            EndReason = (isDriverDown && outOfFuel) ? RunEndReason.DriverDownAndOutOfFuel : (isDriverDown ? RunEndReason.DriverDown : reason);
+            EndReason = outOfFuel ? WithOutOfFuel(reason) : reason;
             DisableDrivingAndControls();
             gameOverDeadline = Time.time + resultsDelay;
             if (gameOverRoutine != null) StopCoroutine(gameOverRoutine);
@@ -400,7 +395,7 @@ namespace AnimeHillRacing.Core
         {
             if (State == RunState.CrashPending)
             {
-                EndReason = RunEndReason.DriverDownAndOutOfFuel;
+                EndReason = WithOutOfFuel(EndReason);
                 return;
             }
             if (State != RunState.Running) return;
@@ -409,6 +404,17 @@ namespace AnimeHillRacing.Core
             gameOverDeadline = Time.time + resultsDelay;
             if (gameOverRoutine != null) StopCoroutine(gameOverRoutine);
             gameOverRoutine = StartCoroutine(ShowResultsAfterDeadline());
+        }
+
+        private static RunEndReason WithOutOfFuel(RunEndReason reason)
+        {
+            if (reason == RunEndReason.DriverDown ||
+                reason == RunEndReason.DriverDownAndOutOfFuel)
+                return RunEndReason.DriverDownAndOutOfFuel;
+            if (reason == RunEndReason.Crashed ||
+                reason == RunEndReason.CrashedAndOutOfFuel)
+                return RunEndReason.CrashedAndOutOfFuel;
+            return RunEndReason.OutOfFuel;
         }
 
         private void CancelOutOfFuelCountdown()

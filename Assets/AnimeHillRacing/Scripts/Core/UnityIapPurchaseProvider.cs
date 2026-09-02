@@ -208,12 +208,13 @@ namespace AnimeHillRacing.Core
         {
             bool fulfilled = true;
             bool foundProduct = false;
+            string transactionId = order?.Info?.TransactionID ?? string.Empty;
             foreach (CartItem item in order.CartOrdered.Items())
             {
                 string productId = item?.Product?.definition?.id;
                 if (string.IsNullOrWhiteSpace(productId)) continue;
                 foundProduct = true;
-                if (!entitlements.TryFulfillNewPurchase(productId, out string error))
+                if (!entitlements.TryFulfillNewPurchase(productId, transactionId, out string error))
                 {
                     fulfilled = false;
                     Debug.LogError($"[IAP] Fulfillment failed for {productId}: {error}");
@@ -280,7 +281,7 @@ namespace AnimeHillRacing.Core
                 {
                     string productId = item?.Product?.definition?.id;
                     if (string.IsNullOrWhiteSpace(productId) || restored.Contains(productId) ||
-                        !entitlements.Contains(productId)) continue;
+                        !entitlements.Contains(productId) || entitlements.IsConsumable(productId)) continue;
                     if (entitlements.TryRestorePermanentEntitlement(productId, out string error))
                     {
                         restored.Add(productId);

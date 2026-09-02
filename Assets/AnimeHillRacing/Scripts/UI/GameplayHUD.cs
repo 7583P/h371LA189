@@ -449,9 +449,10 @@ namespace AnimeHillRacing.UI
                 runtimeFuel.CurrentFuel, runtimeFuel.CurrentConsumptionPerSecond,
                 lowFuelWarningSeconds);
             bool showDepletedImage = normalizedFuel <= 0f &&
-                                     (gameManager.State == RunState.OutOfFuelPending ||
-                                      gameManager.State == RunState.OutOfFuelFinal ||
-                                      gameManager.EndReason == RunEndReason.DriverDownAndOutOfFuel);
+                                      (gameManager.State == RunState.OutOfFuelPending ||
+                                       gameManager.State == RunState.OutOfFuelFinal ||
+                                       gameManager.EndReason == RunEndReason.DriverDownAndOutOfFuel ||
+                                       gameManager.EndReason == RunEndReason.CrashedAndOutOfFuel);
             SetLowFuelWarningVisible(showLowFuelImage || showDepletedImage);
             if (fuelText != null) fuelText.text = $"{normalizedFuel * 100f:0}%";
             if (fuelFill != null)
@@ -493,7 +494,9 @@ namespace AnimeHillRacing.UI
                 else if (gameManager.State == RunState.OutOfFuelFinal)
                 {
                     statusText.text = gameManager.EndReason == RunEndReason.DriverDownAndOutOfFuel
-                        ? "DRIVER DOWN\nOUT OF FUEL" : "OUT OF FUEL";
+                        ? "DRIVER DOWN\nOUT OF FUEL"
+                        : gameManager.EndReason == RunEndReason.CrashedAndOutOfFuel
+                            ? "CRASHED\nOUT OF FUEL" : "OUT OF FUEL";
                     showingCountdown = true;
                 }
                 else if (gameManager.ShowDistanceBonus)
@@ -584,9 +587,13 @@ namespace AnimeHillRacing.UI
             int seconds = Mathf.Max(1, Mathf.CeilToInt(Mathf.Max(0f, remainingSeconds)));
             if (reason == RunEndReason.DriverDownAndOutOfFuel)
                 return $"DRIVER DOWN\nOUT OF FUEL\n{seconds}";
+            if (reason == RunEndReason.CrashedAndOutOfFuel)
+                return $"CRASHED\nOUT OF FUEL\n{seconds}";
             if (reason == RunEndReason.OutOfFuel)
                 return $"OUT OF FUEL\n{seconds}";
-            return $"DRIVER DOWN\n{seconds}";
+            return reason == RunEndReason.Crashed
+                ? $"CRASHED\n{seconds}"
+                : $"DRIVER DOWN\n{seconds}";
         }
 
         private static void SetNeedle(RectTransform needle, float normalized, float zeroAngle, float fullAngle)

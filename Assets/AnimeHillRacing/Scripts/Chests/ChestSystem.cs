@@ -101,6 +101,18 @@ namespace AnimeHillRacing.Chests
                 if (target == null || target.state != ChestState.ReadyToClaim || target.rewardClaimed)
                     return false;
 
+                // Chests saved by versions before Gem rewards existed receive a valid tier reward
+                // when claimed instead of remaining at the legacy serialized value of zero.
+                ChestDefinition definition = catalog?.chestCatalog?.Find(target.type);
+                if (definition != null)
+                {
+                    int minimumGems = Mathf.Max(0, definition.minimumGems);
+                    int maximumGems = Mathf.Max(minimumGems, definition.maximumGems);
+                    if (target.gemReward < minimumGems || target.gemReward > maximumGems)
+                        target.gemReward = maximumGems > minimumGems
+                            ? Random.Range(minimumGems, maximumGems + 1) : minimumGems;
+                }
+
                 BundleDefinition bundle = ResolveClaimBundle(catalog, target);
                 target.rewardClaimed = true;
                 target.state = ChestState.Claimed;

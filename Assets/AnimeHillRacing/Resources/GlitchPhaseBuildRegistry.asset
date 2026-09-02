@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7cb66779304143da8e09d7fbbd10b027, type: 3}
+  m_Name: GlitchPhaseBuildRegistry
+  m_EditorClassIdentifier: Assembly-CSharp::AnimeHillRacing.Core.GlitchPhaseBuildRegistry
+  sprites:
+  - {fileID: 21300000, guid: a80a89931dd074b12b7586df78a72fe6, type: 3}
+  - {fileID: 21300000, guid: 9b00533d627d5ccf0aaa1512b3228298, type: 3}
+  - {fileID: 21300000, guid: 6282b80b256606dcce63b5cd20f1d429, type: 3}
+  - {fileID: 21300000, guid: 1491d1ea771d0147e0872d014d858f7f, type: 3}
+  - {fileID: 21300000, guid: e0e92ed454fdce3480d9c0fa137dd543, type: 3}
+  - {fileID: 21300000, guid: 50ee2ed5dd87404f6c7c2785f21b48cc, type: 3}
+  - {fileID: 21300000, guid: 73f9e86f5a832b07068d9aff30282a76, type: 3}
+  - {fileID: 21300000, guid: b0c87d9d6dd6584275d3ee96422b9ff7, type: 3}
+  - {fileID: 21300000, guid: 825b701390069f8b36134a7a84ccff14, type: 3}
+  - {fileID: 21300000, guid: ec4dfa432cd4df09f7c572647a61b681, type: 3}
+  - {fileID: 21300000, guid: 5cb3735de94451353e235175ee40fbf2, type: 3}
+  - {fileID: 21300000, guid: 6b5aa42568d4f153ebd1ba70f91e6ad9, type: 3}
+  - {fileID: 21300000, guid: 24ea109ae1efdbb858eaf4c6b8f7ee4c, type: 3}
+  - {fileID: 21300000, guid: de39424dcecc8913e4b3188d06d8fab2, type: 3}
+  - {fileID: 21300000, guid: 20404ae04bfb0d8c065c5980710fef76, type: 3}
+  - {fileID: 21300000, guid: e4b709dba42e9e9d53a6555c4105c952, type: 3}
+  - {fileID: 21300000, guid: 543073d8c96d12e01f4da1e7e9c9d55b, type: 3}
+  - {fileID: 21300000, guid: cb4aa02babc514dd6db2faac8d406ec5, type: 3}
+  crystalTideShader: {fileID: 4800000, guid: b94fb6803b9848bda952a6efcfc2ab61, type: 3}

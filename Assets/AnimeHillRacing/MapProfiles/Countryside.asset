@@ -126,7 +126,7 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   maximumDifficulty: 1
-  introductoryAmplitude: 0.16
+  introductoryAmplitude: 0.12
   sectionLength: 52
   recoveryEverySections: 5
   technicalSectionChance: 0.48
@@ -147,14 +147,14 @@ MonoBehaviour:
     miniHillMinimumWavelength: 30
     miniHillMaximumWavelength: 96
     initialMiniHillHeight: 0.45
-    peakMiniHillHeight: 5.5
+    peakMiniHillHeight: 3.4
     microSectionLength: 66
     initialMicroHeight: 0.28
     peakMicroHeight: 2.4
-    miniStraightChance: 0
+    miniStraightChance: 0.36
     miniStraightBumpCount: 3
-    initialChallengeStraightChance: 0
-    peakChallengeStraightChance: 0
+    initialChallengeStraightChance: 0.34
+    peakChallengeStraightChance: 0.26
     straightDescentChance: 0.42
     challengeStartDistance: 350
     challengeMinimumCellLength: 135
@@ -166,18 +166,18 @@ MonoBehaviour:
     initialDeepValleyChance: 0.12
     peakDeepValleyChance: 0.46
     valleyDepthMultiplier: 1.08
-    eventInterval: 2250
-    firstEventDistance: 1500
-    eventChance: 1
-    longFlatChance: 1
-    transitionLength: 60
-    longFlatLengths: {x: 150, y: 150}
+    eventInterval: 500
+    firstEventDistance: 260
+    eventChance: 0.88
+    longFlatChance: 0.58
+    transitionLength: 45
+    longFlatLengths: {x: 150, y: 200}
     slashFlatLead: 18
     slashLength: 96
     slashHeight: 18
-    maximumStartJitter: 750
-  maxSlopeAngle: 60
-  maxHeightDeltaPerSample: 12
+    maximumStartJitter: 70
+  maxSlopeAngle: 38
+  maxHeightDeltaPerSample: 1.3021427
   minimumValleyWidth: 20
   minimumLandingLength: 16
   maximumCrestSharpness: 14
@@ -357,6 +357,67 @@ MonoBehaviour:
     veryHardBumpChance: 0.72
     veryHardBumpCooldownDistance: 1200
     veryHardBumpHeight: 18
+  useLastHorizonTerrain: 0
+  lastHorizon:
+    cycleLength: 10000
+    segmentLength: 250
+    launchSafetyLength: 160
+    cycleOneMaximumRelief: 58
+    cycleTwoMaximumRelief: 72
+    macroRelief: 12
+    minimumRoofZonesPerCycle: 2
+    maximumRoofZonesPerCycle: 3
+    roofLengthRange: {x: 200, y: 5000}
+    roofVehicleClearance: 6.4
+    roofThickness: 2.8
+    roofSampleSpacing: 6
+    roofTransportGapLength: 52
+    roofTransportPlatformWidth: 12
+    roofTransportPlatformThickness: 0.8
+    roofCrusherBlockCount: 3
+    roofCrusherBlockSize: 3.2
+    movingTerrainInterval: 6000
+    movingTerrainLengthRange: {x: 360, y: 620}
+    voidPlatformInterval: 8000
+    voidPlatformLengthRange: {x: 420, y: 760}
+    specialPhaseTransitionLength: 52
+    specialPhaseSeparation: 150
+    voidPlatformWidth: 12
+    voidPlatformGap: 6
+    voidPlatformThickness: 0.7
+    voidPlatformMaximumDrop: 12
+    voidDecorativePlatformCount: 8
+    movingHorizontalTravel: 1.15
+    movingVerticalTravel: 0.7
+    movingTerrainPeriod: 5.5
+    extremeBumpAngle: 80
+    extremeBumpHeight: 0.55
+    extremeBumpSpacing: 12
+    normalFuelGapRange: {x: 200, y: 500}
+    cycleResetFuelInterval: 20000
+    scarcityFuelGapRange: {x: 500, y: 1000}
+    fuelSafetySearchRadius: 30
+    fuelSafetySearchStep: 2
+    obstacleCellLength: 300
+    cycleOneObstacleChance: 0.42
+    cycleTwoObstacleChance: 0.72
+    obstacleStartSafety: 260
+    safeVehicleLength: 5.5
+    safeVehicleHeight: 3.6
+    obstacleSafetyMargin: 2.5
+    seesawWidth: 14
+    seesawMaximumAngle: 17
+    liftWidth: 12
+    liftTravel: 1.6
+    liftPeriod: 5.5
+    tiltingPlatformWidth: 13
+    tiltingPlatformMaximumAngle: 12
+    tiltingPlatformPeriod: 4.25
+    maximumRollers: 4
+    rollerRadius: 0.85
+    seesawSprite: {fileID: 0}
+    liftPlatformSprite: {fileID: 0}
+    rollerSprite: {fileID: 0}
   rainstorm:
     permanentRain: 0
     maximumParticles: 520

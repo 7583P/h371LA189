@@ -100,7 +100,11 @@ namespace AnimeHillRacing.Terrain
                 layout.bridgeLength, trackWidth, true);
             entryBridge.gameObject.SetActive(true);
 
-            bool needsExit = layout.HasExitBridge;
+            // The far-right bridge belongs only to fixed-width water sections. Progressive water
+            // remains open on the far side while its horizontal span grows every 10 km cycle.
+            bool needsExit = !layout.isProgressive && layout.HasExitBridge &&
+                             Mathf.Approximately(layout.waterLength,
+                                 Mathf.Max(2f, settings.normalWaterLength));
             exitBridge.gameObject.SetActive(needsExit);
             if (needsExit)
                 exitBridge.Configure(settings, new Vector2(layout.gapEnd, layout.baselineHeight),
@@ -115,14 +119,17 @@ namespace AnimeHillRacing.Terrain
                 float visualDepth = Mathf.Max(.5f, settings.waterVisualDepth);
                 Vector2 sourceSize = settings.waterSprite != null
                     ? settings.waterSprite.bounds.size : Vector2.one;
-                float horizontalScale = (layout.waterLength + WaterEdgeUnderlap * 2f) /
-                                        Mathf.Max(.001f, sourceSize.x * WaterVisibleWidthFraction);
+                // Water fills the complete cut-out basin, including the area revealed below either
+                // raised bridge. Restricting it to waterStart-waterEnd left transparent dry gaps.
+                float basinWidth = Mathf.Max(.5f, layout.gapEnd - layout.gapStart);
+                float horizontalScale = (basinWidth + WaterEdgeUnderlap * 2f) /
+                                         Mathf.Max(.001f, sourceSize.x * WaterVisibleWidthFraction);
                 float verticalScale = visualDepth /
                                       Mathf.Max(.001f, sourceSize.y * WaterVisibleDepthFraction);
                 waterRenderer.transform.localScale = new Vector3(horizontalScale, verticalScale, 1f);
                 float surfaceFromPivot = sourceSize.y * WaterSurfaceFromPivotFraction * verticalScale;
                 waterRenderer.transform.position = new Vector3(
-                    (layout.waterStart + layout.waterEnd) * .5f,
+                    (layout.gapStart + layout.gapEnd) * .5f,
                     layout.baselineHeight + settings.waterSurfaceOffset - surfaceFromPivot,
                     -.10f);
                 waterRenderer.transform.rotation = Quaternion.identity;
@@ -136,7 +143,7 @@ namespace AnimeHillRacing.Terrain
             float bedSurfaceY = waterSurfaceY - Mathf.Max(.5f, settings.waterVisualDepth);
             waterBed.Configure(profile, settings, layout.gapStart, layout.gapEnd,
                 bedSurfaceY, layout.baselineHeight, trackWidth);
-            waterResistance.Configure(settings, layout.waterStart, layout.waterEnd,
+            waterResistance.Configure(settings, layout.gapStart, layout.gapEnd,
                 waterSurfaceY, bedSurfaceY, trackWidth);
             ConfigureBoats(profile, layout, waterSurfaceY);
 

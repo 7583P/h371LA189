@@ -357,17 +357,17 @@ namespace AnimeHillRacing.Terrain
         [Range(1, 3)] public int maximumBoatsPerZone = 3;
         [Min(2f)] public float minimumBoatWidth = 5.2f;
         [Min(3f)] public float maximumBoatWidth = 9.5f;
-        [Min(.1f)] public float boatColliderThickness = .48f;
+        [Min(.1f)] public float boatColliderThickness = .62f;
         [Range(-.5f, .5f)] public float boatDeckHeightFraction = .18f;
-        [Min(.1f)] public float boatMass = 90f;
+        [Min(.1f)] public float boatMass = 420f;
         [Min(1f)] public float boatVerticalSpring = 24f;
         [Min(.1f)] public float boatVerticalDamping = 8f;
-        [Min(.1f)] public float boatCenteringTorque = 1.15f;
-        [Min(.01f)] public float boatAngularDamping = .12f;
-        [Range(4f, 25f)] public float boatMaximumTilt = 15f;
-        [Min(.1f)] public float boatMaximumSink = 1.25f;
-        [Min(.1f)] public float boatMaximumRise = .65f;
-        [Min(0f)] public float boatLaunchImpulse = 1.8f;
+        [Min(.1f)] public float boatCenteringTorque = 2.4f;
+        [Min(.01f)] public float boatAngularDamping = 1.1f;
+        [Range(4f, 25f)] public float boatMaximumTilt = 10f;
+        [Min(.1f)] public float boatMaximumSink = .1f;
+        [Min(.1f)] public float boatMaximumRise = .1f;
+        [Min(0f)] public float boatLaunchImpulse = 2f;
         public Sprite[] boatSprites = new Sprite[0];
 
         [Header("Authored Visuals")]

@@ -22,7 +22,7 @@ dependencyResolutionManagement {
             url "https://repo.maven.apache.org/maven2/" // Assets/AnimeHillRacing/Scripts/Editor/HillAdventurerGooglePlayDependencies.xml:11, Assets/AnimeHillRacing/Scripts/Editor/HillAdventurerGooglePlayDependencies.xml:16
         }
         maven {
-            url "https://maven.google.com/" // Assets/GooglePlayGames/com.google.play.games/Editor/GooglePlayGamesPluginDependencies.xml:9, Assets/GooglePlayGames/com.google.play.games/Editor/GooglePlayGamesPluginDependencies.xml:14
+            url "https://maven.google.com/" // Assets/GooglePlayGames/com.google.play.games/Editor/GooglePlayGamesPluginDependencies.xml:9, Assets/GooglePlayGames/com.google.play.games/Editor/GooglePlayGamesPluginDependencies.xml:14, Packages/com.google.ads.mobile/GoogleMobileAds/Editor/GoogleMobileAdsDependencies.xml:7, Packages/com.google.ads.mobile/GoogleMobileAds/Editor/GoogleMobileAdsDependencies.xml:12, Packages/com.google.ads.mobile/GoogleMobileAds/Editor/GoogleMobileAdsDependencies.xml:17, Packages/com.google.ads.mobile/GoogleMobileAds/Editor/GoogleMobileAdsDependencies.xml:22, Packages/com.google.ads.mobile/GoogleMobileAds/Editor/GoogleUmpDependencies.xml:7
         }
         mavenLocal()
 // Android Resolver Repos End

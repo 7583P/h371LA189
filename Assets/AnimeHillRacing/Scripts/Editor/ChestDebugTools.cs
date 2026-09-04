@@ -14,11 +14,12 @@ namespace AnimeHillRacing.Editor
         private const string CatalogPath = "Assets/AnimeHillRacing/VehicleData/GameCatalog.asset";
         private const string TotalGemsKey = "AHR.TotalGems";
 
-        [MenuItem("Anime Hill Racing/Chests/DEBUG +30 MIN CHEST PROGRESS")]
-        public static void AddThirtyMinutes()
+        [MenuItem("Anime Hill Racing/Chests/DEBUG +5 MIN CHEST PROGRESS")]
+        public static void AddFiveMinutes()
         {
             GameCatalog catalog = LoadCatalog();
-            List<ChestRecord> granted = ChestSystem.DebugAddGameplay(catalog, 1800f);
+            List<ChestRecord> granted = ChestSystem.DebugAddGameplay(catalog,
+                ChestCatalog.GameplayIntervalSeconds);
             Debug.Log($"CHEST_DEBUG_PROGRESS: granted {granted.Count} chest(s), remainder={ChestSystem.GameplayProgress:0.0}s.");
         }
 
@@ -63,12 +64,27 @@ namespace AnimeHillRacing.Editor
             ValidateDefinition(catalog, ChestType.Master, 10, 12, 15000, 20000, 20, 35, 5);
             ValidateDefinition(catalog, ChestType.Legendary, 1, 24, 30000, 50000, 50, 70, 10);
 
-            float progress = 1799f;
-            if (ChestProgressMath.Advance(ref progress, .9f, 1800f) != 0 ||
-                ChestProgressMath.Advance(ref progress, .1f, 1800f) != 1 || Mathf.Abs(progress) > .001f)
-                throw new InvalidOperationException("29:59 -> 30:00 milestone contract failed.");
-            progress = 1790f;
-            if (ChestProgressMath.Advance(ref progress, 25f, 1800f) != 1 || Mathf.Abs(progress - 15f) > .001f)
+            if (Mathf.Abs(ChestCatalog.GameplayIntervalSeconds - 300f) > .001f ||
+                ChestCatalog.MaximumInventorySize != 6)
+                throw new InvalidOperationException("Chest cadence must be five minutes with six inventory slots.");
+            if (ChestCatalog.CoinAdLimit != 3 || ChestCatalog.CoinAdWindowHours != 6 ||
+                ChestCatalog.CoinAdMinimumReward != 5000 || ChestCatalog.CoinAdMaximumReward != 10000 ||
+                ChestCatalog.ChestAdLimit != 6 || ChestCatalog.ChestAdWindowHours != 12)
+                throw new InvalidOperationException("Rewarded-ad quotas or coin rewards are invalid.");
+            if (ChestSystem.GetRequiredAdViews(ChestType.Bronze) != 1 ||
+                ChestSystem.GetRequiredAdViews(ChestType.Silver) != 1 ||
+                ChestSystem.GetRequiredAdViews(ChestType.Gold) != 1 ||
+                ChestSystem.GetRequiredAdViews(ChestType.Master) != 2 ||
+                ChestSystem.GetRequiredAdViews(ChestType.Legendary) != 3)
+                throw new InvalidOperationException("Chest rewarded-ad requirements must be 1/1/1/2/3.");
+            float progress = 299f;
+            if (ChestProgressMath.Advance(ref progress, .9f, ChestCatalog.GameplayIntervalSeconds) != 0 ||
+                ChestProgressMath.Advance(ref progress, .1f, ChestCatalog.GameplayIntervalSeconds) != 1 ||
+                Mathf.Abs(progress) > .001f)
+                throw new InvalidOperationException("04:59 -> 05:00 milestone contract failed.");
+            progress = 290f;
+            if (ChestProgressMath.Advance(ref progress, 25f, ChestCatalog.GameplayIntervalSeconds) != 1 ||
+                Mathf.Abs(progress - 15f) > .001f)
                 throw new InvalidOperationException("Gameplay remainder contract failed.");
 
             var offline = new ChestRecord
@@ -154,7 +170,11 @@ namespace AnimeHillRacing.Editor
 
             var persisted = new ChestSaveData
             {
-                chestGameplayProgress = 1020f,
+                chestGameplayProgress = 120f,
+                coinAdWindowStartUtc = DateTime.UtcNow.ToString("O"),
+                coinAdsViewed = 2,
+                chestAdWindowStartUtc = DateTime.UtcNow.ToString("O"),
+                chestAdsViewed = 5,
                 inventory = new List<ChestRecord>
                 {
                     new ChestRecord
@@ -163,16 +183,18 @@ namespace AnimeHillRacing.Editor
                         openStartedUtc = DateTime.UtcNow.AddHours(-1).ToString("O"),
                         openReadyUtc = DateTime.UtcNow.AddHours(11).ToString("O"), coinReward = 17420,
                         gemReward = 7,
-                        blueprintBundleId = "cosmetic:test:Skin:test", blueprintReward = 5
+                        blueprintBundleId = "cosmetic:test:Skin:test", blueprintReward = 5,
+                        rewardedAdViews = 1
                     }
                 }
             };
             ChestSaveData restored = JsonUtility.FromJson<ChestSaveData>(JsonUtility.ToJson(persisted));
-            if (restored == null || Mathf.Abs(restored.chestGameplayProgress - 1020f) > .001f ||
+            if (restored == null || Mathf.Abs(restored.chestGameplayProgress - 120f) > .001f ||
                 restored.inventory == null || restored.inventory.Count != 1 ||
                 restored.inventory[0].chestId != "persistence-test" || restored.inventory[0].coinReward != 17420 ||
                 restored.inventory[0].gemReward != 7 ||
-                restored.inventory[0].blueprintReward != 5)
+                restored.inventory[0].blueprintReward != 5 || restored.inventory[0].rewardedAdViews != 1 ||
+                restored.coinAdsViewed != 2 || restored.chestAdsViewed != 5)
                 throw new InvalidOperationException("Chest inventory/progress persistence contract failed.");
 
             int[] counts = new int[5];
@@ -187,7 +209,8 @@ namespace AnimeHillRacing.Editor
                 if (Mathf.Abs(actual - expected) > .006f)
                     throw new InvalidOperationException($"Monte Carlo distribution failed for {(ChestType)i}: {actual:P2} vs {expected:P2}.");
             }
-            Debug.Log($"CHEST_BLUEPRINT_AUDIT_PASS: milestone 29:59/30:00, remainder 15s, UTC offline, " +
+            Debug.Log($"CHEST_BLUEPRINT_AUDIT_PASS: cadence 04:59/05:00, maximum 6, remainder 15s, UTC offline, " +
+                $"coin ads 3/6h +5K..10K, chest ads 6/12h with tier requirements 1/1/1/2/3, " +
                 $"coin ranges, Gem ranges 1-3/2-5/6-12/20-35/50-70, Master +5, Legendary +10, normal 100, vehicle 150, " +
                 $"Shop 10K:+1/50K:+5/100K:+10/1M:+100, tune prices x10, Gems save/add/spend validated, " +
                 $"distance bonus PB-only each 500m, +100..+500 then +500..+5000 validated; " +

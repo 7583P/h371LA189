@@ -83,10 +83,10 @@ MonoBehaviour:
     rarity: 5
     visibleDiameter: 0
     visibleSize: {x: 7.98, y: 2.84}
-    visualOffset: {x: 0.19, y: -0.145}
-    overrideGlitchTransform: 1
-    glitchManualSize: {x: 5.4, y: 1.8000001}
-    glitchManualOffset: {x: -0.46215832, y: 0.121041335}
+    visualOffset: {x: 0, y: 0}
+    overrideGlitchTransform: 0
+    glitchManualSize: {x: 0, y: 0}
+    glitchManualOffset: {x: 0, y: 0}
     overrideGlitchWheelTransform: 0
     glitchRearWheelScale: 1
     glitchFrontWheelScale: 1
@@ -106,10 +106,10 @@ MonoBehaviour:
     rarity: 5
     visibleDiameter: 0
     visibleSize: {x: 7.96, y: 2.82}
-    visualOffset: {x: -0.06, y: -0.155}
-    overrideGlitchTransform: 1
-    glitchManualSize: {x: 5.4, y: 1.8000001}
-    glitchManualOffset: {x: -0.31910923, y: 0.11003774}
+    visualOffset: {x: 0, y: 0}
+    overrideGlitchTransform: 0
+    glitchManualSize: {x: 0, y: 0}
+    glitchManualOffset: {x: 0, y: 0}
     overrideGlitchWheelTransform: 0
     glitchRearWheelScale: 1
     glitchFrontWheelScale: 1
@@ -129,10 +129,10 @@ MonoBehaviour:
     rarity: 5
     visibleDiameter: 0
     visibleSize: {x: 7.94, y: 3.11}
-    visualOffset: {x: 0.21, y: 0.015}
-    overrideGlitchTransform: 1
-    glitchManualSize: {x: 5.4, y: 1.8000001}
-    glitchManualOffset: {x: -0.49517003, y: 0.033011243}
+    visualOffset: {x: 0, y: 0}
+    overrideGlitchTransform: 0
+    glitchManualSize: {x: 0, y: 0}
+    glitchManualOffset: {x: 0, y: 0}
     overrideGlitchWheelTransform: 0
     glitchRearWheelScale: 1
     glitchFrontWheelScale: 1
@@ -152,10 +152,10 @@ MonoBehaviour:
     rarity: 5
     visibleDiameter: 0
     visibleSize: {x: 7.96, y: 3.11}
-    visualOffset: {x: -0.06, y: 0.015}
-    overrideGlitchTransform: 1
-    glitchManualSize: {x: 5.4, y: 1.8000001}
-    glitchManualOffset: {x: -0.297102, y: 0.033011243}
+    visualOffset: {x: 0, y: 0}
+    overrideGlitchTransform: 0
+    glitchManualSize: {x: 0, y: 0}
+    glitchManualOffset: {x: 0, y: 0}
     overrideGlitchWheelTransform: 0
     glitchRearWheelScale: 1
     glitchFrontWheelScale: 1
@@ -175,10 +175,10 @@ MonoBehaviour:
     rarity: 5
     visibleDiameter: 0
     visibleSize: {x: 7.98, y: 2.93}
-    visualOffset: {x: 0.19, y: 0.095}
-    overrideGlitchTransform: 1
-    glitchManualSize: {x: 5.4, y: 1.8000001}
-    glitchManualOffset: {x: -0.46215832, y: -0.066022895}
+    visualOffset: {x: 0, y: 0}
+    overrideGlitchTransform: 0
+    glitchManualSize: {x: 0, y: 0}
+    glitchManualOffset: {x: 0, y: 0}
     overrideGlitchWheelTransform: 0
     glitchRearWheelScale: 1
     glitchFrontWheelScale: 1
@@ -198,10 +198,10 @@ MonoBehaviour:
     rarity: 5
     visibleDiameter: 0
     visibleSize: {x: 8.11, y: 2.96}
-    visualOffset: {x: -0.045, y: 0.08}
-    overrideGlitchTransform: 1
-    glitchManualSize: {x: 5.4, y: 1.8000001}
-    glitchManualOffset: {x: -0.2640908, y: -0.066022485}
+    visualOffset: {x: 0, y: 0}
+    overrideGlitchTransform: 0
+    glitchManualSize: {x: 0, y: 0}
+    glitchManualOffset: {x: 0, y: 0}
     overrideGlitchWheelTransform: 0
     glitchRearWheelScale: 1
     glitchFrontWheelScale: 1
@@ -245,7 +245,7 @@ MonoBehaviour:
     rarity: 5
     visibleDiameter: 0
     visibleSize: {x: 6.99, y: 6.9}
-    visualOffset: {x: 0.08, y: -0.065}
+    visualOffset: {x: 0, y: 0}
     overrideGlitchTransform: 0
     glitchManualSize: {x: 0, y: 0}
     glitchManualOffset: {x: 0, y: 0}
@@ -268,7 +268,7 @@ MonoBehaviour:
     rarity: 5
     visibleDiameter: 0
     visibleSize: {x: 6.84, y: 6.86}
-    visualOffset: {x: 0, y: -0.06}
+    visualOffset: {x: 0, y: 0}
     overrideGlitchTransform: 0
     glitchManualSize: {x: 0, y: 0}
     glitchManualOffset: {x: 0, y: 0}
@@ -291,7 +291,7 @@ MonoBehaviour:
     rarity: 5
     visibleDiameter: 0
     visibleSize: {x: 7.05, y: 7}
-    visualOffset: {x: -0.15, y: 0.085}
+    visualOffset: {x: 0, y: 0}
     overrideGlitchTransform: 0
     glitchManualSize: {x: 0, y: 0}
     glitchManualOffset: {x: 0, y: 0}
@@ -314,7 +314,7 @@ MonoBehaviour:
     rarity: 5
     visibleDiameter: 0
     visibleSize: {x: 6.94, y: 6.91}
-    visualOffset: {x: -0.125, y: -0.075}
+    visualOffset: {x: 0, y: 0}
     overrideGlitchTransform: 0
     glitchManualSize: {x: 0, y: 0}
     glitchManualOffset: {x: 0, y: 0}
@@ -337,7 +337,7 @@ MonoBehaviour:
     rarity: 5
     visibleDiameter: 0
     visibleSize: {x: 7.01, y: 6.94}
-    visualOffset: {x: 0.09, y: 0.09}
+    visualOffset: {x: 0, y: 0}
     overrideGlitchTransform: 0
     glitchManualSize: {x: 0, y: 0}
     glitchManualOffset: {x: 0, y: 0}
@@ -360,7 +360,7 @@ MonoBehaviour:
     rarity: 5
     visibleDiameter: 0
     visibleSize: {x: 7, y: 7}
-    visualOffset: {x: 0, y: 0.07}
+    visualOffset: {x: 0, y: 0}
     overrideGlitchTransform: 0
     glitchManualSize: {x: 0, y: 0}
     glitchManualOffset: {x: 0, y: 0}

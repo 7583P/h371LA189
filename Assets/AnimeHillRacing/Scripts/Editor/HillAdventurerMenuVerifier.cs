@@ -48,6 +48,10 @@ namespace AnimeHillRacing.Editor
             "Assets/Art/Backgrounds/Menu/Neon_Background.png";
         private const string ChestSlotsPath =
             "Assets/Art/Interface/Adventure/ChestSlots.png";
+        private const string ChestClapperPath =
+            "Assets/Art/Interface/Adventure/OpenClapperboardBadge.png";
+        private const string CoinRewardClapperPath =
+            "Assets/Art/Interface/Adventure/CoinRewardClapperboardBadge.png";
         private const string DefaultGaragePath =
             "Assets/Art/Backgrounds/Garage/Default_Garage.png";
         private const string NeonGaragePath = "Assets/Art/Buttons/mainmenu.png";
@@ -184,7 +188,7 @@ namespace AnimeHillRacing.Editor
                 TuneRoot + "SuspensionTune.png", TuneRoot + "GripTune.png",
                 TuneRoot + "FuelTune.png", TuneRoot + "DownforceTune.png",
                 TuneRoot + "ThrustersTune.png", TuneRoot + "InclinationBuggyTune.png",
-                LowFuelPath
+                LowFuelPath, ChestClapperPath, CoinRewardClapperPath
             };
             for (int i = 0; i < spritePaths.Length; i++)
                 if (AssetDatabase.LoadAssetAtPath<Sprite>(spritePaths[i]) == null)

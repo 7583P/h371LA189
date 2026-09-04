@@ -4,6 +4,7 @@ using AnimeHillRacing.Terrain;
 using AnimeHillRacing.UI;
 using AnimeHillRacing.Vehicle;
 using AnimeHillRacing.Chests;
+using AnimeHillRacing.Ads;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -163,6 +164,7 @@ namespace AnimeHillRacing.Core
         private void Awake()
         {
             Instance = this;
+            AdMobManager.SetGameplayActive(true);
             Time.timeScale = 1f;
             Physics.simulationMode = SimulationMode.FixedUpdate;
             Physics2D.simulationMode = SimulationMode2D.FixedUpdate;
@@ -463,6 +465,7 @@ namespace AnimeHillRacing.Core
                 yield return resultCapture.Capture(Mode == GameModeType.Adventure2_5D);
             resultsUI?.Show(this);
             Time.timeScale = 0f;
+            AdMobManager.NotifyRunCompleted();
             gameOverRoutine = null;
         }
 

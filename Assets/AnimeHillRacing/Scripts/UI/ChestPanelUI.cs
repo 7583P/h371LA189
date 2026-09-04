@@ -2,6 +2,7 @@ using System;
 using AnimeHillRacing.Chests;
 using AnimeHillRacing.Core;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 
 namespace AnimeHillRacing.UI
@@ -25,9 +26,15 @@ namespace AnimeHillRacing.UI
         private Button contentsButton;
         private GameObject contentsIndexRoot;
         private Text contentsIndexText;
+        private Button chestAdButton;
+        private Button coinAdButton;
+        private Text chestAdCounter;
+        private Text coinAdCounter;
         private static readonly Color GreenProgressColor = new Color(0.16f, 0.86f, 0.32f, 1f);
         private float nextRefresh;
         private bool outlineConfigured;
+        private bool adControlsConfigured;
+        private bool adRequestInFlight;
         private int currentPage;
 
         public int CurrentPage => currentPage;
@@ -37,12 +44,14 @@ namespace AnimeHillRacing.UI
         {
             ConfigureVisualStyles();
             EnsureContentsIndexUI();
+            EnsureRewardedAdControls();
         }
 
         private void OnEnable()
         {
             ConfigureVisualStyles();
             EnsureContentsIndexUI();
+            EnsureRewardedAdControls();
             ChestSystem.RefreshOpeningStates(DateTime.UtcNow);
             ShowFirstUnseenChest();
             Refresh();
@@ -151,6 +160,86 @@ namespace AnimeHillRacing.UI
             if (contentsIndexRoot != null) contentsIndexRoot.SetActive(false);
         }
 
+        public void WatchCoinAd()
+        {
+            if (adRequestInFlight) return;
+            RewardedAdQuota quota = ChestSystem.GetCoinAdQuota(DateTime.UtcNow);
+            if (!quota.IsAvailable)
+            {
+                SetFeedback("COIN ADS RESET IN " + FormatQuotaRemaining(quota), null);
+                return;
+            }
+            if (!RewardedAdService.IsReady)
+            {
+                SetFeedback("REWARDED AD IS NOT READY", null);
+                return;
+            }
+
+            adRequestInFlight = true;
+            RewardedAdService.Show(completed =>
+            {
+                adRequestInFlight = false;
+                if (!completed)
+                {
+                    SetFeedback("AD WAS NOT COMPLETED", null);
+                    Refresh();
+                    return;
+                }
+                if (ChestSystem.TryClaimCoinAdReward(DateTime.UtcNow, out int coins,
+                        out RewardedAdQuota updated))
+                    SetFeedback($"+{coins:N0} COINS   ADS {updated.Used}/{updated.Limit}", null);
+                else
+                    SetFeedback("COIN ADS RESET IN " + FormatQuotaRemaining(updated), null);
+                Refresh();
+            });
+        }
+
+        public void WatchChestAd()
+        {
+            if (adRequestInFlight) return;
+            ChestRecord opening = ChestSystem.GetOpeningChest(DateTime.UtcNow);
+            if (opening == null)
+            {
+                SetFeedback("START OPENING A CHEST FIRST", null);
+                return;
+            }
+            RewardedAdQuota quota = ChestSystem.GetChestAdQuota(DateTime.UtcNow);
+            if (!quota.IsAvailable)
+            {
+                SetFeedback("CHEST ADS RESET IN " + FormatQuotaRemaining(quota), null);
+                return;
+            }
+            if (!RewardedAdService.IsReady)
+            {
+                SetFeedback("REWARDED AD IS NOT READY", null);
+                return;
+            }
+
+            adRequestInFlight = true;
+            RewardedAdService.Show(completed =>
+            {
+                adRequestInFlight = false;
+                if (!completed)
+                {
+                    SetFeedback("AD WAS NOT COMPLETED", null);
+                    Refresh();
+                    return;
+                }
+                if (ChestSystem.TryApplyAdToOpeningChest(DateTime.UtcNow,
+                        out ChestAdProgressResult progress))
+                {
+                    string status = progress.ReadyToClaim
+                        ? "READY TO CLAIM!"
+                        : $"ADS {progress.CompletedViews}/{progress.RequiredViews}";
+                    SetFeedback($"{progress.Type.ToString().ToUpperInvariant()} CHEST  {status}", null);
+                }
+                else
+                    SetFeedback(progress.Quota.IsAvailable ? "NO CHEST IS OPENING" :
+                        "CHEST ADS RESET IN " + FormatQuotaRemaining(progress.Quota), null);
+                Refresh();
+            });
+        }
+
         public void SetPage(int page)
         {
             currentPage = Mathf.Clamp(page, 0, PageCount - 1);
@@ -230,10 +319,11 @@ namespace AnimeHillRacing.UI
                 typeof(CanvasRenderer), typeof(Image), typeof(Button));
             RectTransform buttonRect = buttonObject.GetComponent<RectTransform>();
             buttonRect.SetParent(transform, false);
-            buttonRect.anchorMin = buttonRect.anchorMax = new Vector2(1f, 1f);
-            buttonRect.pivot = new Vector2(1f, 1f);
-            buttonRect.anchoredPosition = new Vector2(-18f, -18f);
-            buttonRect.sizeDelta = new Vector2(220f, 56f);
+            bool pagedLayout = previousPageButton != null || nextPageButton != null;
+            buttonRect.anchorMin = buttonRect.anchorMax = pagedLayout ? new Vector2(0f, 1f) : new Vector2(1f, 1f);
+            buttonRect.pivot = pagedLayout ? new Vector2(0f, 1f) : new Vector2(1f, 1f);
+            buttonRect.anchoredPosition = pagedLayout ? new Vector2(18f, -18f) : new Vector2(-18f, -18f);
+            buttonRect.sizeDelta = new Vector2(pagedLayout ? 200f : 220f, pagedLayout ? 48f : 56f);
             Image buttonImage = buttonObject.GetComponent<Image>();
             buttonImage.color = new Color(.02f, .36f, .62f, .98f);
             contentsButton = buttonObject.GetComponent<Button>();
@@ -357,22 +447,39 @@ namespace AnimeHillRacing.UI
 
         private void Refresh()
         {
+            EnsureRewardedAdControls();
             ChestSystem.RefreshOpeningStates(DateTime.UtcNow);
             currentPage = Mathf.Clamp(currentPage, 0, PageCount - 1);
             float progress = ChestSystem.GameplayProgress;
+            bool inventoryFull = ChestSystem.Inventory.Count >= ChestCatalog.MaximumInventorySize;
             if (progressFill != null)
-                progressFill.fillAmount = Mathf.Clamp01(progress / ChestCatalog.GameplayIntervalSeconds);
+                progressFill.fillAmount = inventoryFull
+                    ? 1f
+                    : Mathf.Clamp01(progress / ChestCatalog.GameplayIntervalSeconds);
             if (progressText != null)
             {
-                int remaining = Mathf.CeilToInt(ChestCatalog.GameplayIntervalSeconds - progress);
-                progressText.text = $"NEXT CHEST  {remaining / 60:00}:{remaining % 60:00}   " +
-                                    $"({Mathf.FloorToInt(progress) / 60:00}:{Mathf.FloorToInt(progress) % 60:00} / 30:00)";
+                if (inventoryFull)
+                {
+                    progressText.text = $"CHEST STORAGE FULL  {ChestCatalog.MaximumInventorySize} / " +
+                                        ChestCatalog.MaximumInventorySize;
+                }
+                else
+                {
+                    int interval = Mathf.RoundToInt(ChestCatalog.GameplayIntervalSeconds);
+                    int elapsed = Mathf.FloorToInt(progress);
+                    int remaining = Mathf.CeilToInt(ChestCatalog.GameplayIntervalSeconds - progress);
+                    progressText.text = $"NEXT CHEST  {remaining / 60:00}:{remaining % 60:00}   " +
+                                        $"({elapsed / 60:00}:{elapsed % 60:00} / " +
+                                        $"{interval / 60:00}:{interval % 60:00})";
+                }
             }
 
             if (pageText != null)
-                pageText.text = $"CHESTS  {ChestSystem.Inventory.Count}   {currentPage + 1} / {PageCount}";
+                pageText.text = $"CHESTS  {ChestSystem.Inventory.Count} / {ChestCatalog.MaximumInventorySize}   " +
+                                $"{currentPage + 1} / {PageCount}";
             if (previousPageButton != null) previousPageButton.interactable = currentPage > 0;
             if (nextPageButton != null) nextPageButton.interactable = currentPage + 1 < PageCount;
+            RefreshRewardedAdControls();
             for (int i = 0; i < (slotButtons?.Length ?? 0); i++)
             {
                 if (slotButtons[i] == null) continue;
@@ -409,12 +516,85 @@ namespace AnimeHillRacing.UI
                 if (slotLabels != null && i < slotLabels.Length && slotLabels[i] != null)
                 {
                     string state = chest.state == ChestState.Opening
-                        ? ChestSystem.FormatRemaining(chest.ReadyUtc, DateTime.UtcNow)
+                        ? ChestSystem.FormatRemaining(chest.ReadyUtc, DateTime.UtcNow) +
+                          $"  ADS {chest.rewardedAdViews}/{ChestSystem.GetRequiredAdViews(chest.type)}"
                         : chest.state == ChestState.ReadyToClaim ? "READY!  OPEN / CLAIM"
                         : "TAP TO START";
                     slotLabels[i].text = $"{chest.type.ToString().ToUpperInvariant()}\n{state}";
                 }
             }
+        }
+
+        private void EnsureRewardedAdControls()
+        {
+            if (!Application.isPlaying || adControlsConfigured) return;
+            Transform chestTransform = transform.Find("Open Clapperboard Badge");
+            Transform coinTransform = transform.Find("Coin Reward Clapperboard Badge");
+            if (chestTransform == null && coinTransform == null) return;
+            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            if (chestTransform != null)
+                chestAdButton = ConfigureRewardedAdButton(chestTransform, WatchChestAd, font,
+                    out chestAdCounter);
+            if (coinTransform != null)
+                coinAdButton = ConfigureRewardedAdButton(coinTransform, WatchCoinAd, font,
+                    out coinAdCounter);
+            adControlsConfigured = true;
+        }
+
+        private static Button ConfigureRewardedAdButton(Transform target, UnityAction action, Font font,
+            out Text counter)
+        {
+            Image image = target.GetComponent<Image>();
+            Button button = target.GetComponent<Button>();
+            if (button == null) button = target.gameObject.AddComponent<Button>();
+            if (image != null)
+            {
+                image.raycastTarget = true;
+                button.targetGraphic = image;
+            }
+            button.transition = Selectable.Transition.ColorTint;
+            Navigation navigation = button.navigation;
+            navigation.mode = Navigation.Mode.None;
+            button.navigation = navigation;
+            button.onClick.RemoveAllListeners();
+            button.onClick.AddListener(action);
+
+            Transform existing = target.Find("Quota Counter");
+            if (existing != null)
+                counter = existing.GetComponent<Text>();
+            else
+            {
+                counter = CreateIndexText("Quota Counter", target, font, string.Empty, 16,
+                    FontStyle.Bold, new Vector2(.06f, .01f), new Vector2(.94f, .27f));
+                Outline outline = counter.gameObject.AddComponent<Outline>();
+                outline.effectColor = new Color(0f, 0f, 0f, .98f);
+                outline.effectDistance = new Vector2(1.5f, -1.5f);
+            }
+            return button;
+        }
+
+        private void RefreshRewardedAdControls()
+        {
+            DateTime now = DateTime.UtcNow;
+            RewardedAdQuota coinQuota = ChestSystem.GetCoinAdQuota(now);
+            RewardedAdQuota chestQuota = ChestSystem.GetChestAdQuota(now);
+            ChestRecord opening = ChestSystem.GetOpeningChest(now);
+            if (coinAdCounter != null) coinAdCounter.text = $"{coinQuota.Used}/{coinQuota.Limit}";
+            if (chestAdCounter != null)
+                chestAdCounter.text = opening != null
+                    ? $"{opening.rewardedAdViews}/{ChestSystem.GetRequiredAdViews(opening.type)}"
+                    : $"{chestQuota.Used}/{chestQuota.Limit}";
+            bool ready = RewardedAdService.IsReady && !adRequestInFlight;
+            if (coinAdButton != null) coinAdButton.interactable = ready && coinQuota.IsAvailable;
+            if (chestAdButton != null)
+                chestAdButton.interactable = ready && chestQuota.IsAvailable && opening != null;
+        }
+
+        private static string FormatQuotaRemaining(RewardedAdQuota quota)
+        {
+            TimeSpan remaining = quota.ResetUtc - DateTime.UtcNow;
+            if (remaining < TimeSpan.Zero) remaining = TimeSpan.Zero;
+            return $"{(int)remaining.TotalHours:00}:{remaining.Minutes:00}:{remaining.Seconds:00}";
         }
 
         private void ShowFirstUnseenChest()
@@ -458,6 +638,7 @@ namespace AnimeHillRacing.UI
             nextPageButton = nextPage;
             ConfigureVisualStyles();
             EnsureContentsIndexUI();
+            EnsureRewardedAdControls();
             RefreshContentsIndex();
             if (Application.isPlaying) Refresh();
         }

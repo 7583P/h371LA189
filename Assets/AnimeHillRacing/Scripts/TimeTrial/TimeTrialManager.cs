@@ -3,6 +3,7 @@ using AnimeHillRacing.Core;
 using AnimeHillRacing.UI;
 using AnimeHillRacing.Vehicle;
 using AnimeHillRacing.Chests;
+using AnimeHillRacing.Ads;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -45,7 +46,11 @@ namespace AnimeHillRacing.TimeTrial
         public string CircuitName => circuit != null ? circuit.displayName : "PROCEDURAL TEST CIRCUIT";
         public float BestLap => bestLap;
 
-        private void Awake() => Time.timeScale = 1f;
+        private void Awake()
+        {
+            AdMobManager.SetGameplayActive(true);
+            Time.timeScale = 1f;
+        }
 
         private void Start()
         {
@@ -100,6 +105,7 @@ namespace AnimeHillRacing.TimeTrial
             if (capture != null) yield return capture.Capture(false);
             results?.ShowTimeTrial(this);
             Time.timeScale = 0f;
+            AdMobManager.NotifyRunCompleted();
         }
 
         public void Respawn()

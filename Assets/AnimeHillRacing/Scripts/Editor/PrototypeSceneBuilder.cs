@@ -5395,7 +5395,8 @@ namespace AnimeHillRacing.Editor
                  CityBoatLargePath, FuelCanPath, Coin01Path, Coin05Path,
                 BronzeChestClosedPath, BronzeChestOpenPath, SilverChestClosedPath, SilverChestOpenPath,
                 GoldChestClosedPath, GoldChestOpenPath, MasterChestClosedPath, MasterChestOpenPath,
-                LegendaryChestClosedPath, LegendaryChestOpenPath, CoinsChestPath, ChestShelfPath };
+                LegendaryChestClosedPath, LegendaryChestOpenPath, CoinsChestPath, ChestShelfPath,
+                HillChestClapperPath, HillCoinRewardClapperPath };
             for (int i = 0; i < spritePaths.Length; i++)
                 ConfigureFormulaSprite(spritePaths[i], spritePaths[i].StartsWith(CountrysideRoot) ||
                     spritePaths[i].StartsWith(NorthPoleRoot) ||
@@ -5405,7 +5406,8 @@ namespace AnimeHillRacing.Editor
                     spritePaths[i].StartsWith(GameUiRoot) ||
                     spritePaths[i] == FormulaHillAdventurerSkinPath ||
                     spritePaths[i] == HillAdventurerPurpleSkinPath ? 4096 :
-                    spritePaths[i] == FuelCanPath || spritePaths[i] == Coin01Path || spritePaths[i] == Coin05Path ? 512 :
+                    spritePaths[i] == FuelCanPath || spritePaths[i] == Coin01Path || spritePaths[i] == Coin05Path ||
+                    spritePaths[i] == HillChestClapperPath || spritePaths[i] == HillCoinRewardClapperPath ? 512 :
                     spritePaths[i].StartsWith(ChestRoot) ? 2048 : 2048);
             assets.jeepBody = AssetDatabase.LoadAssetAtPath<Sprite>(JeepBodyPath);
             assets.jeepRetroSkin = AssetDatabase.LoadAssetAtPath<Sprite>(JeepRetroSkinPath);
@@ -6798,6 +6800,8 @@ namespace AnimeHillRacing.Editor
                 Bind(chestSlots[i], chestActions[i]);
                 chestSlots[i].gameObject.SetActive(false);
             }
+            CreateChestClapperDecoration(chestPanel.transform, false);
+            CreateCoinRewardClapperDecoration(chestPanel.transform, false);
             GameObject progressBack = CreateImage("Next Chest Progress", chestPanel.transform,
                 new Color(.05f, .08f, .13f, .88f), new Vector2(.10f, .045f), new Vector2(.90f, .075f),
                 Vector2.zero, Vector2.zero);
@@ -6805,12 +6809,13 @@ namespace AnimeHillRacing.Editor
                 Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero).GetComponent<Image>();
             progressFill.type = Image.Type.Filled; progressFill.fillMethod = Image.FillMethod.Horizontal;
             progressFill.fillOrigin = 0; progressFill.fillAmount = 0f;
-            Text progressText = CreateText("Next Chest Text", chestPanel.transform, "NEXT CHEST  30:00", 16,
+            Text progressText = CreateText("Next Chest Text", chestPanel.transform, "NEXT CHEST  05:00", 16,
                 TextAnchor.MiddleCenter, new Vector2(.04f, .075f), new Vector2(.96f, .115f), Vector2.zero, Vector2.zero);
             Outline timerOutline = progressText.gameObject.AddComponent<Outline>();
             timerOutline.effectColor = new Color(0f, 0f, 0f, 0.95f);
             timerOutline.effectDistance = new Vector2(1.5f, -1.5f);
-            Text pageText = CreateText("Inventory Count", chestPanel.transform, "INVENTORY  0", 13, TextAnchor.MiddleCenter,
+            Text pageText = CreateText("Inventory Count", chestPanel.transform,
+                $"CHESTS  0 / {ChestCatalog.MaximumInventorySize}", 13, TextAnchor.MiddleCenter,
                 new Vector2(.34f, .005f), new Vector2(.66f, .04f), Vector2.zero, Vector2.zero);
             Text chestFeedback = CreateText("Chest Feedback", chestPanel.transform, "", 13, TextAnchor.MiddleLeft,
                 new Vector2(.22f, .84f), new Vector2(.98f, .925f), Vector2.zero, Vector2.zero);

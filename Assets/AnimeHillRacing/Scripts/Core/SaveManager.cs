@@ -108,6 +108,8 @@ namespace AnimeHillRacing.Core
             "AHR.Store.StarterPack.InitialRewardsGranted.V1";
         private const string PendingPaidCurrencyCloudSyncKey =
             "AHR.Cloud.PendingPaidCurrencySync.V1";
+        private const string CompletedRunsSinceInterstitialKey =
+            "AHR.Ads.CompletedRunsSinceInterstitial.V1";
         private const string PurchasedGemTransactionKeyPrefix =
             "AHR.Store.Gems.Transaction.V1.";
         private const string FormulaLegacyWheelId = "formula-wheel-rainbow";
@@ -126,6 +128,28 @@ namespace AnimeHillRacing.Core
         public static float HighestAdventureBestDistance =>
             Mathf.Max(0f, PlayerPrefs.GetFloat(HighestAdventureBestDistanceKey, 0f));
         public static event System.Action CurrencyChanged;
+
+        public static int GetCompletedRunsSinceInterstitial(int frequency)
+        {
+            int maximumProgress = Mathf.Max(1, frequency) - 1;
+            return Mathf.Clamp(PlayerPrefs.GetInt(CompletedRunsSinceInterstitialKey, 0),
+                0, maximumProgress);
+        }
+
+        /// <summary>
+        /// Persists local ad-frequency progress and returns the just-completed run number.
+        /// A due run returns <paramref name="frequency"/> while storing zero for the next cycle.
+        /// </summary>
+        public static int RegisterCompletedRunForInterstitial(int frequency)
+        {
+            frequency = Mathf.Max(1, frequency);
+            int completed = GetCompletedRunsSinceInterstitial(frequency) + 1;
+            PlayerPrefs.SetInt(CompletedRunsSinceInterstitialKey,
+                completed >= frequency ? 0 : completed);
+            PlayerPrefs.Save();
+            return completed;
+        }
+
         public static GameModeType SelectedGameMode
         {
             get => (GameModeType)Mathf.Clamp(PlayerPrefs.GetInt(SelectedModeKey, 0), 0, 2);

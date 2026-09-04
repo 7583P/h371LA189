@@ -24,6 +24,7 @@ namespace AnimeHillRacing.Chests
         public int gemReward;
         public string blueprintBundleId;
         public int blueprintReward;
+        public int rewardedAdViews;
         public bool rewardClaimed;
         public bool seen;
 
@@ -49,7 +50,37 @@ namespace AnimeHillRacing.Chests
     {
         public int version = 1;
         public float chestGameplayProgress;
+        public string coinAdWindowStartUtc;
+        public int coinAdsViewed;
+        public string chestAdWindowStartUtc;
+        public int chestAdsViewed;
         public List<ChestRecord> inventory = new List<ChestRecord>();
+    }
+
+    public readonly struct RewardedAdQuota
+    {
+        public int Used { get; }
+        public int Limit { get; }
+        public DateTime ResetUtc { get; }
+        public int Remaining => Math.Max(0, Limit - Used);
+        public bool IsAvailable => Remaining > 0;
+
+        public RewardedAdQuota(int used, int limit, DateTime resetUtc)
+        {
+            Used = Math.Max(0, used);
+            Limit = Math.Max(0, limit);
+            ResetUtc = resetUtc.ToUniversalTime();
+        }
+    }
+
+    public sealed class ChestAdProgressResult
+    {
+        public bool Success { get; internal set; }
+        public ChestType Type { get; internal set; }
+        public int CompletedViews { get; internal set; }
+        public int RequiredViews { get; internal set; }
+        public bool ReadyToClaim { get; internal set; }
+        public RewardedAdQuota Quota { get; internal set; }
     }
 
     public sealed class ChestClaimResult

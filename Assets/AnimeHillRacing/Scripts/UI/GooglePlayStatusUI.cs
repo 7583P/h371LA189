@@ -1,3 +1,4 @@
+using AnimeHillRacing.Ads;
 using AnimeHillRacing.Core;
 using UnityEngine;
 using UnityEngine.UI;
@@ -11,6 +12,7 @@ namespace AnimeHillRacing.UI
         private Text connectLabel;
         private Button connectButton;
         private Button restoreButton;
+        private Button privacyButton;
         private IAuthenticationProvider authentication;
         private IStorePurchaseProvider store;
         private ICloudSaveProvider cloudSave;
@@ -52,6 +54,7 @@ namespace AnimeHillRacing.UI
             Unsubscribe();
             if (connectButton != null) connectButton.onClick.RemoveListener(Connect);
             if (restoreButton != null) restoreButton.onClick.RemoveListener(Restore);
+            if (privacyButton != null) privacyButton.onClick.RemoveListener(OpenPrivacyOptions);
         }
 
         public void Refresh()
@@ -78,6 +81,12 @@ namespace AnimeHillRacing.UI
                   authentication.IsConfigured &&
                   authentication.State != ExternalAuthenticationState.Authenticating;
             restoreButton.interactable = !restoring && store != null && store.IsReady;
+            bool privacyRequired = AdMobManager.PrivacyOptionsRequired;
+            privacyButton.gameObject.SetActive(privacyRequired);
+            privacyButton.interactable = privacyRequired;
+            RectTransform restoreRect = restoreButton.transform as RectTransform;
+            if (restoreRect != null)
+                restoreRect.anchorMax = new Vector2(privacyRequired ? .80f : .98f, .88f);
         }
 
         private void Connect()
@@ -118,6 +127,12 @@ namespace AnimeHillRacing.UI
             });
         }
 
+        private void OpenPrivacyOptions()
+        {
+            privacyButton.interactable = false;
+            AdMobManager.ShowPrivacyOptions(_ => Refresh());
+        }
+
         private void Subscribe()
         {
             IAuthenticationProvider nextAuthentication = ExternalServiceProviders.Authentication;
@@ -152,17 +167,21 @@ namespace AnimeHillRacing.UI
             background.raycastTarget = true;
 
             statusText = CreateText("Status", transform, "PLAY GAMES: NOT CONNECTED", 14,
-                TextAnchor.MiddleLeft, new Vector2(.025f, .08f), new Vector2(.48f, .92f));
+                TextAnchor.MiddleLeft, new Vector2(.025f, .08f), new Vector2(.40f, .92f));
             Sprite googlePlayConnectSprite = Resources.Load<Sprite>("UI/GooglePlayConnectButton");
-            connectButton = CreateButton("Connect", transform, new Vector2(.50f, .12f),
-                new Vector2(.70f, .88f), out connectLabel, googlePlayConnectSprite);
+            connectButton = CreateButton("Connect", transform, new Vector2(.42f, .12f),
+                new Vector2(.60f, .88f), out connectLabel, googlePlayConnectSprite);
             connectLabel.text = "CONNECT";
             connectLabel.enabled = googlePlayConnectSprite == null;
             connectButton.onClick.AddListener(Connect);
-            restoreButton = CreateButton("Restore Purchases", transform, new Vector2(.72f, .12f),
-                new Vector2(.98f, .88f), out Text restoreLabel);
+            restoreButton = CreateButton("Restore Purchases", transform, new Vector2(.62f, .12f),
+                new Vector2(.80f, .88f), out Text restoreLabel);
             restoreLabel.text = "RESTORE PURCHASES";
             restoreButton.onClick.AddListener(Restore);
+            privacyButton = CreateButton("Privacy", transform, new Vector2(.82f, .12f),
+                new Vector2(.98f, .88f), out Text privacyLabel);
+            privacyLabel.text = "PRIVACY";
+            privacyButton.onClick.AddListener(OpenPrivacyOptions);
             built = true;
         }
 

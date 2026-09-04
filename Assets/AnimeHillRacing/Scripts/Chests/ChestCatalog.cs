@@ -52,7 +52,14 @@ namespace AnimeHillRacing.Chests
     [CreateAssetMenu(menuName = "Anime Hill Racing/Chest Catalog", fileName = "ChestCatalog")]
     public sealed class ChestCatalog : ScriptableObject
     {
-        public const float GameplayIntervalSeconds = 1800f;
+        public const float GameplayIntervalSeconds = 300f;
+        public const int MaximumInventorySize = 6;
+        public const int CoinAdLimit = 3;
+        public const int CoinAdWindowHours = 6;
+        public const int CoinAdMinimumReward = 5000;
+        public const int CoinAdMaximumReward = 10000;
+        public const int ChestAdLimit = 6;
+        public const int ChestAdWindowHours = 12;
         public ChestDefinition[] chests;
         public Sprite shelfSprite;
         public Sprite coinsChestSprite;

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using AnimeHillRacing.Core;
 using UnityEngine;
 
@@ -36,14 +37,31 @@ namespace AnimeHillRacing.Chests
             EnsureLoaded();
             var granted = new List<ChestRecord>();
             if (catalog?.chestCatalog == null || realSeconds <= 0f) return granted;
+            if (data.inventory.Count >= ChestCatalog.MaximumInventorySize)
+            {
+                if (data.chestGameplayProgress > 0f)
+                {
+                    data.chestGameplayProgress = 0f;
+                    Flush();
+                }
+                return granted;
+            }
+
+            int availableSlots = ChestCatalog.MaximumInventorySize - data.inventory.Count;
             int awards = ChestProgressMath.Advance(ref data.chestGameplayProgress, realSeconds,
                 ChestCatalog.GameplayIntervalSeconds);
-            for (int i = 0; i < awards; i++)
+            int awardsToGrant = Mathf.Min(awards, availableSlots);
+            for (int i = 0; i < awardsToGrant; i++)
             {
                 ChestRecord chest = CreateChest(catalog, ChestRaritySelector.Roll(catalog.chestCatalog, Random), Random);
                 data.inventory.Add(chest);
                 granted.Add(chest);
             }
+
+            // Active play accumulated after storage becomes full must not be banked. Once a
+            // chest is claimed, the next five-minute cycle starts from zero again.
+            if (awards >= availableSlots && data.inventory.Count >= ChestCatalog.MaximumInventorySize)
+                data.chestGameplayProgress = 0f;
             if (granted.Count > 0 || Time.realtimeSinceStartup - lastFlushRealtime >= 1f)
                 Flush();
             return granted;
@@ -52,9 +70,12 @@ namespace AnimeHillRacing.Chests
         public static ChestRecord Grant(GameCatalog catalog, ChestType type)
         {
             EnsureLoaded();
-            if (catalog?.chestCatalog?.Find(type) == null) return null;
+            if (data.inventory.Count >= ChestCatalog.MaximumInventorySize ||
+                catalog?.chestCatalog?.Find(type) == null) return null;
             ChestRecord chest = CreateChest(catalog, type, Random);
             data.inventory.Add(chest);
+            if (data.inventory.Count >= ChestCatalog.MaximumInventorySize)
+                data.chestGameplayProgress = 0f;
             Flush();
             return chest;
         }
@@ -72,6 +93,7 @@ namespace AnimeHillRacing.Chests
             DateTime start = utcNow.ToUniversalTime();
             target.openStartedUtc = start.ToString("O");
             target.openReadyUtc = start.Add(definition.OpeningDuration).ToString("O");
+            target.rewardedAdViews = 0;
             target.state = ChestState.Opening;
             Flush();
             return true;
@@ -85,6 +107,100 @@ namespace AnimeHillRacing.Chests
                 changed |= data.inventory[i].RefreshState(utcNow);
             if (changed) Flush();
             return changed;
+        }
+
+        public static ChestRecord GetOpeningChest(DateTime utcNow)
+        {
+            EnsureLoaded();
+            RefreshOpeningStates(utcNow);
+            for (int i = 0; i < data.inventory.Count; i++)
+                if (data.inventory[i].state == ChestState.Opening) return data.inventory[i];
+            return null;
+        }
+
+        public static int GetRequiredAdViews(ChestType type)
+        {
+            switch (type)
+            {
+                case ChestType.Master: return 2;
+                case ChestType.Legendary: return 3;
+                default: return 1;
+            }
+        }
+
+        public static RewardedAdQuota GetCoinAdQuota(DateTime utcNow) =>
+            GetAdQuota(true, utcNow);
+
+        public static RewardedAdQuota GetChestAdQuota(DateTime utcNow) =>
+            GetAdQuota(false, utcNow);
+
+        public static bool TryClaimCoinAdReward(DateTime utcNow, out int coinReward,
+            out RewardedAdQuota quota)
+        {
+            EnsureLoaded();
+            DateTime now = utcNow.ToUniversalTime();
+            RefreshAdWindow(ref data.coinAdWindowStartUtc, ref data.coinAdsViewed,
+                ChestCatalog.CoinAdLimit, TimeSpan.FromHours(ChestCatalog.CoinAdWindowHours), now);
+            if (data.coinAdsViewed >= ChestCatalog.CoinAdLimit)
+            {
+                coinReward = 0;
+                quota = CreateQuota(data.coinAdWindowStartUtc, data.coinAdsViewed,
+                    ChestCatalog.CoinAdLimit, TimeSpan.FromHours(ChestCatalog.CoinAdWindowHours), now);
+                return false;
+            }
+
+            StartAdWindow(ref data.coinAdWindowStartUtc, now);
+            data.coinAdsViewed++;
+            coinReward = Random.Range(ChestCatalog.CoinAdMinimumReward,
+                ChestCatalog.CoinAdMaximumReward + 1);
+            SaveManager.AddCoins(coinReward, false);
+            quota = CreateQuota(data.coinAdWindowStartUtc, data.coinAdsViewed,
+                ChestCatalog.CoinAdLimit, TimeSpan.FromHours(ChestCatalog.CoinAdWindowHours), now);
+            Flush();
+            return true;
+        }
+
+        public static bool TryApplyAdToOpeningChest(DateTime utcNow, out ChestAdProgressResult result)
+        {
+            EnsureLoaded();
+            DateTime now = utcNow.ToUniversalTime();
+            RefreshOpeningStates(now);
+            RewardedAdQuota quota = GetChestAdQuota(now);
+            result = new ChestAdProgressResult { Quota = quota };
+            ChestRecord target = GetOpeningChest(now);
+            if (target == null || !quota.IsAvailable) return false;
+
+            int required = GetRequiredAdViews(target.type);
+            target.rewardedAdViews = Mathf.Clamp(target.rewardedAdViews, 0, required);
+            result.Type = target.type;
+            result.RequiredViews = required;
+            if (target.rewardedAdViews >= required)
+            {
+                target.state = ChestState.ReadyToClaim;
+                target.openReadyUtc = now.ToString("O");
+                result.Success = true;
+                result.CompletedViews = required;
+                result.ReadyToClaim = true;
+                Flush();
+                return true;
+            }
+
+            StartAdWindow(ref data.chestAdWindowStartUtc, now);
+            data.chestAdsViewed++;
+            target.rewardedAdViews++;
+            if (target.rewardedAdViews >= required)
+            {
+                target.state = ChestState.ReadyToClaim;
+                target.openReadyUtc = now.ToString("O");
+            }
+
+            result.Success = true;
+            result.CompletedViews = target.rewardedAdViews;
+            result.ReadyToClaim = target.state == ChestState.ReadyToClaim;
+            result.Quota = CreateQuota(data.chestAdWindowStartUtc, data.chestAdsViewed,
+                ChestCatalog.ChestAdLimit, TimeSpan.FromHours(ChestCatalog.ChestAdWindowHours), now);
+            Flush();
+            return true;
         }
 
         public static bool Claim(string chestId, GameCatalog catalog, DateTime utcNow,
@@ -135,7 +251,9 @@ namespace AnimeHillRacing.Chests
                 result.BlueprintRequirement = bundle?.BlueprintRequirement ?? 0;
                 result.BundleUnlocked = unlocked;
 
+                bool inventoryWasFull = data.inventory.Count >= ChestCatalog.MaximumInventorySize;
                 data.inventory.Remove(target);
+                if (inventoryWasFull) data.chestGameplayProgress = 0f;
                 SaveWithoutFlush();
                 PlayerPrefs.Save();
                 lastFlushRealtime = Time.realtimeSinceStartup;
@@ -201,6 +319,8 @@ namespace AnimeHillRacing.Chests
                     chest.gemReward = Mathf.Clamp(chest.gemReward, minimumGems, maximumGems);
                     chest.blueprintReward = Mathf.Clamp(chest.blueprintReward, 0,
                         Mathf.Max(0, definition.blueprintReward));
+                    chest.rewardedAdViews = Mathf.Clamp(chest.rewardedAdViews, 0,
+                        GetRequiredAdViews(chest.type));
                     if (chest.blueprintReward == 0 ||
                         PremiumBundleCatalog.Find(catalog, chest.blueprintBundleId) == null)
                     {
@@ -212,6 +332,7 @@ namespace AnimeHillRacing.Chests
                 imported.chestGameplayProgress = Mathf.Repeat(
                     Mathf.Max(0f, imported.chestGameplayProgress), ChestCatalog.GameplayIntervalSeconds);
                 data = imported;
+                NormalizeAdData(DateTime.UtcNow);
                 RefreshOpeningStatesWithoutSaving(DateTime.UtcNow);
                 SaveWithoutFlush();
                 return true;
@@ -274,6 +395,7 @@ namespace AnimeHillRacing.Chests
                 gemReward = gemReward,
                 blueprintBundleId = bundleId,
                 blueprintReward = string.IsNullOrEmpty(bundleId) ? 0 : definition.blueprintReward,
+                rewardedAdViews = 0,
                 rewardClaimed = false,
                 seen = false
             };
@@ -315,7 +437,96 @@ namespace AnimeHillRacing.Chests
             data.chestGameplayProgress = Mathf.Repeat(Mathf.Max(0f, data.chestGameplayProgress),
                 ChestCatalog.GameplayIntervalSeconds);
             data.inventory.RemoveAll(item => item == null || item.rewardClaimed || item.state == ChestState.Claimed);
+            for (int i = 0; i < data.inventory.Count; i++)
+                data.inventory[i].rewardedAdViews = Mathf.Clamp(data.inventory[i].rewardedAdViews, 0,
+                    GetRequiredAdViews(data.inventory[i].type));
+            NormalizeAdData(DateTime.UtcNow);
             RefreshOpeningStatesWithoutSaving(DateTime.UtcNow);
+        }
+
+        private static RewardedAdQuota GetAdQuota(bool coins, DateTime utcNow)
+        {
+            EnsureLoaded();
+            DateTime now = utcNow.ToUniversalTime();
+            bool changed;
+            RewardedAdQuota quota;
+            if (coins)
+            {
+                changed = RefreshAdWindow(ref data.coinAdWindowStartUtc, ref data.coinAdsViewed,
+                    ChestCatalog.CoinAdLimit, TimeSpan.FromHours(ChestCatalog.CoinAdWindowHours), now);
+                quota = CreateQuota(data.coinAdWindowStartUtc, data.coinAdsViewed,
+                    ChestCatalog.CoinAdLimit, TimeSpan.FromHours(ChestCatalog.CoinAdWindowHours), now);
+            }
+            else
+            {
+                changed = RefreshAdWindow(ref data.chestAdWindowStartUtc, ref data.chestAdsViewed,
+                    ChestCatalog.ChestAdLimit, TimeSpan.FromHours(ChestCatalog.ChestAdWindowHours), now);
+                quota = CreateQuota(data.chestAdWindowStartUtc, data.chestAdsViewed,
+                    ChestCatalog.ChestAdLimit, TimeSpan.FromHours(ChestCatalog.ChestAdWindowHours), now);
+            }
+            if (changed) Flush();
+            return quota;
+        }
+
+        private static void NormalizeAdData(DateTime utcNow)
+        {
+            DateTime now = utcNow.ToUniversalTime();
+            RefreshAdWindow(ref data.coinAdWindowStartUtc, ref data.coinAdsViewed,
+                ChestCatalog.CoinAdLimit, TimeSpan.FromHours(ChestCatalog.CoinAdWindowHours), now);
+            RefreshAdWindow(ref data.chestAdWindowStartUtc, ref data.chestAdsViewed,
+                ChestCatalog.ChestAdLimit, TimeSpan.FromHours(ChestCatalog.ChestAdWindowHours), now);
+        }
+
+        private static bool RefreshAdWindow(ref string startText, ref int used, int limit,
+            TimeSpan duration, DateTime utcNow)
+        {
+            bool changed = false;
+            int clamped = Mathf.Clamp(used, 0, limit);
+            if (clamped != used)
+            {
+                used = clamped;
+                changed = true;
+            }
+
+            if (string.IsNullOrWhiteSpace(startText))
+            {
+                if (used == 0) return changed;
+                used = 0;
+                return true;
+            }
+
+            if (!TryParseUtc(startText, out DateTime start) || utcNow < start || utcNow >= start.Add(duration))
+            {
+                startText = string.Empty;
+                used = 0;
+                return true;
+            }
+            return changed;
+        }
+
+        private static void StartAdWindow(ref string startText, DateTime utcNow)
+        {
+            if (string.IsNullOrWhiteSpace(startText)) startText = utcNow.ToUniversalTime().ToString("O");
+        }
+
+        private static RewardedAdQuota CreateQuota(string startText, int used, int limit,
+            TimeSpan duration, DateTime utcNow)
+        {
+            DateTime reset = TryParseUtc(startText, out DateTime start)
+                ? start.Add(duration) : utcNow.ToUniversalTime().Add(duration);
+            return new RewardedAdQuota(used, limit, reset);
+        }
+
+        private static bool TryParseUtc(string value, out DateTime utc)
+        {
+            if (DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind,
+                    out DateTime parsed))
+            {
+                utc = parsed.ToUniversalTime();
+                return true;
+            }
+            utc = default;
+            return false;
         }
 
         private static void RefreshOpeningStatesWithoutSaving(DateTime utcNow)

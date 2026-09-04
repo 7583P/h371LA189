@@ -38,6 +38,10 @@ namespace AnimeHillRacing.Editor
             HillUiRoot + "/Interface/Common/SettingsIcon.png";
         private const string HillChestSlotsPath =
             HillUiRoot + "/Interface/Adventure/ChestSlots.png";
+        private const string HillChestClapperPath =
+            HillUiRoot + "/Interface/Adventure/OpenClapperboardBadge.png";
+        private const string HillCoinRewardClapperPath =
+            HillUiRoot + "/Interface/Adventure/CoinRewardClapperboardBadge.png";
         private const string HillSkinsIconPath =
             HillUiRoot + "/Interface/Garage/SkinsIcon.png";
         private const string HillLowFuelPath = HillUiRoot + "/Game/HUD/LowFuel.png";
@@ -68,6 +72,32 @@ namespace AnimeHillRacing.Editor
             if (sprite == null)
                 throw new InvalidOperationException("Required Hill Adventurer UI sprite is missing or not imported: " + path);
             return sprite;
+        }
+
+        private static Image CreateChestClapperDecoration(Transform parent, bool horizontalLayout)
+        {
+            Image clapper = horizontalLayout
+                ? CreateSpriteImage("Open Clapperboard Badge", parent, RequireHillSprite(HillChestClapperPath),
+                    new Vector2(.5f, .5f), new Vector2(570f, 105f), new Vector2(92f, 92f))
+                : CreateSpriteImage("Open Clapperboard Badge", parent, RequireHillSprite(HillChestClapperPath),
+                    new Vector2(1f, 1f), new Vector2(-54f, -54f), new Vector2(96f, 96f));
+            clapper.preserveAspect = true;
+            clapper.raycastTarget = false;
+            return clapper;
+        }
+
+        private static Image CreateCoinRewardClapperDecoration(Transform parent, bool horizontalLayout)
+        {
+            Image clapper = horizontalLayout
+                ? CreateSpriteImage("Coin Reward Clapperboard Badge", parent,
+                    RequireHillSprite(HillCoinRewardClapperPath), new Vector2(.5f, .5f),
+                    new Vector2(680f, 105f), new Vector2(92f, 92f))
+                : CreateSpriteImage("Coin Reward Clapperboard Badge", parent,
+                    RequireHillSprite(HillCoinRewardClapperPath), new Vector2(1f, 1f),
+                    new Vector2(-54f, -154f), new Vector2(96f, 96f));
+            clapper.preserveAspect = true;
+            clapper.raycastTarget = false;
+            return clapper;
         }
 
         private static HillNavigationWidgets CreateHillTopNavigation(Transform safe,
@@ -287,10 +317,12 @@ namespace AnimeHillRacing.Editor
                 ">", new Vector2(650f, 8f), new Vector2(64f, 92f));
             Bind(previousChestPage, chestPanel.PreviousPage);
             Bind(nextChestPage, chestPanel.NextPage);
+            CreateChestClapperDecoration(chestRoot.transform, true);
+            CreateCoinRewardClapperDecoration(chestRoot.transform, true);
 
             GameObject progressBack = CreateImage("Next Chest Progress", chestRoot.transform,
                 new Color(.015f, .035f, .075f, .95f), new Vector2(.5f, .5f),
-                new Vector2(.5f, .5f), new Vector2(685f, 83f), new Vector2(260f, 24f));
+                new Vector2(.5f, .5f), new Vector2(685f, -5f), new Vector2(260f, 24f));
             Image progressFill = CreateImage("Fill", progressBack.transform,
                 new Color(.16f, .86f, .32f), Vector2.zero, Vector2.one,
                 new Vector2(3f, 3f), new Vector2(-6f, -6f)).GetComponent<Image>();
@@ -298,18 +330,18 @@ namespace AnimeHillRacing.Editor
             progressFill.fillMethod = Image.FillMethod.Horizontal;
             progressFill.fillOrigin = (int)Image.OriginHorizontal.Left;
             Text progressText = CreateText("Next Chest Timer", chestRoot.transform,
-                "NEXT CHEST  30:00", 16, TextAnchor.MiddleCenter,
+                "NEXT CHEST  05:00", 16, TextAnchor.MiddleCenter,
                 new Vector2(.5f, .5f), new Vector2(.5f, .5f),
-                new Vector2(685f, 112f), new Vector2(280f, 34f));
+                new Vector2(685f, 25f), new Vector2(280f, 34f));
             Text inventoryText = CreateText("Chest Inventory Page", chestRoot.transform,
-                "INVENTORY  0", 16, TextAnchor.MiddleCenter,
+                $"CHESTS  0 / {ChestCatalog.MaximumInventorySize}", 16, TextAnchor.MiddleCenter,
                 new Vector2(.5f, .5f), new Vector2(.5f, .5f),
-                new Vector2(685f, 45f), new Vector2(280f, 34f));
+                new Vector2(685f, -38f), new Vector2(280f, 34f));
             Text feedbackText = CreateText("Chest Feedback", chestRoot.transform, string.Empty, 15,
                 TextAnchor.UpperLeft, new Vector2(.5f, .5f), new Vector2(.5f, .5f),
-                new Vector2(700f, -48f), new Vector2(240f, 130f));
+                new Vector2(700f, -100f), new Vector2(240f, 72f));
             Image rewardThumbnail = CreateSpriteImage("Chest Blueprint Reward", chestRoot.transform,
-                null, new Vector2(.5f, .5f), new Vector2(620f, -45f), new Vector2(80f, 80f));
+                null, new Vector2(.5f, .5f), new Vector2(620f, -100f), new Vector2(68f, 68f));
             rewardThumbnail.enabled = false;
             chestPanel.Assign(assets.catalog, chestButtons, chestImages, chestLabels,
                 progressFill, progressText, inventoryText, feedbackText, rewardThumbnail,
@@ -1028,6 +1060,20 @@ namespace AnimeHillRacing.Editor
                 if (suppliedFrameCount != ChestPanelUI.SlotsPerPage)
                 {
                     Debug.LogError("PreStart: exactly three visual frames sliced from the supplied ChestSlots artwork are required.");
+                    valid = false;
+                }
+                Image clapper = FindHillComponent<Image>(scene, "Open Clapperboard Badge");
+                if (clapper == null || clapper.sprite != RequireHillSprite(HillChestClapperPath) ||
+                    clapper.raycastTarget)
+                {
+                    Debug.LogError("PreStart: the decorative open clapperboard is missing above-right of the chests.");
+                    valid = false;
+                }
+                Image coinClapper = FindHillComponent<Image>(scene, "Coin Reward Clapperboard Badge");
+                if (coinClapper == null || coinClapper.sprite != RequireHillSprite(HillCoinRewardClapperPath) ||
+                    coinClapper.raycastTarget)
+                {
+                    Debug.LogError("PreStart: the coin rewarded-ad clapperboard is missing above-right of the chests.");
                     valid = false;
                 }
             }

@@ -45,6 +45,8 @@ MonoBehaviour:
     minimumZoneSpacing: 300
     approachBlendLength: 50
     recoveryBlendLength: 50
+    crestApproachChance: 0.36
+    crestApproachRise: 3.2
     bridgeLength: 14
     normalWaterLength: 22
     progressiveBaseWaterLength: 22
@@ -62,11 +64,31 @@ MonoBehaviour:
     waterDriverDownClearance: 5
     bridgeColliderThickness: 0.45
     bridgeGroundOverlap: 1
+    exitRampLength: 14
+    exitRampRise: 1.8
     closedAngleDegrees: 0
     openAngleDegrees: 45
     transitionSeconds: 3
     closedHoldSeconds: 4
     openHoldSeconds: 4
+    minimumBoatZonesPerCycle: 5
+    maximumBoatZonesPerCycle: 10
+    minimumBoatsPerZone: 1
+    maximumBoatsPerZone: 3
+    minimumBoatWidth: 5.2
+    maximumBoatWidth: 9.5
+    boatColliderThickness: 0.62
+    boatDeckHeightFraction: 0.18
+    boatMass: 420
+    boatVerticalSpring: 24
+    boatVerticalDamping: 8
+    boatCenteringTorque: 2.4
+    boatAngularDamping: 1.1
+    boatMaximumTilt: 10
+    boatMaximumSink: 0.1
+    boatMaximumRise: 0.1
+    boatLaunchImpulse: 2
+    boatSprites: []
     bridgeSprite: {fileID: 0}
     waterSprite: {fileID: 0}
     bridgeArtSlopeDegrees: 16.1

@@ -45,6 +45,8 @@ MonoBehaviour:
     minimumZoneSpacing: 300
     approachBlendLength: 50
     recoveryBlendLength: 50
+    crestApproachChance: 0.36
+    crestApproachRise: 3.2
     bridgeLength: 14
     normalWaterLength: 22
     progressiveBaseWaterLength: 22
@@ -62,11 +64,31 @@ MonoBehaviour:
     waterDriverDownClearance: 5
     bridgeColliderThickness: 0.45
     bridgeGroundOverlap: 1
+    exitRampLength: 14
+    exitRampRise: 1.8
     closedAngleDegrees: 0
     openAngleDegrees: 45
     transitionSeconds: 3
     closedHoldSeconds: 4
     openHoldSeconds: 4
+    minimumBoatZonesPerCycle: 5
+    maximumBoatZonesPerCycle: 10
+    minimumBoatsPerZone: 1
+    maximumBoatsPerZone: 3
+    minimumBoatWidth: 5.2
+    maximumBoatWidth: 9.5
+    boatColliderThickness: 0.62
+    boatDeckHeightFraction: 0.18
+    boatMass: 420
+    boatVerticalSpring: 24
+    boatVerticalDamping: 8
+    boatCenteringTorque: 2.4
+    boatAngularDamping: 1.1
+    boatMaximumTilt: 10
+    boatMaximumSink: 0.1
+    boatMaximumRise: 0.1
+    boatLaunchImpulse: 2
+    boatSprites: []
     bridgeSprite: {fileID: 0}
     waterSprite: {fileID: 0}
     bridgeArtSlopeDegrees: 16.1
@@ -339,6 +361,67 @@ MonoBehaviour:
     veryHardBumpChance: 0.72
     veryHardBumpCooldownDistance: 1200
     veryHardBumpHeight: 18
+  useLastHorizonTerrain: 0
+  lastHorizon:
+    cycleLength: 10000
+    segmentLength: 250
+    launchSafetyLength: 160
+    cycleOneMaximumRelief: 58
+    cycleTwoMaximumRelief: 72
+    macroRelief: 12
+    minimumRoofZonesPerCycle: 2
+    maximumRoofZonesPerCycle: 3
+    roofLengthRange: {x: 200, y: 5000}
+    roofVehicleClearance: 6.4
+    roofThickness: 2.8
+    roofSampleSpacing: 6
+    roofTransportGapLength: 52
+    roofTransportPlatformWidth: 12
+    roofTransportPlatformThickness: 0.8
+    roofCrusherBlockCount: 3
+    roofCrusherBlockSize: 3.2
+    movingTerrainInterval: 6000
+    movingTerrainLengthRange: {x: 360, y: 620}
+    voidPlatformInterval: 8000
+    voidPlatformLengthRange: {x: 420, y: 760}
+    specialPhaseTransitionLength: 52
+    specialPhaseSeparation: 150
+    voidPlatformWidth: 12
+    voidPlatformGap: 6
+    voidPlatformThickness: 0.7
+    voidPlatformMaximumDrop: 12
+    voidDecorativePlatformCount: 8
+    movingHorizontalTravel: 1.15
+    movingVerticalTravel: 0.7
+    movingTerrainPeriod: 5.5
+    extremeBumpAngle: 80
+    extremeBumpHeight: 0.55
+    extremeBumpSpacing: 12
+    normalFuelGapRange: {x: 200, y: 500}
+    cycleResetFuelInterval: 20000
+    scarcityFuelGapRange: {x: 500, y: 1000}
+    fuelSafetySearchRadius: 30
+    fuelSafetySearchStep: 2
+    obstacleCellLength: 300
+    cycleOneObstacleChance: 0.42
+    cycleTwoObstacleChance: 0.72
+    obstacleStartSafety: 260
+    safeVehicleLength: 5.5
+    safeVehicleHeight: 3.6
+    obstacleSafetyMargin: 2.5
+    seesawWidth: 14
+    seesawMaximumAngle: 17
+    liftWidth: 12
+    liftTravel: 1.6
+    liftPeriod: 5.5
+    tiltingPlatformWidth: 13
+    tiltingPlatformMaximumAngle: 12
+    tiltingPlatformPeriod: 4.25
+    maximumRollers: 4
+    rollerRadius: 0.85
+    seesawSprite: {fileID: 0}
+    liftPlatformSprite: {fileID: 0}
+    rollerSprite: {fileID: 0}
   rainstorm:
     permanentRain: 0
     maximumParticles: 520

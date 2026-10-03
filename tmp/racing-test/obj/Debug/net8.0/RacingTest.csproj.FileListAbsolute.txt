@@ -1,0 +1,16 @@
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\racing-test\obj\Debug\net8.0\RacingTest.csproj.AssemblyReference.cache
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\racing-test\obj\Debug\net8.0\RacingTest.GeneratedMSBuildEditorConfig.editorconfig
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\racing-test\obj\Debug\net8.0\RacingTest.AssemblyInfoInputs.cache
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\racing-test\obj\Debug\net8.0\RacingTest.AssemblyInfo.cs
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\racing-test\obj\Debug\net8.0\RacingTest.csproj.CoreCompileInputs.cache
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\racing-test\obj\Debug\net8.0\RacingTest.sourcelink.json
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\racing-test\bin\Debug\net8.0\RacingTest.exe
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\racing-test\bin\Debug\net8.0\RacingTest.deps.json
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\racing-test\bin\Debug\net8.0\RacingTest.runtimeconfig.json
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\racing-test\bin\Debug\net8.0\RacingTest.dll
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\racing-test\bin\Debug\net8.0\RacingTest.pdb
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\racing-test\obj\Debug\net8.0\RacingTest.dll
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\racing-test\obj\Debug\net8.0\refint\RacingTest.dll
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\racing-test\obj\Debug\net8.0\RacingTest.pdb
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\racing-test\obj\Debug\net8.0\RacingTest.genruntimeconfig.cache
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\racing-test\obj\Debug\net8.0\ref\RacingTest.dll

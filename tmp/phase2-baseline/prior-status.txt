@@ -1,0 +1,31 @@
+﻿ M Assets/AnimeHillRacing/Prefabs/Vehicles/Buggy_3D.prefab
+ M Assets/AnimeHillRacing/Scripts/UI/MainMenuUI.cs
+ M Assets/AnimeHillRacing/Scripts/UI/PreStartMenuUI.cs
+ M Assets/AnimeHillRacing/Scripts/UI/TopNavigationUI.cs
+ M Assets/AnimeHillRacing/VehicleData/BuggyVehicle.asset
+ M Assets/AnimeHillRacing/VehicleData/FormulaVehicle.asset
+ M Assets/AnimeHillRacing/VehicleData/HillAdventurerVehicle.asset
+ M Assets/AnimeHillRacing/VehicleData/MainVehicle.asset
+ M Assets/AnimeHillRacing/VehicleData/RallyVehicle.asset
+ M Assets/AnimeHillRacing/VehicleData/SportBikeVehicle.asset
+ M ProjectSettings/EditorBuildSettings.asset
+ M tmp/editor-check/obj/Debug/EditorCheck.AssemblyInfo.cs
+ M tmp/editor-check/obj/Debug/EditorCheck.AssemblyInfoInputs.cache
+?? Assets/AnimeHillRacing/Scenes/Racing3D.unity
+?? Assets/AnimeHillRacing/Scenes/Racing3D.unity.meta
+?? Assets/AnimeHillRacing/Scenes/RacingGarage.unity
+?? Assets/AnimeHillRacing/Scenes/RacingGarage.unity.meta
+?? Assets/AnimeHillRacing/Scenes/RacingSelect.unity
+?? Assets/AnimeHillRacing/Scenes/RacingSelect.unity.meta
+?? Assets/AnimeHillRacing/Scripts/Editor/RacingSceneShortcuts.cs
+?? Assets/AnimeHillRacing/Scripts/Editor/RacingSceneShortcuts.cs.meta
+?? Assets/AnimeHillRacing/Scripts/Editor/RacingStandaloneBuilder.cs
+?? Assets/AnimeHillRacing/Scripts/Editor/RacingStandaloneBuilder.cs.meta
+?? Assets/AnimeHillRacing/Scripts/Editor/RacingSystemAuditor.cs
+?? Assets/AnimeHillRacing/Scripts/Editor/RacingSystemAuditor.cs.meta
+?? Assets/AnimeHillRacing/Scripts/Racing3D.meta
+?? Assets/AnimeHillRacing/Scripts/Racing3D/
+?? "Assets/_Recovery/0 (6).unity"
+?? "Assets/_Recovery/0 (6).unity.meta"
+?? tmp/phase2-baseline/
+?? tmp/racing-test/

@@ -31,10 +31,96 @@ namespace AnimeHillRacing.UI
             RefreshSelection();
         }
 
+        private void Start()
+        {
+            EnsureRacingTabButton();
+        }
+
+        private void EnsureRacingTabButton()
+        {
+            if (GameObject.Find("RACING_3D_NAV_BUTTON") != null) return;
+
+            // Find Adventure button to clone styling
+            UnityEngine.UI.Button advBtn = null;
+            if (adventureSelected != null)
+                advBtn = adventureSelected.GetComponentInParent<UnityEngine.UI.Button>();
+
+            if (advBtn == null)
+            {
+                var buttons = UnityEngine.Object.FindObjectsByType<UnityEngine.UI.Button>(FindObjectsSortMode.None);
+                foreach (var b in buttons)
+                {
+                    if (b.name == "ADVENTURE" || b.name.Contains("Adventure"))
+                    {
+                        advBtn = b;
+                        break;
+                    }
+                }
+            }
+
+            if (advBtn == null) return;
+
+            Transform container = advBtn.transform.parent;
+            GameObject racingBtnObj = Instantiate(advBtn.gameObject, container);
+            racingBtnObj.name = "RACING_3D_NAV_BUTTON";
+
+            var btn = racingBtnObj.GetComponent<UnityEngine.UI.Button>();
+            if (btn != null)
+            {
+                btn.onClick.RemoveAllListeners();
+                btn.onClick.AddListener(Racing);
+            }
+
+            var texts = racingBtnObj.GetComponentsInChildren<UnityEngine.UI.Text>(true);
+            foreach (var txt in texts)
+            {
+                if (txt.text.ToUpperInvariant().Contains("ADVENTURE"))
+                {
+                    txt.text = "RACING 3D";
+                    txt.color = new Color(1f, 0.85f, 0.2f, 1f);
+                }
+            }
+
+            foreach (Transform child in racingBtnObj.transform)
+            {
+                if (child.name.ToLowerInvariant().Contains("selected") || child.name.ToLowerInvariant().Contains("active"))
+                    child.gameObject.SetActive(false);
+            }
+
+            RectTransform advRt = advBtn.GetComponent<RectTransform>();
+            RectTransform racingRt = racingBtnObj.GetComponent<RectTransform>();
+
+            RectTransform garageRt = null;
+            RectTransform shopRt = null;
+            foreach (Transform child in container)
+            {
+                if (child == advBtn.transform || child == racingBtnObj.transform) continue;
+                if (child.name.Contains("GARAGE") || child.name.Contains("Garage")) garageRt = child as RectTransform;
+                if (child.name.Contains("SHOP") || child.name.Contains("Shop") || child.name.Contains("Store")) shopRt = child as RectTransform;
+            }
+
+            float scale = 0.82f;
+            advRt.localScale = new Vector3(scale, scale, 1f);
+            racingRt.localScale = new Vector3(scale, scale, 1f);
+            if (garageRt != null) garageRt.localScale = new Vector3(scale, scale, 1f);
+            if (shopRt != null) shopRt.localScale = new Vector3(scale, scale, 1f);
+
+            advRt.anchoredPosition = new Vector2(-360f, advRt.anchoredPosition.y);
+            racingRt.anchoredPosition = new Vector2(-120f, advRt.anchoredPosition.y);
+            if (garageRt != null) garageRt.anchoredPosition = new Vector2(120f, advRt.anchoredPosition.y);
+            if (shopRt != null) shopRt.anchoredPosition = new Vector2(360f, advRt.anchoredPosition.y);
+        }
+
         public void Adventure()
         {
             GameSession.BeginAdventureTrackSelection();
             SceneManager.LoadScene("PreStart");
+        }
+
+        public void Racing()
+        {
+            GameSession.ClearGarageContext();
+            SceneManager.LoadScene("RacingSelect");
         }
 
         public void Garage()

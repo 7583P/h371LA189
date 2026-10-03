@@ -670,6 +670,8 @@ namespace AnimeHillRacing.UI
         public void SelectAdventure2_5D() => SelectMode(GameModeType.Adventure2_5D);
         public void SelectAdventure3D() => SelectMode(GameModeType.Adventure3D);
         public void SelectTimeTrial3D() => SelectMode(GameModeType.TimeTrial3D);
+        public void SelectRacing3D() => SceneManager.LoadScene("RacingSelect");
+
         public void SelectClimb() => SelectAdventure2_5D();
         public void SelectRoad() => SelectAdventure3D();
 

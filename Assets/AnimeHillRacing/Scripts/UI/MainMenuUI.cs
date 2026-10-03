@@ -51,7 +51,11 @@ namespace AnimeHillRacing.UI
             SceneManager.LoadScene("PreStart");
         }
 
-        public void Play() => Race();
+        public void Play()
+        {
+            var menu = FindFirstObjectByType<AnimeHillRacing.Racing3D.RacingMainMenuUI>();
+            if (menu != null) menu.ShowPlayChoices(); else Race();
+        }
         public void Adventure() => Race();
 
         public void ThreeD()
@@ -69,6 +73,8 @@ namespace AnimeHillRacing.UI
         public void Store() => OpenGarage(GarageSection.Store);
         public void Shop() => OpenGarage(GarageSection.Store);
         public void Settings() => OpenGarage(GarageSection.Settings);
+        public void Racing() { GameSession.ClearGarageContext(); SceneManager.LoadScene("RacingSelect"); }
+
 
         public void TimeTrial()
         {

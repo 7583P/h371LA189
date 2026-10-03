@@ -19,6 +19,7 @@ namespace AnimeHillRacing.Core
         private static string pendingAdventureMapId = string.Empty;
 
         public static bool OpenTuningOnPreStart { get; set; }
+        public static bool IsAdventureSelectionRequested { get; private set; }
         public static GarageSection RequestedGarageSection { get; set; }
 
         /// <summary>
@@ -64,6 +65,7 @@ namespace AnimeHillRacing.Core
         public static void BeginAdventureTrackSelection()
         {
             ClearGarageContext();
+            IsAdventureSelectionRequested = true;
             SelectedGameMode = GameModeType.Adventure2_5D;
             SelectedTransmission = TransmissionMode.Auto;
             RequestedGarageSection = GarageSection.Vehicle;
@@ -98,6 +100,7 @@ namespace AnimeHillRacing.Core
 
         public static void ClearGarageContext()
         {
+            IsAdventureSelectionRequested = false;
             adventureGarageContext = false;
             pendingAdventureMapId = string.Empty;
         }

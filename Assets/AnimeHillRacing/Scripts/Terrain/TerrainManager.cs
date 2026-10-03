@@ -590,6 +590,14 @@ namespace AnimeHillRacing.Terrain
                             triangles.Add(previous + 1);
                             triangles.Add(current + 1);
                             triangles.Add(current);
+
+                            // Reverse winding for solid double-sided terrain collision
+                            triangles.Add(current);
+                            triangles.Add(previous + 1);
+                            triangles.Add(previous);
+                            triangles.Add(current);
+                            triangles.Add(current + 1);
+                            triangles.Add(previous + 1);
                         }
                     }
                     previousWorldX = leftWorld.x;

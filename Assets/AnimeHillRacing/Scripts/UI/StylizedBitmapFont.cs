@@ -446,7 +446,7 @@ namespace AnimeHillRacing.UI
         }
     }
 
-    internal sealed class StylizedBitmapFallbackMarker : MonoBehaviour { }
+    public sealed class StylizedBitmapFallbackMarker : MonoBehaviour { }
 
     [DefaultExecutionOrder(10000)]
     internal sealed class StylizedBitmapFontInstaller : MonoBehaviour

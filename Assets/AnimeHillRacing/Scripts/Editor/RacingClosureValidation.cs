@@ -35,12 +35,27 @@ namespace AnimeHillRacing.EditorTools
             Directory.CreateDirectory(SessionState.GetString(Prefix + "Output", ""));
             if (SessionState.GetString(Prefix + "Mode", "") == "build") { BuildPlayer(); return; }
             if (SessionState.GetString(Prefix + "Mode", "") == "adventure")
-            { SessionState.SetBool(Prefix + "Active",false); AdventurePhysics2DPlayModeRunner.RunFromCommandLine(); return; }
+            {
+                SessionState.SetBool(Prefix + "Active",false);
+                Directory.CreateDirectory("Temp");
+                // The Adventure runner defaults to Countryside. Request the full
+                // vehicle/map matrix explicitly without changing its physics fixture.
+                File.WriteAllText("Temp/RunAdventurePhysics2DValidation.request",
+                    "car-01,hill-adventurer-01,formula-01,rally-01,sport-bike-01|countryside,rainyer,neon-city,mountains,space");
+                return;
+            }
             if (SessionState.GetString(Prefix + "Mode", "") == "adventure-maps")
             {
                 SessionState.SetBool(Prefix + "Active",false);
                 Directory.CreateDirectory("Temp");
                 File.WriteAllText("Temp/RunAdventurePhysics2DValidation.request","car-01|countryside,rainyer,neon-city,mountains,space");
+                return;
+            }
+            if (SessionState.GetString(Prefix + "Mode", "") == "adventure-landing")
+            {
+                SessionState.SetBool(Prefix + "Active",false);
+                Directory.CreateDirectory("Temp");
+                File.WriteAllText("Temp/RunAdventurePhysics2DValidation.request","car-01|mountains");
                 return;
             }
             if (SessionState.GetString(Prefix + "Mode", "") == "contracts")

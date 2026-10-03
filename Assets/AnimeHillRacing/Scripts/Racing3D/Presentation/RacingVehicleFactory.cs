@@ -57,7 +57,7 @@ namespace AnimeHillRacing.Racing3D
             {
                 paint = identity.paintColor;
             }
-            else if (identity.buildCategory == MetaBuildCategory.Meta)
+            else if (identity.buildCategory == MetaBuildCategory.Meta || identity.vehicleId == "formula-01" || identity.vehicleId == MetaProgressionConfig.MetaVehicleId)
             {
                 paint = MetaYellow;
             }
@@ -66,7 +66,7 @@ namespace AnimeHillRacing.Racing3D
                 paint = colors[Mathf.Abs(identity.personalitySeed % colors.Length)];
             }
 
-            string wheel = (identity.buildCategory == MetaBuildCategory.Meta || identity.wheelId == "wheel-plasma" || identity.wheelId == "wheel-meta-cyan") ? "wheel-meta-cyan" : identity.wheelId;
+            string wheel = (identity.buildCategory == MetaBuildCategory.Meta || identity.vehicleId == "formula-01" || identity.wheelId == "wheel-plasma" || identity.wheelId == "wheel-meta-cyan") ? "wheel-meta-cyan" : identity.wheelId;
 
             RacingVehicleVisuals.Build(root, identity.vehicleId, wheel, paint, isHuman: identity.isHuman);
             return root;

@@ -11,11 +11,16 @@ namespace AnimeHillRacing.Racing3D
         public string name,vehicle,wheels;public int mmr,position,collisions,items,recoveries,checkpointVisits;public bool finished;
         public float drivingSeconds,averageSpeedKmh,offroadSeconds,driftSeconds,airborneSeconds,bestLap,finishTime;
         public int shortcutVisits;public List<float> lapTimes=new List<float>();
-        [NonSerialized] public RacingVehiclePhysics physics;[NonSerialized] public ItemInventory inventory;[NonSerialized] public VehicleRecovery recovery;[NonSerialized] public float speedIntegral,lastLapTime;[NonSerialized] public bool inShortcut;
+        public int wallCollisions,racerCollisions,itemHits,miniTurbos,jumps,tricks,landingBoosts,shortcutCompletions,passingDecisions,defensiveDecisions,trafficBrakingDecisions;
+        public string buildCategory; public float metaProbability;
+        public int driftJumpChains,jumpTrickLandingChains,boostsForShortcuts;
+        [NonSerialized] public RacingVehiclePhysics physics;[NonSerialized] public ItemInventory inventory;[NonSerialized] public VehicleRecovery recovery;[NonSerialized] public AiVehicleController ai;[NonSerialized] public float speedIntegral,lastLapTime;[NonSerialized] public bool inShortcut;
     }
     [Serializable] public sealed class RaceTelemetryReport
     {
         public string classification,quality,device,graphics,track;public int seed,frames,poolDroppedRequests;public float meanFrameMs,p95FrameMs,meanMainThreadMs,meanGpuMs,meanGcBytes,maxGcBytes;public bool gpuTimingAvailable;
+        public bool equalBuildBenchmark;
+        public bool offscreenRendering; public int frameRateLimit;
         public string processor,physicsCounter,aiCounter,drawCounter,batchCounter;
         public int processorCount,width,height,gpuFrames,poolCapacity,poolCreated,poolActiveAtFinish,poolPeakActive,poolActivations,poolReleases,poolReuses;
         public int particleSystems,peakActiveParticleSystems,peakParticles,vfxBursts,vfxEmittedParticles;
@@ -54,7 +59,7 @@ namespace AnimeHillRacing.Racing3D
         {
             if(state==RaceState.Racing)
             {
-                bound=true;report.timeScale=Time.timeScale;
+                bound=true;report.timeScale=Time.timeScale;report.frameRateLimit=Application.targetFrameRate;
                 createdAtGo=itemPool!=null?itemPool.CreatedCount:0;previousCollections=GC.CollectionCount(0);
                 return;
             }
@@ -62,7 +67,19 @@ namespace AnimeHillRacing.Racing3D
             // Prepare it during countdown, before the complete GO-to-Results sample.
             if(state!=RaceState.Countdown||prepared)return;prepared=true;
             report.seed=manager.EffectiveSeed;report.track=manager.ProgressTracker.TrackGraph.name;report.quality=RacingQualityScope.Current.ToString();report.device=SystemInfo.deviceModel;report.graphics=SystemInfo.graphicsDeviceName;
-            report.classification=Application.isEditor?"EDITOR_PLAY_MODE":"WINDOWS_STANDALONE";
+            report.equalBuildBenchmark=manager.Rules.EqualBuildBenchmark;
+            report.classification=Application.isEditor?(SystemInfo.graphicsDeviceType==UnityEngine.Rendering.GraphicsDeviceType.Null?"EDITOR_HEADLESS_PHYSICS":"EDITOR_PLAY_MODE"):"WINDOWS_STANDALONE";
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            report.offscreenRendering=FindFirstObjectByType<RacingRenderedPlayerProbe>()?.IsBound==true;
+            if(report.offscreenRendering)
+            {
+                report.classification="WINDOWS_STANDALONE_FULL_OFFSCREEN_RENDER";
+                // Uncapped profiling records many more frames than a 60 FPS race.
+                // Reserve storage before GO so diagnostic list growth cannot cause
+                // artificial allocation spikes in the measured gameplay interval.
+                frameSamples.Capacity=Mathf.Max(frameSamples.Capacity,200000);
+            }
+#endif
             report.processor=SystemInfo.processorType;report.processorCount=SystemInfo.processorCount;report.width=Screen.width;report.height=Screen.height;report.timeScale=Time.timeScale;
             report.mainThreadAvailable=mainThread.Valid;report.gcAvailable=gc.Valid;
             report.developmentBuild=Debug.isDebugBuild;report.hudEnabled=FindFirstObjectByType<RacingHUD>()!=null;
@@ -70,7 +87,7 @@ namespace AnimeHillRacing.Racing3D
             physics=Counter(available,out report.physicsCounter,"Physics.Simulate","Physics.Processing");
             ai=Counter(available,out report.aiCounter,"Racing.AI.Decide");
             drawCalls=Counter(available,out report.drawCounter,"Draw Calls Count");batches=Counter(available,out report.batchCounter,"Batches Count");
-            render=Counter(available,out report.renderCounter,"Camera.Render","Render Thread");
+            render=Counter(available,out report.renderCounter,"Racing.RenderProbe.Camera","Camera.Render","Render Thread");
             instantiate=Counter(available,out report.instantiateCounter,"Object.Instantiate","Instantiate");
             destroy=Counter(available,out report.destroyCounter,"Object.Destroy","Destroy");
             gcCollect=Counter(available,out report.gcCollectCounter,"GC.Collect","GarbageCollectIncremental");
@@ -85,7 +102,9 @@ namespace AnimeHillRacing.Racing3D
             foreach(var racer in manager.ProgressTracker.Leaderboard)
             {
                 var metric=new RacerTelemetry{name=racer.Identity.displayName,vehicle=racer.Identity.vehicleId,wheels=racer.Identity.wheelId,mmr=racer.Identity.mmr,physics=racer.Vehicle,inventory=racer.Vehicle.GetComponent<ItemInventory>(),recovery=racer.Recovery};
-                racer.Vehicle.OnImpact+=value=>{if(value>.12f)metric.collisions++;};report.racers.Add(metric);
+                metric.buildCategory=report.equalBuildBenchmark?"ControlledEqualBuild":racer.Identity.buildCategory.ToString();metric.metaProbability=racer.Identity.metaProbabilityUsed;
+                metric.ai=racer.Vehicle.GetComponent<AiVehicleController>();
+                report.racers.Add(metric);
             }
             manager.ProgressTracker.OnRacerLapCompleted+=Lap;
         }
@@ -95,18 +114,12 @@ namespace AnimeHillRacing.Racing3D
         }
         void FixedUpdate()
         {
-            if(!bound||manager.State!=RaceState.Racing)return;float dt=Time.fixedDeltaTime;
+            if(!bound||(manager.State!=RaceState.Racing&&manager.State!=RaceState.PlayerFinished&&manager.State!=RaceState.RaceFinishing))return;float dt=Time.fixedDeltaTime;
             foreach(var metric in report.racers)
             {
                 var progress=manager.ProgressTracker.FindRacer(metric.physics);if(progress.Finished)continue;
                 metric.drivingSeconds+=dt;metric.speedIntegral+=metric.physics.SpeedKmh*dt;if(metric.physics.IsOffroad)metric.offroadSeconds+=dt;if(metric.physics.IsDrifting)metric.driftSeconds+=dt;if(!metric.physics.IsGrounded)metric.airborneSeconds+=dt;
-                bool inShortcut=false;
-                if(metric.physics.IsOffroad)
-                {
-                    manager.ProgressTracker.TrackGraph.ProjectPosition(metric.physics.transform.position,out int node,out _,out _);
-                    foreach(var shortcut in manager.ProgressTracker.TrackGraph.Shortcuts)if(node>=shortcut.entryNodeIndex&&node<=shortcut.exitNodeIndex)inShortcut=true;
-                }
-                if(inShortcut&&!metric.inShortcut)metric.shortcutVisits++;metric.inShortcut=inShortcut;
+                SnapshotMechanics(metric);
             }
         }
         void Update()
@@ -156,6 +169,18 @@ namespace AnimeHillRacing.Racing3D
             if(vfxPool!=null){report.vfxBursts=vfxPool.BurstCount;report.vfxEmittedParticles=vfxPool.EmittedParticles;report.vfxSystemsCreated=vfxPool.CreatedSystems;report.impactBursts=vfxPool.ImpactBursts;report.boostBursts=vfxPool.BoostBursts;}
             foreach(var metric in report.racers){var progress=manager.ProgressTracker.FindRacer(metric.physics);metric.position=progress.RacePosition;metric.finished=progress.Finished;metric.finishTime=progress.FinishTime;metric.bestLap=progress.GetDisplayBestLap();metric.checkpointVisits=progress.CheckpointVisits;metric.items=metric.inventory.ItemsUsed;metric.recoveries=metric.recovery.RecoveryCount;metric.averageSpeedKmh=metric.drivingSeconds>0?metric.speedIntegral/metric.drivingSeconds:0;}
             Directory.CreateDirectory(Path.GetDirectoryName(path));File.WriteAllText(path,JsonUtility.ToJson(report,true));
+        }
+        static void SnapshotMechanics(RacerTelemetry metric)
+        {
+            var car=metric.physics;
+            metric.collisions=car.PhysicalCollisions;metric.wallCollisions=car.WallCollisions;metric.racerCollisions=car.RacerCollisions;metric.itemHits=car.ItemHits;
+            metric.miniTurbos=car.MiniTurbosReleased;metric.jumps=car.JumpsPerformed;metric.tricks=car.TricksPerformed;metric.landingBoosts=car.LandingBoosts;
+            metric.driftJumpChains=car.DriftJumpChains;metric.jumpTrickLandingChains=car.JumpTrickLandingChains;
+            var ai=metric.ai;
+            if(ai==null)return;
+            metric.shortcutVisits=ai.ShortcutEntries;metric.shortcutCompletions=ai.ShortcutCompletions;
+            metric.passingDecisions=ai.PassingDecisions;metric.defensiveDecisions=ai.DefensiveDecisions;metric.trafficBrakingDecisions=ai.TrafficBrakingDecisions;
+            metric.boostsForShortcuts=ai.BoostsForShortcuts;
         }
         void OnDestroy(){mainThread.Dispose();gc.Dispose();physics.Dispose();ai.Dispose();drawCalls.Dispose();batches.Dispose();render.Dispose();instantiate.Dispose();destroy.Dispose();gcCollect.Dispose();if(manager!=null){manager.OnStateChanged-=State;manager.OnRaceCompleted-=Complete;if(manager.ProgressTracker!=null)manager.ProgressTracker.OnRacerLapCompleted-=Lap;}}
     }

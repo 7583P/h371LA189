@@ -12,6 +12,7 @@ namespace AnimeHillRacing.Racing3D
         [SerializeField] private string wheelId = "wheel-default";
         [SerializeField] private LayerMask groundLayer = ~0;
         private Rigidbody body;
+        private VehicleRecovery recovery;
         private IVehicleCommandProvider commandProvider;
         private FinalRacingStats stats;
         private readonly RaycastHit[] groundHits = new RaycastHit[12];
@@ -29,6 +30,8 @@ namespace AnimeHillRacing.Racing3D
         private bool trickPerformed;
         private int trickCount;
         private float trickCooldownTimer;
+        Collider[] contacts;bool finishedGhost;
+        float lastMiniTurboTime=float.NegativeInfinity,lastJumpTime=float.NegativeInfinity;
 
         public Rigidbody Body => body != null ? body : (body = GetComponent<Rigidbody>());
         public FinalRacingStats Stats => stats;
@@ -41,12 +44,25 @@ namespace AnimeHillRacing.Racing3D
         public bool IsGrounded => isGrounded;
         public float AirborneTime => airborneTime;
         public bool IsDrifting => isDrifting;
+        public int DriftDirection => driftDirection;
         public bool IsPerformingTrick => trickPerformed;
         public int TrickCount => trickCount;
         public MiniTurboStage CurrentMiniTurboStage => currentMiniTurboStage;
         public float DriftCharge => Mathf.Clamp01(driftTime / 2.7f);
         public float SlipAngle => (body != null || (body = GetComponent<Rigidbody>()) != null) ? Mathf.Atan2(Vector3.Dot(body.linearVelocity, transform.right), Mathf.Max(1f, Mathf.Abs(ForwardSpeedMps))) * Mathf.Rad2Deg : 0f;
         public bool IsBoosting => boostTimer > 0f;
+        public float BoostRemainingSeconds => boostTimer;
+        public float BoostMultiplier => boostSpeedMultiplier;
+        public int PhysicalCollisions { get; private set; }
+        public int WallCollisions { get; private set; }
+        public int RacerCollisions { get; private set; }
+        public int ItemHits { get; private set; }
+        public int MiniTurbosReleased { get; private set; }
+        public int JumpsPerformed { get; private set; }
+        public int TricksPerformed { get; private set; }
+        public int LandingBoosts { get; private set; }
+        public int DriftJumpChains { get; private set; }
+        public int JumpTrickLandingChains { get; private set; }
         public bool IsSpunOut => spinoutTimer > 0f;
         public bool IsOffroad => isOffroad;
         public bool RaceEnabled => raceEnabled;
@@ -64,6 +80,8 @@ namespace AnimeHillRacing.Racing3D
         private void Awake()
         {
             if (body == null) body = GetComponent<Rigidbody>();
+            recovery = GetComponent<VehicleRecovery>();
+            contacts=GetComponents<Collider>();
             if (body != null)
             {
                 body.linearDamping = .12f;
@@ -91,10 +109,17 @@ namespace AnimeHillRacing.Racing3D
         public void SetCommandProvider(IVehicleCommandProvider provider) { commandProvider = provider; }
         public void SetRaceEnabled(bool enabled)
         {
+            if(enabled && finishedGhost){finishedGhost=false;foreach(var contact in contacts)contact.enabled=true;}
             raceEnabled = enabled;
             if (body == null) body = GetComponent<Rigidbody>();
             if (body != null) body.isKinematic = !enabled;
             LastCommands = VehicleCommands.Idle;
+        }
+        public void SetFinished()
+        {
+            ResetVelocities();
+            SetRaceEnabled(false);finishedGhost=true;
+            foreach(var contact in contacts)contact.enabled=false;
         }
         public void ApplyStats(FinalRacingStats resolved)
         {
@@ -113,7 +138,7 @@ namespace AnimeHillRacing.Racing3D
             jumpCooldownTimer = Mathf.Max(0, jumpCooldownTimer - dt);
             trickCooldownTimer = Mathf.Max(0, trickCooldownTimer - dt);
 
-            var recovery = GetComponent<VehicleRecovery>();
+            if (recovery == null) recovery = GetComponent<VehicleRecovery>();
             VehicleCommands cmd = recovery != null && recovery.IsRecovering ? VehicleCommands.Idle : commandProvider?.GetCommands() ?? VehicleCommands.Idle;
             LastCommands = cmd;
 
@@ -131,16 +156,17 @@ namespace AnimeHillRacing.Racing3D
                 coyoteTimer = 0f;
                 isGrounded = false;
                 Vector3 jumpDir = (groundNormal + Vector3.up * 1.5f).normalized;
-                body.AddForce(jumpDir * 6.5f, ForceMode.VelocityChange);
-                OnJump?.Invoke();
+                body.AddForce(jumpDir * 3.6f, ForceMode.VelocityChange);
+                NotifyJump();
                 RacingFeedback.Play(RacingCue.DriftHop);
             }
 
             // In-air trick / stunt action
-            if(!isGrounded && airborneTime > 0.14f && trickCooldownTimer <= 0f && (cmd.Trick || (cmd.Jump && !trickPerformed)))
+            if(!isGrounded && airborneTime > 0.14f && trickCount<2 && trickCooldownTimer <= 0f && (cmd.Trick || (cmd.Jump && !trickPerformed)))
             {
                 trickPerformed = true;
                 trickCount = Mathf.Min(trickCount + 1, 2);
+                TricksPerformed++;
                 trickCooldownTimer = 0.45f;
                 OnTrick?.Invoke(trickCount);
                 RacingFeedback.Play(RacingCue.DriftHop);
@@ -170,14 +196,14 @@ namespace AnimeHillRacing.Racing3D
                     if(groundHits[i].distance < closest) { closest = groundHits[i].distance; hit = groundHits[i]; }
                 }
                 if(closest == float.MaxValue) { suspension[w] = 0; continue; }
-                contacts++;
-                groundNormal += hit.normal;
+                float normalVelocity = Vector3.Dot(body.GetPointVelocity(origin),hit.normal);
+                if (closest <= 1.10f && normalVelocity < 1.5f)
+                { contacts++; groundNormal += hit.normal; }
                 var surface = hit.collider.GetComponent<RacingSurface>();
                 isOffroad |= surface != null && surface.IsOffroad;
                 suspension[w] = Mathf.Clamp01((1.05f-closest)/.45f);
                 if(raceEnabled && !body.isKinematic)
                 {
-                    float normalVelocity = Vector3.Dot(body.GetPointVelocity(origin),hit.normal);
                     float springAcceleration = Mathf.Clamp((.95f-closest)*190f-normalVelocity*18f,0,38f);
                     body.AddForceAtPosition(hit.normal*springAcceleration*body.mass*.25f,origin,ForceMode.Force);
                 }
@@ -197,6 +223,8 @@ namespace AnimeHillRacing.Racing3D
                             float boostMult = 1.22f + 0.08f * trickCount;
                             float boostDur = 1.15f + 0.35f * trickCount;
                             ApplySpeedBoost(boostMult, boostDur);
+                            LandingBoosts++;
+                            if(Time.time-lastJumpTime<3)JumpTrickLandingChains++;
                             OnLandingBoost?.Invoke();
                             RacingFeedback.Play(RacingCue.MiniTurbo);
                         }
@@ -235,6 +263,8 @@ namespace AnimeHillRacing.Racing3D
             if(boost && currentMiniTurboStage != MiniTurboStage.None)
             {
                 int stage = (int)currentMiniTurboStage;
+                MiniTurbosReleased++;
+                lastMiniTurboTime=Time.time;
                 ApplySpeedBoost(1f+.08f*stage,.45f+.35f*stage);
             }
             isDrifting = false; driftDirection = 0; driftTime = 0; currentMiniTurboStage = MiniTurboStage.None;
@@ -300,14 +330,22 @@ namespace AnimeHillRacing.Racing3D
         {
             if(!raceEnabled) return;
             spinoutTimer = Mathf.Max(spinoutTimer,Mathf.Clamp(duration,0,1.25f));
+            ItemHits++;
             EndDrift(false);
             OnImpact?.Invoke(.65f);
         }
         private void OnCollisionEnter(Collision collision)
         {
             if(!raceEnabled || Time.time < impactCooldown) return;
+            bool racerContact=collision.collider.GetComponentInParent<RacingVehiclePhysics>() != null;
+            bool wallContact=false;
+            for(int i=0;i<collision.contactCount;i++)wallContact|=Mathf.Abs(collision.GetContact(i).normal.y)<.65f;
+            if(!racerContact && !wallContact)return;
             float intensity = Mathf.Clamp01(collision.relativeVelocity.magnitude/18f);
             if(intensity < .08f) return;
+            PhysicalCollisions++;
+            if (racerContact) RacerCollisions++;
+            else WallCollisions++;
             impactCooldown = Time.time+.18f;
             OnImpact?.Invoke(intensity);
             if(collision.collider.GetComponentInParent<RacingVehiclePhysics>() == null && collision.contactCount > 0)
@@ -346,7 +384,9 @@ namespace AnimeHillRacing.Racing3D
         {
             if(body != null && !body.isKinematic) { body.linearVelocity = Vector3.zero; body.angularVelocity = Vector3.zero; }
             EndDrift(false); boostTimer = 0; boostSpeedMultiplier = 1; spinoutTimer = 0;
-            trickPerformed = false; trickCount = 0; jumpCooldownTimer = 0f; coyoteTimer = 0f;
+            trickPerformed = false; trickCount = 0; jumpCooldownTimer = trickCooldownTimer = airborneTime = 0f; coyoteTimer = 0f;
+            lastMiniTurboTime = lastJumpTime = float.NegativeInfinity;
         }
+        public void NotifyJump() { JumpsPerformed++;lastJumpTime=Time.time;if(Time.time-lastMiniTurboTime<2)DriftJumpChains++;OnJump?.Invoke(); }
     }
 }

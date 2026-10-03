@@ -108,7 +108,8 @@ namespace AnimeHillRacing.Racing3D
 
         private void BuildLobby()
         {
-            int playerMmr = RacingSaveManager.CurrentMmr;
+            int playerMmr = RacingTestSession.Active ? RacingTestSession.Mmr : RacingSaveManager.CurrentMmr;
+            if (RacingTestSession.Active) PersistResults = false;
             string playerVehicle = RacingSaveManager.SelectedVehicleId;
             string playerWheel = RacingSaveManager.SelectedWheelId;
 
@@ -117,8 +118,11 @@ namespace AnimeHillRacing.Racing3D
                 playerVehicle,
                 playerWheel,
                 "PLAYER",
-                EffectiveSeed = rules.RaceSeed != 0 ? rules.RaceSeed : UnityEngine.Random.Range(1, int.MaxValue)
+                EffectiveSeed = RacingTestSession.Active ? RacingTestSession.Seed : rules.RaceSeed != 0 ? rules.RaceSeed : UnityEngine.Random.Range(1, int.MaxValue)
             );
+            if (rules.EqualBuildBenchmark)
+                foreach (var racer in lobbyRacers)
+                { racer.vehicleId = MetaProgressionConfig.MetaVehicleId; racer.wheelId = MetaProgressionConfig.MetaWheelId; }
         }
 
         private void SpawnRacers()
@@ -234,6 +238,7 @@ namespace AnimeHillRacing.Racing3D
 
         private void HandleRacerFinished(RacerProgress racer, int finishPos)
         {
+            racer.Vehicle.SetFinished();
             if (racer.Identity.isHuman && currentState == RaceState.Racing)
             {
                 SetState(RaceState.PlayerFinished);
@@ -241,7 +246,7 @@ namespace AnimeHillRacing.Racing3D
                 if (playerInput != null) playerInput.SetInputEnabled(false);
             }
 
-            if (finishPos >= rules.TotalRacers && stateTimer <= 0f)
+            if (finishPos >= rules.TotalRacers)
             {
                 TransitionToResults();
             }

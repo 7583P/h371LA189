@@ -5,6 +5,7 @@ param(
     [float]$TimeScale = 4,
     [int]$Mmr = 1000,
     [switch]$Capture,
+    [switch]$Headless,
     [switch]$RestoreOnly
 )
 $ErrorActionPreference = 'Stop'
@@ -100,6 +101,10 @@ $snapshots | Export-Clixml -LiteralPath (Join-Path $validationOutput 'save-befor
 Write-Output ('Protected PlayerPrefs: ' + ($snapshots.Values | Measure-Object).Count + ' values.')
 $unityArguments = @('-batchmode','-force-d3d11','-projectPath',('"' + $validationRoot + '"'),'-buildTarget','Win64','-logFile',('"' + (Join-Path $validationOutput 'unity.log') + '"'),'-executeMethod','AnimeHillRacing.EditorTools.RacingClosureValidation.Run','--closure-output',('"' + $validationOutput + '"'),'--closure-mode',$Mode,'--closure-seeds',$Seeds,'--closure-timescale',$TimeScale.ToString([Globalization.CultureInfo]::InvariantCulture),'--closure-mmr',$Mmr)
 if ($Capture) { $unityArguments += '--closure-capture' }
+if ($Headless) {
+    if ($Mode -notin @('races', 'benchmark') -or $Capture) { throw 'Headless runs are limited to uncaptured Editor races and benchmarks.' }
+    $unityArguments += '-nographics'
+}
 if ($Mode -eq 'profile-player' -or $Mode -eq 'profile-rendered' -or $Mode -eq 'manual-player') {
     $unityExecutable = Join-Path $validationRoot 'Builds\Phase2Closure\HillAdventurerValidation.exe'
     if (!(Test-Path -LiteralPath $unityExecutable)) { throw 'Build the development player before profiling.' }
@@ -115,16 +120,17 @@ if ($Mode -eq 'profile-player' -or $Mode -eq 'profile-rendered' -or $Mode -eq 'm
 $validationExit = 1
 try {
     if ($Mode -eq 'profile-rendered' -or $Mode -eq 'manual-player') {
-        # The closure request needs the actual visible rendering/UI workload.
-        $validationProcess = Start-Process -FilePath $unityExecutable -ArgumentList $unityArguments -WindowStyle Normal -PassThru
+        # Render the full player workload without taking over the user's desktop.
+        $validationProcess = Start-Process -FilePath $unityExecutable -ArgumentList $unityArguments -WindowStyle Hidden -PassThru
     } else {
         $validationProcess = Start-Process -FilePath $unityExecutable -ArgumentList $unityArguments -WindowStyle Hidden -PassThru
     }
     Write-Output ('Unity validation PID: ' + $validationProcess.Id)
-    if (!$validationProcess.WaitForExit(1200000)) {
+    $validationTimeoutMs = if ($Mode -eq 'benchmark') { 2400000 } else { 1200000 }
+    if (!$validationProcess.WaitForExit($validationTimeoutMs)) {
         $validationProcess.Kill()
         $validationProcess.WaitForExit()
-        throw 'The validation exceeded 20 minutes; only its own Unity process was stopped.'
+        throw 'The validation exceeded its time limit; only its own Unity process was stopped.'
     }
     $validationExit = $validationProcess.ExitCode
 } finally {

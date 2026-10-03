@@ -1,0 +1,25 @@
+ M Assets/AnimeHillRacing/Scripts/Racing3D/AI/AiVehicleController.cs
+ M Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingClosureProbe.cs
+ M Assets/AnimeHillRacing/Scripts/Racing3D/MMR/MatchmakingService.cs
+ M Assets/AnimeHillRacing/Scripts/Racing3D/MMR/MetaProgressionConfig.cs
+ M Assets/AnimeHillRacing/Scripts/Racing3D/Presentation/RacingVehicleFactory.cs
+ M Assets/AnimeHillRacing/Scripts/Racing3D/Presentation/RacingVehicleVisuals.cs
+ M Assets/AnimeHillRacing/Scripts/Racing3D/Save/RacingSaveData.cs
+ M Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingGarageUI.cs
+ M Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingMainMenuUI.cs
+ M Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingShowroom.cs
+ M Assets/AnimeHillRacing/Scripts/Racing3D/Vehicles/RacingVehiclePhysics.cs
+ M tmp/editor-check/obj/Debug/EditorCheck.AssemblyInfo.cs
+ M tmp/editor-check/obj/Debug/EditorCheck.AssemblyInfoInputs.cache
+ M tmp/racing-test/bin/Debug/net10.0/Assembly-CSharp.dll
+ M tmp/racing-test/bin/Debug/net10.0/RacingTest.dll
+ M tmp/racing-test/bin/Debug/net10.0/RacingTest.exe
+ M tmp/racing-test/obj/Debug/net10.0/RacingTest.AssemblyInfo.cs
+ M tmp/racing-test/obj/Debug/net10.0/RacingTest.AssemblyInfoInputs.cache
+ M tmp/racing-test/obj/Debug/net10.0/RacingTest.csproj.AssemblyReference.cache
+ M tmp/racing-test/obj/Debug/net10.0/RacingTest.dll
+ M tmp/racing-test/obj/Debug/net10.0/RacingTest.sourcelink.json
+ M tmp/racing-test/obj/Debug/net10.0/apphost.exe
+ M tmp/racing-test/obj/Debug/net10.0/ref/RacingTest.dll
+ M tmp/racing-test/obj/Debug/net10.0/refint/RacingTest.dll
+?? tmp/racing-audit-20261003/

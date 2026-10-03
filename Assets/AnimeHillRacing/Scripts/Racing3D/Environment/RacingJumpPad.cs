@@ -32,6 +32,7 @@ namespace AnimeHillRacing.Racing3D
                 vehicle.Body.AddForce(transform.forward * (18f - currentFwd), ForceMode.VelocityChange);
             }
             LaunchCount++;
+            vehicle.NotifyJump();
             RacingVfxPool.Burst(vehicle.transform.position, RacingDesign.Cyan, 6);
         }
     }

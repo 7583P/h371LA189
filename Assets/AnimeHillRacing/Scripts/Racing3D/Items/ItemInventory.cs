@@ -8,10 +8,12 @@ namespace AnimeHillRacing.Racing3D
     {
         RacingVehiclePhysics vehicle;
         RacingItemPool pool;
+        TrackProgressTracker tracker;
         RaceItemType heldItem=RaceItemType.None,pendingItem;
         bool rolling,shieldActive;
         float rollStarted,shieldUntil,lastUse;
         readonly Collider[] hits=new Collider[64];
+        readonly RaycastHit[] sightHits=new RaycastHit[32];
         readonly RacingVehiclePhysics[] affected=new RacingVehiclePhysics[12];
         public RaceItemType HeldItem=>heldItem;
         public bool HasItem=>heldItem!=RaceItemType.None&&!rolling;
@@ -21,6 +23,9 @@ namespace AnimeHillRacing.Racing3D
         public float ShieldRemaining=>HasShield?shieldUntil-Time.time:0;
         public DeterministicRng ItemRng{get;private set;}
         public int ItemsUsed{get;private set;}
+        public int AcquisitionSerial { get; private set; }
+        public float LastAcquiredTime { get; private set; }
+        public bool HasMissileTarget => FindTarget() != null;
         public event Action<RaceItemType> OnItemReceived;
         public event Action<RaceItemType> OnItemUsed;
         void Awake(){vehicle=GetComponent<RacingVehiclePhysics>();}
@@ -28,14 +33,14 @@ namespace AnimeHillRacing.Racing3D
         void Update()
         {
             if(shieldActive&&Time.time>=shieldUntil)shieldActive=false;
-            if(rolling&&Time.time-rollStarted>=.9f){rolling=false;heldItem=pendingItem;OnItemReceived?.Invoke(heldItem);if(GetComponent<PlayerRacingInput>()!=null)RacingFeedback.Play(RacingCue.ItemReady);}
+            if(rolling&&Time.time-rollStarted>=.9f){rolling=false;heldItem=pendingItem;AcquisitionSerial++;LastAcquiredTime=Time.time;OnItemReceived?.Invoke(heldItem);if(GetComponent<PlayerRacingInput>()!=null)RacingFeedback.Play(RacingCue.ItemReady);}
             if(vehicle.RaceEnabled&&vehicle.LastCommands.UseItem)UseItem();
         }
         public void AcquireItem(RaceItemType type,bool rollRoulette=true)
         {
             if(HasItem||rolling||type==RaceItemType.None)return;
             if(rollRoulette){rolling=true;pendingItem=type;rollStarted=Time.time;}
-            else{heldItem=type;OnItemReceived?.Invoke(type);}
+            else{heldItem=type;AcquisitionSerial++;LastAcquiredTime=Time.time;OnItemReceived?.Invoke(type);}
         }
         public bool UseItem()
         {
@@ -52,7 +57,12 @@ namespace AnimeHillRacing.Racing3D
                     if(Physics.Raycast(position+Vector3.up*1.5f,Vector3.down,out var ground,4,~0,QueryTriggerInteraction.Ignore))position=ground.point+Vector3.up*.15f;
                     pool.Drop(vehicle,position,transform.rotation);break;
                 case RaceItemType.KineticMissile:
-                    var missile=pool.Fire(vehicle,transform.position+transform.forward*2.2f+Vector3.up*.35f,Quaternion.LookRotation(Vector3.ProjectOnPlane(transform.forward,Vector3.up),Vector3.up));
+                    Vector3 origin=transform.position+Vector3.up*.35f;
+                    float muzzleDistance=2.2f;
+                    int obstacles=Physics.SphereCastNonAlloc(origin,.18f,transform.forward,sightHits,muzzleDistance,~0,QueryTriggerInteraction.Ignore);
+                    for(int i=0;i<obstacles;i++)if(sightHits[i].collider.GetComponentInParent<RacingVehiclePhysics>()!=vehicle)
+                        muzzleDistance=Mathf.Min(muzzleDistance,Mathf.Max(.25f,sightHits[i].distance-.35f));
+                    var missile=pool.Fire(vehicle,origin+transform.forward*muzzleDistance,Quaternion.LookRotation(Vector3.ProjectOnPlane(transform.forward,Vector3.up),Vector3.up));
                     if(missile!=null)missile.SetTarget(FindTarget());break;
                 case RaceItemType.ShockwavePulse:Shockwave();break;
             }
@@ -61,14 +71,24 @@ namespace AnimeHillRacing.Racing3D
         }
         Transform FindTarget()
         {
-            var tracker=FindFirstObjectByType<TrackProgressTracker>();float nearest=42f;Transform result=null;
+            if(tracker==null)tracker=FindFirstObjectByType<TrackProgressTracker>();float nearest=42f;Transform result=null;
             if(tracker==null)return null;
-            foreach(var racer in tracker.Leaderboard)
+            var leaderboard=tracker.Leaderboard;
+            for(int racerIndex=0;racerIndex<leaderboard.Count;racerIndex++)
             {
+                var racer=leaderboard[racerIndex];
                 if(racer.Vehicle==vehicle||racer.Vehicle==null||racer.Finished)continue;
                 Vector3 delta=racer.Vehicle.transform.position-transform.position;float distance=delta.magnitude;
                 if(distance>=nearest||Vector3.Dot(delta.normalized,transform.forward)<.72f)continue;
-                if(Physics.Raycast(transform.position+transform.forward*2.1f+Vector3.up*.35f,delta.normalized,out var hit,distance,~0,QueryTriggerInteraction.Ignore)&&hit.collider.GetComponentInParent<RacingVehiclePhysics>()!=racer.Vehicle)continue;
+                Vector3 origin=transform.position+Vector3.up*.35f;
+                Vector3 aim=racer.Vehicle.transform.position+Vector3.up*.35f-origin;
+                int count=Physics.RaycastNonAlloc(origin,aim.normalized,sightHits,aim.magnitude,~0,QueryTriggerInteraction.Ignore);bool blocked=false;
+                for(int i=0;i<count;i++)
+                {
+                    var hitVehicle=sightHits[i].collider.GetComponentInParent<RacingVehiclePhysics>();
+                    if(hitVehicle!=vehicle&&hitVehicle!=racer.Vehicle){blocked=true;break;}
+                }
+                if(blocked)continue;
                 nearest=distance;result=racer.Vehicle.transform;
             }
             return result;

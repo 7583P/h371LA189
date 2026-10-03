@@ -17,6 +17,8 @@ namespace AnimeHillRacing.Racing3D
         private Quaternion lastSafeRotation = Quaternion.identity;
         private float flippedTimer;
         private float stuckTimer;
+        private Vector3 stuckAnchor;
+        private bool stuckAnchorValid;
         private float recoveryPenaltyRemaining;
         private float offTrackTimer;
         private TrackSplineGraph graph;
@@ -93,7 +95,9 @@ namespace AnimeHillRacing.Racing3D
             }
 
             bool belowRoad = !onShortcut && (transform.position.y < road.Position.y - 6f);
-            bool farFromRoad = !onShortcut && (Mathf.Abs(lateral) > road.TrackWidth * 0.5f + 18f);
+            // Rails bound the passable shoulders. The previous 18 m allowance
+            // left cars stranded on outer slopes beside the tunnel indefinitely.
+            bool farFromRoad = !onShortcut && (Mathf.Abs(lateral) > road.TrackWidth * 0.5f + 2f);
 
             offTrackTimer = (belowRoad || farFromRoad) ? offTrackTimer + dt : 0f;
             if (offTrackTimer > 1.4f) TriggerRecovery("Outside the course");
@@ -124,21 +128,30 @@ namespace AnimeHillRacing.Racing3D
 
         private void CheckStuck(float dt)
         {
-            if (vehiclePhysics == null || IsRecovering) return;
+            if (vehiclePhysics == null || IsRecovering)
+            {
+                stuckTimer = 0f;
+                stuckAnchor = transform.position;
+                return;
+            }
 
             VehicleCommands cmd = vehiclePhysics.LastCommands;
             bool tryingToDrive = cmd.Throttle > 0.25f || cmd.Brake > 0.25f;
-            if (tryingToDrive && vehiclePhysics.SpeedMps < 0.8f && vehiclePhysics.IsGrounded)
+            // Contact jitter can repeatedly exceed a speed threshold without making
+            // any progress. Measure displacement over the same shared timeout instead.
+            if (!tryingToDrive || !stuckAnchorValid || (transform.position - stuckAnchor).sqrMagnitude > 9f)
             {
-                stuckTimer += dt;
-                if (stuckTimer >= stuckDurationThreshold)
-                {
-                    TriggerRecovery("Vehicle stuck");
-                }
+                stuckAnchor = transform.position;
+                stuckAnchorValid = true;
+                stuckTimer = 0f;
             }
             else
             {
-                stuckTimer = 0f;
+                stuckTimer += dt;
+                if (stuckTimer >= stuckDurationThreshold && vehiclePhysics.IsGrounded)
+                {
+                    TriggerRecovery("Vehicle stuck");
+                }
             }
         }
 

@@ -161,7 +161,7 @@ namespace AnimeHillRacing.Racing3D
                             r.Vehicle.transform.position,
                             out int nearestNode,
                             out float distAlongTrack,
-                            out _
+                            out float lateral
                         );
 
                         r.DistanceAlongTrack = distAlongTrack;
@@ -169,7 +169,9 @@ namespace AnimeHillRacing.Racing3D
                         if (!r.HasCrossedStart && distAlongTrack > trackLen * 0.75f) r.TotalDistance -= trackLen;
 
                         // Update safe recovery anchor regularly
-                        if (r.Recovery != null && !r.Recovery.IsRecovering && r.Vehicle.IsGrounded && !r.Vehicle.IsOffroad)
+                        var road = trackGraph.SampleDistance(distAlongTrack);
+                        if (r.Recovery != null && !r.Recovery.IsRecovering && r.Vehicle.IsGrounded && !r.Vehicle.IsOffroad &&
+                            Mathf.Abs(lateral) < road.TrackWidth * .45f && Mathf.Abs(r.Vehicle.transform.position.y - road.Position.y) < 2.5f)
                         {
                             trackGraph.GetSafeRecoveryAnchor(nearestNode, out Vector3 safePos, out Quaternion safeRot);
                             r.Recovery.SetLastSafeTransform(safePos, safeRot);

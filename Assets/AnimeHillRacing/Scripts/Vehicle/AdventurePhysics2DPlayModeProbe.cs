@@ -291,20 +291,34 @@ namespace AnimeHillRacing.Vehicle
             Debug.Log($"ADVENTURE_BOX2D_STAGE|vehicle={expectedVehicleId}|stage={stage}");
             sampleLanding = true;
             int stableSteps = 0;
+            int worldVerticalStableSteps = 0, maximumWorldVerticalStableSteps = 0;
+            float landingNormalSpeed = float.NaN, landingSlope = float.NaN;
             for (int step = 0; step < MaximumLandingSteps; step++)
             {
                 yield return WaitFixed;
                 bool both = vehicle.FrontWheelGrounded && vehicle.RearWheelGrounded;
+                bool sampledSurface = terrain.TrySampleAuthoritativeSurface(chassis.position.x, out _, out landingSlope);
+                float slopeRadians = landingSlope * Mathf.Deg2Rad;
+                Vector2 surfaceNormal = new Vector2(-Mathf.Sin(slopeRadians), Mathf.Cos(slopeRadians));
+                landingNormalSpeed = Mathf.Abs(Vector2.Dot(chassis.linearVelocity, surfaceNormal));
+                // Keep the original acceptance criterion during this diagnostic.
+                // The terrain-normal measurement is additional evidence only.
                 if (both && Mathf.Abs(chassis.linearVelocity.y) < 1.5f)
                     stableSteps++;
                 else
                     stableSteps = 0;
+                worldVerticalStableSteps = both && Mathf.Abs(chassis.linearVelocity.y) < 1.5f
+                    ? worldVerticalStableSteps + 1 : 0;
+                maximumWorldVerticalStableSteps = Mathf.Max(maximumWorldVerticalStableSteps, worldVerticalStableSteps);
                 if (stableSteps >= 12)
                 {
                     landingRecovered = true;
                     break;
                 }
             }
+            Debug.Log($"ADVENTURE_BOX2D_LANDING_RECOVERY|vehicle={expectedVehicleId}|map={expectedMapId}|" +
+                      $"normalStableSteps={stableSteps}|maximumWorldVerticalStableSteps={maximumWorldVerticalStableSteps}|" +
+                      $"normalSpeed={landingNormalSpeed:F4}|worldVerticalSpeed={chassis.linearVelocity.y:F4}|slope={landingSlope:F3}");
             sampleLanding = false;
             SetPedals(false, false);
             if (!landingEverAirborne)

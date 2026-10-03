@@ -19,20 +19,41 @@ namespace AnimeHillRacing.Racing3D
             }
             return samples;
         }
-        public static GameObject Ribbon(Transform parent, string name, TrackNode[] nodes, float innerOffset, float outerOffset, Material material, RacingSurfaceKind surface, bool collider = true, bool relativeWidth = false, int gapStart = -1, int gapEnd = -1, float outerDrop = 0)
+        // Tangent-matched approaches surround a straight launch/landing corridor.
+        // Geometry and navigation share these samples, including both exact endpoints.
+        public static Vector3[] ShortcutPath(TrackNode entry, TrackNode exit)
+        {
+            Vector3 chord = exit.Position - entry.Position;
+            Vector3 direction = chord.normalized;
+            float handle = Mathf.Clamp(chord.magnitude * .18f, 18, 34);
+            Vector3 first = entry.Position + chord * .28f, last = entry.Position + chord * .72f;
+            var path = new Vector3[25];
+            for (int i = 0; i <= 8; i++)
+            {
+                float t = i / 8f, u = 1 - t;
+                path[i] = u*u*u*entry.Position + 3*u*u*t*(entry.Position + entry.Forward*handle) +
+                    3*u*t*t*(first - direction*handle) + t*t*t*first;
+                path[16+i] = u*u*u*last + 3*u*u*t*(last + direction*handle) +
+                    3*u*t*t*(exit.Position - exit.Forward*handle) + t*t*t*exit.Position;
+                path[8+i] = Vector3.Lerp(first,last,t);
+            }
+            return path;
+        }
+        public static GameObject Ribbon(Transform parent, string name, TrackNode[] nodes, float innerOffset, float outerOffset, Material material, RacingSurfaceKind surface, bool collider = true, bool relativeWidth = false, int gapStart = -1, int gapEnd = -1, float outerDrop = 0, bool closed = true)
         {
             int count = nodes.Length;
-            Vector3[] vertices = new Vector3[(count + 1) * 2];
+            int segments = closed ? count : count-1;
+            Vector3[] vertices = new Vector3[(segments + 1) * 2];
             Vector2[] uv = new Vector2[vertices.Length];
             var triangles = new System.Collections.Generic.List<int>(count * 6);
-            for (int i = 0; i <= count; i++)
+            for (int i = 0; i <= segments; i++)
             {
                 var n = nodes[i % count];
                 float widthScale = relativeWidth ? n.TrackWidth / 20f : 1f;
                 vertices[i * 2] = n.Position + n.Right * innerOffset * widthScale;
                 vertices[i * 2 + 1] = n.Position + n.Right * outerOffset * widthScale - Vector3.up * outerDrop;
                 uv[i * 2] = new Vector2(0, i * .5f); uv[i * 2 + 1] = new Vector2(1, i * .5f);
-                if (i == count) continue;
+                if (i == segments) continue;
                 int v = i * 2;
                 if (i >= gapStart && i < gapEnd) continue;
                 if (outerOffset > innerOffset)
@@ -72,7 +93,7 @@ namespace AnimeHillRacing.Racing3D
                     colTris.Add(triangles[t + 1] + topLen);
                 }
                 // Side skirts (inner and outer boundaries)
-                for (int i = 0; i < count; i++)
+                for (int i = 0; i < segments; i++)
                 {
                     if (i >= gapStart && i < gapEnd) continue;
                     int i0 = i * 2, i1 = (i + 1) * 2;

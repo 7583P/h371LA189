@@ -1,0 +1,176 @@
+#if UNITY_EDITOR
+using System;
+using System.Collections.Generic;
+using System.IO;
+using AnimeHillRacing.Core;
+using AnimeHillRacing.Terrain;
+using GooglePlayGames.Editor;
+using UnityEditor;
+using UnityEditor.Build.Reporting;
+using UnityEngine;
+
+namespace AnimeHillRacing.Editor
+{
+    public static class GooglePlayReleaseIntegration
+    {
+        private const string AppId = "1059931844415";
+        private const string Package = "com.matias.hilladventurer";
+        private const string StarterProduct = "starter_pack";
+        private const string CloudSaveFilename = "hill-adventurer-save-v1";
+        private const string StarterVehicle = "formula-01";
+        private const string StarterSkin = "formula-skin-hill-adventurer-gold";
+        private const string StarterWheel = "formula-wheel-luxury";
+        private const string StarterAccessory = "baseball-cap-rainbow";
+
+        private static readonly string[] GemProductIds =
+        {
+            "gems_300", "gems_900", "gems_2000", "gems_5000",
+            "gems_10000", "gems_25000", "gems_50000", "gems_100000"
+        };
+
+        private static readonly int[] GemAmounts =
+            { 300, 900, 2000, 5000, 10000, 25000, 50000, 100000 };
+
+        private static readonly string[] GemReferenceUsdPrices =
+            { "$0.99", "$2.59", "$4.99", "$9.99", "$15.99", "$29.99", "$49.99", "$79.99" };
+
+        private static readonly Dictionary<string, string> Leaderboards =
+            new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                { "Countryside", "CgkIv97xxuweEAIQAQ" },
+                { "City", "CgkIv97xxuweEAIQAg" },
+                { "NeonCity", "CgkIv97xxuweEAIQAw" },
+                { "Mountains", "CgkIv97xxuweEAIQBA" },
+                { "Rainyer", "CgkIv97xxuweEAIQBQ" },
+                { "Space", "CgkIv97xxuweEAIQBg" },
+                { "NorthPole", "CgkIv97xxuweEAIQBw" },
+                { "LastHorizon", "CgkIv97xxuweEAIQCA" }
+            };
+
+        public static void ConfigureAndValidateBatch()
+        {
+            Configure();
+            ValidateOrThrow();
+            Debug.Log("GOOGLE_PLAY_LOCAL_INTEGRATION_OK");
+        }
+
+        public static void BuildReleaseAabBatch()
+        {
+            ValidateOrThrow();
+            if (PlayerSettings.Android.bundleVersionCode < 19)
+                throw new InvalidOperationException("Release versionCode must be at least 19.");
+            string keystorePassword = Environment.GetEnvironmentVariable(
+                "HILL_ADVENTURER_KEYSTORE_PASSWORD");
+            string keyaliasPassword = Environment.GetEnvironmentVariable(
+                "HILL_ADVENTURER_KEYALIAS_PASSWORD");
+            if (string.IsNullOrEmpty(keystorePassword) || string.IsNullOrEmpty(keyaliasPassword))
+                throw new InvalidOperationException("Release signing passwords were not provided in the " +
+                    "HILL_ADVENTURER_KEYSTORE_PASSWORD and HILL_ADVENTURER_KEYALIAS_PASSWORD environment variables.");
+            PlayerSettings.Android.keystorePass = keystorePassword;
+            PlayerSettings.Android.keyaliasPass = keyaliasPassword;
+            EditorUserBuildSettings.buildAppBundle = true;
+            EditorUserBuildSettings.development = false;
+            EditorUserBuildSettings.allowDebugging = false;
+
+            string root = Directory.GetParent(Application.dataPath).FullName;
+            string outputDirectory = Path.Combine(root, "Builds", "Android");
+            Directory.CreateDirectory(outputDirectory);
+            string output = Path.Combine(outputDirectory,
+                "HillAdventurer-v" + PlayerSettings.Android.bundleVersionCode + ".aab");
+            var scenes = new List<string>();
+            foreach (EditorBuildSettingsScene scene in EditorBuildSettings.scenes)
+                if (scene.enabled) scenes.Add(scene.path);
+
+            AssetDatabase.SaveAssets();
+            BuildReport report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
+            {
+                scenes = scenes.ToArray(),
+                locationPathName = output,
+                target = BuildTarget.Android,
+                options = BuildOptions.None
+            });
+            if (report.summary.result != BuildResult.Succeeded)
+                throw new InvalidOperationException("AAB build failed: " + report.summary.result +
+                    ", errors=" + report.summary.totalErrors);
+            Debug.Log("HILL_ADVENTURER_RELEASE_AAB_OK: " + output + " bytes=" +
+                report.summary.totalSize + " versionCode=" + PlayerSettings.Android.bundleVersionCode);
+        }
+
+        private static void Configure()
+        {
+            if (!GPGSAndroidSetupUI.PerformSetup(string.Empty, AppId, null))
+                throw new InvalidOperationException("Official GPGS Android setup failed.");
+
+            foreach (KeyValuePair<string, string> entry in Leaderboards)
+            {
+                string path = "Assets/AnimeHillRacing/MapProfiles/" + entry.Key + ".asset";
+                MapProfile profile = AssetDatabase.LoadAssetAtPath<MapProfile>(path);
+                if (profile == null) throw new InvalidOperationException("Missing MapProfile: " + path);
+                SerializedObject serialized = new SerializedObject(profile);
+                SerializedProperty id = serialized.FindProperty("leaderboardId");
+                if (id == null) throw new InvalidOperationException("Missing leaderboardId: " + path);
+                id.stringValue = entry.Value;
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+                EditorUtility.SetDirty(profile);
+            }
+
+            const string starterPath = "Assets/AnimeHillRacing/Resources/StarterPackConfiguration.asset";
+            StarterPackConfiguration starter =
+                AssetDatabase.LoadAssetAtPath<StarterPackConfiguration>(starterPath);
+            if (starter == null) throw new InvalidOperationException("Missing Starter Pack configuration.");
+            SerializedObject starterSerialized = new SerializedObject(starter);
+            starterSerialized.FindProperty("googlePlayProductId").stringValue = StarterProduct;
+            starterSerialized.FindProperty("exclusiveVehicleId").stringValue = StarterVehicle;
+            starterSerialized.FindProperty("exclusiveSkinId").stringValue = StarterSkin;
+            starterSerialized.FindProperty("exclusiveWheelId").stringValue = StarterWheel;
+            starterSerialized.FindProperty("exclusiveAccessoryId").stringValue = StarterAccessory;
+            starterSerialized.FindProperty("coinReward").intValue = 500000;
+            starterSerialized.FindProperty("gemReward").intValue = 1000;
+            starterSerialized.FindProperty("enableCloudSave").boolValue = true;
+            starterSerialized.FindProperty("cloudSaveFilename").stringValue = CloudSaveFilename;
+            starterSerialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(starter);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+        }
+
+        private static void ValidateOrThrow()
+        {
+            if (PlayerSettings.GetApplicationIdentifier(BuildTargetGroup.Android) != Package)
+                throw new InvalidOperationException("Unexpected Android package.");
+            GooglePlayGames.PlayGamesSettings settings =
+                GooglePlayGames.PlayGamesSettings.LoadInstance();
+            if (settings == null || settings.AppId != AppId)
+                throw new InvalidOperationException("GPGS App ID was not persisted.");
+            foreach (KeyValuePair<string, string> entry in Leaderboards)
+            {
+                MapProfile profile = AssetDatabase.LoadAssetAtPath<MapProfile>(
+                    "Assets/AnimeHillRacing/MapProfiles/" + entry.Key + ".asset");
+                SerializedProperty id = new SerializedObject(profile).FindProperty("leaderboardId");
+                if (id == null || id.stringValue != entry.Value)
+                    throw new InvalidOperationException("Leaderboard mismatch: " + entry.Key);
+            }
+            StarterPackConfiguration starter = AssetDatabase.LoadAssetAtPath<StarterPackConfiguration>(
+                "Assets/AnimeHillRacing/Resources/StarterPackConfiguration.asset");
+            if (starter == null || starter.googlePlayProductId != StarterProduct)
+                throw new InvalidOperationException("Starter Pack Product ID mismatch.");
+            if (starter.exclusiveVehicleId != StarterVehicle || starter.exclusiveSkinId != StarterSkin ||
+                starter.exclusiveWheelId != StarterWheel || starter.exclusiveAccessoryId != StarterAccessory ||
+                starter.coinReward != 500000 || starter.gemReward != 1000)
+                throw new InvalidOperationException("Starter Pack reward configuration mismatch.");
+            if (!starter.enableCloudSave || starter.cloudSaveFilename != CloudSaveFilename)
+                throw new InvalidOperationException("Google Play Saved Games configuration mismatch.");
+            IReadOnlyList<GemPackProduct> gemPacks = GemPackCatalog.Products;
+            if (gemPacks.Count != GemProductIds.Length)
+                throw new InvalidOperationException("Gem product count mismatch.");
+            for (int i = 0; i < gemPacks.Count; i++)
+                if (gemPacks[i].ProductId != GemProductIds[i] ||
+                    gemPacks[i].GemAmount != GemAmounts[i] ||
+                    gemPacks[i].ReferenceUsdPrice != GemReferenceUsdPrices[i])
+                    throw new InvalidOperationException("Gem product mismatch at index " + i + ".");
+            if (!File.Exists("Assets/Plugins/Android/GooglePlayGamesManifest.androidlib/AndroidManifest.xml"))
+                throw new InvalidOperationException("Generated GPGS Android manifest missing.");
+        }
+    }
+}
+#endif

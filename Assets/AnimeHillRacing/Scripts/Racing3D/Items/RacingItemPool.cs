@@ -28,6 +28,17 @@ namespace AnimeHillRacing.Racing3D
             var pool = FindFirstObjectByType<RacingItemPool>();
             return pool != null ? pool : new GameObject("Racing item pool").AddComponent<RacingItemPool>();
         }
+        // Public world information only. Cheap scan of the existing fixed-size pool.
+        public bool HasIncomingThreat(RacingVehiclePhysics racer)
+        {
+            foreach (var missile in missiles)
+            {
+                if (!missile.gameObject.activeSelf || missile.Owner == racer) continue;
+                Vector3 delta = racer.transform.position - missile.transform.position;
+                if (delta.sqrMagnitude < 28 * 28 && Vector3.Dot(delta.normalized, missile.transform.forward) > .85f) return true;
+            }
+            return false;
+        }
         void Awake()
         {
             for(int i=0;i<24;i++) missiles.Add(Create<ProjectileItemEntity>("Kinetic dart",PrimitiveType.Capsule,new Vector3(.42f,.8f,.42f),new Color(.15f,.88f,1)));

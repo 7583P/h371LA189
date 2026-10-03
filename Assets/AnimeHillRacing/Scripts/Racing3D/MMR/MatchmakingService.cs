@@ -94,51 +94,31 @@ namespace AnimeHillRacing.Racing3D
 
             // High-MMR Convergence Calibration:
             // At high MMR (70k+), lobbies strongly converge toward META and Near-META setups.
-            // 7 to 9 racers use Exact META, and remaining 1 to 2 racers use Near-META (or elite Specialist).
-            // Zero standard beginner builds are allowed at 70k+ MMR.
+            // Category rolls remain probabilistic; upgrade only remaining beginner builds.
             if (playerMmr >= 70000)
             {
-                int minMeta = playerMmr >= 85000 ? 8 : 7;
-                while (metaCount < minMeta)
-                {
-                    int bestIdx = -1;
-                    int maxMmr = -1;
-                    for (int i = 0; i < AiOpponentsCount; i++)
-                    {
-                        if (categories[i] != MetaBuildCategory.Meta && rivalMmrs[i] > maxMmr)
-                        {
-                            maxMmr = rivalMmrs[i];
-                            bestIdx = i;
-                        }
-                    }
-                    if (bestIdx >= 0)
-                    {
-                        categories[bestIdx] = MetaBuildCategory.Meta;
-                        metaCount++;
-                    }
-                    else break;
-                }
-
                 // Convert any remaining Standard builds to NearMeta or Specialist
                 for (int i = 0; i < AiOpponentsCount; i++)
                 {
                     if (categories[i] == MetaBuildCategory.Standard)
                     {
-                        categories[i] = (i % 2 == 0) ? MetaBuildCategory.NearMeta : MetaBuildCategory.Specialist;
+                        categories[i] = rng.NextFloat() < .85f ? MetaBuildCategory.NearMeta : MetaBuildCategory.Specialist;
                     }
                 }
             }
 
             // Lobby Diversity Guard:
-            // Prevent 11/11 identical META AI (cap at MaximumExactMetaRacers, ensuring >= 1-2 non-META)
+            // Cap exact META at nine, retaining at least two seeded alternatives.
             if (metaCount > MetaProgressionConfig.MaximumExactMetaRacers)
             {
                 int excess = metaCount - MetaProgressionConfig.MaximumExactMetaRacers;
-                for (int i = 0; i < AiOpponentsCount && excess > 0; i++)
+                // Seeded random demotions preserve variety without favoring fixed grid indexes.
+                while (excess > 0)
                 {
+                    int i = rng.Next(AiOpponentsCount);
                     if (categories[i] == MetaBuildCategory.Meta)
                     {
-                        categories[i] = (excess % 2 == 0) ? MetaBuildCategory.NearMeta : MetaBuildCategory.Specialist;
+                        categories[i] = rng.NextFloat() < .85f ? MetaBuildCategory.NearMeta : MetaBuildCategory.Specialist;
                         excess--;
                     }
                 }
@@ -168,10 +148,11 @@ namespace AnimeHillRacing.Racing3D
                         botVehicle = MetaProgressionConfig.MetaVehicleId;
                         botWheel = MetaProgressionConfig.MetaWheelId;
                         botPaint = RacingVehicleFactory.MetaYellow;
-                        buildTitle = "Ranked Meta";
+                        buildTitle = "Formula Apex Meta";
                         break;
                     case MetaBuildCategory.NearMeta:
-                        var nearDef = MetaProgressionConfig.NearMetaBuildPool[rng.Next(MetaProgressionConfig.NearMetaBuildPool.Length)];
+                        var nearPool = playerMmr >= 90000 ? MetaProgressionConfig.CompetitiveAlternativePool : MetaProgressionConfig.NearMetaBuildPool;
+                        var nearDef = nearPool[rng.Next(nearPool.Length)];
                         botVehicle = nearDef.vehicleId;
                         botWheel = nearDef.wheelId;
                         botPaint = nearDef.paintColor;
@@ -214,13 +195,13 @@ namespace AnimeHillRacing.Racing3D
                 };
             }
 
-            // Assign human setup
-            bool humanIsCar01 = string.IsNullOrEmpty(playerVehicleId) || playerVehicleId == MetaProgressionConfig.MetaVehicleId;
-            bool humanHasMetaWheels = (playerWheelId == MetaProgressionConfig.MetaWheelId || playerWheelId == MetaProgressionConfig.MetaWheelVisualId);
-            bool humanIsMeta = humanIsCar01 && humanHasMetaWheels;
-            lobby[0].buildCategory = humanIsMeta ? MetaBuildCategory.Meta : (humanIsCar01 ? MetaBuildCategory.NearMeta : MetaBuildCategory.Specialist);
-            lobby[0].paintColor = humanIsCar01 ? RacingVehicleFactory.MetaYellow : RacingDesign.Cyan;
-            lobby[0].buildName = humanIsMeta ? "Ranked Meta" : (humanIsCar01 ? "Apex Tuner" : "Custom Setup");
+            // Assign human setup: Formula Apex is current competitive META
+            bool humanIsFormula = RacingStatsCalculator.NormalizeVehicleId(lobby[0].vehicleId) == MetaProgressionConfig.MetaVehicleId;
+            bool humanHasMetaWheels = lobby[0].wheelId == MetaProgressionConfig.MetaWheelId || lobby[0].wheelId == MetaProgressionConfig.MetaWheelVisualId;
+            bool humanIsMeta = humanIsFormula && humanHasMetaWheels;
+            lobby[0].buildCategory = humanIsMeta ? MetaBuildCategory.Meta : (humanIsFormula ? MetaBuildCategory.NearMeta : MetaBuildCategory.Specialist);
+            lobby[0].paintColor = humanIsFormula ? RacingVehicleFactory.MetaYellow : RacingDesign.Cyan;
+            lobby[0].buildName = humanIsMeta ? "Formula Apex Meta" : (humanIsFormula ? "Formula Apex" : "Custom Setup");
             lobby[0].metaProbabilityUsed = MetaProgressionConfig.EvaluateMetaProbability(playerMmr);
 
             // 4. Assign Starting Grid Positions (1 to 12)

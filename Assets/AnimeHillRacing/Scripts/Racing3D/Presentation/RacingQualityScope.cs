@@ -8,7 +8,8 @@ namespace AnimeHillRacing.Racing3D
         int aa,pixelLights,vSync,fps;ShadowQuality shadows;float shadowDistance;ShadowResolution resolution;
         public static RacingQuality Current => (RacingQuality)Mathf.Clamp(PlayerPrefs.GetInt("AHR.Racing.Quality",Application.isMobilePlatform?1:2),0,2);
         public static int ParticleBurstBudget => Current==RacingQuality.Low?5:Current==RacingQuality.Medium?10:16;
-        public static void Select(RacingQuality quality){PlayerPrefs.SetInt("AHR.Racing.Quality",(int)quality);PlayerPrefs.Save();FindFirstObjectByType<RacingQualityScope>()?.Apply();}
+        public static event System.Action<RacingQuality> Changed;
+        public static void Select(RacingQuality quality){PlayerPrefs.SetInt("AHR.Racing.Quality",(int)quality);PlayerPrefs.Save();FindFirstObjectByType<RacingQualityScope>()?.Apply();Changed?.Invoke(Current);}
         void Awake()
         {
             aa=QualitySettings.antiAliasing;pixelLights=QualitySettings.pixelLightCount;shadows=QualitySettings.shadows;shadowDistance=QualitySettings.shadowDistance;resolution=QualitySettings.shadowResolution;vSync=QualitySettings.vSyncCount;fps=Application.targetFrameRate;Apply();

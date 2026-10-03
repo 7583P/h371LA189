@@ -88,9 +88,7 @@ namespace AnimeHillRacing.Racing3D
                 string id = PlayerPrefs.GetString(SelectedVehicleKey, "");
                 if (string.IsNullOrEmpty(id))
                 {
-                    // Fall back to general SaveManager vehicle or default
-                    id = SaveManager.SelectedVehicleId;
-                    if (string.IsNullOrEmpty(id)) id = "car-01";
+                    id = "formula-01";
                 }
                 return RacingStatsCalculator.NormalizeVehicleId(id);
             }
@@ -105,7 +103,11 @@ namespace AnimeHillRacing.Racing3D
         {
             get
             {
-                string id = PlayerPrefs.GetString(SelectedWheelKey, "wheel-default");
+                string id = PlayerPrefs.GetString(SelectedWheelKey, "");
+                if (string.IsNullOrEmpty(id))
+                {
+                    id = "wheel-plasma";
+                }
                 return RacingStatsCalculator.NormalizeWheelId(id);
             }
             set
@@ -148,11 +150,11 @@ namespace AnimeHillRacing.Racing3D
             }
             if (!PlayerPrefs.HasKey(SelectedVehicleKey))
             {
-                PlayerPrefs.SetString(SelectedVehicleKey, SaveManager.SelectedVehicleId ?? "car-01");
+                PlayerPrefs.SetString(SelectedVehicleKey, "formula-01");
             }
             if (!PlayerPrefs.HasKey(SelectedWheelKey))
             {
-                PlayerPrefs.SetString(SelectedWheelKey, "wheel-default");
+                PlayerPrefs.SetString(SelectedWheelKey, "wheel-plasma");
             }
 
             PlayerPrefs.SetInt(MigrationV1Key, 1);

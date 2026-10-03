@@ -34,23 +34,28 @@ namespace AnimeHillRacing.Racing3D
     /// </summary>
     public static class MetaProgressionConfig
     {
-        // Authoritative Meta Specification
-        public const string MetaVehicleId = "car-01";
+        // Authoritative Meta Specification: Formula Apex
+        public const string MetaVehicleId = "formula-01";
         public const string MetaWheelId = "wheel-plasma";
         public const string MetaWheelVisualId = "wheel-meta-cyan";
 
-        // Diversity bounds per 11-AI lobby
-        public const int MinimumNonMetaRacers = 2; // Always preserve at least 1-2 non-META racers
-        public const int MaximumExactMetaRacers = 9; // At most 7-9 META racers per 11 AI
+        // Diversity bounds per 11-AI lobby (preserve 1-2 non-META racers at high MMR)
+        public const int MinimumNonMetaRacers = 1;
+        public const int MaximumExactMetaRacers = 9;
 
         // Alternative High-Performance Near-META Builds
         public static readonly VehicleBuildDefinition[] NearMetaBuildPool = new[]
         {
-            new VehicleBuildDefinition("car-01", "wheel-racing", "Apex Slick", new Color(0.12f, 0.85f, 0.95f)),
-            new VehicleBuildDefinition("formula-01", "wheel-racing", "Formula Pro", new Color(0.95f, 0.18f, 0.28f)),
-            new VehicleBuildDefinition("rally-01", "wheel-sport", "Rally Sport", new Color(0.20f, 0.88f, 0.55f)),
-            new VehicleBuildDefinition("car-01", "wheel-carbon", "Carbon Sprint", new Color(0.78f, 0.82f, 0.88f)),
+            new VehicleBuildDefinition("rally-01", "wheel-plasma", "Rally Apex", new Color(0.20f, 0.88f, 0.55f)),
+            new VehicleBuildDefinition("formula-01", "wheel-racing", "Formula Pro", new Color(0.12f, 0.85f, 0.95f)),
+            new VehicleBuildDefinition("sport-bike-01", "wheel-racing", "Apex Carver Pro", new Color(0.95f, 0.38f, 0.15f)),
+            new VehicleBuildDefinition("aerial-satelite-01", "wheel-plasma", "Orbit Turbo", new Color(0.25f, 0.65f, 0.92f)),
             new VehicleBuildDefinition("formula-01", "wheel-carbon", "Monocoque GT", new Color(0.55f, 0.22f, 0.88f))
+        };
+
+        public static readonly VehicleBuildDefinition[] CompetitiveAlternativePool = new[]
+        {
+            NearMetaBuildPool[0], NearMetaBuildPool[2], NearMetaBuildPool[3]
         };
 
         // Competitive Specialist Builds (Offroad, Extreme Drift, Stability)
@@ -58,7 +63,7 @@ namespace AnimeHillRacing.Racing3D
         {
             new VehicleBuildDefinition("buggy-01", "wheel-offroad", "Offroad Brawler", new Color(0.88f, 0.62f, 0.12f)),
             new VehicleBuildDefinition("sport-bike-01", "wheel-sport", "Apex Carver", new Color(0.95f, 0.38f, 0.15f)),
-            new VehicleBuildDefinition("hill-adventurer-01", "wheel-default", "Peak Dominator", new Color(0.25f, 0.65f, 0.92f))
+            new VehicleBuildDefinition("aerial-satelite-01", "wheel-racing", "Orbit Specialist", new Color(0.25f, 0.65f, 0.92f))
         };
 
         // Standard Builds for lower MMR entry lobbies

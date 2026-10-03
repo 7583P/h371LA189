@@ -71,6 +71,7 @@ namespace AnimeHillRacing.Racing3D
         }
         string output, mode, raceOutput;
         int[] seeds;
+        static readonly int[] BenchmarkRatings = {0,1000,10000,20000,30000,40000,50000,60000,70000,80000,90000,100000,125000};
         int currentSeed, playerMmr, errorsAtStart;
         float simulationScale, nextSample;
         bool capture, watchingPreGo;
@@ -98,6 +99,7 @@ namespace AnimeHillRacing.Racing3D
             Application.logMessageReceived += Log;
             SceneManager.sceneLoaded += Loaded;
             RacingSaveManager.CurrentMmr = mmr;
+            if (mode == "profile") RacingQualityScope.Select(RacingQuality.High);
             StartCoroutine(Run());
         }
         void Loaded(Scene scene, LoadSceneMode loadMode)
@@ -105,8 +107,18 @@ namespace AnimeHillRacing.Racing3D
             if (scene.name != "Racing3D") return;
             manager = FindFirstObjectByType<RaceManager>();
             if (manager == null) return;
-            manager.Configure(RaceRules.CreateRanked(currentSeed));
+            var configuration = RaceRules.CreateRanked(currentSeed);
+            configuration.EqualBuildBenchmark = mode == "benchmark";
+            manager.Configure(configuration);
             manager.PersistResults = mode == "final-qa";
+#if !UNITY_EDITOR
+            if (mode == "profile")
+            {
+                var rendered = GetComponent<RacingRenderedPlayerProbe>();
+                if (rendered == null) rendered = gameObject.AddComponent<RacingRenderedPlayerProbe>();
+                rendered.Bind(Camera.main, manager);
+            }
+#endif
         }
         void Log(string message, string stack, LogType type)
         {
@@ -124,18 +136,24 @@ namespace AnimeHillRacing.Racing3D
 #if UNITY_EDITOR
             if (mode == "contracts")
             {
+                raceOutput=output;
                 var contracts = new ClosureContractReport();
                 yield return RacingClosureContracts.ItemsAndDrift(contracts, output);
-                Finish(contracts.failed == 0 && SessionState.GetBool("AHR.Racing.Closure.ContractsPassed", false) && suite.errors == 0);
+                var ui=new ClosureContractReport();yield return RacingImprovementContracts.Menu(ui,capture?Capture:null);
+                File.WriteAllText(Path.Combine(output,"improvement-ui-contracts.json"),JsonUtility.ToJson(ui,true));
+                Finish(contracts.failed == 0 && ui.failed==0 && SessionState.GetBool("AHR.Racing.Closure.ContractsPassed", false) && suite.errors == 0);
                 yield break;
             }
 #endif
             // These are real Button callbacks. The human slot is driven by a test driver,
             // so this must never be reported as subjective human driving approval.
-            for (int race = 0; race < seeds.Length; race++)
+            int raceCount = seeds.Length * (mode == "benchmark" ? BenchmarkRatings.Length : 1);
+            for (int race = 0; race < raceCount; race++)
             {
-                currentSeed = seeds[race];
-                raceOutput = Path.Combine(output, "seed-" + currentSeed);
+                currentSeed = seeds[race % seeds.Length];
+                if (mode == "benchmark") playerMmr = BenchmarkRatings[race / seeds.Length];
+                RacingSaveManager.CurrentMmr = playerMmr;
+                raceOutput = mode == "benchmark" ? Path.Combine(output,"mmr-"+playerMmr,"seed-"+currentSeed) : Path.Combine(output, "seed-" + currentSeed);
                 Directory.CreateDirectory(raceOutput);
                 errorsAtStart = suite.errors;
                 drivers.Clear();
@@ -144,8 +162,6 @@ namespace AnimeHillRacing.Racing3D
                 if (SceneManager.GetActiveScene().name != "PreStart") SceneManager.LoadScene("PreStart");
                 yield return new WaitForSecondsRealtime(mode == "legacy-repro" ? 2 : .8f);
                 Capture("01-main-menu");
-                Click("PLAY");
-                yield return new WaitForSecondsRealtime(.4f);
                 Capture("02-play-selection");
                 if (mode == "legacy-repro") SceneManager.LoadScene("RacingSelect");
                 else Click("RACING");
@@ -177,7 +193,7 @@ namespace AnimeHillRacing.Racing3D
                     yield break;
                 }
                 var playerDriver = manager.PlayerVehicle.gameObject.AddComponent<AiVehicleController>();
-                playerDriver.Initialize(AiSkillModel.CreateProfile(7000, currentSeed), manager.ProgressTracker.TrackGraph,
+                playerDriver.Initialize(AiSkillModel.CreateProfile(playerMmr, currentSeed), manager.ProgressTracker.TrackGraph,
                     manager.ProgressTracker, "SCRIPTED_PLAYER");
                 manager.PlayerVehicle.SetCommandProvider(playerDriver);
 #if UNITY_EDITOR
@@ -198,8 +214,12 @@ namespace AnimeHillRacing.Racing3D
                 movedBeforeGo = 0;
                 watchingPreGo = true;
                 Capture("06-starting-grid");
+#if !UNITY_EDITOR
+                if (mode == "profile") GetComponent<RacingRenderedPlayerProbe>().SaveFrame(Path.Combine(raceOutput, "06-rendered-grid.png"));
+#endif
                 Time.timeScale = simulationScale;
                 Time.maximumDeltaTime = Mathf.Max(.333f, simulationScale / 10f);
+                if (mode == "profile") Application.targetFrameRate = -1;
                 float deadline = Time.realtimeSinceStartup + 600 / simulationScale + 60;
                 float nextCapture = 15;
                 var captured = new HashSet<string>();
@@ -228,6 +248,14 @@ namespace AnimeHillRacing.Racing3D
                 var result = Summarize();
                 yield return new WaitForSecondsRealtime(.7f);
                 Capture("10-results");
+#if !UNITY_EDITOR
+                if (mode == "profile")
+                {
+                    var rendered = GetComponent<RacingRenderedPlayerProbe>();
+                    rendered.SaveFrame(Path.Combine(raceOutput, "10-rendered-results.png"));
+                    rendered.Export(Path.Combine(raceOutput, "render-proof.json"));
+                }
+#endif
                 if (metrics != null && !File.Exists(Path.Combine(raceOutput, "metrics.json")))
                     metrics.Export(Path.Combine(raceOutput, "metrics.json"));
 #if UNITY_EDITOR
@@ -278,8 +306,7 @@ namespace AnimeHillRacing.Racing3D
                 result.maxRecoveries = Mathf.Max(result.maxRecoveries, racer.Recovery.RecoveryCount);
                 result.totalRecoveries += racer.Recovery.RecoveryCount;
                 var stats = RacingStatsCalculator.Calculate(racer.Identity.vehicleId, racer.Identity.wheelId);
-                result.samePhysics &= racer.Vehicle.Stats.SpeedKmh == stats.SpeedKmh && racer.Vehicle.Stats.LateralGrip == stats.LateralGrip &&
-                    racer.Vehicle.Stats.HandlingRadPerSec == stats.HandlingRadPerSec && racer.Vehicle.Stats.AccelerationMps2 == stats.AccelerationMps2;
+                result.samePhysics &= JsonUtility.ToJson(racer.Vehicle.Stats)==JsonUtility.ToJson(stats) && Mathf.Abs(racer.Vehicle.Body.mass-stats.WeightKg)<.01f;
             }
             if (manager.FinalResults != null)
                 foreach (var entry in manager.FinalResults.entries) result.validDnfTimes &= entry.finished ? entry.totalTime > 0 : entry.totalTime == 0;

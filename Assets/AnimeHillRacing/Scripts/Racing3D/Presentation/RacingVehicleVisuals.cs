@@ -15,19 +15,27 @@ namespace AnimeHillRacing.Racing3D
             string key=((Color32)color).ToString()+smoothness.ToString("F2")+emission;
             if(materials.TryGetValue(key,out var mat)&&mat!=null)return mat;
             mat=new Material(Shader.Find("Standard")){name="Racing palette "+key,color=color,enableInstancing=true};mat.SetFloat("_Glossiness",smoothness);mat.SetFloat("_Metallic",smoothness>.5f?.35f:0);
-            if(emission){mat.EnableKeyword("_EMISSION");mat.SetColor("_EmissionColor",color*1.7f);}
+            if(emission){mat.EnableKeyword("_EMISSION");mat.SetColor("_EmissionColor",color*.75f);}
             materials[key]=mat;return mat;
         }
         public static Material MetaYellowMaterial()
         {
-            string key="MetaYellowBody_TrueYellow";
+            string key="MetaYellowBody_TrueCanaryYellow_V2";
             if(materials.TryGetValue(key,out var mat)&&mat!=null)return mat;
             mat=new Material(Shader.Find("Standard")){name="Racing Meta Pure Yellow",color=RacingVehicleFactory.MetaYellow,enableInstancing=true};
-            mat.SetFloat("_Glossiness",0.70f);
-            mat.SetFloat("_Metallic",0.05f);
+            mat.SetFloat("_Glossiness",0.48f);
+            mat.SetFloat("_Metallic",0.02f);
             mat.EnableKeyword("_EMISSION");
-            mat.SetColor("_EmissionColor",RacingVehicleFactory.MetaYellow*0.22f);
+            mat.SetColor("_EmissionColor",RacingVehicleFactory.MetaYellow*0.28f);
             materials[key]=mat;return mat;
+        }
+        public static Material IdentityMaterial(string key, Color color, float glow = .12f)
+        {
+            if(materials.TryGetValue(key,out var material)&&material!=null)return material;
+            material=new Material(Shader.Find("Standard")){name=key,color=color,enableInstancing=true};
+            material.SetFloat("_Metallic",0);material.SetFloat("_Glossiness",.42f);
+            material.EnableKeyword("_EMISSION");material.SetColor("_EmissionColor",color*glow);
+            materials[key]=material;return material;
         }
         public static Mesh Bevel(Vector3 size,float cut=.18f)
         {
@@ -110,19 +118,23 @@ namespace AnimeHillRacing.Racing3D
             }
             var mesh=new Mesh{name=key};mesh.SetVertices(vertices);mesh.SetTriangles(indices,0);mesh.RecalculateNormals();mesh.RecalculateBounds();meshes[key]=mesh;return mesh;
         }
-        public static void Combine(Transform root)
+        public static void Combine(Transform root,float cellSize=0)
         {
-            var groups=new Dictionary<Material,List<CombineInstance>>();
+            var groups=new Dictionary<(Material material,int x,int z),List<CombineInstance>>();
             foreach(var renderer in root.GetComponentsInChildren<MeshRenderer>())
             {
                 var filter=renderer.GetComponent<MeshFilter>();var animated=renderer.GetComponentInParent<RacingAnimatedPart>();if(filter==null||(animated!=null&&animated.transform!=root))continue;
-                var material=renderer.sharedMaterial;if(!groups.TryGetValue(material,out var list)){list=new List<CombineInstance>();groups[material]=list;}
+                var material=renderer.sharedMaterial;Vector3 center=renderer.bounds.center;
+                var key=(material,cellSize>0?Mathf.FloorToInt(center.x/cellSize):0,cellSize>0?Mathf.FloorToInt(center.z/cellSize):0);
+                if(!groups.TryGetValue(key,out var list)){list=new List<CombineInstance>();groups[key]=list;}
                 list.Add(new CombineInstance{mesh=filter.sharedMesh,transform=root.worldToLocalMatrix*filter.transform.localToWorldMatrix});renderer.enabled=false;
             }
             foreach(var pair in groups)
             {
-                var mesh=new Mesh{name="Batched "+pair.Key.name,indexFormat=IndexFormat.UInt32};mesh.CombineMeshes(pair.Value.ToArray(),true,true);
-                var part=Part(root,mesh.name,mesh,pair.Key,Vector3.zero,Quaternion.identity);part.AddComponent<RacingGeneratedMesh>().Mesh=mesh;
+                var mesh=new Mesh{name="Batched "+pair.Key.material.name,indexFormat=IndexFormat.UInt32};mesh.CombineMeshes(pair.Value.ToArray(),true,true);
+                var part=Part(root,mesh.name,mesh,pair.Key.material,Vector3.zero,Quaternion.identity);part.AddComponent<RacingGeneratedMesh>().Mesh=mesh;
+                if(pair.Key.material.IsKeywordEnabled("_EMISSION") && pair.Key.material.name!="Racing Meta Pure Yellow")
+                    part.GetComponent<MeshRenderer>().shadowCastingMode=ShadowCastingMode.Off;
             }
         }
     }
@@ -145,15 +157,15 @@ namespace AnimeHillRacing.Racing3D
             var visualRoot=new GameObject("Visual");visualRoot.transform.SetParent(root.transform,false);
             var model=new GameObject("Body");model.transform.SetParent(visualRoot.transform,false);visual.BodyVisual=model.transform;
 
-            bool isMetaCar = (id == "car-01" && (paint == Color.clear || isHuman || paint == RacingVehicleFactory.MetaYellow || (paint.r > 0.85f && paint.g > 0.80f && paint.b < 0.25f)));
+            bool isMetaCar = (id == "formula-01" || id == MetaProgressionConfig.MetaVehicleId || (isHuman && (string.IsNullOrEmpty(id) || id == "formula-01" || id == "car-01")) || paint == RacingVehicleFactory.MetaYellow || (paint != Color.clear && paint.r > 0.88f && paint.g > 0.82f && paint.b < 0.25f));
             Color bodyColor = isMetaCar ? RacingVehicleFactory.MetaYellow : (paint != Color.clear ? paint : (isHuman ? RacingVehicleFactory.MetaYellow : RacingDesign.Cyan));
             var bodyMat = isMetaCar ? RacingArt.MetaYellowMaterial() : RacingArt.Material(bodyColor, .68f);
             var dark=RacingArt.Material(new Color(.045f,.065f,.085f),.42f);
             var accent=RacingArt.Material(RacingDesign.Cyan,.6f,true);
             var ivory=RacingArt.Material(RacingDesign.Ink,.3f);
             var glass=RacingArt.Material(new Color(.06f,.18f,.24f,.85f),.85f);
-            var neonPurple=RacingArt.Material(RacingVehicleFactory.MetaPurpleSuit,.55f,true);
-            var retroPurple=RacingArt.Material(RacingVehicleFactory.MetaPurpleHelmet,.68f);
+            var neonPurple=RacingArt.IdentityMaterial("Meta Neon Purple Suit",RacingVehicleFactory.MetaPurpleSuit,.18f);
+            var retroPurple=RacingArt.IdentityMaterial("Meta Retro Purple Helmet",RacingVehicleFactory.MetaPurpleHelmet,.08f);
             var purpleDriver=RacingArt.Material(new Color(.48f,.18f,.78f),.35f);
             var gloveMat=RacingArt.Material(new Color(.22f,.06f,.42f),.3f);
 
@@ -243,7 +255,7 @@ namespace AnimeHillRacing.Racing3D
 
             if(formula||rally||orbit)
             {
-                RacingArt.Box(model.transform,"Aero wing",new Vector3(0,.64f,-1.33f),new Vector3(width*1.28f,.11f,.55f),dark);
+                RacingArt.Box(model.transform,"Aero wing",new Vector3(0,.64f,-1.33f),new Vector3(width*1.28f,.11f,.55f),isMetaCar?bodyMat:dark);
                 for(int s=-1;s<=1;s+=2)RacingArt.Box(model.transform,"Wing strut",new Vector3(s*.46f,.42f,-1.34f),new Vector3(.08f,.45f,.1f),bodyMat);
             }
             for(int s=-1;s<=1;s+=2)
@@ -258,19 +270,19 @@ namespace AnimeHillRacing.Racing3D
             // Cyan Wheels: fully cyan and visually striking (no black rubber for meta cyan wheels)
             visual.Wheels=new Transform[4];
             float radius=.38f;float tyreWidth=wheelId=="wheel-offroad"?.32f:wheelId=="wheel-racing"?.26f:.23f;
-            bool isMetaCyanWheel = wheelId == "wheel-meta-cyan" || wheelId == "wheel-cyan" || wheelId == "wheel-plasma" || (bodyColor == RacingVehicleFactory.MetaYellow);
+            bool isMetaCyanWheel = isMetaCar || wheelId == "wheel-meta-cyan" || wheelId == "wheel-cyan" || wheelId == "wheel-plasma" || (bodyColor == RacingVehicleFactory.MetaYellow);
             Color rimColor = isMetaCyanWheel ? RacingVehicleFactory.MetaCyan : (wheelId=="wheel-plasma"?RacingDesign.Accent:wheelId=="wheel-carbon"?RacingDesign.Platinum:paint);
 
-            Color cyanTreadColor = new Color(0.04f, 0.88f, 0.98f);
+            Color cyanTreadColor = new Color(0.02f, 0.74f, 0.92f);
             Color cyanRimColor = RacingVehicleFactory.MetaCyan;
-            Color cyanGlowColor = new Color(0.35f, 0.98f, 1.0f);
+            Color cyanGlowColor = new Color(0.04f, 0.82f, 0.96f);
 
             var tyre = isMetaCyanWheel
-                ? RacingArt.Material(cyanTreadColor, 0.65f, true)
+                ? RacingArt.IdentityMaterial("Meta Full Cyan Tread",cyanTreadColor,.12f)
                 : RacingArt.Material(new Color(.032f, .046f, .057f), .14f);
 
-            var rim = RacingArt.Material(isMetaCyanWheel ? cyanRimColor : rimColor, 0.82f, isMetaCyanWheel || wheelId == "wheel-plasma");
-            var neonRimRing = RacingArt.Material(cyanGlowColor, 0.92f, true);
+            var rim = isMetaCyanWheel ? RacingArt.IdentityMaterial("Meta Cyan Alloy",cyanRimColor,.12f) : RacingArt.Material(rimColor,.65f);
+            var neonRimRing = RacingArt.IdentityMaterial("Meta Cyan Sidewall",cyanGlowColor,.16f);
 
             for(int i=0;i<4;i++)
             {

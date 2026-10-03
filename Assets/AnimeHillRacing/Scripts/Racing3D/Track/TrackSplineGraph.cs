@@ -9,15 +9,19 @@ namespace AnimeHillRacing.Racing3D
         [SerializeField] private TrackNode[] nodes = Array.Empty<TrackNode>();
         [SerializeField] private TrackShortcut[] shortcuts = Array.Empty<TrackShortcut>();
         [SerializeField] private float totalLength;
+        [SerializeField] private int[] checkpointNodeIndices = Array.Empty<int>();
+        public int MainJumpNodeIndex=-1;
 
         public int NodeCount => nodes != null ? nodes.Length : 0;
         public float TotalLength => totalLength;
         public TrackShortcut[] Shortcuts => shortcuts;
+        public int[] CheckpointNodeIndices => checkpointNodeIndices;
 
-        public void InitializeFromNodes(TrackNode[] authoredNodes, TrackShortcut[] authoredShortcuts = null)
+        public void InitializeFromNodes(TrackNode[] authoredNodes, TrackShortcut[] authoredShortcuts = null, int[] checkpointNodes = null)
         {
             nodes = authoredNodes ?? Array.Empty<TrackNode>();
             shortcuts = authoredShortcuts ?? Array.Empty<TrackShortcut>();
+            checkpointNodeIndices = checkpointNodes ?? Array.Empty<int>();
             RecomputeDistances();
         }
 
@@ -174,6 +178,21 @@ namespace AnimeHillRacing.Racing3D
                 }
             }
             return null;
+        }
+
+        public TrackShortcut FindUpcomingShortcut(float distanceAlongTrack, float horizon, out float distanceToEntry)
+        {
+            distanceToEntry = float.MaxValue;
+            TrackShortcut result = null;
+            if (shortcuts == null || totalLength <= 0) return null;
+            foreach (var route in shortcuts)
+            {
+                if (route == null || !route.IsValid() || route.exitNodeIndex >= NodeCount) continue;
+                float ahead = Mathf.Repeat(GetNode(route.entryNodeIndex).CumulativeDistance - distanceAlongTrack, totalLength);
+                if (ahead > horizon || ahead >= distanceToEntry) continue;
+                result = route; distanceToEntry = ahead;
+            }
+            return result;
         }
 
         public void GetSafeRecoveryAnchor(int nearestNodeIndex, out Vector3 safePos, out Quaternion safeRot)

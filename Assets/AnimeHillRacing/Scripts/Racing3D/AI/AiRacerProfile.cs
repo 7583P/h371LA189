@@ -16,6 +16,8 @@ namespace AnimeHillRacing.Racing3D
         [Range(0f, 1f)] public float driftSkill;
         [Range(0f, 1f)] public float overtakingSkill;
         [Range(0f, 1f)] public float recoverySkill;
+        [Range(0f, 1f)] public float trickSkill;
+        [Range(0f, 1f)] public float chainingSkill;
 
         [Header("Track Knowledge")]
         [Range(0f, 1f)] public float shortcutKnowledge;

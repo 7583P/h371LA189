@@ -42,7 +42,10 @@ namespace AnimeHillRacing.EditorTools
             var additional=new ClosureContractReport();
             RacingClosureContracts.Progress(additional);
             File.WriteAllText(Path.Combine(output,"phase2-edit-contracts.json"),JsonUtility.ToJson(additional,true));
-            SessionState.SetBool("AHR.Racing.Closure.ContractsPassed",foundation.Failed==0&&additional.failed==0);
+            var improvements=new ClosureContractReport();
+            using(new RacingPlayerPrefsTestScope())RacingImprovementContracts.Edit(improvements,output);
+            File.WriteAllText(Path.Combine(output,"improvement-edit-contracts.json"),JsonUtility.ToJson(improvements,true));
+            SessionState.SetBool("AHR.Racing.Closure.ContractsPassed",foundation.Failed==0&&additional.failed==0&&improvements.failed==0);
             // Compile the existing test Program.cs with Unity's compiler and real
             // project assemblies, then invoke it inside Unity (no duplicated tests).
             var builder=new AssemblyBuilder(Path.Combine(output,"ExistingRacingTests.dll"),new[]{Path.GetFullPath("tmp/racing-test/Program.cs")});

@@ -8,6 +8,7 @@ namespace AnimeHillRacing.Racing3D
         protected float expiresAt,spawnTime;
         public RacingItemPool Pool { get; set; }
         public int PoolUseCount { get; internal set; }
+        public RacingVehiclePhysics Owner => owner;
         public virtual void Initialize(RacingVehiclePhysics source) { owner=source; spawnTime=Time.time; expiresAt=Time.time+lifetime; }
         protected void Release() { if(Pool!=null) Pool.Release(this); else gameObject.SetActive(false); }
         protected virtual void Update() { if(Time.time>=expiresAt) Release(); }

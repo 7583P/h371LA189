@@ -1,0 +1,17 @@
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\racing-audit-20261003\compile\release-final\RacingTest.exe
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\racing-audit-20261003\compile\release-final\RacingTest.deps.json
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\racing-audit-20261003\compile\release-final\RacingTest.runtimeconfig.json
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\racing-audit-20261003\compile\release-final\RacingTest.dll
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\racing-audit-20261003\compile\release-final\RacingTest.pdb
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\racing-audit-20261003\compile\obj-release-final\RacingTest.csproj.AssemblyReference.cache
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\racing-audit-20261003\compile\obj-release-final\RacingTest.GeneratedMSBuildEditorConfig.editorconfig
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\racing-audit-20261003\compile\obj-release-final\RacingTest.AssemblyInfoInputs.cache
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\racing-audit-20261003\compile\obj-release-final\RacingTest.AssemblyInfo.cs
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\racing-audit-20261003\compile\obj-release-final\RacingTest.csproj.CoreCompileInputs.cache
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\racing-audit-20261003\compile\obj-release-final\RacingTest.sourcelink.json
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\racing-audit-20261003\compile\obj-release-final\RacingTest.csproj.Up2Date
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\racing-audit-20261003\compile\obj-release-final\RacingTest.dll
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\racing-audit-20261003\compile\obj-release-final\refint\RacingTest.dll
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\racing-audit-20261003\compile\obj-release-final\RacingTest.pdb
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\racing-audit-20261003\compile\obj-release-final\RacingTest.genruntimeconfig.cache
+C:\Peru3124\restoredclimb\ClimbAnime\tmp\racing-audit-20261003\compile\obj-release-final\ref\RacingTest.dll

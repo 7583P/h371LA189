@@ -130,7 +130,11 @@ namespace AnimeHillRacing.Racing3D
                 GameObject debugObj = new GameObject("RacingDebugOverlay");
                 debugObj.AddComponent<RacingDebugOverlay>();
             }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            // Race telemetry is diagnostic work; release players must not record
+            // profiler samples or write reports beside the installed game.
             if (FindFirstObjectByType<RacingRaceMetrics>() == null) gameObject.AddComponent<RacingRaceMetrics>();
+#endif
 
             Debug.Log("[RacingSceneBootstrap] Scene components verified and bootstrapped successfully.");
         }

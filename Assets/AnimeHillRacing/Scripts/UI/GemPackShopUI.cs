@@ -67,7 +67,7 @@ namespace AnimeHillRacing.UI
 
         public void Refresh()
         {
-            if (!built || buyButtons == null || priceLabels == null) return;
+            if (this == null || !built || buyButtons == null || priceLabels == null) return;
             Subscribe();
             IStorePurchaseProvider provider = ExternalServiceProviders.Store;
             IReadOnlyList<GemPackProduct> packs = GemPackCatalog.Products;
@@ -143,6 +143,9 @@ namespace AnimeHillRacing.UI
 
         private void Subscribe()
         {
+            // Attach also builds inactive panels. They must not retain static
+            // events if the scene unloads before their first OnEnable.
+            if (!isActiveAndEnabled) return;
             IStorePurchaseProvider provider = ExternalServiceProviders.Store;
             if (!ReferenceEquals(subscribedProvider, provider))
             {

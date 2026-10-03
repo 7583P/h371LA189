@@ -143,7 +143,9 @@ namespace AnimeHillRacing.Racing3D
             Object.Destroy(wall);
             yield return null;
             int previousImpacts = impacts;
-            var rival = manager.SpawnedVehicles[1];rival.SetRaceEnabled(false);
+            var rival = manager.SpawnedVehicles[1];
+            // Restore contacts for this explicit fixture after the finish ghost state.
+            rival.SetRaceEnabled(true);rival.SetRaceEnabled(false);
             car.Body.position = road.Position + Vector3.up * .8f;car.Body.rotation = Quaternion.LookRotation(road.Forward, Vector3.up);car.ResetVelocities();
             rival.Body.position = car.transform.position + road.Forward * 3.5f;rival.Body.rotation = car.Body.rotation;rival.ResetVelocities();
             input.SetTouchGas(true);
@@ -163,7 +165,7 @@ namespace AnimeHillRacing.Racing3D
             Click("MAIN MENU");yield return new WaitForSecondsRealtime(.8f);
             Checks.Check(SceneManager.GetActiveScene().name == "MainMenu", "Racing Results returns through Hub to Main Menu");
             Checks.Check(PlayerPrefs.GetInt("AHR.Racing.MMR.V1") == RacingSaveManager.CurrentMmr, "Ranked save survives scene navigation");
-            Click("PLAY");yield return new WaitForSecondsRealtime(.3f);Click("ADVENTURE");
+            Click("ADVENTURE");
             yield return new WaitForSecondsRealtime(.8f);
             var cards = Object.FindObjectsByType<TrackSelectionCardUI>(FindObjectsSortMode.None);
             Checks.Check(cards.Length >= 5, "Real Adventure UI displays map selection");Capture("adventure-maps");
@@ -194,9 +196,12 @@ namespace AnimeHillRacing.Racing3D
             Checks.Check(input!=null,"Adventure exposes its shared player input controller");
             if(input==null)yield break;
             float position = car.ProgressPosition;float fuel = car.FuelNormalized;
+            // Observe consumption before traversing natural fuel pickups, which
+            // can legitimately refill the tank during the acceleration sample.
+            yield return new WaitForSecondsRealtime(.3f);
+            Checks.Check(car.FuelNormalized < fuel && car.Fuel.CurrentConsumptionNormalizedPerSecond > 0, "Adventure fuel drains during the active run");
             input.SetTouchGas(true);yield return new WaitForSecondsRealtime(2);input.SetTouchGas(false);
             Checks.Check(car.ProgressPosition > position + 1 && car.SpeedMps > .1f, "Adventure touch acceleration moves the spawned vehicle");
-            Checks.Check(car.FuelNormalized < fuel, "Adventure fuel drains during live driving");
             float speed = Mathf.Abs(car.SpeedMps);input.SetTouchBrake(true);yield return new WaitForSecondsRealtime(.8f);input.SetTouchBrake(false);
             Checks.Check(Mathf.Abs(car.SpeedMps) < speed, "Adventure braking reduces speed");Capture("adventure-gameplay");
             int coins = game.RunCoins, gems = SaveManager.TotalGems;

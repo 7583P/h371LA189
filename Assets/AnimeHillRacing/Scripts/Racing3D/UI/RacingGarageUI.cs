@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
@@ -7,11 +7,11 @@ namespace AnimeHillRacing.Racing3D
 {
     public sealed class RacingGarageUI:MonoBehaviour
     {
-        static readonly string[] VehicleIds={"car-01","rally-01","formula-01","buggy-01","sport-bike-01","hill-adventurer-01","aerial-satelite-01"};
+        static readonly string[] VehicleIds={"formula-01","car-01","rally-01","buggy-01","sport-bike-01","hill-adventurer-01","aerial-satelite-01"};
         static readonly string[] WheelIds={"wheel-default","wheel-sport","wheel-offroad","wheel-racing","wheel-carbon","wheel-plasma"};
         static readonly string[] WheelNames={"ALL TERRAIN","SPORT SLICK","HEAVY OFFROAD","PRO RACING","LIGHT CARBON","PLASMA TURBO"};
         static readonly string[] StatNames={"SPEED","ACCELERATION","HANDLING","DRIFT","GRIP","WEIGHT","MINI TURBO","OFFROAD","STABILITY"};
-        int vehicleIndex,wheelIndex;FinalRacingStats stats;RacingShowroom preview;Text vehicleText,wheelText,deltaText;Image[] fills=new Image[9];float[] displayed=new float[9],desired=new float[9];RectTransform root,rankedPresentation;
+        int vehicleIndex,wheelIndex;FinalRacingStats stats;RacingShowroom preview;Text vehicleText,wheelText,deltaText,buildText;Image[] fills=new Image[9];float[] displayed=new float[9],desired=new float[9];RectTransform root,rankedPresentation;
         void Start()
         {
             RacingSaveManager.EnsureMigration();vehicleIndex=Mathf.Max(0,Array.IndexOf(VehicleIds,RacingStatsCalculator.NormalizeVehicleId(RacingSaveManager.SelectedVehicleId)));wheelIndex=Mathf.Max(0,Array.IndexOf(WheelIds,RacingSaveManager.SelectedWheelId));
@@ -20,6 +20,7 @@ namespace AnimeHillRacing.Racing3D
             RacingDesign.Label(root,"RACING / GARAGE",RacingType.Section,.05f,.87f,.55f,.07f,RacingDesign.Cyan);
             RacingDesign.Label(root,"MAKE IT YOURS.",RacingType.Title,.05f,.78f,.57f,.08f,RacingDesign.Ink,display:true);
             preview=RacingShowroom.Create(root,.045f,.225f,.54f,.535f,VehicleIds[vehicleIndex],WheelIds[wheelIndex]);
+            buildText=RacingDesign.Label(root,"",RacingType.Caption,.07f,.71f,.49f,.045f,RacingDesign.Gold);
             RacingDesign.Label(root,"DRAG TO ROTATE / SCROLL TO ZOOM",RacingType.Caption,.07f,.18f,.48f,.04f,RacingDesign.Muted,TextAnchor.MiddleCenter);
             var statsPanel=RacingDesign.Panel(root,"Build performance",.62f,.23f,.32f,.57f,RacingDesign.Surface);
             RacingDesign.Label(statsPanel.transform,"PERFORMANCE",RacingType.Section,.06f,.88f,.88f,.085f,RacingDesign.Ink);
@@ -53,6 +54,7 @@ namespace AnimeHillRacing.Racing3D
             float[] min={125,9,1.8f,.7f,.8f,500,.7f,.3f,.7f},max={190,20,3.8f,1.8f,2,1300,2.1f,1,1.7f};
             for(int i=0;i<9;i++)desired[i]=Mathf.InverseLerp(min[i],max[i],values[i]);
             if(vehicleText!=null)vehicleText.text=RacingDesign.VehicleName(VehicleIds[vehicleIndex]);if(wheelText!=null)wheelText.text=WheelNames[wheelIndex];
+            if(buildText!=null)buildText.text=VehicleIds[vehicleIndex]==MetaProgressionConfig.MetaVehicleId && WheelIds[wheelIndex]==MetaProgressionConfig.MetaWheelId?"CURRENT META / FORMULA APEX + PLASMA TURBO":"CUSTOM BUILD / "+WheelNames[wheelIndex];
             if(delta&&deltaText!=null)deltaText.text=$"SPEED {stats.SpeedKmh-previous.SpeedKmh:+0;-0;0}   HANDLING {(stats.HandlingRadPerSec-previous.HandlingRadPerSec)*10:+0;-0;0}";
         }
         public void ShowRankedPresentation()
@@ -61,11 +63,11 @@ namespace AnimeHillRacing.Racing3D
             rankedPresentation=RacingDesign.Area(root,"Ranked briefing",0,0,1,1);rankedPresentation.gameObject.AddComponent<RacingScreenMotion>();
             var panel=RacingDesign.Panel(rankedPresentation,"Ranked",.18f,.13f,.64f,.75f,RacingDesign.Surface);
             RacingDesign.Label(panel.transform,"RANKED",RacingType.Display,.08f,.72f,.84f,.18f,RacingDesign.Gold,TextAnchor.MiddleCenter,true);
-            int mmr=RacingSaveManager.CurrentMmr;
+            int mmr=RacingTestSession.Active?RacingTestSession.Mmr:RacingSaveManager.CurrentMmr;
             RacingDesign.Label(panel.transform,mmr.ToString("N0"),RacingType.Mmr,.25f,.55f,.50f,.15f,RacingDesign.Ink,TextAnchor.MiddleCenter);
             RacingDesign.Label(panel.transform,MmrTierUtility.GetTierDisplayName(MmrTierUtility.GetTier(mmr)),RacingType.Section,.15f,.45f,.70f,.09f,RacingDesign.TierColor(mmr),TextAnchor.MiddleCenter);
             RacingDesign.Label(panel.transform,RacingDesign.VehicleName(VehicleIds[vehicleIndex])+" / "+WheelNames[wheelIndex],RacingType.Body,.1f,.33f,.8f,.08f,RacingDesign.Ink,TextAnchor.MiddleCenter);
-            RacingDesign.Label(panel.transform,"CANYON RUSH / 3 LAPS / 1 PLAYER + 11 AI",RacingType.Caption,.1f,.23f,.8f,.07f,RacingDesign.Muted,TextAnchor.MiddleCenter);
+            RacingDesign.Label(panel.transform,(RacingTestSession.Active?"TEST / ":"")+"NIGHT CITY / 3 LAPS / 12 RACERS",RacingType.Caption,.1f,.23f,.8f,.07f,RacingDesign.Muted,TextAnchor.MiddleCenter);
             var start=RacingDesign.Button(panel.transform,"START RACE",.34f,.065f,.58f,.10f,StartRankedRace,RacingDesign.Highlight);
             RacingDesign.Button(panel.transform,"BACK",.08f,.065f,.23f,.10f,()=>{Destroy(rankedPresentation.gameObject);rankedPresentation=null;});RacingDesign.Focus(start);
         }

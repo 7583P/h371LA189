@@ -10,7 +10,7 @@ namespace AnimeHillRacing.Racing3D
         [SerializeField] RaceManager raceManager;
         RectTransform root;Text positionText,lapText,speedText,timerText,countdownText,itemText,driftText,bannerText;RacingEmblem itemIcon;Image chargeFill;
         GameObject lobby,controls,banner,pause;PlayerRacingInput input;RacingVehiclePhysics vehicle;ItemInventory inventory;RacerProgress progress;
-        float nextRefresh,countdownAge,bannerUntil,positionPulse;int lastPosition=12,lastLap=1,lastCount=-1;bool paused;
+        float nextRefresh,countdownAge,bannerUntil,positionPulse;int lastPosition=12,lastCount=-1;bool paused;
         public RacingRaceMap Map{get;private set;}
         void Start()
         {
@@ -30,7 +30,7 @@ namespace AnimeHillRacing.Racing3D
             chargeFill=RacingDesign.Area(charge.transform,"Charge",0,0,0,1).gameObject.AddComponent<Image>();chargeFill.color=RacingDesign.Cyan;
             driftText=RacingDesign.Label(root,"",RacingType.Caption,.34f,.085f,.32f,.04f,RacingDesign.Cyan,TextAnchor.MiddleCenter);
             countdownText=RacingDesign.Label(root,"",RacingType.Position,.32f,.34f,.36f,.28f,RacingDesign.Ink,TextAnchor.MiddleCenter);countdownText.fontSize=132;countdownText.resizeTextMaxSize=132;countdownText.resizeTextMinSize=110;
-            var message=RacingDesign.Panel(root,"Race announcement",.25f,.47f,.50f,.16f,RacingDesign.Surface);banner=message.gameObject;bannerText=RacingDesign.Label(message.transform,"",RacingType.Title,.05f,.10f,.90f,.80f,RacingDesign.Ink,TextAnchor.MiddleCenter);banner.SetActive(false);
+            var message=RacingDesign.Panel(root,"Race announcement",.30f,.21f,.40f,.07f,RacingDesign.Surface);banner=message.gameObject;bannerText=RacingDesign.Label(message.transform,"",RacingType.Section,.05f,.08f,.90f,.84f,RacingDesign.Ink,TextAnchor.MiddleCenter);banner.SetActive(false);
             var mapRect=RacingDesign.Area(root,"Race map",.04f,.52f,.14f,.20f);Map=mapRect.gameObject.AddComponent<RacingRaceMap>();Map.color=RacingDesign.Ink;Map.gameObject.SetActive(PlayerPrefs.GetInt("AHR.Racing.Map",0)==1);
             var pauseButton=RacingDesign.Button(root,"II",.47f,.90f,.055f,.06f,TogglePause);var nav=pauseButton.navigation;nav.mode=Navigation.Mode.None;pauseButton.navigation=nav;
             raceManager.OnCountdownTick+=Countdown;raceManager.OnStateChanged+=StateChanged;
@@ -66,7 +66,7 @@ namespace AnimeHillRacing.Racing3D
             if((Keyboard.current?.escapeKey.wasPressedThisFrame==true||Gamepad.current?.startButton.wasPressedThisFrame==true)&&raceManager.State==RaceState.Racing)TogglePause();
             countdownAge+=Time.unscaledDeltaTime;if(lastCount>=0){float t=Mathf.Clamp01(countdownAge/.28f);countdownText.rectTransform.localScale=Vector3.one*Mathf.Lerp(1.35f,1,1-Mathf.Pow(1-t,3));if(lastCount==0&&countdownAge>1f)countdownText.text="";}
             if(banner.activeSelf&&Time.unscaledTime>bannerUntil)banner.SetActive(false);
-            if(lobby!=null){lobby.SetActive(raceManager.State==RaceState.Preparing);UpdateLobby();}
+            if(lobby!=null){bool preparing=raceManager.State==RaceState.Preparing;lobby.SetActive(preparing);if(preparing)UpdateLobby();}
             if(vehicle==null)return;
             float pulse=Mathf.Clamp01((positionPulse-Time.unscaledTime)*4);positionText.rectTransform.localScale=Vector3.one*(1+pulse*.08f);
             chargeFill.rectTransform.anchorMax=new Vector2(vehicle.DriftCharge,1);chargeFill.rectTransform.offsetMax=Vector2.zero;
@@ -102,7 +102,8 @@ namespace AnimeHillRacing.Racing3D
             RacingDesign.Label(panel.transform,"RANKED / OFFLINE OPPONENTS / NIGHT CITY",RacingType.Caption,.05f,.70f,.90f,.07f,RacingDesign.Cyan,TextAnchor.MiddleCenter);
             for(int i=0;i<12;i++)lobbyNames[i]=RacingDesign.Label(panel.transform,"",RacingType.Body,.05f+(i%3)*.31f,.53f-(i/3)*.13f,.28f,.10f,RacingDesign.Ink);
         }
-        void UpdateLobby(){if(raceManager.LobbyRacers==null)return;for(int i=0;i<12;i++)lobbyNames[i].text=i<raceManager.LobbyRevealCount?$"{raceManager.LobbyRacers[i].displayName}\n{raceManager.LobbyRacers[i].mmr:N0} MMR":"";}
+        int lastLobbyReveal=-1;
+        void UpdateLobby(){if(raceManager.LobbyRacers==null||lastLobbyReveal==raceManager.LobbyRevealCount)return;lastLobbyReveal=raceManager.LobbyRevealCount;for(int i=0;i<12;i++)lobbyNames[i].text=i<lastLobbyReveal?$"{raceManager.LobbyRacers[i].displayName}\n{raceManager.LobbyRacers[i].mmr:N0} MMR":"";}
         void BuildControls()
         {
             var rt=RacingDesign.Area(root,"Touch controls",0,0,1,1);controls=rt.gameObject;controls.SetActive(Application.isMobilePlatform||PlayerPrefs.GetInt("AHR.Racing.ShowTouch",0)==1);
@@ -155,7 +156,8 @@ namespace AnimeHillRacing.Racing3D
         {
             vh.Clear();if(tracker==null)return;
             for(int i=0;i<tracker.TrackGraph.NodeCount;i++)RacingEmblem.Line(vh,Project(tracker.TrackGraph.GetNode(i).Position),Project(tracker.TrackGraph.GetNode(i+1).Position),2,new Color(.65f,.78f,.82f,.55f));
-            foreach(var racer in tracker.Leaderboard){Vector2 p=Project(racer.Vehicle.transform.position);float size=racer.Identity.isHuman?5:3;RacingEmblem.Line(vh,p-Vector2.right*size,p+Vector2.right*size,size*2,racer.Identity.isHuman?RacingDesign.Secondary:RacingDesign.Cyan);}
+            var leaderboard=tracker.Leaderboard;
+            for(int i=0;i<leaderboard.Count;i++){var racer=leaderboard[i];Vector2 p=Project(racer.Vehicle.transform.position);float size=racer.Identity.isHuman?5:3;RacingEmblem.Line(vh,p-Vector2.right*size,p+Vector2.right*size,size*2,racer.Identity.isHuman?RacingDesign.Secondary:RacingDesign.Cyan);}
         }
     }
 }

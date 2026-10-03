@@ -30,11 +30,13 @@ namespace AnimeHillRacing.Racing3D
         public int TotalRacers = 12;
         public int TotalLaps = 3;
         public float CountdownSeconds = 3.0f;
-        public float PostPlayerFinishTimeoutSeconds = 5.0f;
+        public float PostPlayerFinishTimeoutSeconds = 15.0f;
         public bool EnableLaunchTiming = false;
         public int RaceSeed = 0; // 0 = random dynamic seed
         public bool AllowItems = true;
         public bool DeterministicDebug = false;
+        // Explicit diagnostics only; normal ranked races retain their generated builds.
+        public bool EqualBuildBenchmark = false;
 
         public static RaceRules CreateRanked(int seed = 0) => new RaceRules
         {
@@ -42,7 +44,7 @@ namespace AnimeHillRacing.Racing3D
             TotalRacers = 12,
             TotalLaps = 3,
             CountdownSeconds = 3.0f,
-            PostPlayerFinishTimeoutSeconds = 5.0f,
+            PostPlayerFinishTimeoutSeconds = 15.0f,
             RaceSeed = seed,
             AllowItems = true,
             DeterministicDebug = seed != 0

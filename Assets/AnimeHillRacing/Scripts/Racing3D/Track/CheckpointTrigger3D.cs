@@ -36,13 +36,27 @@ namespace AnimeHillRacing.Racing3D
 
         private void OnTriggerEnter(Collider other)
         {
+            TryCrossing(other);
+        }
+        private void OnTriggerStay(Collider other)
+        {
+            // A racer can enter the volume while braking or spun out, then cross
+            // its plane on a later physics step without another Enter callback.
+            TryCrossing(other);
+        }
+        private void TryCrossing(Collider other)
+        {
             RacingVehiclePhysics racer = other.GetComponentInParent<RacingVehiclePhysics>();
             if (racer != null)
             {
                 if (manager == null || (manager.State != RaceState.Racing && manager.State != RaceState.PlayerFinished)) return;
                 if (Vector3.Dot(racer.Body.linearVelocity, transform.forward) <= 0.5f) return;
+                if(Vector3.Dot(racer.Body.position-transform.position,transform.forward)<0)return;
+                var progress=tracker?.FindRacer(racer);
+                if(progress==null || progress.Finished || progress.LastCheckpointIndex==checkpointIndex)return;
+                int before=progress.CheckpointVisits;
                 tracker?.NotifyCheckpoint(racer, checkpointIndex, isFinishLine, manager.RaceElapsed);
-                OnRacerEntered?.Invoke(racer, checkpointIndex, isFinishLine);
+                if(progress.CheckpointVisits>before)OnRacerEntered?.Invoke(racer, checkpointIndex, isFinishLine);
             }
         }
     }

@@ -27,6 +27,7 @@ namespace AnimeHillRacing.Racing3D
         public int exitNodeIndex;
         public Vector3[] pathPoints = Array.Empty<Vector3>();
         public bool requiresBoost = true;
+        public bool requiresJump;
         [Range(0f, 1f)] public float minSkillRequired = 0.4f;
         [Range(0f, 1f)] public float riskLevel = 0.5f;
 

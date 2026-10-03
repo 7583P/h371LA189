@@ -59,7 +59,7 @@ namespace AnimeHillRacing.UI
 
         public void Refresh()
         {
-            if (!built || buyButtons == null) return;
+            if (this == null || !built || buyButtons == null) return;
             IReadOnlyList<CoinPackProduct> packs = CoinPackCatalog.Products;
             balanceText.text = $"YOUR GEMS  {SaveManager.TotalGems:N0}";
             for (int i = 0; i < packs.Count && i < buyButtons.Length; i++)
@@ -95,6 +95,7 @@ namespace AnimeHillRacing.UI
 
         private void Subscribe()
         {
+            if (!isActiveAndEnabled) return;
             SaveManager.CurrencyChanged -= Refresh;
             SaveManager.CurrencyChanged += Refresh;
         }

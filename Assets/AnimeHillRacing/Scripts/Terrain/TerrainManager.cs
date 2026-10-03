@@ -261,6 +261,7 @@ namespace AnimeHillRacing.Terrain
             if (vehicle == null || vehicle.Body2D == null) return;
             float wheelRadius = vehicle.Definition != null ? vehicle.Definition.wheelRadius : .6f;
             float requiredLift = 0f;
+            Vector2 supportNormal = Vector2.up;
             VehiclePhysics2DController physics = vehicle as VehiclePhysics2DController;
             Suspension2DController[] suspensions = physics != null
                 ? new[] { physics.RearSuspension, physics.FrontSuspension }
@@ -273,13 +274,32 @@ namespace AnimeHillRacing.Terrain
                     continue;
                 float slopeCosine = Mathf.Max(.30f, Mathf.Cos(Mathf.Abs(slopeDegrees) * Mathf.Deg2Rad));
                 float verticalTireClearance = wheelRadius / slopeCosine + .055f;
-                requiredLift = Mathf.Max(requiredLift,
-                    surfaceY + verticalTireClearance - wheel.position.y);
+                float lift = surfaceY + verticalTireClearance - wheel.position.y;
+                if (lift > requiredLift)
+                {
+                    requiredLift = lift;
+                    float radians = slopeDegrees * Mathf.Deg2Rad;
+                    supportNormal = new Vector2(-Mathf.Sin(radians), Mathf.Cos(radians));
+                }
             }
             if (requiredLift <= .001f) return;
 
             Vector2 correction = Vector2.up * requiredLift;
             TranslateMountainVehicle(correction, false);
+            // Position correction supplies the contact missed by Box2D. Leaving
+            // the incoming velocity intact made the rig keep falling into this
+            // safety plane every step, even after both wheels had landed.
+            // Preserve tangent motion and outward/airborne velocity.
+            RemoveIncomingMountainVelocity(vehicle.Body2D, supportNormal);
+            for (int i = 0; i < suspensions.Length; i++)
+                RemoveIncomingMountainVelocity(suspensions[i] != null ? suspensions[i].WheelBody : null, supportNormal);
+        }
+
+        private static void RemoveIncomingMountainVelocity(Rigidbody2D part, Vector2 normal)
+        {
+            if (part == null) return;
+            float incoming = Vector2.Dot(part.linearVelocity, normal);
+            if (incoming < 0f) part.linearVelocity -= normal * incoming;
         }
 
         private void TranslateMountainVehicle(Vector2 correction, bool dampVelocity)

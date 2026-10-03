@@ -42,6 +42,12 @@ namespace AnimeHillRacing.Racing3D
         {
             var rt=Area(parent,name,x,y,w,h);var graphic=rt.gameObject.AddComponent<RacingPanelGraphic>();graphic.color=color;graphic.Cut=cut;graphic.raycastTarget=false;return graphic;
         }
+        public static RacingPanelGraphic CompetitivePanel(Transform parent,string name,float x,float y,float w,float h,Color accent)
+        {
+            var panel=Panel(parent,name,x,y,w,h,Surface,14);
+            var detail=Area(panel.transform,"Circuit trim",0,0,1,1).gameObject.AddComponent<RacingCircuitTrimGraphic>();
+            detail.color=accent;detail.raycastTarget=false;return panel;
+        }
         public static Text Label(Transform parent,string value,RacingType role,float x,float y,float w,float h,Color? color=null,TextAnchor anchor=TextAnchor.MiddleLeft,bool display=false)
         {
             var rt=Area(parent,"Text "+value,x,y,w,h);var text=rt.gameObject.AddComponent<Text>();
@@ -81,6 +87,17 @@ namespace AnimeHillRacing.Racing3D
         public static string ItemName(RaceItemType item)
         {
             switch(item){case RaceItemType.TurboPulse:return "TURBO PULSE";case RaceItemType.KineticMissile:return "KINETIC DART";case RaceItemType.ElectroSpike:return "ELECTRO SPIKE";case RaceItemType.MagneticShield:return "MAGNETIC SHIELD";case RaceItemType.ShockwavePulse:return "SHOCKWAVE";case RaceItemType.HyperCharge:return "HYPER CHARGE";default:return "CHARGE POD";}
+        }
+    }
+    [RequireComponent(typeof(CanvasRenderer))]
+    public sealed class RacingCircuitTrimGraphic:MaskableGraphic
+    {
+        protected override void OnPopulateMesh(VertexHelper vh)
+        {
+            vh.Clear();Rect r=rectTransform.rect;
+            RacingEmblem.Line(vh,new Vector2(r.xMin+18,r.yMax-2),new Vector2(r.xMax-28,r.yMax-2),2,color);
+            RacingEmblem.Line(vh,new Vector2(r.xMax-28,r.yMax-2),new Vector2(r.xMax-2,r.yMax-28),2,color);
+            for(int i=0;i<3;i++)RacingEmblem.Line(vh,new Vector2(r.xMin+10+i*10,r.yMin+10),new Vector2(r.xMin+16+i*10,r.yMin+16),2,color);
         }
     }
     public sealed class RacingSafeArea:MonoBehaviour

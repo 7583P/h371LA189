@@ -107,21 +107,15 @@ namespace AnimeHillRacing.Racing3D
                 }
             }
 
-            // Lobby Diversity Guard:
-            // Cap exact META at nine, retaining at least two seeded alternatives.
-            if (metaCount > MetaProgressionConfig.MaximumExactMetaRacers)
+            // A seeded lobby-level adoption roll gives 75k+ grids ten or eleven exact
+            // META opponents. Lower grids retain their individual build probabilities.
+            float eliteConvergence = Mathf.InverseLerp(50000, 75000, playerMmr);
+            if (rng.NextFloat() < eliteConvergence)
             {
-                int excess = metaCount - MetaProgressionConfig.MaximumExactMetaRacers;
-                // Seeded random demotions preserve variety without favoring fixed grid indexes.
-                while (excess > 0)
-                {
-                    int i = rng.Next(AiOpponentsCount);
-                    if (categories[i] == MetaBuildCategory.Meta)
-                    {
-                        categories[i] = rng.NextFloat() < .85f ? MetaBuildCategory.NearMeta : MetaBuildCategory.Specialist;
-                        excess--;
-                    }
-                }
+                float allMetaChance = Mathf.Lerp(.78f, .94f, Mathf.InverseLerp(75000, 125000, playerMmr));
+                int specialist = rng.NextFloat() < allMetaChance ? -1 : rng.Next(AiOpponentsCount);
+                for (int i = 0; i < AiOpponentsCount; i++)
+                    categories[i] = i == specialist ? MetaBuildCategory.Specialist : MetaBuildCategory.Meta;
             }
             else if (playerMmr >= 50000 && metaCount == 0)
             {
@@ -147,8 +141,8 @@ namespace AnimeHillRacing.Racing3D
                     case MetaBuildCategory.Meta:
                         botVehicle = MetaProgressionConfig.MetaVehicleId;
                         botWheel = MetaProgressionConfig.MetaWheelId;
-                        botPaint = RacingVehicleFactory.MetaYellow;
-                        buildTitle = "Formula Apex Meta";
+                        botPaint = RacingVehicleFactory.MetaBlack;
+                        buildTitle = "Formula Apex Blackline";
                         break;
                     case MetaBuildCategory.NearMeta:
                         var nearPool = playerMmr >= 90000 ? MetaProgressionConfig.CompetitiveAlternativePool : MetaProgressionConfig.NearMetaBuildPool;
@@ -200,8 +194,8 @@ namespace AnimeHillRacing.Racing3D
             bool humanHasMetaWheels = lobby[0].wheelId == MetaProgressionConfig.MetaWheelId || lobby[0].wheelId == MetaProgressionConfig.MetaWheelVisualId;
             bool humanIsMeta = humanIsFormula && humanHasMetaWheels;
             lobby[0].buildCategory = humanIsMeta ? MetaBuildCategory.Meta : (humanIsFormula ? MetaBuildCategory.NearMeta : MetaBuildCategory.Specialist);
-            lobby[0].paintColor = humanIsFormula ? RacingVehicleFactory.MetaYellow : RacingDesign.Cyan;
-            lobby[0].buildName = humanIsMeta ? "Formula Apex Meta" : (humanIsFormula ? "Formula Apex" : "Custom Setup");
+            lobby[0].paintColor = humanIsFormula ? RacingVehicleFactory.MetaBlack : RacingDesign.Cyan;
+            lobby[0].buildName = humanIsMeta ? "Formula Apex Blackline" : (humanIsFormula ? "Formula Apex" : "Custom Setup");
             lobby[0].metaProbabilityUsed = MetaProgressionConfig.EvaluateMetaProbability(playerMmr);
 
             // 4. Assign Starting Grid Positions (1 to 12)

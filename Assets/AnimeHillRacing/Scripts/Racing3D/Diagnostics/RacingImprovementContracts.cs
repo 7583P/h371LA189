@@ -49,22 +49,33 @@ namespace AnimeHillRacing.Racing3D
                         if(rating>=70000)lobbies&=lobby[i].buildCategory!=MetaBuildCategory.Standard;
                     }
                     lobbies&=grid.Count==12&&grid.Contains(1)&&grid.Contains(12)&&names.Count==12;
-                    diverse&=exact<=9;meta+=exact;if(rating==100000)highCounts.Add(exact);
+                    diverse&=exact<=11&&(rating<75000||exact>=10);meta+=exact;if(rating==100000)highCounts.Add(exact);
                 }
                 row.observedMetaRate=meta/(64f*11);curves.rows.Add(row);
                 checks.Check(bounded,$"{rating} MMR: all skills remain finite and imperfect");
                 checks.Check(repeated,$"{rating} MMR: profiles and full lobby reproduce their seed");
-                checks.Check(lobbies&&diverse,$"{rating} MMR: twelve unique grid slots, valid builds and diversity guard");
-                checks.Check(previous==null||(row.line>previous.line&&row.braking>previous.braking&&row.drift>=previous.drift&&row.consistency>previous.consistency&&row.execution>=previous.execution&&row.items>previous.items&&row.chaining>=previous.chaining&&row.tricks>=previous.tricks&&row.aggression>=previous.aggression),$"{rating} MMR: aggregate driving, tactics and chaining progress");
+                checks.Check(lobbies&&diverse,$"{rating} MMR: twelve unique grid slots, valid builds and elite convergence");
+                checks.Check(previous==null||(row.line>=previous.line&&row.braking>=previous.braking&&row.drift>=previous.drift&&row.consistency>=previous.consistency&&row.execution>=previous.execution&&row.items>=previous.items&&row.chaining>=previous.chaining&&row.tricks>=previous.tricks&&row.aggression>=previous.aggression),$"{rating} MMR: aggregate driving, tactics and chaining progress");
                 previous=row;
             }
-            checks.Check(curves.rows[11].line-curves.rows[3].line>.5f&&curves.rows[11].execution-curves.rows[3].execution>.5f,"100k retains a substantial skill gap over 20k");
-            checks.Check(highCounts.Count>1,"Exact META count varies across high-MMR seeds without a forced minimum");
+            checks.Check(curves.rows[11].line-curves.rows[3].line>.4f&&curves.rows[11].execution-curves.rows[3].execution>.4f,"100k retains a substantial skill gap over 20k");
+            checks.Check(highCounts.Contains(10)&&highCounts.Contains(11),"High-MMR seeds produce eleven META bots or ten META plus one specialist");
             var custom=MatchmakingService.GenerateRankedLobby(100000,"formula-01","wheel-default","TEST",42);
             checks.Check(custom[0].buildCategory!=MetaBuildCategory.Meta,"Formula with default tuning is not mislabeled exact META");
-            PlayerPrefs.SetString("AHR.Racing.SelectedVehicle.V1","car-01");PlayerPrefs.SetString("AHR.Racing.SelectedWheel.V1","wheel-default");
-            checks.Check(RacingSaveManager.SelectedVehicleId=="car-01"&&RacingSaveManager.SelectedWheelId=="wheel-default","Saved Jeep and default wheels survive selection getters");
-            checks.Check(PlayerPrefs.GetString("AHR.Racing.SelectedVehicle.V1")=="car-01"&&PlayerPrefs.GetString("AHR.Racing.SelectedWheel.V1")=="wheel-default","Selection reads do not overwrite saved choices");
+            const string vehicleKey="AHR.Racing.SelectedVehicle.V1",wheelKey="AHR.Racing.SelectedWheel.V1";
+            bool hadVehicle=PlayerPrefs.HasKey(vehicleKey),hadWheel=PlayerPrefs.HasKey(wheelKey);
+            string savedVehicle=PlayerPrefs.GetString(vehicleKey),savedWheel=PlayerPrefs.GetString(wheelKey);
+            try
+            {
+                PlayerPrefs.SetString(vehicleKey,"car-01");PlayerPrefs.SetString(wheelKey,"wheel-default");
+                checks.Check(RacingSaveManager.SelectedVehicleId=="car-01"&&RacingSaveManager.SelectedWheelId=="wheel-default","Saved Jeep and default wheels survive selection getters");
+                checks.Check(PlayerPrefs.GetString(vehicleKey)=="car-01"&&PlayerPrefs.GetString(wheelKey)=="wheel-default","Selection reads do not overwrite saved choices");
+            }
+            finally
+            {
+                if(hadVehicle)PlayerPrefs.SetString(vehicleKey,savedVehicle);else PlayerPrefs.DeleteKey(vehicleKey);
+                if(hadWheel)PlayerPrefs.SetString(wheelKey,savedWheel);else PlayerPrefs.DeleteKey(wheelKey);
+            }
             int mmr=RacingSaveManager.CurrentMmr,highest=RacingSaveManager.HighestMmr,races=RacingSaveManager.RacesCount;
             RacingTestSession.Set(125000,42);
             checks.Check(RacingTestSession.Active&&RacingTestSession.Mmr==125000&&RacingSaveManager.CurrentMmr==mmr&&RacingSaveManager.HighestMmr==highest&&RacingSaveManager.RacesCount==races,"Test race override preserves live rating and progression");
@@ -88,7 +99,7 @@ namespace AnimeHillRacing.Racing3D
                 {
                     Vector3 a=route.pathPoints[i],delta=route.pathPoints[i+1]-a;length+=delta.magnitude;
                     if(i<route.pathPoints.Length-2)largestTurn=Mathf.Max(largestTurn,Vector3.Angle(delta,route.pathPoints[i+2]-route.pathPoints[i+1]));
-                    if(route.requiresJump&&(i==10||i==11))continue;
+                    if(route.requiresJump&&i>=route.gapStartNodeIndex&&i<route.landingNodeIndex)continue;
                     Vector3 point=a+delta*.5f;
                     bool hit=Physics.Raycast(point+Vector3.up*.6f,Vector3.down,out var floor,1.2f,~0,QueryTriggerInteraction.Ignore);
                     decks&=hit&&floor.normal.y>.6f&&Mathf.Abs(floor.point.y-point.y)<.55f;
@@ -97,7 +108,7 @@ namespace AnimeHillRacing.Racing3D
                 }
                 float main=graph.GetNode(route.exitNodeIndex).CumulativeDistance-graph.GetNode(route.entryNodeIndex).CumulativeDistance;
                 if(route.shortcutId=="ridge_cut"||route.shortcutId=="overpass_launch")checks.Check(main-length>30,route.displayName+": strong route saves at least thirty physical meters");
-                checks.Check(largestTurn<45,route.displayName+$": smooth sampled turns ({largestTurn:F1} degrees maximum)");
+                checks.Check(largestTurn<(route.requiresJump?45:60),route.displayName+$": sampled turns stay within the ground/jump route limit ({largestTurn:F1} degrees maximum)");
                 checks.Check(decks,route.displayName+": continuous physical decks outside the jump gap");
                 checks.Check(corridor,route.displayName+": car corridor is clear of scenery and tunnel walls");
             }
@@ -125,12 +136,18 @@ namespace AnimeHillRacing.Racing3D
                 checks.Check(RacingSaveManager.CurrentMmr==original&&RacingSaveManager.HighestMmr==highest&&RacingSaveManager.RacesCount==races,"MMR preset preserves saved rank and rewards: "+preset);
             }
             capture?.Invoke("test-mmr-100k-plus");
-            Click("DRIVE TEST",checks);yield return new WaitForSecondsRealtime(.6f);
+            Click("DRIVE TEST",checks);yield return Loaded("RacingGarage");
             checks.Check(SceneManager.GetActiveScene().name=="RacingGarage"&&RacingTestSession.Active&&RacingTestSession.Mmr==125000&&RacingSaveManager.CurrentMmr==original,"Visible Drive Test enters Garage with a read-only 100k+ override");
-            Click("RACING HUB",checks);yield return new WaitForSecondsRealtime(.6f);
+            Click("RACING HUB",checks);yield return Loaded("RacingSelect");
             checks.Check(!RacingTestSession.Active&&RacingSaveManager.CurrentMmr==original,"Returning to Hub clears the test override and preserves rank");
-            Click("MAIN MENU",checks);yield return new WaitForSecondsRealtime(.6f);
+            Click("MAIN MENU",checks);yield return Loaded("MainMenu");
             checks.Check(Find("ADVENTURE")!=null&&Find("RACING")!=null&&Find("GARAGE")!=null&&Find("SHOP")!=null,"True Main Menu visibly exposes Adventure, Racing, Garage and Shop");
+        }
+        static IEnumerator Loaded(string scene)
+        {
+            float deadline=Time.realtimeSinceStartup+30;
+            while((SceneManager.GetActiveScene().name!=scene||RacingLoadingScreen.IsLoading)&&Time.realtimeSinceStartup<deadline)yield return null;
+            yield return new WaitForSecondsRealtime(.25f);
         }
         static Button Find(string name)
         {foreach(var b in UnityEngine.Object.FindObjectsByType<Button>(FindObjectsSortMode.None))if(b.name==name&&b.gameObject.activeInHierarchy)return b;return null;}

@@ -4,10 +4,11 @@ namespace AnimeHillRacing.Racing3D
     public static class RacingVehicleFactory
     {
         static PhysicsMaterial contact;
-        public static readonly Color MetaYellow = new Color(1.0f, 0.98f, 0.02f);
         public static readonly Color MetaCyan = new Color(0.08f, 0.94f, 0.98f);
-        public static readonly Color MetaPurpleSuit = new Color(0.58f, 0.16f, 0.94f);
-        public static readonly Color MetaPurpleHelmet = new Color(0.44f, 0.08f, 0.84f);
+        public static readonly Color MetaBlack = new Color(.018f, .025f, .037f);
+        public static readonly Color MetaBlueHelmet = new Color(.025f, .24f, .95f);
+        public static readonly Color MetaRed = new Color(.98f, .045f, .08f);
+        public static readonly Color MetaGreen = new Color(.08f, .94f, .32f);
 
         public static GameObject Create(RacerIdentity identity)
         {
@@ -59,14 +60,14 @@ namespace AnimeHillRacing.Racing3D
             }
             else if (identity.buildCategory == MetaBuildCategory.Meta || identity.vehicleId == "formula-01" || identity.vehicleId == MetaProgressionConfig.MetaVehicleId)
             {
-                paint = MetaYellow;
+                paint = MetaBlack;
             }
             else
             {
                 paint = colors[Mathf.Abs(identity.personalitySeed % colors.Length)];
             }
 
-            string wheel = (identity.buildCategory == MetaBuildCategory.Meta || identity.vehicleId == "formula-01" || identity.wheelId == "wheel-plasma" || identity.wheelId == "wheel-meta-cyan") ? "wheel-meta-cyan" : identity.wheelId;
+            string wheel = (identity.wheelId == MetaProgressionConfig.MetaWheelId || identity.wheelId == "wheel-meta-cyan") ? MetaProgressionConfig.MetaWheelVisualId : identity.wheelId;
 
             RacingVehicleVisuals.Build(root, identity.vehicleId, wheel, paint, isHuman: identity.isHuman);
             return root;

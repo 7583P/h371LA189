@@ -48,7 +48,7 @@ namespace AnimeHillRacing.Racing3D
         public bool IsPerformingTrick => trickPerformed;
         public int TrickCount => trickCount;
         public MiniTurboStage CurrentMiniTurboStage => currentMiniTurboStage;
-        public float DriftCharge => Mathf.Clamp01(driftTime / 2.7f);
+        public float DriftCharge => Mathf.Clamp01(driftTime / RacingDriftFeedback.PurpleCharge);
         public float SlipAngle => (body != null || (body = GetComponent<Rigidbody>()) != null) ? Mathf.Atan2(Vector3.Dot(body.linearVelocity, transform.right), Mathf.Max(1f, Mathf.Abs(ForwardSpeedMps))) * Mathf.Rad2Deg : 0f;
         public bool IsBoosting => boostTimer > 0f;
         public float BoostRemainingSeconds => boostTimer;
@@ -58,6 +58,7 @@ namespace AnimeHillRacing.Racing3D
         public int RacerCollisions { get; private set; }
         public int ItemHits { get; private set; }
         public int MiniTurbosReleased { get; private set; }
+        public int DriftsStarted { get; private set; }
         public int JumpsPerformed { get; private set; }
         public int TricksPerformed { get; private set; }
         public int LandingBoosts { get; private set; }
@@ -72,6 +73,7 @@ namespace AnimeHillRacing.Racing3D
         public event Action<float> OnImpact;
         public event Action<float> OnLanding;
         public event Action<MiniTurboStage> OnDriftStage;
+        public event Action<MiniTurboStage> OnMiniTurboReleased;
         public event Action OnBoost;
         public event Action OnJump;
         public event Action<int> OnTrick;
@@ -250,12 +252,13 @@ namespace AnimeHillRacing.Racing3D
             if(!isDrifting && cmd.Drift && Mathf.Abs(cmd.Steering) > .22f && ForwardSpeedKmh > 38f)
             {
                 isDrifting = true; driftDirection = cmd.Steering > 0 ? 1 : -1; driftTime = 0;
+                DriftsStarted++;
             }
             if(!isDrifting) return;
             if(!cmd.Drift || ForwardSpeedKmh < 22f) { EndDrift(ForwardSpeedKmh >= 22f); return; }
             if(Mathf.Abs(SlipAngle) >= 5f && Mathf.Abs(cmd.Steering) > .05f)
                 driftTime += dt*stats.MiniTurboMultiplier*Mathf.Lerp(.7f,1f,Mathf.Clamp01(Mathf.Abs(SlipAngle)/20f));
-            MiniTurboStage stage = driftTime >= 2.7f ? MiniTurboStage.UltraMiniTurbo : driftTime >= 1.55f ? MiniTurboStage.SuperMiniTurbo : driftTime >= .65f ? MiniTurboStage.MiniTurbo : MiniTurboStage.None;
+            MiniTurboStage stage = RacingDriftFeedback.StageForCharge(driftTime);
             if(stage != currentMiniTurboStage) { currentMiniTurboStage = stage; OnDriftStage?.Invoke(stage); }
         }
         private void EndDrift(bool boost)
@@ -266,6 +269,7 @@ namespace AnimeHillRacing.Racing3D
                 MiniTurbosReleased++;
                 lastMiniTurboTime=Time.time;
                 ApplySpeedBoost(1f+.08f*stage,.45f+.35f*stage);
+                OnMiniTurboReleased?.Invoke(currentMiniTurboStage);
             }
             isDrifting = false; driftDirection = 0; driftTime = 0; currentMiniTurboStage = MiniTurboStage.None;
         }

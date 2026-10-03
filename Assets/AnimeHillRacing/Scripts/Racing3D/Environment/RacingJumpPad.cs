@@ -9,11 +9,14 @@ namespace AnimeHillRacing.Racing3D
         private readonly RacingVehiclePhysics[] racers = new RacingVehiclePhysics[12];
         private readonly float[] lastLaunch = new float[12];
         public int LaunchCount { get; private set; }
+        public float VerticalImpulse { get; set; } = 6.5f;
+        public bool RequiresBoost { get; set; }
 
         private void OnTriggerEnter(Collider other)
         {
             var vehicle = other.GetComponentInParent<RacingVehiclePhysics>();
             if (vehicle == null || !vehicle.RaceEnabled || vehicle.ForwardSpeedMps < 4f) return;
+            if (RequiresBoost && !vehicle.IsBoosting) return;
             if (Vector3.Dot(vehicle.transform.forward, transform.forward) < .5f) return;
             int slot = -1;
             for (int i = 0; i < racers.Length; i++)
@@ -24,7 +27,7 @@ namespace AnimeHillRacing.Racing3D
             if (slot < 0 || (racers[slot] == vehicle && Time.time - lastLaunch[slot] < 3f)) return;
             racers[slot] = vehicle;
             lastLaunch[slot] = Time.time;
-            float impulse = Mathf.Max(0f, 6.5f - vehicle.Body.linearVelocity.y);
+            float impulse = Mathf.Max(0f, VerticalImpulse - vehicle.Body.linearVelocity.y);
             vehicle.Body.AddForce(Vector3.up * impulse, ForceMode.VelocityChange);
             float currentFwd = Vector3.Dot(vehicle.Body.linearVelocity, transform.forward);
             if (currentFwd < 18f)

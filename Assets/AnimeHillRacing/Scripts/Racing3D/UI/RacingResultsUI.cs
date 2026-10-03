@@ -16,7 +16,7 @@ namespace AnimeHillRacing.Racing3D
             root=RacingDesign.Canvas("Ranked results",50);root.gameObject.AddComponent<RacingScreenMotion>();RacingDesign.Panel(root,"Backdrop",0,0,1,1,RacingDesign.Background,0);
             RacingDesign.Label(root,(raceManager.PersistResults?"RANKED / ":"TEST RACE / ")+results.trackDisplayName,RacingType.Section,.05f,.87f,.86f,.065f,RacingDesign.Cyan);
             RacingDesign.Label(root,RacingHUD.Ordinal(player.finishPosition)+" PLACE",RacingType.Display,.05f,.72f,.39f,.13f,RacingDesign.Ink,display:true);
-            var summary=RacingDesign.Panel(root,"Progression",.05f,.25f,.33f,.43f,RacingDesign.Surface);
+            var summary=RacingDesign.CompetitivePanel(root,"Progression",.05f,.25f,.33f,.43f,RacingDesign.Apex);
             RacingDesign.Label(summary.transform,raceManager.PersistResults?"RATING":"TEST RATING",RacingType.Caption,.08f,.81f,.84f,.08f,RacingDesign.Muted);
             mmrText=RacingDesign.Label(summary.transform,player.oldMmr.ToString("N0"),RacingType.Mmr,.08f,.53f,.84f,.26f,RacingDesign.Ink);
             RacingDesign.Label(summary.transform,raceManager.PersistResults?$"{player.oldMmr:N0}  {player.mmrDelta:+0;-0;0}  =  {player.newMmr:N0}":"RANK AND REWARDS PRESERVED",RacingType.Body,.08f,.40f,.84f,.11f,player.mmrDelta>=0?RacingDesign.Success:RacingDesign.Danger);
@@ -24,7 +24,7 @@ namespace AnimeHillRacing.Racing3D
             var bg=RacingDesign.Area(summary.transform,"Rank progress",.08f,.15f,.84f,.02f).gameObject.AddComponent<Image>();bg.color=RacingDesign.Highlight;
             progress=RacingDesign.Area(bg.transform,"Progress",0,0,1,1).gameObject.AddComponent<Image>();progress.color=RacingDesign.TierColor(displayRating);
             RacingDesign.Label(summary.transform,displayRating>=100000?"APEX / PINNACLE MASTERY":"NEXT TIER / KEEP CLIMBING",RacingType.Caption,.08f,.015f,.84f,.09f,RacingDesign.Muted);
-            var table=RacingDesign.Panel(root,"Race classification",.42f,.18f,.53f,.64f,RacingDesign.Surface);
+            var table=RacingDesign.CompetitivePanel(root,"Race classification",.42f,.18f,.53f,.64f,RacingDesign.Cyan);
             Row(table.transform,"POS","RACER","MMR","VEHICLE","TIME",.91f,RacingDesign.Muted);
             for(int i=0;i<results.entries.Length;i++)
             {
@@ -34,7 +34,7 @@ namespace AnimeHillRacing.Racing3D
             }
             var retry=RacingDesign.Button(root,"RACE AGAIN",.42f,.055f,.25f,.085f,()=>raceManager.RetryRace(),RacingDesign.Highlight);
             RacingDesign.Button(root,"RACING HUB",.70f,.055f,.25f,.085f,()=>raceManager.ExitToMenu());
-            RacingDesign.Button(root,"GARAGE",.05f,.055f,.24f,.085f,()=>SceneManager.LoadScene("RacingGarage"));RacingDesign.Focus(retry);
+            RacingDesign.Button(root,"GARAGE",.05f,.055f,.24f,.085f,()=>RacingLoadingScreen.Load("RacingGarage","TUNE YOUR NEXT RACE"));RacingDesign.Focus(retry);
         }
         static void Row(Transform table,string pos,string name,string mmr,string vehicle,string time,float y,Color color)
         {

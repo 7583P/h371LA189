@@ -137,9 +137,10 @@ namespace AnimeHillRacing.Racing3D
 
             VehicleCommands cmd = vehiclePhysics.LastCommands;
             bool tryingToDrive = cmd.Throttle > 0.25f || cmd.Brake > 0.25f;
-            // Contact jitter can repeatedly exceed a speed threshold without making
-            // any progress. Measure displacement over the same shared timeout instead.
-            if (!tryingToDrive || !stuckAnchorValid || (transform.position - stuckAnchor).sqrMagnitude > 9f)
+            // Compare net displacement over a complete shared time window.
+            // Resetting whenever the car moved three meters let a repeated
+            // forward/reverse oscillation reset this guard indefinitely.
+            if (!tryingToDrive || !stuckAnchorValid)
             {
                 stuckAnchor = transform.position;
                 stuckAnchorValid = true;
@@ -150,7 +151,8 @@ namespace AnimeHillRacing.Racing3D
                 stuckTimer += dt;
                 if (stuckTimer >= stuckDurationThreshold && vehiclePhysics.IsGrounded)
                 {
-                    TriggerRecovery("Vehicle stuck");
+                    if((transform.position-stuckAnchor).sqrMagnitude<9f)TriggerRecovery("Vehicle stuck");
+                    stuckAnchor=transform.position;stuckTimer=0;
                 }
             }
         }

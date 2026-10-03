@@ -19,11 +19,11 @@ namespace AnimeHillRacing.Racing3D
             if(built)return;built=true;
             gameObject.AddComponent<RacingTrackInfo>();
             Vector3[] control={
-                new Vector3(0,6,0),new Vector3(0,6,110),new Vector3(25,7,215),new Vector3(85,8,290),
+                new Vector3(0,6,0),new Vector3(0,6,110),new Vector3(130,24,205),new Vector3(85,11,290),
                 new Vector3(175,9,320),new Vector3(260,11,285),new Vector3(310,13,210),new Vector3(315,19,135),
-                new Vector3(285,11,55),new Vector3(235,8,-15),new Vector3(195,7,-85),new Vector3(255,6,-165),
-                new Vector3(220,6,-250),new Vector3(125,7,-280),new Vector3(45,9,-235),new Vector3(-45,11,-250),
-                new Vector3(-120,10,-180),new Vector3(-100,8,-90),new Vector3(-35,6,-60),new Vector3(0,6,-40)
+                new Vector3(285,11,55),new Vector3(235,8,-15),new Vector3(175,14,-78),new Vector3(260,9,-155),
+                new Vector3(210,7,-244),new Vector3(105,12,-278),new Vector3(38,15,-221),new Vector3(-48,20,-258),
+                new Vector3(-125,18,-175),new Vector3(-85,13,-96),new Vector3(-78,18,0),new Vector3(0,6,-48)
             };
             var positions=RacingTrackGeometry.SmoothLoop(control,Steps);var nodes=new TrackNode[positions.Length];
             for(int i=0;i<nodes.Length;i++)
@@ -32,7 +32,9 @@ namespace AnimeHillRacing.Racing3D
                 Vector3 ahead=(positions[(i+3)%positions.Length]-positions[i]).normalized;
                 Vector3 behind=(positions[i]-positions[(i+positions.Length-3)%positions.Length]).normalized;
                 float corner=Vector3.SignedAngle(behind,ahead,Vector3.up);float target=155-Mathf.Clamp(Mathf.Abs(corner)*1.25f,0,80);
-                float width=21+Mathf.Sin(i*.075f)*2.5f;
+                float technical=SectorWeight(i,78,109)+SectorWeight(i,115,134)+SectorWeight(i,140,156);
+                float width=20+Mathf.Sin(i*.075f)*1.5f-Mathf.Clamp01(technical)*5;
+                target-=Mathf.Clamp01(technical)*12;
                 nodes[i]=new TrackNode{Position=positions[i],Forward=forward,Right=Vector3.Cross(Vector3.up,forward).normalized,Up=Vector3.up,TrackWidth=width,SafeLineOffset=0,OptimalLineOffset=Mathf.Sign(corner)*Mathf.Clamp01(Mathf.Abs(corner)/40)*.28f,TargetSpeedKmh=target,IsDriftZone=Mathf.Abs(corner)>15};
             }
             var groundCut=new TrackShortcut{shortcutId="ridge_cut",displayName="RIDGE CUT",entryNodeIndex=10*Steps,exitNodeIndex=14*Steps-2,requiresBoost=true,minSkillRequired=.42f,riskLevel=.30f};
@@ -42,19 +44,29 @@ namespace AnimeHillRacing.Racing3D
             var waterfallCut=new TrackShortcut{shortcutId="waterfall_gap",displayName="WATERFALL LINK",entryNodeIndex=3*Steps+1,exitNodeIndex=6*Steps-2,requiresBoost=true,minSkillRequired=.52f,riskLevel=.36f};
             // Boost-gated shortcut 2: Apex Overpass Ramp (Boost-gated elevated sky bridge)
             // Leave after checkpoint 4 and rejoin before checkpoint 5: never bypass a required gate.
-            var overpassLaunch=new TrackShortcut{shortcutId="overpass_launch",displayName="APEX VIADUCT",entryNodeIndex=14*Steps+1,exitNodeIndex=17*Steps-2,requiresBoost=true,requiresJump=true,minSkillRequired=.70f,riskLevel=.50f};
-            foreach(var route in new[]{groundCut,skywayJump,waterfallCut,overpassLaunch})
-                route.pathPoints=RacingTrackGeometry.ShortcutPath(nodes[route.entryNodeIndex],nodes[route.exitNodeIndex]);
+            var overpassLaunch=new TrackShortcut{shortcutId="overpass_launch",displayName="APEX VIADUCT",entryNodeIndex=14*Steps+1,exitNodeIndex=17*Steps-2,requiresBoost=true,requiresJump=true,launchNodeIndex=10,gapStartNodeIndex=11,landingNodeIndex=13,minSkillRequired=.70f,riskLevel=.50f};
+            // Both precision links stay inside their checkpoint sector. They cut
+            // the authored bend, never the checkpoint sequence or lap counter.
+            var crestCut=new TrackShortcut{shortcutId="crest_cut",displayName="CREST PHASE",entryNodeIndex=1*Steps+3,exitNodeIndex=3*Steps-2,requiresBoost=true,requiresJump=true,width=8,launchSpeedKmh=110,launchNodeIndex=10,gapStartNodeIndex=11,landingNodeIndex=13,minSkillRequired=.84f,riskLevel=.78f};
+            var returnDrop=new TrackShortcut{shortcutId="return_drop",displayName="HAIRPIN DROP",entryNodeIndex=17*Steps+1,exitNodeIndex=19*Steps-1,requiresBoost=false,requiresJump=true,width=7,launchSpeedKmh=80,launchNodeIndex=10,gapStartNodeIndex=11,landingNodeIndex=13,minSkillRequired=.88f,riskLevel=.82f};
+            var routes=new[]{groundCut,skywayJump,waterfallCut,overpassLaunch,crestCut,returnDrop};
+            foreach(var route in routes)
+                route.pathPoints=RacingTrackGeometry.ShortcutPath(nodes[route.entryNodeIndex],nodes[route.exitNodeIndex],
+                    route==crestCut||route==returnDrop||route==overpassLaunch);
             for(int i=1;i<skywayJump.pathPoints.Length-1;i++)
                 skywayJump.pathPoints[i].y+=7*Mathf.Pow(Mathf.Sin(Mathf.PI*i/(skywayJump.pathPoints.Length-1)),2);
+            RacingTrackGeometry.MatchRoadPortals(crestCut,nodes);
+            RacingTrackGeometry.MatchRoadPortals(returnDrop,nodes);
+            RacingTrackGeometry.MatchRoadPortals(overpassLaunch,nodes);
+            var precisionPortals=new[]{crestCut,returnDrop,overpassLaunch};
 
             int[] checkpoints={0,3*Steps,6*Steps,9*Steps,14*Steps,17*Steps};
-            var graphRoot=new GameObject("Night City spline graph");graphRoot.transform.SetParent(transform,false);Graph=graphRoot.AddComponent<TrackSplineGraph>();Graph.InitializeFromNodes(nodes,new[]{groundCut,skywayJump,waterfallCut,overpassLaunch},checkpoints);
+            var graphRoot=new GameObject("Night City spline graph");graphRoot.transform.SetParent(transform,false);Graph=graphRoot.AddComponent<TrackSplineGraph>();Graph.InitializeFromNodes(nodes,routes,checkpoints);
             var gridRoot=new GameObject("12 slot starting grid");gridRoot.transform.SetParent(transform,false);gridRoot.transform.position=nodes[0].Position;gridRoot.transform.rotation=Quaternion.LookRotation(nodes[0].Forward,Vector3.up);Grid=gridRoot.AddComponent<StartingGrid>();Grid.Initialize(Graph);
 
             // Night City Materials with high readable contrast
-            Material road=RacingArt.Material(new Color(.11f,.13f,.16f),.45f);
-            Material shoulder=RacingArt.Material(new Color(.06f,.07f,.10f),.2f);
+            Material road=RacingCityArt.Asphalt();
+            Material shoulder=RacingArt.Material(new Color(.018f,.026f,.044f),.2f);
             Material cyanGlow=RacingArt.Material(RacingDesign.Cyan,.85f,true);
             Material yellowStripe=RacingArt.Material(new Color(1,.85f,.08f),.4f,true);
             Material magentaGlow=RacingArt.Material(new Color(.95f,.15f,.75f),.85f,true);
@@ -75,10 +87,10 @@ namespace AnimeHillRacing.Racing3D
             RacingTrackGeometry.Ribbon(transform,"City asphalt",nodes,-10,10,road,RacingSurfaceKind.Road,true,true,gapStart,gapEnd);
             RacingTrackGeometry.Ribbon(transform,"Left neon curb",nodes,-10.8f,-10,cyanGlow,RacingSurfaceKind.Road,false,true,gapStart,gapEnd);
             RacingTrackGeometry.Ribbon(transform,"Right neon curb",nodes,10,10.8f,cyanGlow,RacingSurfaceKind.Road,false,true,gapStart,gapEnd);
-            RacingTrackGeometry.Ribbon(transform,"Left shoulder",nodes,-15,-10.8f,shoulder,RacingSurfaceKind.Dirt,true,true,gapStart,gapEnd);
-            RacingTrackGeometry.Ribbon(transform,"Right shoulder",nodes,10.8f,15,shoulder,RacingSurfaceKind.Dirt,true,true,gapStart,gapEnd);
-            RacingTrackGeometry.Ribbon(transform,"City left slope",nodes,-15,-45,shoulder,RacingSurfaceKind.Dirt,true,true,gapStart,gapEnd,14);
-            RacingTrackGeometry.Ribbon(transform,"City right slope",nodes,15,45,shoulder,RacingSurfaceKind.Dirt,true,true,gapStart,gapEnd,14);
+            RacingTrackGeometry.Ribbon(transform,"Left shoulder",nodes,-15,-10.8f,shoulder,RacingSurfaceKind.Dirt,true,true,gapStart,gapEnd,clearRoutes:precisionPortals);
+            RacingTrackGeometry.Ribbon(transform,"Right shoulder",nodes,10.8f,15,shoulder,RacingSurfaceKind.Dirt,true,true,gapStart,gapEnd,clearRoutes:precisionPortals);
+            RacingTrackGeometry.Ribbon(transform,"City left slope",nodes,-15,-45,shoulder,RacingSurfaceKind.Dirt,true,true,gapStart,gapEnd,14,clearRoutes:precisionPortals);
+            RacingTrackGeometry.Ribbon(transform,"City right slope",nodes,15,45,shoulder,RacingSurfaceKind.Dirt,true,true,gapStart,gapEnd,14,clearRoutes:precisionPortals);
 
             var scenery=new GameObject("Batched night city scenery");scenery.transform.SetParent(transform,false);
             var rng=new DeterministicRng(90173);
@@ -90,11 +102,11 @@ namespace AnimeHillRacing.Racing3D
             var ground=RacingArt.Box(scenery.transform,"City basin",new Vector3(90,-16,0),new Vector3(1400,1,1400),shoulder,.5f);
             ground.AddComponent<BoxCollider>().size=new Vector3(1400,1,1400);ground.AddComponent<RacingSurface>().Kind=RacingSurfaceKind.Dirt;
 
-            BuildBarriers(nodes,scenery.transform,metalDark,magentaGlow,cyanGlow,new[]{groundCut,skywayJump,waterfallCut,overpassLaunch});
+            BuildBarriers(nodes,scenery.transform,metalDark,magentaGlow,cyanGlow,routes);
             BuildGate(nodes[0],scenery.transform,metalDark,cyanGlow,yellowStripe);
             BuildBridge(nodes,scenery.transform,metalDark,cyanGlow);
             BuildTunnel(nodes,scenery.transform,metalDark,magentaGlow,cyanGlow);
-            BuildShortcuts(groundCut,skywayJump,waterfallCut,overpassLaunch,scenery.transform,road,cyanGlow,magentaGlow,yellowStripe);
+            BuildShortcuts(routes,scenery.transform,road,cyanGlow,magentaGlow,yellowStripe);
             BuildStreetLights(nodes,scenery.transform,metalDark,cyanGlow);
             BuildDigitalCascade(nodes[3].Position+nodes[3].Right*-58,scenery.transform,cyanGlow);
             BuildRaceGantries(nodes,scenery.transform,metalDark,cyanGlow,yellowStripe);
@@ -116,9 +128,13 @@ namespace AnimeHillRacing.Racing3D
 
             BuildSectionGuidance(nodes,scenery.transform,metalDark);
             RacingArt.Combine(scenery.transform,160);
+            RacingCityBackdrop.Build(transform);
             ApplyLighting();
-            Debug.Log($"NIGHT_CITY_BUILT nodes={nodes.Length} length={Graph.TotalLength:F1} checkpoints={checkpoints.Length} shortcuts=4");
+            Debug.Log($"NIGHT_CITY_BUILT nodes={nodes.Length} length={Graph.TotalLength:F1} checkpoints={checkpoints.Length} shortcuts={routes.Length}");
         }
+
+        static float SectorWeight(int node,int start,int end)
+            => node<=start||node>=end?0:Mathf.Sin(Mathf.PI*(node-start)/(end-start));
 
         static void BuildCitySkyscrapers(TrackNode[] nodes,TrackShortcut[] routes,Transform parent,DeterministicRng rng,Material dark,Material cyan,Material magenta,Material yellow)
         {
@@ -148,19 +164,10 @@ namespace AnimeHillRacing.Racing3D
 
                 Material winMat=neonWindows[i%neonWindows.Length];
                 if(i%3==0)RacingArt.Box(towerRoot.transform,"Stepped crown",new Vector3(0,height+4,0),new Vector3(width*.62f,8,depth*.62f),dark,.5f);
-                int floors=Mathf.Min(8,(int)(height/12));
-                for(int f=1;f<floors;f++)
-                {
-                    float winY=f*11f;
-                    for(int column=0;column<5;column++)
-                    {
-                        if(rng.NextFloat()<.28f)continue;
-                        float x=(column-2)*width*.15f;
-                        var windowMaterial=(f+column)%4==0?warm:winMat;
-                        for(int face=-1;face<=1;face+=2)
-                            RacingArt.Box(towerRoot.transform,"Lit office window",new Vector3(x,winY,depth*.505f*face),new Vector3(width*.095f,2.6f,.12f),windowMaterial,.02f);
-                    }
-                }
+                RacingCityArt.Facade(towerRoot.transform,width,height,depth,90173+i*127,winMat,warm);
+                if(i%4==0)for(int facadeSide=-1;facadeSide<=1;facadeSide+=2)
+                    RacingArt.Box(towerRoot.transform,"Facade neon spine",new Vector3(facadeSide*width*.48f,height*.5f,depth*.506f),new Vector3(.14f,height*.88f,.06f),winMat,.02f);
+                RacingArt.Box(towerRoot.transform,"Entrance podium",new Vector3(0,2,0),new Vector3(width*1.04f,4,depth*1.04f),dark,.6f);
 
                 RacingArt.Box(towerRoot.transform,"Roof Spire",new Vector3(0,height+6,0),new Vector3(1.2f,12,1.2f),winMat,.1f);
                 RacingArt.Box(towerRoot.transform,"Crown Beacon",new Vector3(0,height+12,0),new Vector3(2.5f,2.5f,2.5f),winMat,.1f);
@@ -184,12 +191,8 @@ namespace AnimeHillRacing.Racing3D
 
                 RacingArt.Box(midRoot.transform,"Mid Core",new Vector3(0,height*.5f,0),new Vector3(width,height,depth),dark,.3f);
                 Material winMat=neonWindows[(i+1)%neonWindows.Length];
-                int floors=Mathf.Min(12,(int)(height/14));
-                for(int f=1;f<floors;f+=2)
-                {
-                    float winY=f*12.5f;
-                    RacingArt.Box(midRoot.transform,"Mid Window Strip",new Vector3(0,winY,depth*.51f),new Vector3(width*.8f,1.5f,.2f),winMat,.05f);
-                }
+                RacingCityArt.Facade(midRoot.transform,width,height,depth,104729+i*113,winMat,warm);
+                RacingArt.Box(midRoot.transform,"Stepped tower penthouse",new Vector3(0,height+5,0),new Vector3(width*.64f,10,depth*.70f),dark,.8f);
                 RacingArt.Box(midRoot.transform,"Roof Pylon",new Vector3(0,height+10,0),new Vector3(1.8f,20,1.8f),cyan,.1f);
             }
 
@@ -211,6 +214,7 @@ namespace AnimeHillRacing.Racing3D
 
                 RacingArt.Box(megaRoot.transform,"Monolith Core",new Vector3(0,height*.5f,0),new Vector3(width,height,depth),dark,.4f);
                 Material glow=(i%2==0)?cyan:magenta;
+                RacingCityArt.Facade(megaRoot.transform,width,height,depth,209759+i*89,glow,warm);
                 RacingArt.Box(megaRoot.transform,"Skyline Spine",new Vector3(0,height*.5f,depth*.52f),new Vector3(2.5f,height*.85f,.3f),glow,.1f);
                 RacingArt.Box(megaRoot.transform,"Crown Beacon",new Vector3(0,height+8,0),new Vector3(4f,16f,4f),glow,.1f);
             }
@@ -318,27 +322,27 @@ namespace AnimeHillRacing.Racing3D
             }
             return false;
         }
-        void BuildShortcuts(TrackShortcut groundCut,TrackShortcut skywayJump,TrackShortcut waterfallCut,TrackShortcut overpassLaunch,Transform parent,Material road,Material cyan,Material magenta,Material yellow)
+        void BuildShortcuts(TrackShortcut[] routes,Transform parent,Material road,Material cyan,Material magenta,Material yellow)
         {
-            foreach (var route in new[]{groundCut,skywayJump,waterfallCut,overpassLaunch})
+            foreach (var route in routes)
             {
-                Material guidance=route==overpassLaunch?magenta:route==groundCut?yellow:cyan;
+                Material guidance=route.shortcutId=="return_drop"||route.shortcutId=="overpass_launch"?magenta:route.shortcutId=="ridge_cut"?yellow:route.shortcutId=="crest_cut"?RacingArt.Material(RacingDriftFeedback.Green,.4f,true):cyan;
                 var routeNodes=new TrackNode[route.pathPoints.Length];
                 for(int i=0;i<routeNodes.Length;i++)
                 {
                     Vector3 tangent=route.pathPoints[Mathf.Min(i+1,routeNodes.Length-1)]-route.pathPoints[Mathf.Max(0,i-1)];
-                    routeNodes[i]=new TrackNode{Position=route.pathPoints[i],Forward=tangent.normalized,Right=Vector3.Cross(Vector3.up,tangent).normalized,Up=Vector3.up,TrackWidth=12};
+                    routeNodes[i]=new TrackNode{Position=route.pathPoints[i],Forward=tangent.normalized,Right=Vector3.Cross(Vector3.up,tangent).normalized,Up=Vector3.up,TrackWidth=route.width};
                 }
                 void Deck(int first,int last,RacingSurfaceKind surface)
                 {
                     var section=new TrackNode[last-first+1];Array.Copy(routeNodes,first,section,0,section.Length);
-                    RacingTrackGeometry.Ribbon(parent,route.displayName+" deck "+first,section,-6,6,road,surface,true,false,-1,-1,0,false);
+                    RacingTrackGeometry.Ribbon(parent,route.displayName+" deck "+first,section,-route.width*.5f,route.width*.5f,road,surface,true,false,-1,-1,0,false);
                 }
-                if(route==groundCut)Deck(0,routeNodes.Length-1,RacingSurfaceKind.Dirt);
+                if(route.shortcutId=="ridge_cut")Deck(0,routeNodes.Length-1,RacingSurfaceKind.Dirt);
                 else
                 {
-                    Deck(0,4,RacingSurfaceKind.Dirt);
-                    if(route.requiresJump){Deck(4,10,RacingSurfaceKind.Road);Deck(12,routeNodes.Length-1,RacingSurfaceKind.Road);}
+                    Deck(0,4,route.shortcutId=="crest_cut"||route.shortcutId=="return_drop"||route.shortcutId=="overpass_launch"?RacingSurfaceKind.Road:RacingSurfaceKind.Dirt);
+                    if(route.requiresJump){Deck(4,route.gapStartNodeIndex,RacingSurfaceKind.Road);Deck(route.landingNodeIndex,routeNodes.Length-1,RacingSurfaceKind.Road);}
                     else Deck(4,routeNodes.Length-1,RacingSurfaceKind.Road);
                 }
                 for(int i=0;i<route.pathPoints.Length-1;i++)
@@ -349,7 +353,7 @@ namespace AnimeHillRacing.Racing3D
                     // Continuous ribbon collision prevents wheel impulses at overlapping box seams.
                     for(int side=-1;side<=1;side+=2)
                     {
-                        var edge=RacingArt.Box(parent,"Route edge guide",(a+b)*.5f+rotation*Vector3.right*side*5.7f+Vector3.up*.045f,new Vector3(.16f,.06f,length),guidance,.02f);
+                        var edge=RacingArt.Box(parent,"Route edge guide",(a+b)*.5f+rotation*Vector3.right*side*(route.width*.5f-.18f)+Vector3.up*.045f,new Vector3(.16f,.06f,length),guidance,.02f);
                         edge.transform.rotation=rotation;
                     }
                     for(float d=10;d<length;d+=20)
@@ -362,15 +366,25 @@ namespace AnimeHillRacing.Racing3D
                 var sign=new GameObject(route.displayName+" direction sign");sign.transform.SetParent(parent,false);
                 sign.transform.position=route.pathPoints[0]+Vector3.up*3;
                 sign.transform.rotation=Quaternion.LookRotation(direction,Vector3.up);
-                Sign(sign.transform,route.displayName+" // BOOST",Vector3.zero,.58f,guidance.color);
+                string requirement=route.requiresBoost?(route.requiresJump?"BOOST + JUMP":"BOOST"):"PRECISE DROP";
+                Sign(sign.transform,route.displayName+" // "+requirement,Vector3.zero,.48f,guidance.color);
+                for(int s=-1;s<=1;s+=2)RacingArt.Box(sign.transform,"Precision entry beacon",new Vector3(s*route.width*.42f,-1.8f,0),new Vector3(.18f,2,.18f),guidance,.04f);
                 if (route.requiresJump)
                 {
+                    if(route.requiresBoost)
+                    {
+                        route.BoostSupply=ItemBox.CreateBoostSupply(transform,route.pathPoints[4]+Vector3.up*1.1f,route.width*.70f);
+                        Sign(route.BoostSupply.transform,"BOOST CELL",new Vector3(0,1.5f,0),.28f,guidance.color);
+                    }
                     var pad=new GameObject(route.displayName+" launch strip");pad.transform.SetParent(parent,false);
-                    pad.transform.position=route.pathPoints[9];
-                    pad.transform.rotation=Quaternion.LookRotation(route.pathPoints[10]-route.pathPoints[9],Vector3.up);
-                    var trigger=pad.AddComponent<BoxCollider>();trigger.isTrigger=true;trigger.center=Vector3.up;trigger.size=new Vector3(12,3,2);
-                    pad.AddComponent<RacingJumpPad>();
-                    RacingArt.Box(pad.transform,"Visible kicker",new Vector3(0,.08f,0),new Vector3(9,.12f,1),guidance,.03f);
+                    pad.transform.position=route.pathPoints[route.launchNodeIndex];
+                    pad.transform.rotation=Quaternion.LookRotation(route.pathPoints[route.launchNodeIndex+1]-route.pathPoints[route.launchNodeIndex],Vector3.up);
+                    var trigger=pad.AddComponent<BoxCollider>();trigger.isTrigger=true;trigger.center=Vector3.up;trigger.size=new Vector3(route.width,3,2);
+                    var jump=pad.AddComponent<RacingJumpPad>();
+                    jump.RequiresBoost=route.requiresBoost;
+                    if(route.shortcutId=="return_drop")jump.VerticalImpulse=2.7f;
+                    if(route.shortcutId=="crest_cut")jump.VerticalImpulse=5.5f;
+                    RacingArt.Box(pad.transform,"Visible kicker",new Vector3(0,.08f,0),new Vector3(route.width*.8f,.12f,1),guidance,.03f);
                 }
             }
         }

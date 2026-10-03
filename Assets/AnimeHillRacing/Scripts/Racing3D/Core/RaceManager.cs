@@ -325,13 +325,13 @@ namespace AnimeHillRacing.Racing3D
 
         public void RetryRace()
         {
-            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+            RacingLoadingScreen.Load(SceneManager.GetActiveScene().name,"BACK TO THE STARTING GRID");
         }
 
         public void ExitToMenu()
         {
             SetState(RaceState.Exiting);
-            SceneManager.LoadScene("RacingSelect");
+            RacingLoadingScreen.Load("RacingSelect","RACING HUB");
         }
         private void OnDestroy()
         {

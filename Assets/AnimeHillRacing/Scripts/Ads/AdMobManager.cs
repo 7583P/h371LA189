@@ -307,7 +307,9 @@ namespace AnimeHillRacing.Ads
 
         private void Update()
         {
-            if (shuttingDown) return;
+            // A desktop player never starts the mobile consent flow. Do not
+            // query UMP every frame there: its unsupported client throws.
+            if (shuttingDown || !consentUpdateStarted) return;
             double now = Time.realtimeSinceStartupAsDouble;
             if (!initialized)
             {

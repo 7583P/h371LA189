@@ -356,25 +356,25 @@ namespace AnimeHillRacing.EditorTools
             report.Assert(p5k < 0.05f && p5k > 0f, "Meta_ProbAt5kRare", $"Expected 0 < p < 0.05 at 5k MMR, got {p5k:P2}");
 
             float p25k = MetaProgressionConfig.EvaluateMetaProbability(25000);
-            report.Assert(p25k >= 0.10f && p25k <= 0.20f, "Meta_ProbAt25kMinority", $"Expected 0.10 <= p <= 0.20 at 25k MMR, got {p25k:P2}");
+            report.Assert(p25k >= 0.22f && p25k <= 0.24f, "Meta_ProbAt25kMinority", $"Expected approximately 23% at 25k MMR, got {p25k:P2}");
 
             float p50k = MetaProgressionConfig.EvaluateMetaProbability(50000);
-            report.Assert(p50k >= 0.35f && p50k <= 0.45f, "Meta_ProbAt50kMidRange", $"Expected 0.35 <= p <= 0.45 at 50k MMR, got {p50k:P2}");
+            report.Assert(Mathf.Abs(p50k-.82f)<.001f, "Meta_ProbAt50kCommon", $"Expected 82% at 50k MMR, got {p50k:P2}");
 
             float p75k = MetaProgressionConfig.EvaluateMetaProbability(75000);
-            report.Assert(p75k >= 0.60f && p75k <= 0.70f, "Meta_ProbAt75kCommon", $"Expected 0.60 <= p <= 0.70 at 75k MMR, got {p75k:P2}");
+            report.Assert(p75k >= .97f && p75k <= .985f, "Meta_ProbAt75kElite", $"Expected 97%-98.5% at 75k MMR, got {p75k:P2}");
 
             float p95k = MetaProgressionConfig.EvaluateMetaProbability(95000);
-            report.Assert(p95k >= 0.80f && p95k <= 0.90f, "Meta_ProbAt95kDominant", $"Expected 0.80 <= p <= 0.90 at 95k MMR, got {p95k:P2}");
+            report.Assert(p95k >= .995f && p95k <= .998f, "Meta_ProbAt95kDominant", $"Expected 99.5%-99.8% at 95k MMR, got {p95k:P2}");
 
             float p100k = MetaProgressionConfig.EvaluateMetaProbability(100000);
-            report.Assert(p100k >= 0.85f && p100k <= 0.92f, "Meta_ProbAt100kApex", $"Expected 0.85 <= p <= 0.92 at 100k MMR, got {p100k:P2}");
+            report.Assert(Mathf.Abs(p100k-.998f)<.001f, "Meta_ProbAt100kApex", $"Expected 99.8% at 100k MMR, got {p100k:P2}");
 
             // 2. Statistical Aggregate Simulation across 50 Seeds
             const int SampleRuns = 50;
             int metaCount5k = 0, metaCount25k = 0, metaCount50k = 0, metaCount75k = 0, metaCount100k = 0;
-            bool noLobbyAllMeta = true;
-            bool allLobbiesHaveAlternatives = true;
+            bool eliteLobbiesExact = true;
+            int allMeta75k=0, allMeta100k=0;
 
             for (int s = 0; s < SampleRuns; s++)
             {
@@ -394,7 +394,11 @@ namespace AnimeHillRacing.EditorTools
 
                 // 75,000 MMR Lobby
                 var lob75k = MatchmakingService.GenerateRankedLobby(75000, "car-01", "wheel-default", "Tester", seed);
-                for (int i = 1; i < lob75k.Length; i++) if (lob75k[i].buildCategory == MetaBuildCategory.Meta) metaCount75k++;
+                int elite75k=0;
+                for (int i = 1; i < lob75k.Length; i++) if (lob75k[i].buildCategory == MetaBuildCategory.Meta)
+                {metaCount75k++;elite75k++;eliteLobbiesExact &= lob75k[i].vehicleId==MetaProgressionConfig.MetaVehicleId&&lob75k[i].wheelId==MetaProgressionConfig.MetaWheelId;}
+                eliteLobbiesExact &= elite75k>=10;
+                if(elite75k==11)allMeta75k++;
 
                 // 100,000 MMR Lobby
                 var lob100k = MatchmakingService.GenerateRankedLobby(100000, "car-01", "wheel-default", "Tester", seed);
@@ -405,11 +409,12 @@ namespace AnimeHillRacing.EditorTools
                     {
                         metaCount100k++;
                         lobbyMetaCount++;
+                        eliteLobbiesExact &= lob100k[i].vehicleId==MetaProgressionConfig.MetaVehicleId&&lob100k[i].wheelId==MetaProgressionConfig.MetaWheelId;
                     }
                 }
 
-                if (lobbyMetaCount == 11) noLobbyAllMeta = false; // Must never be 11/11 identical META bots
-                if (11 - lobbyMetaCount < 1) allLobbiesHaveAlternatives = false; // Must preserve at least 1-2 alternatives
+                eliteLobbiesExact &= lobbyMetaCount>=10;
+                if(lobbyMetaCount==11)allMeta100k++;
             }
 
             int totalAi = SampleRuns * 11;
@@ -421,13 +426,13 @@ namespace AnimeHillRacing.EditorTools
 
             report.Assert(rate5k < 0.10f, "Meta_AggregateAt5kRare", $"5k aggregate rate: {rate5k:P1} (expected < 10%)");
             report.Assert(rate25k > rate5k && rate25k < 0.30f, "Meta_AggregateAt25kMinority", $"25k aggregate rate: {rate25k:P1}");
-            report.Assert(rate50k > rate25k && rate50k >= 0.25f && rate50k <= 0.60f, "Meta_AggregateAt50kMidRange", $"50k aggregate rate: {rate50k:P1}");
-            report.Assert(rate75k > rate50k && rate75k >= 0.50f, "Meta_AggregateAt75kCommon", $"75k aggregate rate: {rate75k:P1}");
-            report.Assert(rate100k >= 0.65f && rate100k <= 0.85f, "Meta_AggregateAt100kApex", $"100k aggregate rate: {rate100k:P1}");
+            report.Assert(rate50k > rate25k && rate50k >= .70f && rate50k <= .90f, "Meta_AggregateAt50kCommon", $"50k aggregate rate: {rate50k:P1}");
+            report.Assert(rate75k > rate50k && rate75k >= .97f, "Meta_AggregateAt75kElite", $"75k aggregate rate: {rate75k:P1}");
+            report.Assert(rate100k >= .97f && rate100k <= 1, "Meta_AggregateAt100kApex", $"100k aggregate rate: {rate100k:P1}");
 
             // 3. Lobby Diversity Guarantees
-            report.Assert(noLobbyAllMeta, "Diversity_NoLobby11IdenticalMeta", "No 100k lobby should have 11 identical META AI");
-            report.Assert(allLobbiesHaveAlternatives, "Diversity_AlternativesPreservedInHighMmr", "Every high-MMR lobby preserved at least 1-2 alternative setups");
+            report.Assert(eliteLobbiesExact, "Meta_EliteTenOrElevenExact", "Every 75k and 100k lobby has ten or eleven exact Formula/plasma META bots");
+            report.Assert(allMeta75k>SampleRuns*.6f&&allMeta100k>SampleRuns*.6f, "Meta_UsuallyElevenExact", $"All eleven exact META: {allMeta75k}/{SampleRuns} at 75k; {allMeta100k}/{SampleRuns} at 100k");
 
             // 4. Deterministic Reproducibility
             var repLobby1 = MatchmakingService.GenerateRankedLobby(88000, "car-01", "wheel-default", "Tester", 9999);

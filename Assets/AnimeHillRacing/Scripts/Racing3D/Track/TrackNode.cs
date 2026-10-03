@@ -28,9 +28,15 @@ namespace AnimeHillRacing.Racing3D
         public Vector3[] pathPoints = Array.Empty<Vector3>();
         public bool requiresBoost = true;
         public bool requiresJump;
+        public float width = 12f;
+        public float launchSpeedKmh = 115f;
+        public int launchNodeIndex = 9;
+        public int gapStartNodeIndex = 10;
+        public int landingNodeIndex = 12;
+        [NonSerialized] public ItemBox BoostSupply;
         [Range(0f, 1f)] public float minSkillRequired = 0.4f;
         [Range(0f, 1f)] public float riskLevel = 0.5f;
 
-        public bool IsValid() => entryNodeIndex >= 0 && exitNodeIndex > entryNodeIndex && pathPoints != null && pathPoints.Length > 0;
+        public bool IsValid() => entryNodeIndex >= 0 && exitNodeIndex > entryNodeIndex && width >= 4 && pathPoints != null && pathPoints.Length > 1;
     }
 }

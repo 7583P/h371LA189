@@ -6,10 +6,25 @@ namespace AnimeHillRacing.Racing3D
     public sealed class RacingQualityScope : MonoBehaviour
     {
         int aa,pixelLights,vSync,fps;ShadowQuality shadows;float shadowDistance;ShadowResolution resolution;
-        public static RacingQuality Current => (RacingQuality)Mathf.Clamp(PlayerPrefs.GetInt("AHR.Racing.Quality",Application.isMobilePlatform?1:2),0,2);
+        static RacingQuality? cached,validationQuality;
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void Reset(){cached=validationQuality=null;}
+        public static RacingQuality Current
+        {
+            get
+            {
+                if(validationQuality.HasValue)return validationQuality.Value;
+                if(!cached.HasValue)cached=(RacingQuality)Mathf.Clamp(PlayerPrefs.GetInt("AHR.Racing.Quality",Application.isMobilePlatform?1:2),0,2);
+                return cached.Value;
+            }
+        }
         public static int ParticleBurstBudget => Current==RacingQuality.Low?5:Current==RacingQuality.Medium?10:16;
         public static event System.Action<RacingQuality> Changed;
-        public static void Select(RacingQuality quality){PlayerPrefs.SetInt("AHR.Racing.Quality",(int)quality);PlayerPrefs.Save();FindFirstObjectByType<RacingQualityScope>()?.Apply();Changed?.Invoke(Current);}
+        public static void Select(RacingQuality quality){cached=quality;validationQuality=null;PlayerPrefs.SetInt("AHR.Racing.Quality",(int)quality);PlayerPrefs.Save();FindFirstObjectByType<RacingQualityScope>()?.Apply();Changed?.Invoke(Current);}
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        public static void OverrideForValidation(RacingQuality quality)
+        {validationQuality=quality;foreach(var scope in FindObjectsByType<RacingQualityScope>(FindObjectsSortMode.None))scope.Apply();}
+#endif
         void Awake()
         {
             aa=QualitySettings.antiAliasing;pixelLights=QualitySettings.pixelLightCount;shadows=QualitySettings.shadows;shadowDistance=QualitySettings.shadowDistance;resolution=QualitySettings.shadowResolution;vSync=QualitySettings.vSyncCount;fps=Application.targetFrameRate;Apply();

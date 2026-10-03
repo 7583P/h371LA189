@@ -24,7 +24,12 @@ namespace AnimeHillRacing.Racing3D
             RacingArt.Box(stage.transform,"Display platform",new Vector3(0,-.68f,0),new Vector3(5.8f,.12f,5.8f),baseMat,.6f);
             RacingArt.Part(stage.transform,"Platform light ring",RacingArt.Ring(2.6f,2.565f,.035f,48),RacingArt.Material(RacingDesign.Cyan,.5f,true),new Vector3(0,-.602f,0),Quaternion.Euler(0,0,90));
             var cameraRoot=new GameObject("Studio camera");cameraRoot.transform.SetParent(stage.transform,false);previewCamera=cameraRoot.AddComponent<Camera>();previewCamera.clearFlags=CameraClearFlags.SolidColor;previewCamera.backgroundColor=RacingDesign.Background;previewCamera.fieldOfView=36;previewCamera.nearClipPlane=.1f;previewCamera.farClipPlane=35;previewCamera.depth=-5;
-            texture=new RenderTexture(Application.isMobilePlatform?768:1024,768,24,RenderTextureFormat.ARGB32){name="Racing preview"};texture.Create();previewCamera.targetTexture=texture;image.texture=texture;
+            Canvas.ForceUpdateCanvases();
+            int width=Application.isMobilePlatform?768:1024;
+            Rect rect=image.rectTransform.rect;
+            int height=Mathf.Clamp(Mathf.RoundToInt(width*rect.height/Mathf.Max(1,rect.width)),384,1024);
+            int samples=RacingQualityScope.Current==RacingQuality.High?4:RacingQualityScope.Current==RacingQuality.Medium?2:1;
+            texture=new RenderTexture(width,height,24,RenderTextureFormat.ARGB32){name="Racing preview",antiAliasing=samples};texture.Create();previewCamera.targetTexture=texture;image.texture=texture;
             var lightRoot=new GameObject("Studio softbox");lightRoot.transform.SetParent(stage.transform,false);lightRoot.transform.localPosition=new Vector3(-3,5,4);var light=lightRoot.AddComponent<Light>();light.type=LightType.Point;light.color=new Color(.88f,.95f,1);light.intensity=.65f;light.range=14;light.cullingMask=1<<29;
             var keyRoot=new GameObject("Studio keylight");keyRoot.transform.SetParent(stage.transform,false);var keyLight=keyRoot.AddComponent<Light>();keyLight.type=LightType.Directional;keyLight.color=Color.white;keyLight.intensity=.65f;keyLight.cullingMask=1<<29;keyLight.transform.rotation=Quaternion.Euler(45,-30,0);
             previewCamera.cullingMask=1<<29;
@@ -35,8 +40,8 @@ namespace AnimeHillRacing.Racing3D
             if(PreviewVehicle!=null)Destroy(PreviewVehicle);
             PreviewVehicle=new GameObject("Studio "+id);PreviewVehicle.transform.SetParent(stage.transform,false);
             bool isMeta=(id=="formula-01"||id==MetaProgressionConfig.MetaVehicleId);
-            Color c = paint ?? (isMeta ? RacingVehicleFactory.MetaYellow : (id=="car-01" ? new Color(0.95f, 0.45f, 0.10f) : RacingDesign.Cyan));
-            string w = (isMeta && (string.IsNullOrEmpty(wheels) || wheels=="wheel-default" || wheels=="wheel-plasma" || wheels=="wheel-meta-cyan")) ? "wheel-meta-cyan" : wheels;
+            Color c = paint ?? (isMeta ? RacingVehicleFactory.MetaBlack : (id=="car-01" ? new Color(0.95f, 0.45f, 0.10f) : RacingDesign.Cyan));
+            string w = (wheels==MetaProgressionConfig.MetaWheelId || wheels=="wheel-meta-cyan") ? MetaProgressionConfig.MetaWheelVisualId : wheels;
             RacingVehicleVisuals.Build(PreviewVehicle,id,w,c,preview:false,isHuman:isMeta);
             foreach(var part in PreviewVehicle.GetComponentsInChildren<Transform>())part.gameObject.layer=29;
         }

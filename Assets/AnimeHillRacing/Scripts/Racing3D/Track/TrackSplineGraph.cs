@@ -110,11 +110,17 @@ namespace AnimeHillRacing.Racing3D
         {
             if (NodeCount < 2 || totalLength < 0.01f) return GetNode(0);
             distance = Mathf.Repeat(distance, totalLength);
-            for (int i = 0; i < NodeCount; i++)
+            // The cumulative distances are sorted. AI braking envelopes sample
+            // many points; binary lookup avoids rescanning the whole circuit.
+            int low=0,high=NodeCount-1;
+            while(low<high)
             {
-                TrackNode a = nodes[i], b = nodes[(i + 1) % NodeCount];
-                float length = Vector3.Distance(a.Position, b.Position);
-                if (distance > a.CumulativeDistance + length && i < NodeCount - 1) continue;
+                int middle=(low+high+1)/2;
+                if(nodes[middle].CumulativeDistance<=distance)low=middle;else high=middle-1;
+            }
+            {
+                int i=low;TrackNode a = nodes[i], b = nodes[(i + 1) % NodeCount];
+                float length = i<NodeCount-1 ? b.CumulativeDistance-a.CumulativeDistance : totalLength-a.CumulativeDistance;
                 float t = length > 0.001f ? Mathf.Clamp01((distance - a.CumulativeDistance) / length) : 0f;
                 a.Position = Vector3.Lerp(a.Position, b.Position, t);
                 a.Forward = Vector3.Slerp(a.Forward, b.Forward, t).normalized;
@@ -125,7 +131,6 @@ namespace AnimeHillRacing.Racing3D
                 a.CumulativeDistance = distance;
                 return a;
             }
-            return nodes[0];
         }
 
         /// <summary>

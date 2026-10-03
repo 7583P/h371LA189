@@ -209,7 +209,17 @@ namespace AnimeHillRacing.Racing3D
             report.Check(!tactical.ShouldUseItem(new AiItemContext{projectileThreat=true}),"Elite AI avoids wasting a shield while protection is active");
             inventory.UseItem();yield return new WaitForSeconds(.3f);inventory.AcquireItem(RaceItemType.ShockwavePulse,false);yield return new WaitForSeconds(.25f);
             report.Check(!tactical.ShouldUseItem(new AiItemContext{rivalsInPulseRadius=0})&&tactical.ShouldUseItem(new AiItemContext{rivalsInPulseRadius=1}),"Elite shockwave waits for a rival inside the actual pulse radius");
-            inventory.UseItem();owner.SetFinished();
+            inventory.UseItem();
+            rival.SetRaceEnabled(true);
+            Place(owner,new Vector3(4999,100.6f,0));Place(rival,new Vector3(5001,100.6f,0));
+            var supply=ItemBox.CreateBoostSupply(floor.transform,new Vector3(5000,101.1f,0),6);
+            int ownerUses=inventory.ItemsUsed,rivalUses=defense.ItemsUsed;
+            Physics.SyncTransforms();yield return new WaitForFixedUpdate();yield return new WaitForFixedUpdate();
+            report.Check(inventory.HeldItem==RaceItemType.TurboPulse&&defense.HeldItem==RaceItemType.TurboPulse,"A visible route boost pickup supplies the same item to human and bot collectors");
+            report.Check(inventory.ItemsUsed==ownerUses&&defense.ItemsUsed==rivalUses,"Route boost pickups stay held until the ordinary use command");
+            yield return new WaitForSeconds(.3f);inventory.UseItem();
+            report.Check(!supply.CanCollect(owner),"Route boost pickup cooldown prevents immediate repeated collection by the same racer");
+            UnityEngine.Object.Destroy(supply.gameObject);owner.SetFinished();
             bool ghost=true;foreach(var collider in owner.GetComponents<Collider>())ghost&=!collider.enabled;
             report.Check(ghost&&owner.Body.isKinematic&&!owner.RaceEnabled,"Finished racers cannot drive, attack or block the active pack");
             owner.SetRaceEnabled(true);bool restored=true;foreach(var collider in owner.GetComponents<Collider>())restored&=collider.enabled;
@@ -232,7 +242,7 @@ namespace AnimeHillRacing.Racing3D
             recoveryWall.AddComponent<BoxCollider>().size=new Vector3(8,4,1);
             Place(owner,new Vector3(5000,100.6f,0));
             recovery.SetLastSafeTransform(new Vector3(5000,100.6f,-8),Quaternion.identity);
-            deadline=Time.time+6;
+            deadline=Time.time+9;
             while(recovery.RecoveryCount==recoveryCount&&Time.time<deadline)
             {
                 var oscillating=owner.Body.linearVelocity;

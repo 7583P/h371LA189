@@ -37,11 +37,11 @@ namespace AnimeHillRacing.Racing3D
         // Authoritative Meta Specification: Formula Apex
         public const string MetaVehicleId = "formula-01";
         public const string MetaWheelId = "wheel-plasma";
-        public const string MetaWheelVisualId = "wheel-meta-cyan";
+        public const string MetaWheelVisualId = "wheel-luxury-black";
 
-        // Diversity bounds per 11-AI lobby (preserve 1-2 non-META racers at high MMR)
-        public const int MinimumNonMetaRacers = 1;
-        public const int MaximumExactMetaRacers = 9;
+        // Elite lobbies may be completely META; the human choice is always preserved.
+        public const int MinimumNonMetaRacers = 0;
+        public const int MaximumExactMetaRacers = 11;
 
         // Alternative High-Performance Near-META Builds
         public static readonly VehicleBuildDefinition[] NearMetaBuildPool = new[]
@@ -75,8 +75,8 @@ namespace AnimeHillRacing.Racing3D
         };
 
         // Continuous piecewise knots (MMR, Probability)
-        // 0-10k: 0-5%, 10-20k: 5-10%, 20-30k: 10-20%, 30-40k: 20-30%, 40-50k: 30-40%,
-        // 50-60k: 40-50%, 60-70k: 50-60%, 70-80k: 60-70%, 80-90k: 70-80%, 90-100k: 80-90%, 100k+: ~85-92%
+        // Individual adoption rises from 6% at 10k to 82% at 50k and 99.8% at
+        // 100k. Matchmaking adds seeded elite convergence to 10 or 11 exact builds.
         private static readonly float[] MmrKnots = new float[]
         {
             0f, 10000f, 20000f, 30000f, 40000f, 50000f, 60000f, 70000f, 80000f, 90000f, 100000f, 125000f
@@ -84,7 +84,7 @@ namespace AnimeHillRacing.Racing3D
 
         private static readonly float[] ProbKnots = new float[]
         {
-            0.00f, 0.05f, 0.10f, 0.20f, 0.30f, 0.40f, 0.50f, 0.60f, 0.70f, 0.80f, 0.90f, 0.91f
+            0.00f, 0.06f, 0.16f, 0.30f, 0.55f, 0.82f, 0.92f, 0.97f, 0.985f, 0.995f, 0.998f, 0.999f
         };
 
         /// <summary>

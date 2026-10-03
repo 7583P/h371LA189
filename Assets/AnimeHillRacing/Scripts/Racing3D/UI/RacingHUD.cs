@@ -8,7 +8,7 @@ namespace AnimeHillRacing.Racing3D
     public sealed class RacingHUD:MonoBehaviour
     {
         [SerializeField] RaceManager raceManager;
-        RectTransform root;Text positionText,lapText,speedText,timerText,countdownText,itemText,driftText,bannerText;RacingEmblem itemIcon;Image chargeFill;
+        RectTransform root;Text positionText,lapText,speedText,timerText,countdownText,itemText,driftText,bannerText,routeText;RacingEmblem itemIcon;Image chargeFill;
         GameObject lobby,controls,banner,pause;PlayerRacingInput input;RacingVehiclePhysics vehicle;ItemInventory inventory;RacerProgress progress;
         float nextRefresh,countdownAge,bannerUntil,positionPulse;int lastPosition=12,lastCount=-1;bool paused;
         public RacingRaceMap Map{get;private set;}
@@ -23,12 +23,16 @@ namespace AnimeHillRacing.Racing3D
             var slot=RacingDesign.Button(root,"",.83f,.75f,.12f,.20f,()=>input?.TriggerTouchItem(),RacingDesign.Surface);
             itemIcon=RacingDesign.Area(slot.transform,"Item silhouette",.18f,.28f,.64f,.60f).gameObject.AddComponent<RacingEmblem>();itemIcon.color=RacingDesign.Cyan;itemIcon.raycastTarget=false;
             itemText=RacingDesign.Label(slot.transform,"EMPTY",RacingType.Caption,.05f,.06f,.90f,.2f,RacingDesign.Muted,TextAnchor.MiddleCenter);
+            RacingDesign.Panel(slot.transform,"Item charge rim",.05f,.95f,.9f,.025f,RacingDesign.Cyan,0);
             RacingDesign.Label(root,"E / LB / TAP",RacingType.Caption,.825f,.705f,.13f,.04f,RacingDesign.Muted,TextAnchor.MiddleCenter);
             var speed=RacingDesign.Panel(root,"Speed",.83f,.08f,.12f,.13f,RacingDesign.Surface);speedText=RacingDesign.Label(speed.transform,"0",RacingType.Mmr,.10f,.20f,.63f,.70f,RacingDesign.Ink);
             RacingDesign.Label(speed.transform,"KM/H",RacingType.Caption,.62f,.15f,.32f,.25f,RacingDesign.Muted);
             var charge=RacingDesign.Area(root,"Drift charge",.34f,.06f,.32f,.018f).gameObject.AddComponent<Image>();charge.color=new Color(.05f,.13f,.18f,.6f);
             chargeFill=RacingDesign.Area(charge.transform,"Charge",0,0,0,1).gameObject.AddComponent<Image>();chargeFill.color=RacingDesign.Cyan;
+            foreach(float tick in new[]{RacingDriftFeedback.GreenCharge,RacingDriftFeedback.CyanCharge})
+                RacingDesign.Panel(charge.transform,"Turbo threshold",tick/RacingDriftFeedback.PurpleCharge,0,.007f,1,RacingDesign.Ink,0);
             driftText=RacingDesign.Label(root,"",RacingType.Caption,.34f,.085f,.32f,.04f,RacingDesign.Cyan,TextAnchor.MiddleCenter);
+            routeText=RacingDesign.Label(root,"",RacingType.Caption,.04f,.415f,.23f,.08f,RacingDesign.Cyan);
             countdownText=RacingDesign.Label(root,"",RacingType.Position,.32f,.34f,.36f,.28f,RacingDesign.Ink,TextAnchor.MiddleCenter);countdownText.fontSize=132;countdownText.resizeTextMaxSize=132;countdownText.resizeTextMinSize=110;
             var message=RacingDesign.Panel(root,"Race announcement",.30f,.21f,.40f,.07f,RacingDesign.Surface);banner=message.gameObject;bannerText=RacingDesign.Label(message.transform,"",RacingType.Section,.05f,.08f,.90f,.84f,RacingDesign.Ink,TextAnchor.MiddleCenter);banner.SetActive(false);
             var mapRect=RacingDesign.Area(root,"Race map",.04f,.52f,.14f,.20f);Map=mapRect.gameObject.AddComponent<RacingRaceMap>();Map.color=RacingDesign.Ink;Map.gameObject.SetActive(PlayerPrefs.GetInt("AHR.Racing.Map",0)==1);
@@ -44,6 +48,7 @@ namespace AnimeHillRacing.Racing3D
             vehicle.OnTrick += HandleTrick;
             vehicle.OnLandingBoost += HandleLandingBoost;
             vehicle.OnJump += HandleJump;
+            vehicle.OnMiniTurboReleased += HandleMiniTurbo;
             BuildControls();
         }
         void HandleTrick(int count)
@@ -60,6 +65,12 @@ namespace AnimeHillRacing.Racing3D
         {
             RacingFeedback.Play(RacingCue.Landing);
         }
+        void HandleMiniTurbo(MiniTurboStage stage)
+        {
+            Announce(stage==MiniTurboStage.UltraMiniTurbo?"MAX TURBO!":stage==MiniTurboStage.SuperMiniTurbo?"SUPER TURBO!":"MINI TURBO!",.9f);
+            bannerText.color=RacingDriftFeedback.ColorForStage(stage);
+            RacingFeedback.Play(RacingCue.MiniTurbo);
+        }
         void Update()
         {
             if(raceManager==null)return;Bind();
@@ -74,8 +85,10 @@ namespace AnimeHillRacing.Racing3D
             int place=progress.RacePosition;positionText.text=Ordinal(place);positionText.color=place<lastPosition?RacingDesign.Success:place<=3?RacingDesign.Gold:RacingDesign.Ink;
             if(place!=lastPosition){positionPulse=Time.unscaledTime+.28f;if(place<lastPosition)RacingFeedback.Play(RacingCue.PositionUp);lastPosition=place;}
             lapText.text=$"LAP {Mathf.Min(progress.CurrentLap,raceManager.Rules.TotalLaps)} / {raceManager.Rules.TotalLaps}";timerText.text=RacerResultEntry.FormatTime(raceManager.RaceElapsed);speedText.text=Mathf.RoundToInt(vehicle.SpeedKmh).ToString();
-            var stage=vehicle.CurrentMiniTurboStage;Color color=stage==MiniTurboStage.UltraMiniTurbo?RacingDesign.Apex:stage==MiniTurboStage.SuperMiniTurbo?RacingDesign.Gold:RacingDesign.Cyan;chargeFill.color=color;driftText.color=color;
-            driftText.text=vehicle.IsBoosting?"TURBO ACTIVE":vehicle.IsDrifting?stage==MiniTurboStage.UltraMiniTurbo?"OVERDRIVE":stage==MiniTurboStage.SuperMiniTurbo?"SURGE":stage==MiniTurboStage.MiniTurbo?"FLOW":"CHARGING":"";
+            var stage=vehicle.CurrentMiniTurboStage;Color color=RacingDriftFeedback.ColorForStage(stage);chargeFill.color=color;driftText.color=color;
+            driftText.text=vehicle.IsDrifting?RacingDriftFeedback.ChargeLabel(stage):vehicle.IsBoosting?"TURBO ACTIVE":"SHIFT / RB - DRIFT     J / A - JUMP + TRICK";
+            var route=raceManager.ProgressTracker.TrackGraph.FindUpcomingShortcut(progress.DistanceAlongTrack,120,out float routeDistance);
+            routeText.text=route!=null?route.displayName+" / "+Mathf.RoundToInt(routeDistance)+" M\n"+(route.requiresBoost?(route.requiresJump?"BOOST + JUMP / PRECISE LINE":"BOOST / INSIDE LINE"):"PRECISE JUMP / HAIRPIN SKIP"):"";
             var item=inventory.IsRolling?(RaceItemType)(1+Mathf.FloorToInt((1-Mathf.Pow(1-inventory.RouletteProgress,2.7f))*27)%6):inventory.HeldItem;
             if(itemIcon.Item!=item){itemIcon.Item=item;itemIcon.SetVerticesDirty();}
             itemIcon.color=inventory.IsRolling?RacingDesign.Gold:inventory.HasItem?RacingDesign.Cyan:RacingDesign.Muted;itemText.text=inventory.IsRolling?"CHARGING":inventory.HasItem?RacingDesign.ItemName(item):inventory.HasShield?"SHIELDED":"EMPTY";
@@ -87,7 +100,7 @@ namespace AnimeHillRacing.Racing3D
             if(!racer.Identity.isHuman)return;
             if(lap==raceManager.Rules.TotalLaps){Announce("FINAL LAP",2.4f);RacingFeedback.Play(RacingCue.FinalLap);RacingFeedback.Music(RacingMusicPhase.FinalLap);}else Announce("LAP "+lap,1.3f);
         }
-        void Announce(string text,float seconds){banner.SetActive(true);bannerText.text=text;bannerUntil=Time.unscaledTime+seconds;var motion=banner.GetComponent<RacingScreenMotion>();if(motion==null)motion=banner.AddComponent<RacingScreenMotion>();motion.Restart();}
+        void Announce(string text,float seconds){banner.SetActive(true);bannerText.text=text;bannerText.color=RacingDesign.Ink;bannerUntil=Time.unscaledTime+seconds;var motion=banner.GetComponent<RacingScreenMotion>();if(motion==null)motion=banner.AddComponent<RacingScreenMotion>();motion.Restart();}
         void StateChanged(RaceState state)
         {
             if(state==RaceState.Racing)RacingFeedback.Music(RacingMusicPhase.Race);
@@ -127,7 +140,7 @@ namespace AnimeHillRacing.Racing3D
         }
         void OnDestroy()
         {
-            if(vehicle!=null){vehicle.OnTrick-=HandleTrick;vehicle.OnLandingBoost-=HandleLandingBoost;vehicle.OnJump-=HandleJump;}
+            if(vehicle!=null){vehicle.OnTrick-=HandleTrick;vehicle.OnLandingBoost-=HandleLandingBoost;vehicle.OnJump-=HandleJump;vehicle.OnMiniTurboReleased-=HandleMiniTurbo;}
             if(raceManager!=null){raceManager.OnCountdownTick-=Countdown;raceManager.OnStateChanged-=StateChanged;if(raceManager.ProgressTracker!=null)raceManager.ProgressTracker.OnRacerLapCompleted-=Lap;}
             if(paused)Time.timeScale=1;
         }

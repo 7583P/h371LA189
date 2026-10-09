@@ -1,39 +1,82 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using Unity.Profiling;
+
 namespace AnimeHillRacing.Racing3D
 {
     [DefaultExecutionOrder(-20), RequireComponent(typeof(RacingVehiclePhysics))]
     public sealed class AiVehicleController : MonoBehaviour, IVehicleCommandProvider
     {
         static readonly ProfilerMarker DecisionMarker = new ProfilerMarker("Racing.AI.Decide");
+        static readonly ProfilerMarker TacticalMarker = new ProfilerMarker("Racing.AI.Tactical");
+        static readonly ProfilerMarker StrategicMarker = new ProfilerMarker("Racing.AI.Strategic");
+
+        private static int globalBotCounter = 0;
+        private static readonly List<DiscoveredRoute> candidateDiscoveredRoutes = new List<DiscoveredRoute>(16);
+
         [SerializeField] TrackSplineGraph trackGraph;
         [SerializeField] TrackProgressTracker progressTracker;
-        RacingVehiclePhysics vehicle; VehicleRecovery recovery; ItemInventory inventory; RacingItemPool itemPool;
-        RacerProgress raceProgress; AiRacerProfile profile; AiDecisionLogger logger; AiItemAgent itemAgent; DeterministicRng rng;
-        VehicleCommands commands; Vector3 target;
-        float nextDecision, targetSpeed, steering, lane, targetLane, launchTime = -1;
+
+        RacingVehiclePhysics vehicle;
+        VehicleRecovery recovery;
+        ItemInventory inventory;
+        RacingItemPool itemPool;
+        RacerProgress raceProgress;
+        AiRacerProfile profile;
+        AiDecisionLogger logger;
+        AiItemAgent itemAgent;
+        DeterministicRng rng;
+
+        VehicleCommands commands;
+        Vector3 target;
+
+        int botId;
+        float profileStartedTime;
+        readonly string[] plannedActions = new string[5];
+        int plannedActionCount;
+        static readonly string[] RoadPlan = {"RacingLine","Brake","Drift","Turbo","Rejoin"};
+        static readonly string[] DriftPlan = {"Drift","Turbo","Hop","AerialCorrection","LandingBoost"};
+        static readonly string[] AirPlan = {"Hop","AerialCorrection","LandingBoost","Rejoin"};
+        static readonly string[] SkyPlan = {"ReserveBoost","Launch","AerialCorrection","LandingBoost","Rejoin"};
+        static readonly string[] ApexPlan = {"Shortcut","Turbo","Hop","AerialCorrection","LandingBoost"};
+        static readonly string[] SafeRoutePlan = {"Shortcut","Brake","Rejoin"};
+        float nextTactical, nextStrategic, launchTime = -1;
+        float targetSpeed, steering, lane, targetLane, trafficSpeedLimit = float.MaxValue;
         float angle, trackDistance, lookAheadDistance, trackCurvature, lateralOffset, racingLineOffset;
         float blockedTime, reverseUntil, nextReverse, laneHoldUntil, mistakeUntil, mistakeOffset, routeEntryDistance, nextChainHop, driftStarted;
-        int targetNode, currentNode, routeSegment, recoverySeen, routeConsideredLap = -1, routeAttemptLap=-1,routeAttemptMask;
+        int targetNode, currentNode, routeSegment, recoverySeen, routeConsideredLap = -1, routeAttemptLap = -1, routeAttemptMask;
+
         TrackShortcut activeRoute, consideredRoute;
+        DiscoveredRoute activeDiscoveredRoute;
+        float aerialBoostRemaining, plannedPitch, plannedAirRoll, aerialAirStart;
+
         bool drift, shortcut, routeEntered, reserveBoost, routeSelected, routeHopTaken;
         string intent = "RacingLine";
         float routeProgressAt;
-        float rejoinDistance=-1,rejoinStableTime;
-        int routeIndex=-1;
-        int[] routeEntries,routeCompletions;
+        float rejoinDistance = -1, rejoinStableTime;
+        int routeIndex = -1;
+        int[] routeEntries, routeCompletions;
         readonly float[] laneCosts = new float[3];
         static readonly float[] LaneOptions = { 0, -.40f, .40f };
+
+        // Performance Budget Update Frequencies (Hz)
+        public float FastControlHz => 20f;
+        public float TacticalHz => profile == null ? 6f : Mathf.Lerp(4f, 8f, profile.awareness);
+        public float StrategicHz => 1.5f;
+
         public AiRacerProfile Profile => profile;
         public AiDecisionLogger Logger => logger;
         public Vector3 CurrentTarget => target;
-        public float DecisionHz => profile == null ? 10 : Mathf.Lerp(10, 16, profile.awareness);
+        public float DecisionHz => TacticalHz;
         public bool ExecutingShortcut => shortcut;
         public int CurrentNodeIndex => currentNode;
         public int TargetNodeIndex => targetNode;
         public float LookAheadDistance => lookAheadDistance;
         public float TrackCurvature => trackCurvature;
         public float TargetSpeedKmh => targetSpeed;
+        public bool ProtectingRoadBoundary => false;
+        public bool TrafficBraking => trafficSpeedLimit<float.MaxValue && vehicle.SpeedKmh>trafficSpeedLimit+4;
         public float LateralOffset => lateralOffset;
         public float RacingLineOffset => racingLineOffset;
         public float UpcomingTurnDegrees => angle;
@@ -44,178 +87,650 @@ namespace AnimeHillRacing.Racing3D
         public int TrafficBrakingDecisions { get; private set; }
         public int BoostsForShortcuts { get; private set; }
         public bool ReservingBoost => reserveBoost;
-        public int ActiveRouteIndex=>routeIndex;
-        public int RouteSegment=>routeSegment;
+        public int ActiveRouteIndex => routeIndex;
+        public int RouteSegment => routeSegment;
         public int FailedShortcuts { get; private set; }
         public string LastRouteAbortReason { get; private set; }
-        public int RouteEntries(int index)=>routeEntries!=null&&index>=0&&index<routeEntries.Length?routeEntries[index]:0;
-        public int RouteCompletions(int index)=>routeCompletions!=null&&index>=0&&index<routeCompletions.Length?routeCompletions[index]:0;
+        public DiscoveredRoute ActiveDiscoveredRoute => activeDiscoveredRoute;
+        public string CurrentIntent => intent;
+        public Vector3 TargetLanding => activeRoute!=null&&activeRoute.requiresJump?activeRoute.pathPoints[activeRoute.landingNodeIndex]:target;
+        public int PlannedActionDepth => plannedActionCount;
+        public string PlanSummary => string.Join(" > ", plannedActions, 0, plannedActionCount);
+
+        public int RouteEntries(int index) => routeEntries != null && index >= 0 && index < routeEntries.Length ? routeEntries[index] : 0;
+        public int RouteCompletions(int index) => routeCompletions != null && index >= 0 && index < routeCompletions.Length ? routeCompletions[index] : 0;
+
         void Awake()
         {
-            vehicle = GetComponent<RacingVehiclePhysics>(); recovery = GetComponent<VehicleRecovery>();
-            inventory = GetComponent<ItemInventory>(); logger = new AiDecisionLogger();
+            botId = ++globalBotCounter;
+            vehicle = GetComponent<RacingVehiclePhysics>();
+            recovery = GetComponent<VehicleRecovery>();
+            inventory = GetComponent<ItemInventory>();
+            logger = new AiDecisionLogger();
         }
+
         public void Initialize(AiRacerProfile skill, TrackSplineGraph graph, TrackProgressTracker progress, string name = "AI")
         {
-            profile = skill; trackGraph = graph; progressTracker = progress; logger.BotName = name;
+            if (logger == null) logger = new AiDecisionLogger();
+            if (vehicle == null) vehicle = GetComponent<RacingVehiclePhysics>();
+            if (recovery == null) recovery = GetComponent<VehicleRecovery>();
+            if (inventory == null) inventory = GetComponent<ItemInventory>();
+            // A previous race must not change this seed's update schedule.
+            botId = Mathf.Abs(skill.personalitySeed % 24) + 1;
+
+            profile = skill;
+            profileStartedTime = CurrentTime;
+            trackGraph = graph;
+            progressTracker = progress;
+            logger.BotName = name;
             rng = new DeterministicRng(skill.personalitySeed ^ 71829);
-            itemAgent = new AiItemAgent(skill, inventory, vehicle, graph, logger); itemPool = RacingItemPool.ForScene();
+            itemAgent = new AiItemAgent(skill, inventory, vehicle, graph, logger);
+            itemPool = RacingItemPool.ForScene();
+            UpdateActionPlan();
             lane = Mathf.Abs(skill.personalitySeed % 997) / 996f * .22f - .11f;
-            nextDecision = Time.time + Mathf.Abs(skill.personalitySeed % 11) * .009f; vehicle.SetCommandProvider(this);
-            routeEntries=new int[graph.Shortcuts.Length];routeCompletions=new int[graph.Shortcuts.Length];
+
+            // Stagger bot updates across frames to prevent CPU frame spikes
+            float tacticalStagger = (botId % 8) * (1f / (8f * 6f));
+            float strategicStagger = (botId % 6) * (1f / (6f * 1.5f));
+            nextTactical = CurrentTime + tacticalStagger;
+            nextStrategic = CurrentTime + strategicStagger;
+
+            vehicle.SetCommandProvider(this);
+            routeEntries = new int[graph.Shortcuts != null ? graph.Shortcuts.Length : 0];
+            routeCompletions = new int[graph.Shortcuts != null ? graph.Shortcuts.Length : 0];
         }
-        void FixedUpdate()
+
+        private float? simTimeOverride;
+        public float CurrentTime => simTimeOverride ?? Time.time;
+        public void StepAi(float customTime = -1f)
         {
-            if (profile == null || trackGraph == null || !vehicle.RaceEnabled) { commands = VehicleCommands.Idle; launchTime = -1; return; }
-            if (recovery != null && recovery.IsRecovering) { commands = VehicleCommands.Idle; return; }
+            if (customTime >= 0f) simTimeOverride = customTime;
+            try
+            {
+                FixedUpdate();
+            }
+            finally
+            {
+                if (customTime >= 0f) simTimeOverride = null;
+            }
+        }
+        public void LaunchImmediate() => launchTime = 0f;
+
+        void FixedUpdate()
+        { using(DecisionMarker.Auto()) StepControl(); }
+        void StepControl()
+        {
+            if (profile == null || trackGraph == null || !vehicle.RaceEnabled)
+            {
+                commands = VehicleCommands.Idle;
+                launchTime = -1;
+                return;
+            }
+            if (recovery != null && recovery.IsRecovering)
+            {
+                commands = VehicleCommands.Idle;
+                return;
+            }
             if (recovery != null && recovery.RecoveryCount != recoverySeen)
-            { recoverySeen = recovery.RecoveryCount; AbortRoute("Shared recovery: "+recovery.LastRecoveryReason); rejoinDistance=-1; shortcut = drift = false; steering = blockedTime = reverseUntil = nextDecision = 0; }
-            if (launchTime < 0) launchTime = Time.time + Mathf.Lerp(.65f, .06f, profile.reactionSkill) + Mathf.Abs(profile.personalitySeed % 17) * .003f;
-            if (Time.time < launchTime) { commands = VehicleCommands.Idle; return; }
-            if (Time.time >= nextDecision) { nextDecision = Time.time + 1f / DecisionHz; using (DecisionMarker.Auto()) Decide(); }
+            {
+                recoverySeen = recovery.RecoveryCount;
+                AbortRoute("Shared recovery: " + recovery.LastRecoveryReason);
+                rejoinDistance = -1;
+                shortcut = drift = false;
+                steering = blockedTime = reverseUntil = nextTactical = 0;
+            }
+
+            if (launchTime < 0)
+                launchTime = CurrentTime + Mathf.Lerp(.55f, .03f, profile.reactionSkill) + Mathf.Abs(profile.personalitySeed % 17) * .002f;
+
+            if (launchTime > 0f && CurrentTime < launchTime)
+            {
+                commands = VehicleCommands.Idle;
+                return;
+            }
+
+            // Layer 4 & 5: Strategic Planning (1-2 Hz, staggered)
+            if (CurrentTime >= nextStrategic)
+            {
+                nextStrategic = CurrentTime + 1f / StrategicHz;
+                using (StrategicMarker.Auto())
+                {
+                    StrategicDecide();
+                }
+            }
+
+            // Tactical Decisions (4-8 Hz, staggered)
+            if (CurrentTime >= nextTactical)
+            {
+                nextTactical = CurrentTime + 1f / TacticalHz;
+                using (TacticalMarker.Auto())
+                {
+                    TacticalDecide();
+                }
+            }
+
+            // Fast Control (15-20 Hz per FixedUpdate)
+            ExecuteFastControl();
+        }
+
+        private void ExecuteFastControl()
+        {
+            // A route target only 8-16 m away expires before a 1.5 Hz strategy tick.
+            // Follow ordered route segments at the physics cadence; strategy only selects.
+            if (activeRoute != null) FollowRoute();
+            else if (activeDiscoveredRoute != null) FollowDiscoveredRoute();
+            else if (rejoinDistance >= 0) FollowRejoin(true);
+            targetSpeed = Mathf.Min(targetSpeed, trafficSpeedLimit);
             lane = Mathf.MoveTowards(lane, targetLane, Time.fixedDeltaTime * Mathf.Lerp(.22f, .65f, profile.awareness));
-            Vector3 deltaToTarget = Vector3.ProjectOnPlane(target-transform.position,Vector3.up);
-            Vector3 heading = vehicle.SpeedMps>5 ? Vector3.ProjectOnPlane(vehicle.Body.linearVelocity,Vector3.up).normalized : Vector3.ProjectOnPlane(transform.forward,Vector3.up).normalized;
-            float localX=Vector3.Dot(deltaToTarget,Vector3.Cross(Vector3.up,heading)),localZ=Vector3.Dot(deltaToTarget,heading);
+            Vector3 deltaToTarget = Vector3.ProjectOnPlane(target - transform.position, Vector3.up);
+            Vector3 heading = vehicle.SpeedMps > 5 ? Vector3.ProjectOnPlane(vehicle.Body.linearVelocity, Vector3.up).normalized : Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
+            float localX = Vector3.Dot(deltaToTarget, Vector3.Cross(Vector3.up, heading));
+            float localZ = Vector3.Dot(deltaToTarget, heading);
             float distance = Mathf.Max(4, deltaToTarget.magnitude);
+            if(vehicle.IsDrifting && drift && activeRoute==null && activeDiscoveredRoute==null)
+            {
+                var road=trackGraph.GetNode(currentNode);
+                float offset=Vector3.Dot(transform.position-road.Position,road.Right);
+                float sideSpeed=Vector3.Dot(vehicle.Body.linearVelocity,road.Right);
+                // Release while there is still room for normal tire grip to catch
+                // an outward slide. Waiting until 46% width reaches the barrier.
+                if(Mathf.Abs(offset)>road.TrackWidth*.34f && offset*sideSpeed>0 &&
+                    Mathf.Abs(offset+sideSpeed*.18f)>road.TrackWidth*.43f)
+                    drift=false;
+            }
+            if (vehicle.IsGrounded && !vehicle.IsSpunOut && distance > 6)
+            {
+                // Reserve actual yaw authority for line correction on every road.
+                // A drift multiplier is available only during an actual drift.
+                float pursuitCurvature = Mathf.Abs(2 * localX / (distance * distance));
+                if (pursuitCurvature > .005f)
+                {
+                    float authority=vehicle.Stats.HandlingRadPerSec*.5f;
+                    if(vehicle.IsDrifting&&drift)authority*=Mathf.Lerp(1,1.3f,Mathf.Clamp01(vehicle.Stats.DriftMultiplier-.5f));
+                    float margin=activeRoute!=null?.80f:Mathf.Lerp(.78f,.93f,profile.racingLineSkill);
+                    targetSpeed=Mathf.Min(targetSpeed,authority*margin/pursuitCurvature*3.6f);
+                }
+            }
+            // Full throttle commitment: drive at maximum speed when under target speed
+            float overspeed = vehicle.SpeedKmh - targetSpeed;
+            float throttle = 1f;
+            if (overspeed > 0)
+            {
+                float throttleAllowance = Mathf.Lerp(4.0f, 9.0f, profile.throttleSkill);
+                throttle = Mathf.Clamp01(1f - overspeed / throttleAllowance);
+            }
+            if (overspeed <= 0)
+                throttle = 1f;
+
+            float brakeThreshold = Mathf.Lerp(4.0f, 7.5f, profile.brakingSkill);
+            float brake = overspeed > brakeThreshold
+                ? Mathf.Clamp01((overspeed - brakeThreshold) / 6.0f) * Mathf.Lerp(.55f, 1f, profile.brakingSkill)
+                : 0f;
+
+            if (vehicle.IsDrifting && (brake > .88f || Mathf.Abs(vehicle.SlipAngle) > 42 || Mathf.Abs(lateralOffset) > trackGraph.GetNode(currentNode).TrackWidth * .46f))
+                drift = false;
+
+            // Physics applies UpdateDrift before steering in this same fixed step.
+            // Use the steering equation of the requested state, including the
+            // first step after releasing; the previous drift equation inverted it.
+            bool steeringInDrift=vehicle.IsDrifting&&drift;
             float desiredYaw = 2 * Mathf.Max(7, vehicle.SpeedMps) * localX / (distance * distance);
-            float desiredSlip=vehicle.IsDrifting ? -vehicle.DriftDirection*Mathf.Lerp(6,13,profile.driftSkill) : 0;
-            desiredYaw += (vehicle.SlipAngle-desiredSlip)*Mathf.Deg2Rad*.65f;
-            desiredYaw += (desiredYaw-Vector3.Dot(vehicle.Body.angularVelocity,Vector3.up))*.30f;
+            float desiredSlip = steeringInDrift ? -vehicle.DriftDirection * Mathf.Lerp(
+                profile.style == AiRacingStyle.DriftPrecision ? 8 : 6, 13, profile.driftSkill) : 0;
+            desiredYaw += (vehicle.SlipAngle - desiredSlip) * Mathf.Deg2Rad * .65f;
+            desiredYaw += (desiredYaw - Vector3.Dot(vehicle.Body.angularVelocity, Vector3.up)) * .30f;
             float desiredSteer = Mathf.Clamp(desiredYaw / (vehicle.Stats.HandlingRadPerSec * .5f), -1, 1);
             if (localZ < 0) desiredSteer = Mathf.Sign(localX);
-            if (vehicle.IsDrifting)
+            if (steeringInDrift)
             {
                 float authority = Mathf.Lerp(1, 1.3f, Mathf.Clamp01(vehicle.Stats.DriftMultiplier - .5f));
                 desiredSteer = Mathf.Clamp((desiredSteer / authority - vehicle.DriftDirection * .56f) / .55f, -1, 1);
             }
             steering = Mathf.MoveTowards(steering, desiredSteer, Time.fixedDeltaTime * Mathf.Lerp(3.8f, 10, profile.racingLineSkill));
-            float overspeed = vehicle.SpeedKmh - targetSpeed;
-            // Elite execution uses the same full-throttle command available to a human.
-            float throttle = (profile.throttleSkill >= .85f ? 1 : Mathf.Lerp(.65f, 1, profile.throttleSkill)) * Mathf.Clamp01(1 - Mathf.Max(0, overspeed) / 7);
-            float brake = Mathf.Clamp01((overspeed - 2) / 8) * Mathf.Lerp(.55f, 1, profile.brakingSkill);
-            if (vehicle.IsDrifting && (brake > .75f || Mathf.Abs(vehicle.SlipAngle)>32 || Mathf.Abs(lateralOffset) > trackGraph.GetNode(currentNode).TrackWidth * .40f)) drift = false;
+
             bool trick = !vehicle.IsGrounded && profile.trickSkill > .22f &&
                 vehicle.AirborneTime > Mathf.Lerp(.35f, .16f, profile.trickSkill) &&
                 vehicle.TrickCount < (profile.trickSkill > .88f && vehicle.AirborneTime > .67f ? 2 : 1);
-            commands = new VehicleCommands { Steering = steering, Throttle = throttle, Brake = brake, Drift = drift, Trick = trick,
-                Pitch = !vehicle.IsGrounded ? Mathf.Clamp(-transform.forward.y * 1.4f, -.5f, .5f) : 0 };
-            if(activeRoute!=null && routeEntered && !activeRoute.requiresJump && !routeHopTaken &&
-                profile.chainingSkill>.68f && routeSegment>=9 && routeSegment<=11 && vehicle.IsGrounded &&
-                !vehicle.IsSpunOut && vehicle.SpeedKmh>55 && angle<8 && Mathf.Abs(vehicle.SlipAngle)<6)
-            {commands.Jump=true;routeHopTaken=true;intent="ExitTurboToHopTrickLanding";}
-            // A released drift can be converted into a hop/trick/landing boost on a
-            // clear, straight exit. Cooldown and landing room prevent bunny-hop spam.
-            if (activeRoute == null && profile.chainingSkill > .85f && Time.time > nextChainHop &&
+
+            // Aerial Boost and Air Roll logic
+            bool aerialBoost = false;
+            float pitch = 0f;
+            float airRoll = 0f;
+
+            if (!vehicle.IsGrounded)
+            {
+                if (activeDiscoveredRoute != null && activeDiscoveredRoute.isAerialRoute)
+                {
+                    float airElapsed = CurrentTime - aerialAirStart;
+                    aerialBoost = airElapsed <= activeDiscoveredRoute.boostDuration && airElapsed >= activeDiscoveredRoute.jumpTiming;
+                    pitch = Mathf.Clamp(activeDiscoveredRoute.pitch / 25f, -1f, 1f);
+                    airRoll = Mathf.Clamp(activeDiscoveredRoute.airRoll / 30f, -1f, 1f);
+                }
+                else
+                {
+                    // General in-air stabilization: level vehicle and avoid nose-dive
+                    var landingRoad = trackGraph.SampleDistance(trackDistance + Mathf.Max(12, vehicle.SpeedMps * .6f));
+                    Vector3 landingForward=landingRoad.Forward;
+                    if(activeRoute!=null&&activeRoute.requiresJump)
+                    {int landing=Mathf.Clamp(activeRoute.landingNodeIndex,0,activeRoute.pathPoints.Length-2);landingForward=(activeRoute.pathPoints[landing+1]-activeRoute.pathPoints[landing]).normalized;}
+                    pitch = Mathf.Clamp((transform.forward.y - landingForward.y) * 2f - Vector3.Dot(vehicle.Body.angularVelocity, transform.right) * .25f, -.7f, .7f);
+                    airRoll = Mathf.Clamp(Vector3.Dot(transform.right, landingRoad.Up) * 2f + Vector3.Dot(vehicle.Body.angularVelocity, transform.forward) * .25f, -.8f, .8f) * profile.trickSkill;
+
+                    // Pulse only after an intentional hop or shared launch pad.
+                    // Road crests and a landing bounce are not new jump plans.
+                    float sinceLaunch = CurrentTime - vehicle.LastJumpTime;
+                    bool launchedThisFlight = sinceLaunch >= 0 && sinceLaunch < .70f &&
+                        sinceLaunch <= vehicle.AirborneTime + .16f;
+                    bool beforeLanding = activeRoute == null || !activeRoute.requiresJump ||
+                        (routeSegment >= activeRoute.launchNodeIndex && routeSegment < activeRoute.landingNodeIndex);
+                    float boostTarget = activeRoute != null && activeRoute.requiresJump
+                        ? activeRoute.launchSpeedKmh * 1.02f
+                        : Mathf.Min(vehicle.Stats.SpeedKmh * 1.10f, targetSpeed + 10f);
+                    bool authoredFlight=activeRoute!=null&&activeRoute.requiresJump;
+                    // A valid shared kicker can launch below 85 km/h after traffic or
+                    // alignment braking. Refusing its planned air correction then
+                    // strands the car in the gap. Stop thrust at the route's speed
+                    // target, using the same bounded aerial input as the human.
+                    float correctionLimit=authoredFlight?.45f:Mathf.Lerp(.07f,
+                        profile.style==AiRacingStyle.AerialAggressive?.20f:.17f,profile.trickSkill);
+                    if (profile.trickSkill > .70f && launchedThisFlight && beforeLanding &&
+                        vehicle.AirborneTime > .16f && vehicle.AirborneTime < .65f &&
+                        Plans("AerialCorrection") && vehicle.AerialBoostTimer < correctionLimit &&
+                        vehicle.SpeedKmh > (authoredFlight?55f:85f) && vehicle.SpeedKmh < boostTarget && angle < 10f)
+                    {
+                        if (Vector3.Dot(transform.forward, landingForward) > .94f && transform.forward.y > -.10f)
+                        {
+                            aerialBoost = true;
+                            pitch = Mathf.Clamp(pitch - .10f * profile.trickSkill, -.7f, .7f);
+                        }
+                    }
+                }
+            }
+
+            bool itemBackward = commands.ItemBackward;
+            commands = new VehicleCommands
+            {
+                Steering = steering,
+                Throttle = throttle,
+                Brake = brake,
+                Drift = drift,
+                Trick = trick,
+                AerialBoost = aerialBoost,
+                Pitch = pitch,
+                AirRoll = airRoll,
+                ItemBackward = itemBackward
+            };
+
+            // Exit hop chaining
+            if (activeRoute != null && routeEntered && !activeRoute.requiresJump && !routeHopTaken &&
+                profile.chainingSkill > .68f && Plans("Hop") && routeSegment >= 9 && routeSegment <= 11 && vehicle.IsGrounded &&
+                !vehicle.IsSpunOut && vehicle.SpeedKmh > 55 && angle < 8 && Mathf.Abs(vehicle.SlipAngle) < 6 && HasSafeRouteHopLanding())
+            {
+                commands.Jump = true;
+                routeHopTaken = true;
+                intent = "ExitTurboToHopTrickLanding";
+            }
+
+            if (activeRoute == null && profile.chainingSkill > .85f && Plans("Hop") && CurrentTime > nextChainHop &&
                 vehicle.IsBoosting && !vehicle.IsDrifting && vehicle.IsGrounded && !vehicle.IsSpunOut &&
                 vehicle.SpeedKmh > 72 && angle < 5 && trackCurvature < .004f &&
-                Mathf.Abs(lateralOffset) < trackGraph.GetNode(currentNode).TrackWidth * .22f && NextGateDistance() > 24)
-            { commands.Jump = true; nextChainHop = Time.time + 5.5f; intent = "DriftBoostHopTrickLanding"; }
+                Mathf.Abs(lateralOffset) < trackGraph.GetNode(currentNode).TrackWidth * .22f && NextGateDistance() > 24 && HasSafeHopLanding())
+            {
+                commands.Jump = true;
+                nextChainHop = CurrentTime + Mathf.Lerp(5.5f, 1.55f, profile.chainingSkill);
+                intent = "DriftBoostHopTrickLanding";
+            }
+
             if (vehicle.IsGrounded && !vehicle.IsSpunOut && commands.Throttle > .3f && vehicle.SpeedMps < 1.2f)
             {
                 blockedTime += Time.fixedDeltaTime;
-                if (blockedTime > .85f && Time.time > nextReverse) { reverseUntil = Time.time + .8f; nextReverse = Time.time + 3; }
+                if (blockedTime > .85f && CurrentTime > nextReverse) { reverseUntil = CurrentTime + .8f; nextReverse = CurrentTime + 3; }
                 if (blockedTime > Mathf.Lerp(3.4f, 2.6f, profile.recoverySkill)) { recovery?.TriggerRecovery("AI blocked after reverse attempt"); blockedTime = 0; }
             }
             else blockedTime = 0;
-            if (Time.time < reverseUntil) commands = new VehicleCommands { Brake = 1, Steering = -Mathf.Sign(Mathf.Abs(desiredSteer) > .1f ? desiredSteer : 1) };
+
+            if (CurrentTime < reverseUntil)
+                commands = new VehicleCommands { Brake = 1, Steering = -Mathf.Sign(Mathf.Abs(desiredSteer) > .1f ? desiredSteer : 1) };
         }
-        void Decide()
+
+        private void StrategicDecide()
+        {
+            UpdateDrivingTarget();
+            PlanRoute();
+            PlanDiscoveredRoute();
+            UpdateActionPlan();
+        }
+
+        bool HasSafeHopLanding()
+        {
+            // A hop preserves horizontal velocity: inspect the whole projected flight.
+            // This uses the shared hop envelope, never a new force or a different car.
+            for (int i = 1; i <= 3; i++)
+            {
+                // Include the full shared hop plus bounded aerial-correction
+                // envelope. The old 0.6 s horizon ended before some landings.
+                float seconds = i * .35f;
+                var road = trackGraph.SampleDistance(trackDistance + vehicle.SpeedMps * seconds);
+                Vector3 projected = transform.position + vehicle.Body.linearVelocity * seconds;
+                float side = Mathf.Abs(Vector3.Dot(projected - road.Position, road.Right));
+                if (side > road.TrackWidth * .30f || Vector3.Angle(transform.forward, road.Forward) > 12f)
+                    return false;
+            }
+            return true;
+        }
+
+        bool HasSafeRouteHopLanding()
+        {
+            var points=activeRoute.pathPoints;
+            for(int sample=1;sample<=3;sample++)
+            {
+                Vector3 projected=transform.position+vehicle.Body.linearVelocity*(sample*.20f);
+                float closest=float.MaxValue;
+                for(int segment=routeSegment;segment<points.Length-1;segment++)
+                {
+                    Vector3 delta=Vector3.ProjectOnPlane(points[segment+1]-points[segment],Vector3.up);
+                    Vector3 offset=Vector3.ProjectOnPlane(projected-points[segment],Vector3.up);
+                    float fraction=delta.sqrMagnitude>.01f?Mathf.Clamp01(Vector3.Dot(offset,delta)/delta.sqrMagnitude):0;
+                    closest=Mathf.Min(closest,(offset-delta*fraction).sqrMagnitude);
+                }
+                if(closest>activeRoute.width*activeRoute.width*.09f)return false;
+            }
+            return true;
+        }
+
+        void UpdateActionPlan()
+        {
+            string[] sequence = activeRoute != null
+                ? (activeRoute.requiresJump ? SkyPlan : profile.style == AiRacingStyle.SafeConsistency ? SafeRoutePlan : ApexPlan)
+                : (!vehicle.IsGrounded || vehicle.IsBoosting) && profile.style != AiRacingStyle.SafeConsistency
+                    ? AirPlan : drift ? DriftPlan : RoadPlan;
+            int first = activeRoute != null && activeRoute.requiresJump
+                ? routeSegment >= activeRoute.landingNodeIndex ? 3 : routeSegment >= activeRoute.launchNodeIndex ? 2 : 0 : 0;
+            plannedActionCount = Mathf.Min(profile.PlanningDepth, sequence.Length - first);
+            for (int i = 0; i < plannedActionCount; i++) plannedActions[i] = sequence[first + i];
+        }
+
+        bool Plans(string action)
+        {
+            for (int i = 0; i < plannedActionCount; i++) if (plannedActions[i] == action) return true;
+            return false;
+        }
+
+        private void UpdateDrivingTarget()
         {
             trackGraph.ProjectPosition(transform.position, out currentNode, out trackDistance, out float lateral);
             if (raceProgress == null) raceProgress = progressTracker?.FindRacer(vehicle);
-            if(raceProgress!=null && routeAttemptLap!=raceProgress.CurrentLap){routeAttemptLap=raceProgress.CurrentLap;routeAttemptMask=0;}
+            if (raceProgress != null && routeAttemptLap != raceProgress.CurrentLap)
+            {
+                routeAttemptLap = raceProgress.CurrentLap;
+                routeAttemptMask = 0;
+            }
+
             var current = trackGraph.SampleDistance(trackDistance);
-            lookAheadDistance = Mathf.Clamp(5 + vehicle.SpeedMps * Mathf.Lerp(.36f, .38f, profile.racingLineSkill), 9, 25);
+            lookAheadDistance = Mathf.Clamp(16f + vehicle.SpeedMps * Mathf.Lerp(.52f, .85f, profile.racingLineSkill), 24f, 75f);
             var future = trackGraph.SampleDistance(trackDistance + lookAheadDistance);
             float turn = Vector3.SignedAngle(current.Forward, future.Forward, Vector3.up);
-            trackCurvature = Mathf.Abs(turn) * Mathf.Deg2Rad / lookAheadDistance; lateralOffset = lateral;
+            trackCurvature = Mathf.Abs(turn) * Mathf.Deg2Rad / lookAheadDistance;
+            lateralOffset = lateral;
             targetSpeed = BrakingEnvelope(current);
-            float entryTurn = Vector3.SignedAngle(current.Forward, trackGraph.SampleDistance(trackDistance + 7).Forward, Vector3.up);
+
+            float entryTurn = Vector3.SignedAngle(current.Forward, trackGraph.SampleDistance(trackDistance + 10).Forward, Vector3.up);
             float racingOffset = Mathf.Lerp(current.SafeLineOffset, future.OptimalLineOffset, profile.racingLineSkill);
-            if (Mathf.Abs(entryTurn) < 4 && Mathf.Abs(turn) > 10 && profile.racingLineSkill > .65f) racingOffset = -Mathf.Sign(turn) * .18f;
-            if (Time.time >= mistakeUntil && rng.NextFloat() < Mathf.Lerp(.015f, .00015f, profile.consistency))
-            { mistakeUntil = Time.time + Mathf.Lerp(1.6f, .3f, profile.consistency); mistakeOffset = rng.Range(-.20f, .20f) * (1 - profile.consistency); }
-            float natural = Mathf.Sin(Time.time * .33f + profile.personalitySeed * .01f) * (1 - profile.consistency) * .16f;
-            if (Time.time < mistakeUntil) natural += mistakeOffset;
-            intent = "RacingLine";
-            var traffic = EvaluatePack(current, racingOffset, turn);
-            racingLineOffset = Mathf.Clamp((racingOffset + lane + natural) * current.TrackWidth * .4f, -current.TrackWidth * .34f, current.TrackWidth * .34f);
+            if (Mathf.Abs(entryTurn) < 5 && Mathf.Abs(turn) > 10 && profile.racingLineSkill > .60f)
+                racingOffset = -Mathf.Sign(turn) * .20f;
+
+            if (CurrentTime >= mistakeUntil && rng.NextFloat() < Mathf.Lerp(.025f, .0001f, profile.consistency))
+            {
+                mistakeUntil = CurrentTime + Mathf.Lerp(1.6f, .3f, profile.consistency);
+                mistakeOffset = rng.Range(-.20f, .20f) * (1 - profile.consistency);
+            }
+            float natural = Mathf.Sin((CurrentTime-profileStartedTime) * .33f + profile.personalitySeed * .01f) * (1 - profile.consistency) * .14f;
+            if (CurrentTime < mistakeUntil) natural += mistakeOffset;
+            if (profile.style == AiRacingStyle.DriftPrecision) natural *= 1f - .35f * profile.NormalizedSkill;
+
+            racingLineOffset = Mathf.Clamp((racingOffset + lane + natural) * current.TrackWidth * .4f, -current.TrackWidth * .38f, current.TrackWidth * .38f);
             target = future.Position + future.Right * racingLineOffset;
-            if(NextGateDistance()<28)target=future.Position+future.Right*racingLineOffset*.35f;
+            if (NextGateDistance() < 28) target = future.Position + future.Right * racingLineOffset * .35f;
+            float gateDistance=NextGateDistance();
+            if(gateDistance<lookAheadDistance&&gateDistance>4&&activeRoute==null&&rejoinDistance<0&&raceProgress!=null)
+            {
+                int gate=(raceProgress.LastCheckpointIndex+1)%trackGraph.CheckpointNodeIndices.Length;
+                target=trackGraph.GetNode(trackGraph.CheckpointNodeIndices[gate]).Position;
+            }
             trackGraph.ProjectPosition(future.Position, out targetNode, out _, out _);
-            shortcut = false; PlanRoute();
+
+            shortcut = false;
+
             if (activeRoute != null) FollowRoute();
-            else if(rejoinDistance>=0)FollowRejoin();
-            else if (Mathf.Abs(lateral) > current.TrackWidth * .34f)
-            { targetLane = 0; target = future.Position; targetSpeed = Mathf.Min(targetSpeed, 78); intent = "RecoverLine"; }
-            if(activeRoute==null && rejoinDistance<0 && trackGraph.MainJumpNodeIndex>=0)
+            else if (activeDiscoveredRoute != null) FollowDiscoveredRoute();
+            else if (rejoinDistance >= 0) FollowRejoin();
+            else if (Mathf.Abs(lateral) > current.TrackWidth * .45f)
             {
-                var jumpNode=trackGraph.GetNode(trackGraph.MainJumpNodeIndex);
-                float toJump=Mathf.Repeat(jumpNode.CumulativeDistance-trackDistance,trackGraph.TotalLength);
-                if(toJump<35)
-                {
-                    Vector3 landing=trackGraph.SampleDistance(jumpNode.CumulativeDistance+Mathf.Clamp(vehicle.SpeedMps*1.05f,24,40)).Position;
-                    target=jumpNode.Position+(landing-jumpNode.Position).normalized*10;
-                    targetLane=0;targetSpeed=Mathf.Min(targetSpeed,110);drift=false;intent="PrepareJumpAndLanding";
-                }
+                targetLane = 0; target = future.Position; intent = "RecoverLine";
             }
+        }
+
+        private void TacticalDecide()
+        {
+            UpdateDrivingTarget();
+            var current = trackGraph.SampleDistance(trackDistance);
+            var future = trackGraph.SampleDistance(trackDistance + lookAheadDistance);
+            float turn = Vector3.SignedAngle(current.Forward, future.Forward, Vector3.up);
+
+            // RacingLineOffset is already in meters and includes the current lane.
+            // Candidate lanes below are offsets from the base racing line.
+            var traffic = EvaluatePack(current, racingLineOffset-lane*current.TrackWidth*.4f, turn);
+            traffic.straightDistance = lookAheadDistance;
+
             angle = Vector3.Angle(Vector3.ProjectOnPlane(transform.forward, Vector3.up), Vector3.ProjectOnPlane(target - transform.position, Vector3.up));
-            if (angle > 45) targetSpeed = Mathf.Min(targetSpeed, Mathf.Lerp(32, 42, profile.recoverySkill));
-            if (vehicle.IsDrifting && activeRoute==null)
+            if (angle > 105f) targetSpeed = Mathf.Min(targetSpeed, Mathf.Lerp(55f, 75f, profile.recoverySkill));
+
+            // Drift decision (Mini vs Medium vs Super Turbo release)
+            if (vehicle.IsDrifting && activeRoute == null && activeDiscoveredRoute == null)
             {
-                bool exitReady = Mathf.Abs(turn) < 3f || (Mathf.Sign(turn) != vehicle.DriftDirection && Mathf.Abs(turn) > 4);
-                bool ultraReady = vehicle.CurrentMiniTurboStage == MiniTurboStage.UltraMiniTurbo && Mathf.Abs(turn) < 10;
-                if ((Time.time - driftStarted > .4f && (exitReady || ultraReady)) || shortcut || angle > 46 || Mathf.Abs(lateral) > current.TrackWidth * .38f) drift = false;
+                float postCornerDistance = 45f;
+                var postCorner = trackGraph.SampleDistance(trackDistance + postCornerDistance);
+                float postTurn = Mathf.Abs(Vector3.SignedAngle(current.Forward, postCorner.Forward, Vector3.up));
+                bool longRunway = postTurn < 12f;
+
+                bool wantSuper = profile.driftSkill > 0.82f && longRunway;
+                bool wantMedium = profile.driftSkill > 0.55f;
+                bool exitReady = Mathf.Abs(turn) < 4f || (Mathf.Sign(turn) != vehicle.DriftDirection && Mathf.Abs(turn) > 5f);
+                bool hasSuper = vehicle.CurrentMiniTurboStage == MiniTurboStage.UltraMiniTurbo;
+                bool hasMedium = vehicle.CurrentMiniTurboStage == MiniTurboStage.SuperMiniTurbo;
+                bool hasMini = vehicle.CurrentMiniTurboStage == MiniTurboStage.MiniTurbo;
+
+                bool shouldRelease = false;
+                if (exitReady && hasMini && !wantSuper && !wantMedium)
+                    shouldRelease = true;
+                else if (hasSuper)
+                {
+                    shouldRelease = exitReady || Mathf.Abs(turn) < 14f;
+                }
+                else if (hasMedium)
+                {
+                    if (exitReady && (!wantSuper || CurrentTime - driftStarted > 2.8f))
+                        shouldRelease = true;
+                }
+                else if (hasMini)
+                {
+                    if (exitReady && !wantMedium && !wantSuper)
+                        shouldRelease = true;
+                }
+                else
+                {
+                    if (exitReady && CurrentTime - driftStarted > 0.7f)
+                        shouldRelease = true;
+                }
+
+                if (shouldRelease || shortcut || angle > 65f || Mathf.Abs(lateralOffset) > current.TrackWidth * .46f)
+                    drift = false;
             }
-            else if(activeRoute==null)
+            else if (activeRoute == null && activeDiscoveredRoute == null)
             {
-                drift = intent!="PrepareJumpAndLanding" && activeRoute == null && rejoinDistance<0 && profile.driftSkill > .32f &&
-                    Mathf.Abs(turn) > Mathf.Lerp(14, 6.5f, profile.driftSkill) && Mathf.Abs(turn) < 58 &&
-                    vehicle.SpeedKmh > 43 && vehicle.SpeedKmh < targetSpeed + 7 &&
-                    Mathf.Abs(lateral) < current.TrackWidth * .30f && !vehicle.IsSpunOut;
-                if (drift) driftStarted = Time.time;
+                drift = intent != "PrepareJumpAndLanding" && rejoinDistance < 0 && profile.driftSkill > .26f &&
+                    Mathf.Abs(turn) > Mathf.Lerp(10f, 4.5f, profile.driftSkill) && Mathf.Abs(turn) < 70f &&
+                    vehicle.SpeedKmh > 40f &&
+                    Mathf.Abs(lateralOffset) < current.TrackWidth * .42f && !vehicle.IsSpunOut;
+                if (drift) driftStarted = CurrentTime;
             }
+
             if (drift) intent = "DriftToExitBoost";
-            if (reserveBoost && activeRoute==null && vehicle.IsDrifting && vehicle.CurrentMiniTurboStage != MiniTurboStage.None && routeEntryDistance < 18) drift = false;
             traffic.reserveBoost = reserveBoost;
-            traffic.shortcutEntryReady = activeRoute != null && activeRoute.requiresBoost && angle < 22 &&
-                ((!activeRoute.requiresJump && !routeEntered && routeEntryDistance < 12) ||
-                 (activeRoute.requiresJump && routeEntered && routeSegment>=8 && routeSegment<=activeRoute.launchNodeIndex &&
-                  Vector3.Distance(transform.position,activeRoute.pathPoints[activeRoute.launchNodeIndex])<Mathf.Max(9,vehicle.SpeedMps*.35f) &&
-                  LaunchAngleError(activeRoute)<7 && vehicle.BoostRemainingSeconds<.6f));
-            traffic.turnDegrees = shortcut?angle:Mathf.Max(Mathf.Abs(turn), angle);
+            traffic.shortcutEntryReady = activeRoute!=null&&activeRoute.requiresBoost&&(!activeRoute.requiresJump||
+                routeSegment>=activeRoute.launchNodeIndex-2 && LaunchAngleError(activeRoute)<7 && Mathf.Abs(vehicle.SlipAngle)<7 && trafficSpeedLimit>80) ||
+                (activeDiscoveredRoute != null && activeDiscoveredRoute.requiresAerialBoost);
+            traffic.turnDegrees = shortcut ? angle : Mathf.Max(Mathf.Abs(turn), angle);
             traffic.finalLap = raceProgress != null && raceProgress.CurrentLap == progressTracker.TotalLaps;
             traffic.position = raceProgress != null ? raceProgress.RacePosition : 12;
+
             if (inventory != null && inventory.HasItem && itemAgent.ShouldUseItem(traffic))
-            {bool boost=inventory.HeldItem==RaceItemType.TurboPulse || inventory.HeldItem==RaceItemType.HyperCharge;if(inventory.UseItem()&&boost&&traffic.shortcutEntryReady)BoostsForShortcuts++;}
+            {
+                commands.ItemBackward = itemAgent.ShouldThrowBackward(traffic);
+                bool boost = RaceItemUtility.IsShortcutBoost(inventory.HeldItem);
+                if (inventory.UseItem() && boost && traffic.shortcutEntryReady) BoostsForShortcuts++;
+            }
             logger.UpdateSteeringDecision(intent, reserveBoost ? "PreserveShortcutResource" : "TrackAndPredictedTraffic", target, steering, commands.Throttle, drift);
+            UpdateActionPlan();
         }
+
+        private void PlanDiscoveredRoute()
+        {
+            if (activeRoute != null || activeDiscoveredRoute != null || rejoinDistance >= 0 || profile.chainingSkill < .85f) return;
+            var kb = ShortcutKnowledgeBase.Instance;
+            if (kb == null) return;
+
+            kb.GetCandidateRoutes(trackDistance, 90f, trackGraph.TotalLength, candidateDiscoveredRoutes);
+            if (candidateDiscoveredRoutes.Count == 0) return;
+
+            int pos = raceProgress != null ? raceProgress.RacePosition : 6;
+            bool isLeading = pos == 1;
+            bool isTrailing = pos >= 4;
+            bool finalLap = raceProgress != null && raceProgress.CurrentLap == progressTracker.TotalLaps;
+
+            for (int i = 0; i < candidateDiscoveredRoutes.Count; i++)
+            {
+                var candidate = candidateDiscoveredRoutes[i];
+                // Ballistic catalog estimates are proposals, not verified shared-physics routes.
+                if (!candidate.validatedSharedPhysics || candidate.pathPoints == null || candidate.pathPoints.Length < 2) continue;
+                bool bypassesGate = false;
+                foreach (int gate in trackGraph.CheckpointNodeIndices)
+                    bypassesGate |= gate > candidate.entryNodeIndex && gate < candidate.exitNodeIndex;
+                if (bypassesGate) continue;
+                float confidence = kb.GetConfidence(candidate.routeId);
+
+                // Decision rule based on race position and risk tolerance
+                if (isLeading && (confidence < 0.88f || candidate.expectedValue < 1.0f))
+                    continue;
+
+                if (!isLeading && !isTrailing && confidence < 0.70f)
+                    continue;
+
+                if (isTrailing && (confidence < 0.50f || candidate.expectedValue <= 0f))
+                    continue;
+
+                // Entry speed and alignment check
+                if (vehicle.SpeedKmh < candidate.minSpeedKmh * 0.85f)
+                    continue;
+
+                float distToEntry = Mathf.Repeat(candidate.entryDistance - trackDistance, trackGraph.TotalLength);
+                if (distToEntry < 35f && vehicle.IsGrounded && !vehicle.IsSpunOut)
+                {
+                    activeDiscoveredRoute = candidate.Clone();
+                    shortcut = true;
+                    routeEntered = false;
+                    routeProgressAt = CurrentTime;
+                    aerialAirStart = CurrentTime;
+                    intent = "ExecutingDiscoveredAerialSkip";
+                    break;
+                }
+            }
+        }
+
+        private void FollowDiscoveredRoute()
+        {
+            shortcut = true;
+            drift = false;
+            intent = "DiscoveredAerialTrajectory";
+
+            var exitRoadNode = trackGraph.GetNode(activeDiscoveredRoute.exitNodeIndex);
+            target = exitRoadNode.Position + Vector3.up * 0.5f;
+            targetSpeed = Mathf.Max(targetSpeed, activeDiscoveredRoute.idealSpeedKmh);
+
+            if (!vehicle.IsGrounded)
+            {
+                routeEntered = true;
+            }
+            else if (routeEntered)
+            {
+                // Touchdown after aerial skip!
+                float timeSaved = activeDiscoveredRoute.timeSaved;
+                bool safeLanding = Mathf.Abs(lateralOffset) <= exitRoadNode.TrackWidth * 0.48f;
+
+                if (safeLanding)
+                {
+                    ShortcutKnowledgeBase.Instance?.RecordAttempt(activeDiscoveredRoute.routeId, true, timeSaved, raceProgress != null ? raceProgress.CurrentLap : 1);
+                    ShortcutCompletions++;
+                    activeDiscoveredRoute = null;
+                    shortcut = false;
+                }
+                else
+                {
+                    ShortcutKnowledgeBase.Instance?.RecordAttempt(activeDiscoveredRoute.routeId, false, 0, raceProgress != null ? raceProgress.CurrentLap : 1);
+                    AbortRoute("Discovered route landing off corridor");
+                }
+            }
+        }
+
         float BrakingEnvelope(TrackNode current)
         {
-            float efficiency = Mathf.Lerp(.70f, .995f, profile.racingLineSkill), maxSpeed = vehicle.Stats.SpeedKmh * (vehicle.IsBoosting ? vehicle.BoostMultiplier : 1);
+            // Commanded pace/anticipation, never a change to the physical speed limit.
+            float skill = profile.NormalizedSkill;
+            float elite = Mathf.Pow(Mathf.InverseLerp(.90f, 1f, skill), 2f);
+            bool lancer = vehicle.IsLancerActive;
+            float efficiency = lancer ? 1f : .58f + .34f * Mathf.Pow(skill, .85f) + .08f * elite;
+            float maxSpeed = (vehicle.IsLancerActive ? RaceItemUtility.LancerSpeedKmh : vehicle.Stats.SpeedKmh * (vehicle.IsBoosting ? vehicle.BoostMultiplier : 1)) * vehicle.ShortcutSpeedMultiplier;
             float speed = maxSpeed * efficiency;
-            float deceleration = vehicle.Stats.AccelerationMps2 * 2.4f * Mathf.Lerp(.55f, .94f, profile.brakingSkill);
-            float horizon = Mathf.Clamp(vehicle.SpeedMps * vehicle.SpeedMps / (2 * deceleration) + vehicle.SpeedMps * .35f, 32, 145);
+            if (!lancer && profile.style == AiRacingStyle.SafeConsistency) speed *= 1f - .015f * skill;
+            float deceleration = vehicle.Stats.AccelerationMps2 * 2.4f * Mathf.Lerp(.65f, .98f, profile.brakingSkill);
+            float horizon = Mathf.Clamp(vehicle.SpeedMps * vehicle.SpeedMps / (2 * deceleration) + vehicle.SpeedMps * .45f, 35, 160);
             var previous = current;
+            float driftBonus = vehicle.IsDrifting ? Mathf.Lerp(1, 1.3f, Mathf.Clamp01(vehicle.Stats.DriftMultiplier - .5f)) : 1f;
             for (int i = 1; i <= 10; i++)
             {
-                float ahead = horizon * i / 10; var sample = trackGraph.SampleDistance(trackDistance + ahead);
+                float ahead = horizon * i / 10;
+                var sample = trackGraph.SampleDistance(trackDistance + ahead);
                 float curvature = Mathf.Abs(Vector3.SignedAngle(previous.Forward, sample.Forward, Vector3.up)) * Mathf.Deg2Rad / (horizon / 10);
-                // Handling/2 is the shared physics' full steering yaw authority.
-                float corner = curvature > .001f ? vehicle.Stats.HandlingRadPerSec * Mathf.Lerp(.33f, .46f, profile.racingLineSkill) / curvature : maxSpeed / 3.6f;
-                float authored = sample.TargetSpeedKmh > 0 ? Mathf.Lerp(sample.TargetSpeedKmh, maxSpeed, .78f * profile.racingLineSkill) / 3.6f : maxSpeed / 3.6f;
+                // Shared steering executes Handling * .5, including its bounded drift multiplier.
+                // Predicting several times that yaw rate made late braking impossible.
+                float cornerAuthority = vehicle.Stats.HandlingRadPerSec * .5f * driftBonus * Mathf.Lerp(.72f, .94f, profile.racingLineSkill);
+                float corner = curvature > .0008f ? cornerAuthority / curvature : maxSpeed / 3.6f;
+                float authored = sample.TargetSpeedKmh > 0 ? Mathf.Min(maxSpeed, sample.TargetSpeedKmh * Mathf.Lerp(.85f, 1.22f, profile.racingLineSkill)) / 3.6f : maxSpeed / 3.6f;
+                // An explicit Lancer item must not fight the ordinary straight
+                // pace target. Retain curvature and authored drift-zone braking.
+                if (lancer && curvature < .001f && !sample.IsDriftZone) authored = maxSpeed / 3.6f;
                 float limit = Mathf.Min(corner, authored) * efficiency;
-                speed = Mathf.Min(speed, Mathf.Sqrt(limit * limit + 2 * deceleration * Mathf.Max(0, ahead - vehicle.SpeedMps * .15f)) * 3.6f); previous = sample;
+                speed = Mathf.Min(speed, Mathf.Sqrt(limit * limit + 2 * deceleration * Mathf.Max(0, ahead - vehicle.SpeedMps * .15f)) * 3.6f);
+                previous = sample;
             }
-            return speed;
+            return Mathf.Max(speed, 42f * vehicle.ShortcutSpeedMultiplier);
         }
+
         AiItemContext EvaluatePack(TrackNode road, float racingOffset, float turn)
         {
-            var context = new AiItemContext(); if (progressTracker == null) return context;
-            float baseLine = racingOffset * road.TrackWidth * .4f;
+            var context = new AiItemContext();
+            if (progressTracker == null) return context;
+            float packLateral=lateralOffset;
+            if(activeRoute!=null && routeEntered) {
+                Vector3 start=activeRoute.pathPoints[routeSegment],segment=activeRoute.pathPoints[routeSegment+1]-start;
+                road.Forward=segment.normalized;road.Right=Vector3.Cross(Vector3.up,segment).normalized;road.TrackWidth=activeRoute.WidthAt(routeSegment);
+                packLateral=Vector3.Dot(transform.position-start,road.Right);racingOffset=0;
+            }
+            float baseLine = racingOffset;
             for (int i = 0; i < 3; i++) laneCosts[i] = i == 0 ? 0 : .05f;
-            bool blocked = false, closingRear = false; float leadSpeed = float.MaxValue, leadGap = float.MaxValue;
+            bool blocked = false, closingRear = false;
+            float leadSpeed = float.MaxValue, leadGap = float.MaxValue, leadClosing = 0;
+            trafficSpeedLimit = float.MaxValue;
             var leaderboard = progressTracker.Leaderboard;
             for (int racerIndex = 0; racerIndex < leaderboard.Count; racerIndex++)
             {
@@ -229,213 +744,315 @@ namespace AnimeHillRacing.Racing3D
                 if (ahead > 2 && ahead < 40 && Mathf.Abs(side) < 3) context.targetAhead = true;
                 if (delta.sqrMagnitude < 64) context.rivalsInPulseRadius++;
                 float prediction = Mathf.Lerp(.15f, .7f, profile.awareness);
-                float predictedZ = ahead - closing * prediction, predictedX = lateralOffset + side + Vector3.Dot(racer.Vehicle.Body.linearVelocity, road.Right) * prediction;
+                float predictedZ = ahead - closing * prediction, predictedX = packLateral + side + Vector3.Dot(racer.Vehicle.Body.linearVelocity, road.Right) * prediction;
                 if (predictedZ < -4 || predictedZ > 24) continue;
                 for (int i = 0; i < 3; i++)
                 {
                     float separation = Mathf.Abs(predictedX - (baseLine + LaneOptions[i] * road.TrackWidth * .4f));
                     if (separation < 2.5f) laneCosts[i] += (2.5f - separation) / Mathf.Max(3, Mathf.Abs(predictedZ));
                 }
-                if (ahead > 1 && ahead < Mathf.Clamp(vehicle.SpeedMps * .8f, 10, 27) && Mathf.Abs(side) < 2.1f && closing > -.4f)
-                { blocked = true; if (ahead < leadGap) { leadGap = ahead; leadSpeed = racer.Vehicle.SpeedKmh; } }
+                if (ahead > 0.5f && ahead < Mathf.Clamp(vehicle.SpeedMps * .85f, 12, 35) && Mathf.Abs(side) < 2.2f && closing > -.2f)
+                {
+                    blocked = true;
+                    if (ahead < leadGap) { leadGap = ahead; leadSpeed = racer.Vehicle.SpeedKmh; leadClosing = closing; }
+                }
             }
+            context.overtakingOpportunity = blocked;
             if (blocked)
             {
                 int best = laneCosts[1] < laneCosts[2] || (Mathf.Approximately(laneCosts[1], laneCosts[2]) && (profile.personalitySeed & 1) == 0) ? 1 : 2;
                 int held = targetLane < 0 ? 1 : 2;
-                if (Time.time < laneHoldUntil && laneCosts[held] <= laneCosts[best] + .16f) best = held;
-                float laneCostTolerance = Mathf.Lerp(.015f, .06f, profile.aggression);
-                if (profile.overtakingSkill > .25f && laneCosts[best] < laneCosts[0] + laneCostTolerance && Mathf.Abs(turn) < 32)
+                if (CurrentTime < laneHoldUntil && laneCosts[held] <= laneCosts[best] + .16f) best = held;
+                float laneCostTolerance = Mathf.Lerp(.02f, .08f, profile.aggression) +
+                    (profile.style == AiRacingStyle.Opportunistic ? .015f * profile.NormalizedSkill : 0);
+                if (profile.overtakingSkill > .15f && laneCosts[best] < laneCosts[0] + laneCostTolerance && Mathf.Abs(turn) < 40)
                 {
-                    if (Time.time >= laneHoldUntil) { PassingDecisions++; laneHoldUntil = Time.time + Mathf.Lerp(1.8f, 1.1f, profile.overtakingSkill); }
-                    targetLane = LaneOptions[best] * Mathf.Lerp(.65f, 1, profile.overtakingSkill) * Mathf.Lerp(.8f, 1.06f, profile.aggression); intent = "CommittedPass";
+                    if (CurrentTime >= laneHoldUntil) { PassingDecisions++; laneHoldUntil = CurrentTime + Mathf.Lerp(1.5f, 0.8f, profile.overtakingSkill); }
+                    targetLane = LaneOptions[best] * Mathf.Lerp(.75f, 1.05f, profile.overtakingSkill) * Mathf.Lerp(.85f, 1.15f, profile.aggression);
+                    intent = "CommittedPass";
                 }
-                if (leadGap < Mathf.Lerp(10, 7, profile.aggression) || laneCosts[best] >= laneCosts[0] + laneCostTolerance)
-                { targetSpeed = Mathf.Min(targetSpeed, Mathf.Max(25, leadSpeed - (leadGap < 4 ? 12 : 0))); TrafficBrakingDecisions++; }
+                // Brake from predicted closing time; a minimum pace floor previously
+                // commanded 120 km/h even when the nearby lead car was almost stopped.
+                float safetyGap = 3f + Mathf.Max(0, leadClosing) * Mathf.Lerp(.35f, .70f, profile.awareness);
+                if (leadGap < safetyGap && leadSpeed < vehicle.SpeedKmh)
+                {
+                    trafficSpeedLimit = Mathf.Max(0, leadSpeed + (leadGap - 3f) * 2f);
+                    targetSpeed = Mathf.Min(targetSpeed, trafficSpeedLimit);
+                    TrafficBrakingDecisions++;
+                }
             }
-            else if (Time.time >= laneHoldUntil)
+            else if (CurrentTime >= laneHoldUntil)
             {
                 targetLane = (Mathf.Abs(profile.personalitySeed % 23) / 22f - .5f) * .15f;
                 if (closingRear && profile.defensiveAwareness > .62f && Mathf.Abs(turn) > 8 && Mathf.Abs(turn) < 28 && laneCosts[0] < .18f)
-                { targetLane = Mathf.Sign(turn) * .12f; DefensiveDecisions++; intent = "ProtectInside"; }
+                {
+                    targetLane = Mathf.Sign(turn) * .12f;
+                    DefensiveDecisions++;
+                    intent = "ProtectInside";
+                }
             }
             context.projectileThreat = profile.awareness > .4f && itemPool != null && itemPool.HasIncomingThreat(vehicle);
             return context;
         }
+
         void PlanRoute()
         {
             reserveBoost = false;
-            if(rejoinDistance>=0)return;
-            if (activeRoute != null) { reserveBoost = activeRoute.requiresBoost && (!routeEntered || (activeRoute.requiresJump?routeSegment<=activeRoute.launchNodeIndex:routeSegment<6)); return; }
-            var nearby = trackGraph.FindUpcomingShortcut(trackDistance, 150, out float distance); routeEntryDistance = distance;
-            if (nearby == null || profile.shortcutKnowledge < nearby.minSkillRequired || profile.riskTolerance < nearby.riskLevel) return;
+            if (rejoinDistance >= 0 || activeDiscoveredRoute != null) return;
+            if (activeRoute != null)
+            {
+                reserveBoost = activeRoute.requiresBoost && (!routeEntered || (activeRoute.requiresJump ? routeSegment <= activeRoute.launchNodeIndex : routeSegment < 6));
+                return;
+            }
+            var nearby = trackGraph.FindUpcomingShortcut(trackDistance, 150, out float distance);
+            routeEntryDistance = distance;
+            if (nearby == null) return;
+
+            int pos = raceProgress != null ? raceProgress.RacePosition : 6;
+            bool isLeading = pos == 1;
+            bool isTrailing = pos >= 4;
+            float riskBonus = isTrailing ? 0.20f : (isLeading ? -0.12f : 0.04f);
+            float styleRisk=profile.style==AiRacingStyle.SafeConsistency?-.08f:profile.style==AiRacingStyle.ShortcutHeavy?.05f:0;
+            float effectiveRiskTolerance = Mathf.Clamp01(profile.riskTolerance + riskBonus+styleRisk*profile.NormalizedSkill);
+            if (profile.shortcutKnowledge < nearby.minSkillRequired || effectiveRiskTolerance < nearby.riskLevel) return;
+
             int lap = raceProgress != null ? raceProgress.CurrentLap : 1;
             if (consideredRoute != nearby || routeConsideredLap != lap)
             {
-                consideredRoute = nearby; routeConsideredLap = lap;
-                float probability = Mathf.Lerp(.05f, .995f, profile.shortcutExecution) * Mathf.Lerp(.6f, 1, profile.consistency);
-                if (raceProgress != null && lap == progressTracker.TotalLaps && raceProgress.RacePosition > 3) probability = Mathf.Min(.98f, probability + .06f);
+                consideredRoute = nearby;
+                routeConsideredLap = lap;
+                float stylePreference=profile.style==AiRacingStyle.ShortcutHeavy?.04f:profile.style==AiRacingStyle.SafeConsistency?-.04f:
+                    profile.style==AiRacingStyle.Opportunistic&&isTrailing?.03f:0;
+                float probability = Mathf.Clamp01(Mathf.Lerp(.15f, .998f, profile.shortcutExecution) * Mathf.Lerp(.7f, 1, profile.consistency)+stylePreference*profile.NormalizedSkill);
+                if (isTrailing) probability = Mathf.Min(.99f, probability + .12f);
+                if (raceProgress != null && lap == progressTracker.TotalLaps && raceProgress.RacePosition > 2) probability = 1f;
                 routeSelected = rng.NextFloat() < probability;
             }
             if (!routeSelected) return;
-            int index=System.Array.IndexOf(trackGraph.Shortcuts,nearby);
-            if(index>=0 && (routeAttemptMask&(1<<index))!=0)return;
+            int index = Array.IndexOf(trackGraph.Shortcuts, nearby);
+            if (index >= 0 && (routeAttemptMask & (1 << index)) != 0) return;
             reserveBoost = nearby.requiresBoost;
-            float launchSeconds=.4f;
-            if(nearby.requiresJump)
+            float launchSeconds = .4f;
+            if (nearby.requiresJump)
             {
-                float approach=distance;
-                for(int i=0;i<nearby.launchNodeIndex;i++)approach+=Vector3.Distance(nearby.pathPoints[i],nearby.pathPoints[i+1]);
-                launchSeconds=approach/Mathf.Max(12,Mathf.Min(vehicle.SpeedMps,nearby.launchSpeedKmh/3.6f))+.35f;
+                float approach = distance;
+                for (int i = 0; i < nearby.launchNodeIndex; i++) approach += Vector3.Distance(nearby.pathPoints[i], nearby.pathPoints[i + 1]);
+                launchSeconds = approach / Mathf.Max(12, Mathf.Min(vehicle.SpeedMps, nearby.launchSpeedKmh / 3.6f)) + .35f;
             }
             bool resource = !nearby.requiresBoost || HasBoostItem() || vehicle.BoostRemainingSeconds > launchSeconds ||
-                (!nearby.requiresJump&&vehicle.IsDrifting&&vehicle.CurrentMiniTurboStage!=MiniTurboStage.None) ||
-                (nearby.BoostSupply!=null&&nearby.BoostSupply.CanCollect(vehicle));
-            if(distance<65&&resource)
+                (!nearby.requiresJump && vehicle.IsDrifting && vehicle.CurrentMiniTurboStage != MiniTurboStage.None) ||
+                (nearby.BoostSupply != null && nearby.BoostSupply.CanCollect(vehicle));
+
+            if (distance < 38 && nearby.pathPoints != null && nearby.pathPoints.Length > 0)
             {
-                targetLane=0;target=trackGraph.SampleDistance(trackDistance+lookAheadDistance).Position;
-                float entrySpeed=RouteSetupSpeed(nearby)/3.6f;
-                targetSpeed=Mathf.Min(targetSpeed,Mathf.Sqrt(entrySpeed*entrySpeed+2*vehicle.Stats.AccelerationMps2*2.1f*Mathf.Max(0,distance-8))*3.6f);
-                intent="PrepareShortcutApproach";
+                Vector3 toEntrance = nearby.pathPoints[0] - transform.position;
+                float entranceAngle = Vector3.Angle(Vector3.ProjectOnPlane(transform.forward, Vector3.up), Vector3.ProjectOnPlane(toEntrance, Vector3.up));
+                if (entranceAngle > 20f && !routeEntered) return;
             }
-            if (distance < 35 && resource && NextGateDistance()>distance && Mathf.Abs(lateralOffset)<trackGraph.GetNode(currentNode).TrackWidth*.27f && vehicle.IsGrounded && !vehicle.IsSpunOut)
-            { activeRoute = nearby; routeIndex=index;routeProgressAt=Time.time;routeSegment = 0; routeEntered = routeHopTaken = false; }
+
+            if (distance < 65 && resource)
+            {
+                targetLane = 0;
+                target = trackGraph.SampleDistance(trackDistance + lookAheadDistance).Position;
+                float entrySpeed = RouteSetupSpeed(nearby) / 3.6f;
+                targetSpeed = Mathf.Min(targetSpeed, Mathf.Sqrt(entrySpeed * entrySpeed + 2 * vehicle.Stats.AccelerationMps2 * 2.1f * Mathf.Max(0, distance - 8)) * 3.6f);
+                intent = "PrepareShortcutApproach";
+            }
+            if (distance < 35 && resource && NextGateDistance() > distance && Mathf.Abs(lateralOffset) < trackGraph.GetNode(currentNode).TrackWidth * .27f && vehicle.IsGrounded && !vehicle.IsSpunOut)
+            {
+                activeRoute = nearby;
+                routeIndex = index;
+                routeProgressAt = CurrentTime;
+                routeSegment = 0;
+                routeEntered = routeHopTaken = false;
+            }
         }
+
         float NextGateDistance()
         {
-            var gates=trackGraph.CheckpointNodeIndices;
-            if(raceProgress==null || gates.Length==0)return float.MaxValue;
-            int next=(raceProgress.LastCheckpointIndex+1)%gates.Length;
-            return Mathf.Repeat(trackGraph.GetNode(gates[next]).CumulativeDistance-trackDistance,trackGraph.TotalLength);
+            var gates = trackGraph.CheckpointNodeIndices;
+            if (raceProgress == null || gates == null || gates.Length == 0) return float.MaxValue;
+            int next = (raceProgress.LastCheckpointIndex + 1) % gates.Length;
+            return Mathf.Repeat(trackGraph.GetNode(gates[next]).CumulativeDistance - trackDistance, trackGraph.TotalLength);
         }
+
         void FollowRoute()
         {
-            shortcut = true; drift = false; intent = "CommittedShortcut"; var points = activeRoute.pathPoints;
-            // A hit or a missed landing must not leave a bot orbiting a waypoint
-            // indefinitely. Rejoin through steering; shared recovery handles falls.
-            if(Time.time-routeProgressAt>(routeEntered?3.5f:5.5f))
-            {AbortRoute("No forward route progress");FollowRejoin();return;}
+            shortcut = true;
+            drift = false;
+            intent = "CommittedShortcut";
+            var points = activeRoute.pathPoints;
+            if (CurrentTime - routeProgressAt > (routeEntered ? 3.5f : 5.5f))
+            {
+                AbortRoute("No forward route progress");
+                FollowRejoin();
+                return;
+            }
             routeEntryDistance = Vector3.Distance(transform.position, points[0]);
             if (!routeEntered)
             {
                 target = points[0];
-                float entrySpeed=RouteSetupSpeed(activeRoute)/3.6f;
-                targetSpeed=Mathf.Min(targetSpeed,Mathf.Sqrt(entrySpeed*entrySpeed+2*vehicle.Stats.AccelerationMps2*2.1f*Mathf.Max(0,routeEntryDistance-8))*3.6f);
+                float entrySpeed = RouteSetupSpeed(activeRoute) / 3.6f;
+                targetSpeed = Mathf.Min(targetSpeed, Mathf.Sqrt(entrySpeed * entrySpeed + 2 * vehicle.Stats.AccelerationMps2 * 2.1f * Mathf.Max(0, routeEntryDistance - 8)) * 3.6f);
                 if (routeEntryDistance > Mathf.Max(7, vehicle.SpeedMps * .25f)) return;
-                if (activeRoute.requiresBoost && !vehicle.IsBoosting && vehicle.CurrentMiniTurboStage==MiniTurboStage.None)
+                if (activeRoute.requiresBoost && !vehicle.IsBoosting && vehicle.CurrentMiniTurboStage == MiniTurboStage.None)
                 {
-                    if (inventory == null || !inventory.HasItem || (inventory.HeldItem != RaceItemType.TurboPulse && inventory.HeldItem != RaceItemType.HyperCharge))
-                    if(activeRoute.BoostSupply==null||!activeRoute.BoostSupply.CanCollect(vehicle)){ AbortRoute("Entry boost unavailable");FollowRejoin();return; }
+                    if (inventory == null || !inventory.HasItem || !RaceItemUtility.IsShortcutBoost(inventory.HeldItem))
+                        if (activeRoute.BoostSupply == null || !activeRoute.BoostSupply.CanCollect(vehicle)) { AbortRoute("Entry boost unavailable"); FollowRejoin(); return; }
                 }
-                routeEntered = true; ShortcutEntries++;
-                routeProgressAt=Time.time;if(routeIndex>=0)routeEntries[routeIndex]++;
-                if(routeIndex>=0)routeAttemptMask|=1<<routeIndex;
+                routeEntered = true;
+                ShortcutEntries++;
+                routeProgressAt = CurrentTime;
+                if (routeIndex >= 0) routeEntries[routeIndex]++;
+                if (routeIndex >= 0) routeAttemptMask |= 1 << routeIndex;
             }
-            // Route stays committed after boost expiry; targets always advance in order.
             Vector3 a = points[routeSegment], b = points[routeSegment + 1], delta = b - a;
             float fraction = delta.sqrMagnitude > .01f ? Mathf.Clamp01(Vector3.Dot(transform.position - a, delta) / delta.sqrMagnitude) : 1;
             while ((fraction >= .995f || Vector3.Distance(transform.position, b) < 2) && routeSegment < points.Length - 2)
-            { routeSegment++;routeProgressAt=Time.time; a = points[routeSegment]; b = points[routeSegment + 1]; delta = b - a; fraction = delta.sqrMagnitude > .01f ? Mathf.Clamp01(Vector3.Dot(transform.position - a, delta) / delta.sqrMagnitude) : 1; }
-            Vector3 right=Vector3.Cross(Vector3.up,delta).normalized;
-            Vector3 projected=a+delta*fraction;
-            float routeLateral=Vector3.Dot(transform.position-projected,right);
-            if(Mathf.Abs(routeLateral)>activeRoute.width*.5f+2.5f || transform.position.y<projected.y-3)
-            {AbortRoute("Outside landing corridor");FollowRejoin();return;}
-            if(activeRoute.requiresBoost&&activeRoute.requiresJump&&routeSegment==activeRoute.launchNodeIndex-1&&!vehicle.IsBoosting&&!HasBoostItem())
-            {AbortRoute("Launch boost expired");FollowRejoin();return;}
-            if (routeSegment == points.Length - 2 && Vector3.Distance(transform.position, b)<8 && vehicle.IsGrounded)
-            { if(routeIndex>=0)routeCompletions[routeIndex]++;activeRoute = null;routeIndex=-1; shortcut = reserveBoost = false; ShortcutCompletions++; return; }
-            lookAheadDistance=Mathf.Clamp(5+vehicle.SpeedMps*.22f,8,16);
-            float remaining = lookAheadDistance; target = a + delta * fraction;
+            {
+                routeSegment++;
+                routeProgressAt = CurrentTime;
+                a = points[routeSegment];
+                b = points[routeSegment + 1];
+                delta = b - a;
+                fraction = delta.sqrMagnitude > .01f ? Mathf.Clamp01(Vector3.Dot(transform.position - a, delta) / delta.sqrMagnitude) : 1;
+            }
+            Vector3 right = Vector3.Cross(Vector3.up, delta).normalized;
+            Vector3 projected = a + delta * fraction;
+            float routeLateral = Vector3.Dot(transform.position - projected, right);
+            if (Mathf.Abs(routeLateral) > activeRoute.WidthAt(routeSegment + fraction) * .5f + 2.5f || transform.position.y < projected.y - 3)
+            {
+                AbortRoute("Outside landing corridor");
+                FollowRejoin();
+                return;
+            }
+            // On the elevated approach the nearest main road is across a real void.
+            // Retain the supported corridor while correcting alignment; steering
+            // straight toward that main road was an unsafe abort, not a rejoin.
+            var exitRoad = trackGraph.GetNode(activeRoute.exitNodeIndex);
+            Vector3 toExit = transform.position - exitRoad.Position;
+            bool enteredExitRoad = fraction > .95f && Mathf.Abs(Vector3.Dot(toExit, exitRoad.Right)) < exitRoad.TrackWidth * .43f &&
+                Mathf.Abs(toExit.y) < 2f && Vector3.Dot(transform.forward, exitRoad.Forward) > .5f;
+            if (routeSegment == points.Length - 2 && vehicle.IsGrounded &&
+                enteredExitRoad)
+            {
+                if (routeIndex >= 0) routeCompletions[routeIndex]++;
+                // Completion is observed here; time saving requires a matched legal reference.
+                ShortcutKnowledgeBase.Instance?.RecordAttempt(activeRoute.shortcutId, true, 0, raceProgress != null ? raceProgress.CurrentLap : 1);
+                activeRoute = null;
+                routeIndex = -1;
+                shortcut = reserveBoost = false;
+                ShortcutCompletions++;
+                rejoinDistance = exitRoad.CumulativeDistance + 15f;
+                rejoinStableTime = 0;
+                FollowRejoin();
+                return;
+            }
+            lookAheadDistance = Mathf.Clamp(4 + vehicle.SpeedMps * .24f, 8, 18);
+            float remaining = lookAheadDistance;
+            target = a + delta * fraction;
             for (int s = routeSegment; s < points.Length - 1; s++)
-            { Vector3 next = points[s + 1]; float length = Vector3.Distance(target, next); if (length >= remaining) { target = Vector3.MoveTowards(target, next, remaining); break; } remaining -= length; target = next; }
-            Vector3 routeRight=Vector3.Cross(Vector3.up,delta).normalized;
-            target+=routeRight*Mathf.Clamp(lane*3,-activeRoute.width*.08f,activeRoute.width*.08f);
-            targetSpeed = vehicle.Stats.SpeedKmh * Mathf.Lerp(.68f, .995f, profile.shortcutExecution) * (vehicle.IsBoosting ? vehicle.BoostMultiplier : 1);
-            float aheadDistance=Vector3.Distance(transform.position,b), deceleration=vehicle.Stats.AccelerationMps2*2.0f;
-            for(int s=routeSegment;s<points.Length-2 && aheadDistance<85;s++)
             {
-                Vector3 before=points[s+1]-points[s],after=points[s+2]-points[s+1];
-                float curvature=Vector3.Angle(Vector3.ProjectOnPlane(before,Vector3.up),Vector3.ProjectOnPlane(after,Vector3.up))*Mathf.Deg2Rad/Mathf.Max(1,(before.magnitude+after.magnitude)*.5f);
-                if(curvature>.001f)
-                {
-                    float corner=vehicle.Stats.HandlingRadPerSec*Mathf.Lerp(.24f,.40f,profile.shortcutExecution)/curvature;
-                    targetSpeed=Mathf.Min(targetSpeed,Mathf.Sqrt(corner*corner+2*deceleration*Mathf.Max(0,aheadDistance-vehicle.SpeedMps*.15f))*3.6f);
-                }
-                if(activeRoute.shortcutId=="crest_cut"&&s>=activeRoute.landingNodeIndex)
-                {
-                    // A supported exit crest also needs braking. At racing speed
-                    // its falling grade can lift the wheels before the merge,
-                    // even after a perfectly aligned first landing.
-                    float beforeRun=Vector3.ProjectOnPlane(before,Vector3.up).magnitude;
-                    float afterRun=Vector3.ProjectOnPlane(after,Vector3.up).magnitude;
-                    float crest=Mathf.Max(0,Mathf.Atan2(before.y,beforeRun)-Mathf.Atan2(after.y,afterRun))/Mathf.Max(1,(beforeRun+afterRun)*.5f);
-                    if(crest>.002f)
-                    {
-                        float supportedSpeed=Mathf.Sqrt(6.5f/crest);
-                        targetSpeed=Mathf.Min(targetSpeed,Mathf.Sqrt(supportedSpeed*supportedSpeed+2*deceleration*Mathf.Max(0,aheadDistance-vehicle.SpeedMps*.25f))*3.6f);
-                    }
-                }
-                aheadDistance+=after.magnitude;
+                Vector3 next = points[s + 1];
+                float length = Vector3.Distance(target, next);
+                if (length >= remaining) { target = Vector3.MoveTowards(target, next, remaining); remaining = 0; break; }
+                remaining -= length;
+                target = next;
             }
-            // A straight launch at a controlled speed leaves room for a second trick and a stable landing.
-            if(activeRoute.requiresJump && routeSegment>=5 && routeSegment<16)targetSpeed=Mathf.Min(targetSpeed,activeRoute.launchSpeedKmh);
-            // Set up the takeoff while wheels still have steering authority.
-            // Airborne yaw cannot repair a sideways launch on a narrow deck.
-            if(activeRoute.requiresJump && routeSegment<8)
+            if (remaining > 0 && routeSegment >= points.Length - 4)
             {
-                float setupSpeed=RouteSetupSpeed(activeRoute);
-                targetSpeed=Mathf.Min(targetSpeed,setupSpeed);
+                // Continue through the portal. A stationary endpoint behind the car
+                // previously requested a U-turn before the exit-heading test could pass.
+                target = trackGraph.SampleDistance(exitRoad.CumulativeDistance + remaining).Position;
             }
-            if(activeRoute.requiresJump&&routeSegment>=8&&routeSegment<activeRoute.launchNodeIndex&&
-                (LaunchAngleError(activeRoute)>5 || Mathf.Abs(vehicle.SlipAngle)>5))
-                targetSpeed=Mathf.Min(targetSpeed,activeRoute.width<8?55:78);
-            if(progressTracker!=null&&vehicle.IsGrounded)
+            Vector3 routeRight = Vector3.Cross(Vector3.up, delta).normalized;
+            // Traffic prediction and physical passing use the same route-relative lanes.
+            // Main-road lateral coordinates are unrelated while on the elevated link.
+            target += routeRight * Mathf.Clamp(lane * activeRoute.width * .4f, -activeRoute.width * .24f, activeRoute.width * .24f);
+            targetSpeed = (vehicle.IsLancerActive ? RaceItemUtility.LancerSpeedKmh : vehicle.Stats.SpeedKmh * Mathf.Lerp(.68f, .995f, profile.shortcutExecution) * (vehicle.IsBoosting ? vehicle.BoostMultiplier : 1)) * vehicle.ShortcutSpeedMultiplier;
+            float aheadDistance = 0, deceleration = vehicle.Stats.AccelerationMps2 * 2.0f;
+            // Retain the current corner's limit through the final segment. Previously
+            // the last bend lost its speed limit just as the car needed to finish turning.
+            for (int s = Mathf.Max(0, routeSegment - 1); s < points.Length - 2 && aheadDistance < 85; s++)
             {
-                Vector3 forward=Vector3.ProjectOnPlane(delta,Vector3.up).normalized;
-                foreach(var rival in progressTracker.Leaderboard)
+                if (s == routeSegment) aheadDistance = Vector3.Distance(transform.position, b);
+                Vector3 before = points[s + 1] - points[s], after = points[s + 2] - points[s + 1];
+                float curvature = Vector3.Angle(Vector3.ProjectOnPlane(before, Vector3.up), Vector3.ProjectOnPlane(after, Vector3.up)) * Mathf.Deg2Rad / Mathf.Max(1, (before.magnitude + after.magnitude) * .5f);
+                if (curvature > .001f)
                 {
-                    if(rival.Vehicle==vehicle||rival.Finished)continue;
-                    Vector3 offset=rival.Vehicle.Body.position-vehicle.Body.position;
-                    float ahead=Vector3.Dot(offset,forward);
-                    if(ahead<1||ahead>Mathf.Clamp(vehicle.SpeedMps*.65f,6,20)||Mathf.Abs(offset.y)>3||Mathf.Abs(Vector3.Dot(offset,right))>2.2f)continue;
-                    float lead=Mathf.Max(20,Vector3.Dot(rival.Vehicle.Body.linearVelocity,forward)*3.6f);
-                    targetSpeed=Mathf.Min(targetSpeed,Mathf.Max(20,lead+(ahead-7)*3));
-                    TrafficBrakingDecisions++;intent="ShortcutTrafficSpacing";
+                    float corner = vehicle.Stats.HandlingRadPerSec * .5f * Mathf.Lerp(.65f, .82f, profile.shortcutExecution) / curvature;
+                    targetSpeed = Mathf.Min(targetSpeed, Mathf.Sqrt(corner * corner + 2 * deceleration * Mathf.Max(0, aheadDistance - vehicle.SpeedMps * .45f - 5f)) * 3.6f);
                 }
+                if (s >= routeSegment) aheadDistance += after.magnitude;
             }
+            if (activeRoute.requiresJump && routeSegment >= 5)
+                targetSpeed = Mathf.Min(targetSpeed, routeSegment >= 20 ? 95f : activeRoute.launchSpeedKmh);
+            if (activeRoute.requiresJump && routeSegment < 8)
+            {
+                float setupSpeed = RouteSetupSpeed(activeRoute);
+                targetSpeed = Mathf.Min(targetSpeed, setupSpeed);
+            }
+            if (activeRoute.requiresJump && routeSegment >= 8 && routeSegment < activeRoute.launchNodeIndex &&
+                (LaunchAngleError(activeRoute) > 5 || Mathf.Abs(vehicle.SlipAngle) > 5))
+                targetSpeed = Mathf.Min(targetSpeed, activeRoute.width < 8 ? 55 : 78);
         }
-        bool HasBoostItem()=>inventory!=null&&inventory.HasItem&&(inventory.HeldItem==RaceItemType.TurboPulse||inventory.HeldItem==RaceItemType.HyperCharge);
-        static float RouteSetupSpeed(TrackShortcut route)=>route.width<8?80:route.width<10?100:route.shortcutId=="overpass_launch"?100:90;
-        float LaunchAngleError(TrackShortcut route)=>Vector3.Angle(Vector3.ProjectOnPlane(vehicle.Body.linearVelocity,Vector3.up),
-            Vector3.ProjectOnPlane(route.pathPoints[route.launchNodeIndex+1]-route.pathPoints[route.launchNodeIndex],Vector3.up));
-        void FollowRejoin()
+
+        bool HasBoostItem() => inventory != null && inventory.HasItem && RaceItemUtility.IsShortcutBoost(inventory.HeldItem);
+        static float RouteSetupSpeed(TrackShortcut route) => route.requiresJump ? 72 : route.width < 8 ? 80 : route.width < 10 ? 100 : route.shortcutId == "overpass_launch" ? 100 : 90;
+        float LaunchAngleError(TrackShortcut route) => Vector3.Angle(Vector3.ProjectOnPlane(vehicle.Body.linearVelocity, Vector3.up),
+            Vector3.ProjectOnPlane(route.pathPoints[route.launchNodeIndex + 1] - route.pathPoints[route.launchNodeIndex], Vector3.up));
+
+        void FollowRejoin(bool physicsTick = false)
         {
-            var road=trackGraph.SampleDistance(rejoinDistance);
-            Vector3 offset=transform.position-road.Position;
-            if(offset.magnitude<Mathf.Max(8,lookAheadDistance)&&Mathf.Abs(offset.y)<2.5f&&
-                Mathf.Abs(Vector3.Dot(offset,road.Right))<road.TrackWidth*.45f&&Vector3.Dot(offset,road.Forward)>-2)
-            {rejoinDistance+=Mathf.Max(8,lookAheadDistance);road=trackGraph.SampleDistance(rejoinDistance);}
-            target=road.Position;targetLane=0;drift=shortcut=reserveBoost=false;
-            targetSpeed=Mathf.Min(targetSpeed,78);intent="CommittedRoadRejoin";
-            var current=trackGraph.SampleDistance(trackDistance);
-            bool clean=vehicle.IsGrounded&&Mathf.Abs(lateralOffset)<current.TrackWidth*.30f&&
-                Mathf.Abs(transform.position.y-current.Position.y)<2&&Vector3.Dot(transform.forward,current.Forward)>.7f;
-            rejoinStableTime=clean?rejoinStableTime+1f/DecisionHz:0;
-            if(rejoinStableTime>.5f){rejoinDistance=-1;rejoinStableTime=0;}
-        }
-        void AbortRoute(string reason="Route cancelled")
-        {
-            if(activeRoute!=null)
+            if (physicsTick)
+                trackGraph.ProjectPosition(transform.position, out currentNode, out trackDistance, out lateralOffset);
+            var road = trackGraph.SampleDistance(rejoinDistance);
+            Vector3 offset = transform.position - road.Position;
+            if (offset.magnitude < Mathf.Max(8, lookAheadDistance) && Mathf.Abs(offset.y) < 2.5f &&
+                Mathf.Abs(Vector3.Dot(offset, road.Right)) < road.TrackWidth * .45f && Vector3.Dot(offset, road.Forward) > -2)
             {
-                LastRouteAbortReason=reason;
-                if(routeEntered)FailedShortcuts++;
-                if(routeIndex>=0)routeAttemptMask|=1<<routeIndex;
-                trackGraph.ProjectPosition(transform.position,out _,out float distance,out _);
-                rejoinDistance=distance+Mathf.Min(lookAheadDistance,NextGateDistance());rejoinStableTime=0;
+                rejoinDistance += Mathf.Max(8, lookAheadDistance);
+                road = trackGraph.SampleDistance(rejoinDistance);
             }
-            activeRoute=null;routeIndex=-1;shortcut=reserveBoost=routeSelected=false;
+            target = road.Position;
+            targetLane = 0;
+            drift = shortcut = reserveBoost = false;
+            targetSpeed = Mathf.Min(targetSpeed, 78);
+            intent = "CommittedRoadRejoin";
+            var current = trackGraph.SampleDistance(trackDistance);
+            bool clean = vehicle.IsGrounded && Mathf.Abs(lateralOffset) < current.TrackWidth * .30f &&
+                Mathf.Abs(transform.position.y - current.Position.y) < 2 && Vector3.Dot(transform.forward, current.Forward) > .7f;
+            if (physicsTick) rejoinStableTime = clean ? rejoinStableTime + Time.fixedDeltaTime : 0;
+            if (rejoinStableTime > .5f) { rejoinDistance = -1; rejoinStableTime = 0; }
         }
+
+        void AbortRoute(string reason = "Route cancelled")
+        {
+            if (activeRoute != null)
+            {
+                LastRouteAbortReason = reason;
+                if (routeEntered) FailedShortcuts++;
+                if (routeIndex >= 0) routeAttemptMask |= 1 << routeIndex;
+                ShortcutKnowledgeBase.Instance?.RecordAttempt(activeRoute.shortcutId, false, 0, raceProgress != null ? raceProgress.CurrentLap : 1);
+                trackGraph.ProjectPosition(transform.position, out _, out float distance, out _);
+                rejoinDistance = distance + Mathf.Min(lookAheadDistance, NextGateDistance());
+                rejoinStableTime = 0;
+            }
+            if (activeDiscoveredRoute != null)
+            {
+                LastRouteAbortReason = reason;
+                if (routeEntered) FailedShortcuts++;
+                ShortcutKnowledgeBase.Instance?.RecordAttempt(activeDiscoveredRoute.routeId, false, 0, raceProgress != null ? raceProgress.CurrentLap : 1);
+                trackGraph.ProjectPosition(transform.position, out _, out float distance, out _);
+                rejoinDistance = distance + Mathf.Min(lookAheadDistance, NextGateDistance());
+                rejoinStableTime = 0;
+            }
+            activeRoute = null;
+            activeDiscoveredRoute = null;
+            routeIndex = -1;
+            shortcut = reserveBoost = routeSelected = false;
+        }
+
         public VehicleCommands GetCommands() => commands;
     }
 }

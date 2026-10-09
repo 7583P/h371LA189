@@ -18,20 +18,30 @@ namespace AnimeHillRacing.Racing3D
             if(emission){mat.EnableKeyword("_EMISSION");mat.SetColor("_EmissionColor",color*.75f);}
             materials[key]=mat;return mat;
         }
-        public static Material MetaBlackMaterial()
+        public static Material MetaBodyMaterial()
         {
-            string key="Formula Blackline Obsidian";
-            if(materials.TryGetValue(key,out var mat)&&mat!=null)return mat;
-            mat=new Material(Shader.Find("Standard")){name=key,color=RacingVehicleFactory.MetaBlack,enableInstancing=true};
-            mat.SetFloat("_Glossiness",.82f);
-            mat.SetFloat("_Metallic",.48f);
+            string key="DAPEX / midnight blue pearl";
+            if(materials.TryGetValue(key,out var mat)&&mat!=null)
+            {
+                mat.color = RacingVehicleFactory.MetaNavy;
+                return mat;
+            }
+            mat=new Material(Shader.Find("Standard")){name=key,color=RacingVehicleFactory.MetaNavy,enableInstancing=true};
+            mat.SetFloat("_Glossiness",.76f);
+            mat.SetFloat("_Metallic",.58f);
             materials[key]=mat;return mat;
         }
         public static Material IdentityMaterial(string key, Color color, float glow = .12f)
         {
-            if(materials.TryGetValue(key,out var material)&&material!=null)return material;
+            if(materials.TryGetValue(key,out var material)&&material!=null)
+            {
+                material.color = color;
+                material.SetColor("_EmissionColor", color * glow);
+                return material;
+            }
             material=new Material(Shader.Find("Standard")){name=key,color=color,enableInstancing=true};
-            material.SetFloat("_Metallic",0);material.SetFloat("_Glossiness",.42f);
+            material.SetFloat("_Metallic", glow > .5f ? .10f : 0f);
+            material.SetFloat("_Glossiness", glow > .5f ? .88f : .55f);
             material.EnableKeyword("_EMISSION");material.SetColor("_EmissionColor",color*glow);
             materials[key]=material;return material;
         }
@@ -199,7 +209,7 @@ namespace AnimeHillRacing.Racing3D
             }
         }
     }
-    public sealed class RacingAnimatedPart:MonoBehaviour {}
+
     public sealed class RacingVehicleVisuals:MonoBehaviour
     {
         public Transform BodyVisual {get;private set;}
@@ -212,6 +222,11 @@ namespace AnimeHillRacing.Racing3D
         float spin,roll,pitch,landing,trickRoll,lastForward;
         readonly Transform[] upperArms=new Transform[2],forearms=new Transform[2],gloves=new Transform[2];
         readonly Transform[] calipers=new Transform[4];
+        static readonly int EmissionColorId=Shader.PropertyToID("_EmissionColor");
+        MeshRenderer brakeRenderer;
+        MaterialPropertyBlock brakeProperties;
+        public bool BrakeLightsOn {get;private set;}
+        public int BrakeLightTransitions {get;private set;}
 
         public static RacingVehicleVisuals Build(GameObject root,string id,string wheelId,Color paint,bool preview=false,bool isHuman=false)
         {
@@ -221,64 +236,42 @@ namespace AnimeHillRacing.Racing3D
             var model=new GameObject("Body");model.transform.SetParent(visualRoot.transform,false);visual.BodyVisual=model.transform;
 
             bool isMetaCar = formula;
-            Color bodyColor = formula ? RacingVehicleFactory.MetaBlack : (paint != Color.clear ? paint : RacingDesign.Cyan);
-            var bodyMat = formula ? RacingArt.MetaBlackMaterial() : RacingArt.Material(bodyColor, .68f);
+            Color bodyColor = formula ? RacingVehicleFactory.MetaNavy : (paint != Color.clear ? paint : RacingDesign.Cyan);
+            var bodyMat = formula ? RacingArt.MetaBodyMaterial() : RacingArt.Material(bodyColor, .68f);
             var dark=RacingArt.Material(new Color(.045f,.065f,.085f),.56f);
             var accent=RacingArt.Material(RacingDesign.Cyan,.6f,true);
             var ivory=RacingArt.Material(RacingDesign.Ink,.3f);
             var glass=RacingArt.Material(new Color(.025f,.09f,.15f),.92f);
             var suit=RacingArt.Material(new Color(.055f,.09f,.15f),.36f);
-            var helmet=RacingArt.IdentityMaterial("Blackline Cobalt Helmet",RacingVehicleFactory.MetaBlueHelmet,.10f);
+            var helmet=RacingArt.IdentityMaterial("Blackline Cobalt Helmet",RacingVehicleFactory.MetaBlueHelmet,.18f);
+            helmet.SetFloat("_Glossiness",.82f);
+            helmet.SetFloat("_Metallic",.25f);
             var gloveMat=RacingArt.Material(new Color(.12f,.17f,.23f),.42f);
-            var red=RacingArt.Material(RacingVehicleFactory.MetaRed,.5f,true);
-            var green=RacingArt.Material(RacingVehicleFactory.MetaGreen,.5f,true);
+            var red=RacingArt.Material(RacingVehicleFactory.MetaRed,.55f,true);
+            var blue=RacingArt.Material(RacingVehicleFactory.MetaBlue,.55f,true);
 
-            float width=bike?.7f:formula?1.28f:1.65f;
-            var hull=formula?RacingArt.AeroShell("blackline_monocoque",new Vector4(.31f,-.14f,.20f,-1.60f),new Vector4(.44f,-.14f,.29f,-1.24f),new Vector4(.56f,-.13f,.39f,-.76f),new Vector4(.53f,-.13f,.37f,-.20f),new Vector4(.37f,-.11f,.30f,.28f),new Vector4(.22f,-.07f,.21f,.96f),new Vector4(.12f,-.03f,.08f,1.84f)):
-                RacingArt.Hull("adventure_"+width,new Vector4(width*.40f,-.14f,.22f,-1.52f),new Vector4(width*.5f,-.14f,.33f,-.7f),new Vector4(width*.48f,-.13f,.29f,.7f),new Vector4(width*.37f,-.08f,.19f,1.62f));
-            RacingArt.Part(model.transform,"Sculpted monocoque",hull,bodyMat,Vector3.zero,Quaternion.identity);
-
+            float width=bike?.7f:formula?1.70f:1.65f;
             if(formula)
+                RacingMetaVisuals.Body(model.transform,bodyMat,dark,glass);
+            else
             {
-                for(int s=-1;s<=1;s+=2)
-                {
-                    RacingArt.Part(model.transform,"Undercut sidepod",RacingArt.AeroShell("blackline_pod",new Vector4(.16f,-.11f,.12f,-1.18f),new Vector4(.26f,-.12f,.25f,-.63f),new Vector4(.29f,-.09f,.27f,-.14f),new Vector4(.21f,-.05f,.22f,.32f),new Vector4(.12f,-.03f,.10f,.61f)),bodyMat,new Vector3(s*.65f,0,0),Quaternion.identity);
-                    RacingArt.Part(model.transform,"Swept front aero blade",RacingArt.Airfoil("front_lower",.8f,.38f),dark,new Vector3(s*.52f,-.10f,1.68f),Quaternion.identity);
-                    RacingArt.Box(model.transform,"Wing leading red pinstripe",new Vector3(s*.52f,-.052f,1.83f),new Vector3(.80f,.015f,.035f),red,.008f);
-                    RacingArt.Part(model.transform,"Upper aero element",RacingArt.Airfoil("front_upper",.76f,.16f),bodyMat,new Vector3(s*.52f,.012f,1.59f),Quaternion.identity);
-                    RacingArt.Box(model.transform,"Aero endplate",new Vector3(s*.94f,.02f,1.67f),new Vector3(.045f,.32f,.5f),bodyMat,.03f);
-                    RacingArt.Box(model.transform,"Green endplate crest",new Vector3(s*.967f,.155f,1.67f),new Vector3(.012f,.027f,.39f),green,.006f);
-                    RacingArt.Box(model.transform,"Cyan sidepod underlight",new Vector3(s*.91f,-.075f,-.19f),new Vector3(.021f,.024f,1.17f),accent,.007f);
-                    RacingArt.Box(model.transform,"Red sidepod shoulder",new Vector3(s*.72f,.272f,-.18f),new Vector3(.040f,.016f,.65f),red,.007f);
-                    for(int l=0;l<4;l++)RacingArt.Box(model.transform,"Cooling louvre",new Vector3(s*.66f,.27f,-.57f+l*.075f),new Vector3(.26f,.012f,.025f),dark,.006f);
-                    for(int axle=-1;axle<=1;axle+=2)
-                    {
-                        var arm=RacingArt.Box(model.transform,"Carbon wishbone",new Vector3(s*.64f,-.085f,axle*1.02f),new Vector3(.52f,.035f,.055f),dark,.01f);
-                        arm.transform.localRotation=Quaternion.Euler(0,s*axle*19,0);
-                    }
-                }
-                RacingArt.Part(model.transform,"Engine spine",RacingArt.AeroShell("blackline_spine",new Vector4(.18f,.22f,.38f,-1.24f),new Vector4(.20f,.24f,.51f,-.87f),new Vector4(.12f,.26f,.54f,-.59f)),bodyMat,Vector3.zero,Quaternion.identity);
-                RacingArt.Box(model.transform,"Spine red spine line",new Vector3(0,.48f,-.91f),new Vector3(.036f,.025f,.43f),red,.008f);
-                for(int f=-2;f<=2;f++)RacingArt.Box(model.transform,"Diffuser channel",new Vector3(f*.15f,-.15f,-1.46f),new Vector3(.026f,.12f,.33f),dark,.01f);
+                var hull=RacingArt.Hull("adventure_"+width,new Vector4(width*.40f,-.14f,.22f,-1.52f),new Vector4(width*.5f,-.14f,.33f,-.7f),new Vector4(width*.48f,-.13f,.29f,.7f),new Vector4(width*.37f,-.08f,.19f,1.62f));
+                RacingArt.Part(model.transform,"Sculpted monocoque",hull,bodyMat,Vector3.zero,Quaternion.identity);
+                RacingArt.Box(model.transform,"Lower splitter",new Vector3(0,-.08f,1.52f),new Vector3(width*1.08f,.08f,.52f),dark);
+                RacingArt.Box(model.transform,"Rear diffuser",new Vector3(0,-.08f,-1.45f),new Vector3(width,.16f,.3f),dark);
+                var stripe=RacingArt.Box(model.transform,"Nose precision line",new Vector3(0,.257f,1.12f),new Vector3(width*.20f,.014f,.78f),accent,.012f);
+                stripe.transform.localRotation=Quaternion.Euler(4,0,0);
+                var cockpitHull=RacingArt.Hull("cockpit_"+width,new Vector4(width*.32f,.18f,.38f,-.95f),new Vector4(width*.36f,.18f,.38f,-.22f),new Vector4(width*.28f,.18f,.32f,.35f));
+                RacingArt.Part(model.transform,"Cockpit recess",cockpitHull,dark,Vector3.zero,Quaternion.identity);
+                var windshield=RacingArt.Box(model.transform,"Aero windshield",new Vector3(0,.47f,.27f),new Vector3(width*.45f,.17f,.04f),glass,.05f);
+                windshield.transform.localRotation=Quaternion.Euler(34,0,0);
             }
-            RacingArt.Box(model.transform,"Lower splitter",new Vector3(0,-.08f,1.52f),new Vector3(width*1.08f,.08f,.52f),dark);
-            RacingArt.Box(model.transform,"Rear diffuser",new Vector3(0,-.08f,-1.45f),new Vector3(width,.16f,.3f),dark);
-            var stripe=RacingArt.Box(model.transform,"Nose precision line",new Vector3(0,formula?.187f:.257f,1.12f),new Vector3(formula?.055f:width*.20f,.014f,.78f),formula?red:accent,.012f);stripe.transform.localRotation=Quaternion.Euler(formula?8:4,0,0);
-            if(formula)for(int s=-1;s<=1;s+=2)RacingArt.Box(model.transform,"Nose cyan tracer",new Vector3(s*.125f,.143f,1.25f),new Vector3(.012f,.012f,.60f),accent,.004f).transform.localRotation=Quaternion.Euler(8,s*3,0);
-
-            // Aerodynamic open/aero cockpit with visible driver
-            var cockpitHull = RacingArt.Hull("cockpit_"+width,new Vector4(width*.32f,.18f,.38f,-.95f),new Vector4(width*.36f,.18f,.38f,-.22f),new Vector4(width*.28f,.18f,.32f,.35f));
-            RacingArt.Part(model.transform,"Cockpit recess",cockpitHull,dark,Vector3.zero,Quaternion.identity);
-
-            // Sleek low windshield
-            var windshield = RacingArt.Box(model.transform,"Aero windshield",new Vector3(0,.47f,.27f),new Vector3(width*.45f,.17f,.04f),glass,.05f);
-            windshield.transform.localRotation=Quaternion.Euler(34,0,0);
 
             // A cobalt helmet and a fitted, segmented racing suit. Arms follow the
             // actual steering-rim hand positions rather than sliding through it.
             var driverSeat = new GameObject("DriverSeat");
             driverSeat.transform.SetParent(model.transform,false);
-            driverSeat.transform.localPosition = new Vector3(0, 0, 0);
+            driverSeat.transform.localPosition = new Vector3(0, formula ? -.16f : 0, 0);
 
             // Suit & Torso
             RacingArt.Part(driverSeat.transform,"Fitted Driver Torso",RacingArt.Ellipsoid("blackline_pilot_torso",new Vector3(.225f,.255f,.18f)),suit,new Vector3(0,.47f,-.42f),Quaternion.Euler(12,0,0));
@@ -293,20 +286,22 @@ namespace AnimeHillRacing.Racing3D
             // Helmet shell, chin aero, visor, vents and crest are distinct geometry.
             var headRoot = new GameObject("DriverHead");
             headRoot.transform.SetParent(driverSeat.transform,false);
-            headRoot.transform.localPosition = new Vector3(0,.83f,-.32f);
+            headRoot.transform.localPosition = new Vector3(0,.88f,-.30f);
             headRoot.AddComponent<RacingAnimatedPart>();
             visual.DriverHead = headRoot.transform;
 
-            RacingArt.Part(headRoot.transform,"Cobalt Helmet Shell",RacingArt.Ellipsoid("blackline_helmet",new Vector3(.225f,.24f,.25f)),helmet,Vector3.zero,Quaternion.identity);
-            RacingArt.Box(headRoot.transform,"Crown cyan seam",new Vector3(0,.232f,-.012f),new Vector3(.032f,.018f,.23f),accent,.008f);
-            RacingArt.Part(headRoot.transform,"Chin aero",RacingArt.AeroShell("helmet_chin",new Vector4(.105f,-.145f,-.075f,.11f),new Vector4(.17f,-.15f,-.075f,.20f),new Vector4(.15f,-.135f,-.085f,.278f)),helmet,Vector3.zero,Quaternion.identity);
-            RacingArt.Box(headRoot.transform,"Chin intake",new Vector3(0,-.09f,.287f),new Vector3(.14f,.025f,.012f),dark,.009f);
+            RacingArt.Part(headRoot.transform,"Cobalt Helmet Shell",RacingArt.Ellipsoid("blackline_helmet",new Vector3(.24f,.255f,.265f)),helmet,Vector3.zero,Quaternion.identity);
+            RacingArt.Box(headRoot.transform,"Crown cyan seam",new Vector3(0,.246f,-.012f),new Vector3(.036f,.018f,.24f),accent,.008f);
+            RacingArt.Part(headRoot.transform,"Chin aero",RacingArt.AeroShell("helmet_chin",new Vector4(.115f,-.145f,-.075f,.11f),new Vector4(.18f,-.15f,-.075f,.20f),new Vector4(.16f,-.135f,-.085f,.285f)),helmet,Vector3.zero,Quaternion.identity);
+            RacingArt.Box(headRoot.transform,"Chin intake",new Vector3(0,-.09f,.295f),new Vector3(.14f,.025f,.012f),dark,.009f);
             for(int s=-1;s<=1;s+=2)
             {
-                RacingArt.Box(headRoot.transform,"Helmet vent",new Vector3(s*.203f,.105f,-.025f),new Vector3(.025f,.035f,.11f),dark,.01f);
-                RacingArt.Box(headRoot.transform,"Visor hinge",new Vector3(s*.215f,.015f,.11f),new Vector3(.025f,.05f,.065f),ivory,.013f);
+                RacingArt.Box(headRoot.transform,"Helmet vent",new Vector3(s*.215f,.105f,-.025f),new Vector3(.025f,.035f,.11f),dark,.01f);
+                RacingArt.Box(headRoot.transform,"Visor hinge",new Vector3(s*.225f,.015f,.11f),new Vector3(.025f,.05f,.065f),ivory,.013f);
             }
-            RacingArt.Part(headRoot.transform,"Polarized panoramic visor",RacingArt.HelmetVisor("panoramic",-.023f,.093f),glass,Vector3.zero,Quaternion.identity);
+            var visorGlass=RacingArt.Material(new Color(.015f,.04f,.08f),.95f);
+            visorGlass.SetFloat("_Metallic",.5f);
+            RacingArt.Part(headRoot.transform,"Polarized panoramic visor",RacingArt.HelmetVisor("panoramic",-.023f,.093f),visorGlass,Vector3.zero,Quaternion.identity);
             RacingArt.Part(headRoot.transform,"Curved visor highlight",RacingArt.HelmetVisor("visor_crest",.092f,.100f),accent,Vector3.zero,Quaternion.identity);
             RacingArt.Combine(headRoot.transform);
 
@@ -323,7 +318,7 @@ namespace AnimeHillRacing.Racing3D
 
             RacingArt.Part(wheelRoot.transform,"Wheel Rim",RacingArt.Ring(.18f,.145f,.032f,20),dark,Vector3.zero,Quaternion.Euler(0,90,0));
             RacingArt.Box(wheelRoot.transform,"Wheel telemetry hub",Vector3.zero,new Vector3(.12f,.065f,.025f),suit,.018f);
-            RacingArt.Box(wheelRoot.transform,"Telemetry LEDs",new Vector3(0,.035f,.02f),new Vector3(.085f,.012f,.012f),green,.004f);
+            RacingArt.Box(wheelRoot.transform,"Telemetry LEDs",new Vector3(0,.035f,.02f),new Vector3(.085f,.012f,.012f),accent,.004f);
             for(int spoke=0;spoke<3;spoke++)
             {
                 float angle = spoke * 120f;
@@ -342,19 +337,12 @@ namespace AnimeHillRacing.Racing3D
             }
             visual.PoseHands();
 
-            if(formula||rally||orbit)
+            if(!formula && (rally||orbit))
             {
-                if(formula)RacingArt.Part(model.transform,"Rear aero foil",RacingArt.Airfoil("rear",width*1.28f,.55f),bodyMat,new Vector3(0,.64f,-1.33f),Quaternion.identity);
-                else RacingArt.Box(model.transform,"Aero wing",new Vector3(0,.64f,-1.33f),new Vector3(width*1.28f,.075f,.55f),dark);
-                if(formula)
-                {
-                    RacingArt.Box(model.transform,"Rear wing green leading line",new Vector3(0,.684f,-1.09f),new Vector3(width*1.20f,.015f,.032f),green,.006f);
-                    RacingArt.Box(model.transform,"Rear wing cyan trailing line",new Vector3(0,.684f,-1.56f),new Vector3(width*1.20f,.015f,.025f),accent,.006f);
-                    for(int s=-1;s<=1;s+=2)RacingArt.Box(model.transform,"Rear wing endplate",new Vector3(s*.84f,.60f,-1.34f),new Vector3(.045f,.25f,.55f),bodyMat,.02f);
-                }
+                RacingArt.Box(model.transform,"Aero wing",new Vector3(0,.64f,-1.33f),new Vector3(width*1.28f,.075f,.55f),dark);
                 for(int s=-1;s<=1;s+=2)RacingArt.Box(model.transform,"Wing strut",new Vector3(s*.46f,.42f,-1.34f),new Vector3(.08f,.45f,.1f),bodyMat);
             }
-            for(int s=-1;s<=1;s+=2)
+            if(!formula)for(int s=-1;s<=1;s+=2)
             {
                 RacingArt.Box(model.transform,"Front running light",new Vector3(s*width*.34f,.2f,1.646f),new Vector3(width*.22f,.085f,.04f),accent);
                 RacingArt.Box(model.transform,"Tail lamp",new Vector3(s*width*.34f,.15f,-1.645f),new Vector3(width*.23f,.06f,.025f),RacingArt.Material(RacingDesign.Secondary,.6f,true));
@@ -362,12 +350,20 @@ namespace AnimeHillRacing.Racing3D
                 RacingArt.Box(model.transform,"Exhaust",new Vector3(s*.4f,-.025f,-1.62f),new Vector3(.15f,.16f,.3f),dark);
             }
             RacingArt.Combine(model.transform);
+            if(formula)
+            {
+                // Update only this car's combined rear lamps; the cached material
+                // remains shared by every DAPEX and the garage preview.
+                foreach(var renderer in model.GetComponentsInChildren<MeshRenderer>())
+                    if(renderer.enabled&&renderer.sharedMaterial.name=="DAPEX / rear brake ribbon")
+                    {visual.brakeRenderer=renderer;visual.brakeProperties=new MaterialPropertyBlock();break;}
+            }
 
-            // The luxury wheel changes appearance only. The saved wheel-plasma ID
-            // retains the same public stats for humans and AI.
+            // Whity and legacy wheels share the same collision envelope and suspension animation.
             visual.Wheels=new Transform[4];
             float radius=.38f;float tyreWidth=wheelId=="wheel-offroad"?.32f:wheelId=="wheel-racing"?.26f:.23f;
-            bool luxury=wheelId==MetaProgressionConfig.MetaWheelVisualId||wheelId=="wheel-plasma"||wheelId=="wheel-meta-cyan";
+            bool whity=wheelId==MetaProgressionConfig.MetaWheelId;
+            bool luxury=wheelId=="wheel-luxury-black"||wheelId=="wheel-plasma"||wheelId=="wheel-meta-cyan";
             var tyre=RacingArt.Material(new Color(.018f,.022f,.027f),.16f);
             var rim=RacingArt.Material(luxury?new Color(.04f,.05f,.065f):wheelId=="wheel-carbon"?RacingDesign.Platinum:bodyColor,.80f);
             var lip=RacingArt.Material(new Color(.18f,.22f,.27f),.85f);
@@ -379,6 +375,13 @@ namespace AnimeHillRacing.Racing3D
                 pivot.transform.localPosition=new Vector3((i%2==0?-1:1)*.88f,-.19f,i<2?1.02f:-1.02f);
                 pivot.AddComponent<RacingAnimatedPart>();
                 visual.Wheels[i]=pivot.transform;
+                if(whity)
+                {
+                    RacingMetaVisuals.Wheel(pivot.transform,tyreWidth,tyre,dark);
+                    RacingArt.Combine(pivot.transform);
+                    continue;
+                }
+
 
                 // 1. Tread (outer ring)
                 RacingArt.Part(pivot.transform,"Tread",RacingArt.Ring(radius,.20f,tyreWidth),tyre,Vector3.zero,Quaternion.identity);
@@ -418,6 +421,13 @@ namespace AnimeHillRacing.Racing3D
         void LateUpdate()
         {
             float dt=Time.deltaTime;if(vehicle==null)return;
+            bool braking=vehicle.LastCommands.Brake>.07f;
+            if(brakeRenderer!=null&&braking!=BrakeLightsOn)
+            {
+                BrakeLightsOn=braking;BrakeLightTransitions++;
+                brakeProperties.SetColor(EmissionColorId,new Color(.98f,.06f,.12f)*(braking?1.65f:.95f));
+                brakeRenderer.SetPropertyBlock(brakeProperties);
+            }
             float acceleration=(vehicle.ForwardSpeedMps-lastForward)/Mathf.Max(.001f,dt);lastForward=vehicle.ForwardSpeedMps;
             float targetRoll=vehicle.LastCommands.Steering*Mathf.Clamp(vehicle.SpeedKmh/100,0,1)*-4.5f;
             if(vehicle.IsDrifting)targetRoll*=1.35f;

@@ -11,8 +11,10 @@ namespace AnimeHillRacing.Racing3D
         [SerializeField, Range(2f, 30f)] private float steeringSensitivity = 18f;
         private VehicleCommands sampledCommands;
         private bool pendingItem;
+        private bool pendingItemBackward;
         private bool pendingJump;
         private bool pendingTrick;
+        private bool pendingMiniHop, wasPreDriftHeld;
 
         // Mobile touch flags
         private bool touchGas;
@@ -21,12 +23,15 @@ namespace AnimeHillRacing.Racing3D
         private bool touchItem;
         private bool touchJump;
         private float touchSteer;
+        private float touchPitch;
+        private bool touchLookBack;
 
         private float smoothSteer;
         private bool itemTriggeredThisFrame;
         private bool jumpTriggeredThisFrame;
 
         public bool InputEnabled => inputEnabled;
+        public bool LookBack { get; private set; }
 
         public void SetInputEnabled(bool enabled)
         {
@@ -37,23 +42,32 @@ namespace AnimeHillRacing.Racing3D
                 itemTriggeredThisFrame = false;
                 jumpTriggeredThisFrame = false;
                 pendingItem = false;
+                pendingItemBackward = false;
                 pendingJump = false;
                 pendingTrick = false;
+                pendingMiniHop = wasPreDriftHeld = false;
                 touchGas = touchBrake = touchDrift = touchItem = touchJump = false;
-                touchSteer = 0f;
+                touchSteer = touchPitch = 0f;
+                touchLookBack = false;
+                LookBack = false;
             }
         }
 
         public VehicleCommands GetCommands()
         {
             if (!inputEnabled) return VehicleCommands.Idle;
+            if (!Application.isPlaying) return SampleCommands();
             var commands = sampledCommands;
             commands.UseItem = pendingItem;
+            commands.ItemBackward = pendingItemBackward;
             commands.Jump = pendingJump;
             commands.Trick = pendingTrick;
+            commands.MiniHop = pendingMiniHop;
             pendingItem = false;
+            pendingItemBackward = false;
             pendingJump = false;
             pendingTrick = false;
+            pendingMiniHop = false;
             return commands;
         }
 
@@ -61,16 +75,21 @@ namespace AnimeHillRacing.Racing3D
         {
             sampledCommands = SampleCommands();
             pendingItem |= sampledCommands.UseItem;
+            pendingItemBackward |= sampledCommands.ItemBackward;
             pendingJump |= sampledCommands.Jump;
             pendingTrick |= sampledCommands.Trick;
+            pendingMiniHop |= sampledCommands.MiniHop;
         }
 
-        private VehicleCommands SampleCommands()
+        public VehicleCommands SampleCommands()
         {
             if (!inputEnabled) return VehicleCommands.Idle;
 
             Keyboard kb = Keyboard.current;
             Gamepad pad = Gamepad.current;
+            Mouse mouse = Mouse.current;
+            LookBack = touchLookBack || (mouse != null && mouse.rightButton.isPressed) ||
+                (pad != null && pad.rightStickButton.isPressed);
 
             // 1. Throttle (W, UpArrow, Gamepad R2 / South Button)
             float rawThrottle = 0f;
@@ -100,19 +119,36 @@ namespace AnimeHillRacing.Racing3D
                 }
             }
 
-            smoothSteer = Mathf.MoveTowards(smoothSteer, Mathf.Clamp(rawSteer, -1f, 1f), Time.deltaTime * steeringSensitivity);
+            float dt = Time.deltaTime > 0.0001f ? Time.deltaTime : 0.05f;
+            smoothSteer = Mathf.MoveTowards(smoothSteer, Mathf.Clamp(rawSteer, -1f, 1f), dt * steeringSensitivity);
 
-            // 4. Drift (Space, Left Shift, Gamepad R1 / Shoulder, Touch)
+            // 4. Shift drift; retain existing keyboard/gamepad alternatives.
             bool drift = touchDrift ||
-                (kb != null && (kb.spaceKey.isPressed || kb.leftShiftKey.isPressed)) ||
+                (kb != null && (kb.leftShiftKey.isPressed || kb.rightShiftKey.isPressed || kb.spaceKey.isPressed || kb.cKey.isPressed)) ||
                 (pad != null && (pad.rightShoulder.isPressed || pad.buttonEast.isPressed));
+            bool preDriftHeld = touchDrift ||
+                (kb != null && (kb.leftShiftKey.isPressed || kb.rightShiftKey.isPressed)) ||
+                (pad != null && pad.buttonEast.isPressed);
+            bool miniHop = preDriftHeld && !wasPreDriftHeld;
+            wasPreDriftHeld = preDriftHeld;
 
-            // 5. Use Item (E, Left Ctrl, Enter, Gamepad L1 / North Button, Touch)
-            bool useItem = itemTriggeredThisFrame || touchItem ||
-                (kb != null && (kb.eKey.wasPressedThisFrame || kb.leftCtrlKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame)) ||
+            var physics = GetComponent<RacingVehiclePhysics>();
+            bool isGrounded = physics != null && physics.IsGrounded;
+
+            // 5. Use Item (E on ground, F, Left Ctrl, Enter, Gamepad L1 / North Button, Touch)
+            bool useItem = itemTriggeredThisFrame || touchItem || (mouse != null && mouse.leftButton.wasPressedThisFrame) ||
+                (isGrounded && kb != null && kb.eKey.wasPressedThisFrame) ||
+                (kb != null && (kb.fKey.wasPressedThisFrame || kb.leftCtrlKey.wasPressedThisFrame || kb.enterKey.wasPressedThisFrame)) ||
                 (pad != null && (pad.leftShoulder.wasPressedThisFrame || pad.buttonNorth.wasPressedThisFrame));
 
+            // RMB+W requests the rear direction without consuming throttle or
+            // auto-firing. Only a use-button rising edge activates an item.
+            bool itemBackward = useItem && (LookBack || rawBrake > 0.25f ||
+                (kb != null && (kb.sKey.isPressed || kb.downArrowKey.isPressed)) ||
+                (pad != null && pad.leftStick.y.ReadValue() < -0.3f));
+
             itemTriggeredThisFrame = false;
+            touchItem = false;
 
             // 6. Jump and Air Trick
             bool jumpOrTrick = jumpTriggeredThisFrame || touchJump ||
@@ -121,13 +157,11 @@ namespace AnimeHillRacing.Racing3D
 
             jumpTriggeredThisFrame = false;
 
-            var physics = GetComponent<RacingVehiclePhysics>();
-            bool isGrounded = physics != null && physics.IsGrounded;
             bool jump = jumpOrTrick && isGrounded;
             bool trick = jumpOrTrick && !isGrounded;
 
-            // 7. In-air pitch
-            float pitch = 0f;
+            // 7. In-air pitch (W / S or Left Stick Y)
+            float pitch = touchPitch;
             if (kb != null)
             {
                 if (kb.wKey.isPressed || kb.upArrowKey.isPressed) pitch += 1f;
@@ -135,8 +169,30 @@ namespace AnimeHillRacing.Racing3D
             }
             if (pad != null)
             {
-                pitch = pad.leftStick.y.ReadValue();
+                if(Mathf.Abs(pad.leftStick.y.ReadValue())>.1f) pitch = pad.leftStick.y.ReadValue();
             }
+
+            // 8. PC Air Roll (Q = Air Roll Left, E = Air Roll Right) - ONLY active while airborne!
+            float airRoll = 0f;
+            if (!isGrounded)
+            {
+                airRoll=touchSteer;
+                if (kb != null)
+                {
+                    if (kb.qKey.isPressed) airRoll -= 1f;
+                    if (kb.eKey.isPressed) airRoll += 1f;
+                }
+                if (pad != null)
+                {
+                    if (pad.leftShoulder.isPressed) airRoll -= 1f;
+                    if (pad.rightShoulder.isPressed) airRoll += 1f;
+                }
+            }
+
+            // 9. Aerial Boost (Space or B, Gamepad South/Trigger, or Touch) - ONLY while airborne!
+            bool aerialBoost = !isGrounded && (touchJump ||
+                (kb != null && (kb.spaceKey.isPressed || kb.bKey.isPressed)) ||
+                (pad != null && (pad.buttonSouth.isPressed || pad.rightTrigger.isPressed || pad.buttonWest.isPressed)));
 
             return new VehicleCommands
             {
@@ -144,10 +200,14 @@ namespace AnimeHillRacing.Racing3D
                 Throttle = Mathf.Clamp01(rawThrottle),
                 Brake = Mathf.Clamp01(rawBrake),
                 Drift = drift,
+                MiniHop = miniHop,
                 UseItem = useItem,
+                ItemBackward = itemBackward,
                 Jump = jump,
                 Trick = trick,
-                Pitch = Mathf.Clamp(pitch, -1f, 1f)
+                AerialBoost = aerialBoost,
+                Pitch = Mathf.Clamp(pitch, -1f, 1f),
+                AirRoll = Mathf.Clamp(airRoll, -1f, 1f)
             };
         }
 
@@ -158,9 +218,11 @@ namespace AnimeHillRacing.Racing3D
         public void SetTouchJump(bool pressed) { touchJump = pressed; if (pressed) jumpTriggeredThisFrame = true; }
         public void TriggerTouchJump() => jumpTriggeredThisFrame = inputEnabled;
         public void ReleaseTouchJump() => touchJump = false;
-        public void TriggerTouchItem() => pendingItem = inputEnabled;
+        public void TriggerTouchItem() { itemTriggeredThisFrame = inputEnabled; touchItem = inputEnabled; }
         public void ReleaseTouchItem() => touchItem = false;
         public void SetTouchSteer(float axis) => touchSteer = Mathf.Clamp(axis, -1f, 1f);
+        public void SetTouchPitch(float axis) => touchPitch = Mathf.Clamp(axis, -1f, 1f);
+        public void SetTouchLookBack(bool pressed) => touchLookBack = pressed && inputEnabled;
 
         private void LateUpdate()
         {

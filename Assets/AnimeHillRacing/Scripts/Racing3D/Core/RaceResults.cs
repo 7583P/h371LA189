@@ -18,6 +18,8 @@ namespace AnimeHillRacing.Racing3D
         public int oldMmr;
         public int mmrDelta;
         public int newMmr;
+        public string titleId;
+        public int shortcutSuccesses, aerialSuccesses, landingSuccesses;
 
         public override string ToString() =>
             $"P{finishPosition:00} | {displayName,-14} | Time: {FormatTime(totalTime)} | Best: {FormatTime(bestLapTime)} | MMR: {oldMmr} -> {newMmr} ({(mmrDelta >= 0 ? "+" : "")}{mmrDelta})";

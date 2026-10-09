@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Purchasing;
+using AnimeHillRacing.Ads;
 
 namespace AnimeHillRacing.Core
 {
@@ -214,6 +215,11 @@ namespace AnimeHillRacing.Core
                 string productId = item?.Product?.definition?.id;
                 if (string.IsNullOrWhiteSpace(productId)) continue;
                 foundProduct = true;
+                if (entitlements.IsVip(productId) && !RefreshVip(order, productId, out _)) {
+                    fulfilled = false;
+                    CompletePurchaseCallback(productId, new StorePurchaseResult(StorePurchaseStatus.Failed, "VIP RECEIPT EXPIRY COULD NOT BE VERIFIED"));
+                    continue;
+                }
                 if (!entitlements.TryFulfillNewPurchase(productId, transactionId, out string error))
                 {
                     fulfilled = false;
@@ -274,12 +280,17 @@ namespace AnimeHillRacing.Core
         private void OnPurchasesFetched(Orders orders)
         {
             HashSet<string> restored = new HashSet<string>(StringComparer.Ordinal);
+            long latestVipExpiry = 0; bool sawVipReceipt = false;
             for (int orderIndex = 0; orderIndex < orders.ConfirmedOrders.Count; orderIndex++)
             {
                 ConfirmedOrder order = orders.ConfirmedOrders[orderIndex];
                 foreach (CartItem item in order.CartOrdered.Items())
                 {
                     string productId = item?.Product?.definition?.id;
+                    if (entitlements.IsVip(productId)) {
+                        if (RefreshVip(order, productId, out long expiry, false)) { latestVipExpiry = Math.Max(latestVipExpiry, expiry); sawVipReceipt = true; }
+                        continue;
+                    }
                     if (string.IsNullOrWhiteSpace(productId) || restored.Contains(productId) ||
                         !entitlements.Contains(productId) || entitlements.IsConsumable(productId)) continue;
                     if (entitlements.TryRestorePermanentEntitlement(productId, out string error))
@@ -292,10 +303,26 @@ namespace AnimeHillRacing.Core
                 }
             }
 
+            if (sawVipReceipt) AdEntitlementService.UpdateStoreVipExpiry(latestVipExpiry);
+
             Action<StoreRestoreResult> completed = restoreCallback;
             restoreCallback = null;
             completed?.Invoke(new StoreRestoreResult(true, restored.Count, string.Empty));
             if (restored.Count > 0) StateChanged?.Invoke();
+        }
+
+        private bool RefreshVip(Order order, string productId, out long expiry, bool apply = true)
+        {
+            expiry = 0;
+            try {
+                var info = new SubscriptionInfoHelper(order.Info.Receipt, productId, null).GetSubscriptionInfo();
+                if (info == null || info.IsSubscribed() == Result.Unsupported) return false;
+                expiry = info.GetExpireDate().ToUniversalTime().Ticks;
+                if (expiry <= DateTime.MinValue.Ticks || expiry > DateTime.MaxValue.Ticks) return false;
+                if (apply) AdEntitlementService.UpdateStoreVipExpiry(expiry);
+                return true;
+            }
+            catch (Exception exception) { Debug.LogWarning("[IAP] VIP receipt could not be evaluated: " + exception.Message); return false; }
         }
 
         private void OnPurchasesFetchFailed(PurchasesFetchFailureDescription failure)

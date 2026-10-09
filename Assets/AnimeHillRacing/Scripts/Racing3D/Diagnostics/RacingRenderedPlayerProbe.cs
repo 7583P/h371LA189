@@ -18,8 +18,9 @@ namespace AnimeHillRacing.Racing3D
         sealed class RenderProof
         {
             public string classification = "FULL_BUILT_IN_CAMERA_AND_HUD_TO_RENDER_TEXTURE";
+            public string renderMode;
             public int width, height, antiAliasing, renderedFrames, canvases;
-            public bool targetCreated;
+            public bool targetCreated, renderWorkVerified;
         }
 
         Camera renderCamera;
@@ -27,7 +28,9 @@ namespace AnimeHillRacing.Racing3D
         RenderTexture target, previousTarget;
         bool previousEnabled, uiBound, resultsBound;
         int renderedFrames, canvasesBound;
-        public bool IsBound => renderCamera != null && target != null && target.IsCreated();
+        bool nativeWindow;
+        public bool IsBound => renderCamera != null && (nativeWindow || (target != null && target.IsCreated()));
+        public bool OffscreenRendering => IsBound && !nativeWindow;
 
         public void Bind(Camera camera, RaceManager race)
         {
@@ -37,6 +40,11 @@ namespace AnimeHillRacing.Racing3D
             manager = race;
             previousEnabled = camera.enabled;
             previousTarget = camera.targetTexture;
+            nativeWindow = RacingFrameForensics.Requested && RacingFrameForensics.Argument("--forensics-render", "manual") == "native";
+            Camera.onPostRender += OnRendered;
+            renderedFrames = canvasesBound = 0;
+            uiBound = resultsBound = false;
+            if (nativeWindow) { camera.enabled = true; return; }
             target = new RenderTexture(1600, 900, 24, RenderTextureFormat.ARGB32)
             {
                 name = "Explicit player performance render",
@@ -44,10 +52,10 @@ namespace AnimeHillRacing.Racing3D
             };
             target.Create();
             camera.targetTexture = target;
-            camera.enabled = false;
-            renderedFrames = canvasesBound = 0;
-            uiBound = resultsBound = false;
+            camera.enabled = RacingFrameForensics.Requested && RacingFrameForensics.Argument("--forensics-render", "manual") == "automatic";
         }
+
+        void OnRendered(Camera camera) { if (camera == renderCamera) renderedFrames++; }
 
         void BindUi()
         {
@@ -55,6 +63,7 @@ namespace AnimeHillRacing.Racing3D
             foreach (var canvas in FindObjectsByType<Canvas>(FindObjectsSortMode.None))
             {
                 if (canvas.renderMode == RenderMode.WorldSpace) continue;
+                if (nativeWindow) { canvasesBound++; continue; }
                 canvas.renderMode = RenderMode.ScreenSpaceCamera;
                 canvas.worldCamera = renderCamera;
                 canvas.planeDistance = .5f;
@@ -71,13 +80,13 @@ namespace AnimeHillRacing.Racing3D
                 BindUi();
                 resultsBound = manager.State == RaceState.Results;
             }
-            using (RenderMarker.Auto()) renderCamera.Render();
-            renderedFrames++;
+            if (!nativeWindow && !renderCamera.enabled) using (RenderMarker.Auto()) renderCamera.Render();
         }
 
         public void SaveFrame(string path)
         {
             if (!IsBound) return;
+            if (nativeWindow) { ScreenCapture.CaptureScreenshot(path); return; }
             BindUi();
             Canvas.ForceUpdateCanvases();
             renderCamera.Render();
@@ -103,13 +112,18 @@ namespace AnimeHillRacing.Racing3D
             if (!IsBound) return;
             File.WriteAllText(path, JsonUtility.ToJson(new RenderProof
             {
-                width = target.width, height = target.height, antiAliasing = target.antiAliasing,
-                renderedFrames = renderedFrames, canvases = canvasesBound, targetCreated = target.IsCreated()
+                classification = nativeWindow ? "FULL_NATIVE_WINDOW_CAMERA_AND_HUD" : "OFFSCREEN_RENDER_REQUIRES_POST_RENDER_PROOF",
+                renderMode = nativeWindow ? "native" : (renderCamera.enabled ? "automatic" : "manual"),
+                width = nativeWindow ? Screen.width : target.width, height = nativeWindow ? Screen.height : target.height,
+                antiAliasing = nativeWindow ? QualitySettings.antiAliasing : target.antiAliasing,
+                renderedFrames = renderedFrames, canvases = canvasesBound, targetCreated = target != null && target.IsCreated(),
+                renderWorkVerified = renderedFrames > 0
             }, true));
         }
 
         void Release()
         {
+            Camera.onPostRender -= OnRendered;
             if (renderCamera != null)
             {
                 renderCamera.targetTexture = previousTarget;

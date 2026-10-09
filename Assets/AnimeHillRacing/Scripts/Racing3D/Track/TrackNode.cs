@@ -29,6 +29,7 @@ namespace AnimeHillRacing.Racing3D
         public bool requiresBoost = true;
         public bool requiresJump;
         public float width = 12f;
+        public float exitWidth;
         public float launchSpeedKmh = 115f;
         public int launchNodeIndex = 9;
         public int gapStartNodeIndex = 10;
@@ -38,5 +39,7 @@ namespace AnimeHillRacing.Racing3D
         [Range(0f, 1f)] public float riskLevel = 0.5f;
 
         public bool IsValid() => entryNodeIndex >= 0 && exitNodeIndex > entryNodeIndex && width >= 4 && pathPoints != null && pathPoints.Length > 1;
+        public float WidthAt(float sample) => exitWidth>width?
+            Mathf.Lerp(width,exitWidth,Mathf.InverseLerp(pathPoints.Length-5,pathPoints.Length-1,sample)):width;
     }
 }

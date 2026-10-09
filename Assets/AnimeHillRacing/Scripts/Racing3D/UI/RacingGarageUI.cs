@@ -8,20 +8,25 @@ namespace AnimeHillRacing.Racing3D
     public sealed class RacingGarageUI:MonoBehaviour
     {
         static readonly string[] VehicleIds={"formula-01","car-01","rally-01","buggy-01","sport-bike-01","hill-adventurer-01","aerial-satelite-01"};
-        static readonly string[] WheelIds={"wheel-default","wheel-sport","wheel-offroad","wheel-racing","wheel-carbon","wheel-plasma"};
-        static readonly string[] WheelNames={"ALL TERRAIN","SPORT SLICK","HEAVY OFFROAD","PRO RACING","LIGHT CARBON","BLACK LUXURY"};
+        static readonly string[] WheelIds={"wheel-default","wheel-sport","wheel-offroad","wheel-racing","wheel-carbon","wheel-plasma","wheel-whity"};
+        static readonly string[] WheelNames={"ALL TERRAIN","SPORT SLICK","HEAVY OFFROAD","PRO RACING","LIGHT CARBON","PLASMA FORGED","WHITY"};
         static readonly string[] StatNames={"SPEED","ACCELERATION","HANDLING","DRIFT","GRIP","WEIGHT","MINI TURBO","OFFROAD","STABILITY"};
         int vehicleIndex,wheelIndex;FinalRacingStats stats;RacingShowroom preview;Text vehicleText,wheelText,deltaText,buildText;Image[] fills=new Image[9];float[] displayed=new float[9],desired=new float[9];RectTransform root,rankedPresentation;
+        Text driverText,accessoryText;
         void Start()
         {
             RacingSaveManager.EnsureMigration();vehicleIndex=Mathf.Max(0,Array.IndexOf(VehicleIds,RacingStatsCalculator.NormalizeVehicleId(RacingSaveManager.SelectedVehicleId)));wheelIndex=Mathf.Max(0,Array.IndexOf(WheelIds,RacingSaveManager.SelectedWheelId));
             root=RacingDesign.Canvas("Racing garage");root.gameObject.AddComponent<RacingScreenMotion>();gameObject.AddComponent<RacingQualityScope>();RacingFeedback.Ensure();
             RacingDesign.Panel(root,"Backdrop",0,0,1,1,RacingDesign.Background,0);
+            RacingDesign.RankBadge(root,RacingSaveManager.CurrentMmr,.85f,.845f,.09f,.13f);
+            RacingDesign.Label(root,MmrTierUtility.GetDisplayName(RacingSaveManager.CurrentMmr),RacingType.Caption,.63f,.89f,.21f,.045f,RacingDesign.TierColor(RacingSaveManager.CurrentMmr),TextAnchor.MiddleRight);
             RacingDesign.Label(root,"RACING / GARAGE",RacingType.Section,.05f,.87f,.55f,.07f,RacingDesign.Cyan);
             RacingDesign.Label(root,"MAKE IT YOURS.",RacingType.Title,.05f,.78f,.57f,.08f,RacingDesign.Ink,display:true);
             preview=RacingShowroom.Create(root,.045f,.225f,.54f,.535f,VehicleIds[vehicleIndex],WheelIds[wheelIndex]);
             buildText=RacingDesign.Label(root,"",RacingType.Caption,.07f,.71f,.49f,.045f,RacingDesign.Gold);
-            RacingDesign.Label(root,"DRAG TO ROTATE / SCROLL TO ZOOM",RacingType.Caption,.07f,.18f,.48f,.04f,RacingDesign.Muted,TextAnchor.MiddleCenter);
+            var driver=RacingDesign.Button(root,"",.07f,.175f,.245f,.045f,NextDriver);
+            var accessory=RacingDesign.Button(root,"",.325f,.175f,.245f,.045f,NextAccessory);
+            driverText=driver.GetComponentInChildren<Text>();accessoryText=accessory.GetComponentInChildren<Text>();RefreshCosmetics();
             var statsPanel=RacingDesign.CompetitivePanel(root,"Build performance",.62f,.23f,.32f,.57f,RacingDesign.Cyan);
             RacingDesign.Label(statsPanel.transform,"PERFORMANCE",RacingType.Section,.06f,.88f,.88f,.085f,RacingDesign.Ink);
             for(int i=0;i<9;i++)
@@ -46,7 +51,10 @@ namespace AnimeHillRacing.Racing3D
         public void PreviousVehicle(){vehicleIndex=(vehicleIndex+VehicleIds.Length-1)%VehicleIds.Length;SaveSelection();}
         public void NextWheel(){wheelIndex=(wheelIndex+1)%WheelIds.Length;SaveSelection();}
         public void PreviousWheel(){wheelIndex=(wheelIndex+WheelIds.Length-1)%WheelIds.Length;SaveSelection();}
-        void SaveSelection(){RacingSaveManager.SelectedVehicleId=VehicleIds[vehicleIndex];RacingSaveManager.SelectedWheelId=WheelIds[wheelIndex];RecalculateStats(true);preview?.Show(VehicleIds[vehicleIndex],WheelIds[wheelIndex]);}
+        void SaveSelection(){RacingSaveManager.SelectedVehicleId=VehicleIds[vehicleIndex];RacingSaveManager.SelectedWheelId=WheelIds[wheelIndex];var h=RacingProgressionService.State.human;h.vehiclePreference=VehicleIds[vehicleIndex];h.wheelPreference=WheelIds[wheelIndex];RacingProgressionService.MarkChanged();RacingProgressionService.Save();RecalculateStats(true);RefreshCosmetics();}
+        public void NextDriver(){var h=RacingProgressionService.State.human;int index=Array.IndexOf(LeagueBotCatalog.Characters,h.characterPreference);h.characterPreference=LeagueBotCatalog.Characters[(index+1)%LeagueBotCatalog.Characters.Length];RacingProgressionService.MarkChanged();RacingProgressionService.Save();RefreshCosmetics();}
+        public void NextAccessory(){var h=RacingProgressionService.State.human;int index=Array.IndexOf(LeagueBotCatalog.Accessories,h.accessoryPreference);h.accessoryPreference=LeagueBotCatalog.Accessories[(index+1)%LeagueBotCatalog.Accessories.Length];RacingProgressionService.MarkChanged();RacingProgressionService.Save();RefreshCosmetics();}
+        void RefreshCosmetics(){var h=RacingProgressionService.State.human;if(driverText!=null)driverText.text=RacingLoadoutVisuals.DriverName(h.characterPreference);if(accessoryText!=null)accessoryText.text=RacingLoadoutVisuals.AccessoryName(h.accessoryPreference);preview?.Show(VehicleIds[vehicleIndex],WheelIds[wheelIndex],character:h.characterPreference,accessory:h.accessoryPreference);}
         void RecalculateStats(bool delta)
         {
             FinalRacingStats previous=stats;stats=RacingStatsCalculator.Calculate(VehicleIds[vehicleIndex],WheelIds[wheelIndex]);
@@ -54,7 +62,7 @@ namespace AnimeHillRacing.Racing3D
             float[] min={125,9,1.8f,.7f,.8f,500,.7f,.3f,.7f},max={190,20,3.8f,1.8f,2,1300,2.1f,1,1.7f};
             for(int i=0;i<9;i++)desired[i]=Mathf.InverseLerp(min[i],max[i],values[i]);
             if(vehicleText!=null)vehicleText.text=RacingDesign.VehicleName(VehicleIds[vehicleIndex]);if(wheelText!=null)wheelText.text=WheelNames[wheelIndex];
-            if(buildText!=null){bool meta=VehicleIds[vehicleIndex]==MetaProgressionConfig.MetaVehicleId && WheelIds[wheelIndex]==MetaProgressionConfig.MetaWheelId;buildText.text=meta?"EXACT META / FORMULA APEX BLACKLINE / BLACK LUXURY":"CUSTOM BUILD / "+WheelNames[wheelIndex];buildText.color=meta?RacingDesign.Cyan:RacingDesign.Muted;}
+            if(buildText!=null){bool meta=VehicleIds[vehicleIndex]==MetaProgressionConfig.MetaVehicleId && WheelIds[wheelIndex]==MetaProgressionConfig.MetaWheelId;buildText.text=meta?"EXACT META / DAPEX / WHITY":"CUSTOM BUILD / "+WheelNames[wheelIndex];buildText.color=meta?RacingDesign.Cyan:RacingDesign.Muted;}
             if(delta&&deltaText!=null)deltaText.text=$"SPEED {stats.SpeedKmh-previous.SpeedKmh:+0;-0;0}   HANDLING {(stats.HandlingRadPerSec-previous.HandlingRadPerSec)*10:+0;-0;0}";
         }
         public void ShowRankedPresentation()
@@ -66,8 +74,10 @@ namespace AnimeHillRacing.Racing3D
             int mmr=RacingTestSession.Active?RacingTestSession.Mmr:RacingSaveManager.CurrentMmr;
             RacingDesign.Label(panel.transform,mmr.ToString("N0"),RacingType.Mmr,.25f,.55f,.50f,.15f,RacingDesign.Ink,TextAnchor.MiddleCenter);
             RacingDesign.Label(panel.transform,MmrTierUtility.GetTierDisplayName(MmrTierUtility.GetTier(mmr)),RacingType.Section,.15f,.45f,.70f,.09f,RacingDesign.TierColor(mmr),TextAnchor.MiddleCenter);
+            RacingDesign.RankBadge(panel.transform,mmr,.02f,.48f,.22f,.25f);
+            RacingDesign.Title(panel.transform,RacingProgressionService.State.human.selectedTitleId,RacingProgressionService.State.human.seasonPeakMmr,.15f,.385f,.70f,.05f);
             RacingDesign.Label(panel.transform,RacingDesign.VehicleName(VehicleIds[vehicleIndex])+" / "+WheelNames[wheelIndex],RacingType.Body,.1f,.33f,.8f,.08f,RacingDesign.Ink,TextAnchor.MiddleCenter);
-            RacingDesign.Label(panel.transform,(RacingTestSession.Active?"TEST / ":"")+"NIGHT CITY / 3 LAPS / 12 RACERS",RacingType.Caption,.1f,.23f,.8f,.07f,RacingDesign.Muted,TextAnchor.MiddleCenter);
+            RacingDesign.Label(panel.transform,(RacingTestSession.Active?"TEST / ":"")+RacingTrackSelection.ShortName+" / 3 LAPS / 12 RACERS",RacingType.Caption,.1f,.23f,.8f,.07f,RacingDesign.Muted,TextAnchor.MiddleCenter);
             var start=RacingDesign.Button(panel.transform,"START RACE",.34f,.065f,.58f,.10f,StartRankedRace,RacingDesign.Highlight);
             RacingDesign.Button(panel.transform,"BACK",.08f,.065f,.23f,.10f,()=>{Destroy(rankedPresentation.gameObject);rankedPresentation=null;});RacingDesign.Focus(start);
         }

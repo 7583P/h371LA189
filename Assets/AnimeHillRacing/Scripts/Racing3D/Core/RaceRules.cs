@@ -37,6 +37,7 @@ namespace AnimeHillRacing.Racing3D
         public bool DeterministicDebug = false;
         // Explicit diagnostics only; normal ranked races retain their generated builds.
         public bool EqualBuildBenchmark = false;
+        public int BenchmarkMmr = -1;
 
         public static RaceRules CreateRanked(int seed = 0) => new RaceRules
         {

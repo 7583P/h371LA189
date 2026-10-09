@@ -2,14 +2,15 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
 using UnityEngine.EventSystems;
+using AnimeHillRacing.Core;
 
 namespace AnimeHillRacing.Racing3D
 {
     public sealed class RacingHUD:MonoBehaviour
     {
         [SerializeField] RaceManager raceManager;
-        RectTransform root;Text positionText,lapText,speedText,timerText,countdownText,itemText,driftText,bannerText,routeText;RacingEmblem itemIcon;Image chargeFill;
-        GameObject lobby,controls,banner,pause;PlayerRacingInput input;RacingVehiclePhysics vehicle;ItemInventory inventory;RacerProgress progress;
+        RectTransform root;Text positionText,lapText,speedText,timerText,countdownText,itemText,driftText,bannerText;RacingEmblem itemIcon;Image chargeFill;
+        GameObject lobby,controls,banner,pause,rearIndicator;Text walletText;PlayerRacingInput input;RacingVehiclePhysics vehicle;ItemInventory inventory;RacerProgress progress;
         float nextRefresh,countdownAge,bannerUntil,positionPulse;int lastPosition=12,lastCount=-1;bool paused;
         public RacingRaceMap Map{get;private set;}
         void Start()
@@ -24,7 +25,13 @@ namespace AnimeHillRacing.Racing3D
             itemIcon=RacingDesign.Area(slot.transform,"Item silhouette",.18f,.28f,.64f,.60f).gameObject.AddComponent<RacingEmblem>();itemIcon.color=RacingDesign.Cyan;itemIcon.raycastTarget=false;
             itemText=RacingDesign.Label(slot.transform,"EMPTY",RacingType.Caption,.05f,.06f,.90f,.2f,RacingDesign.Muted,TextAnchor.MiddleCenter);
             RacingDesign.Panel(slot.transform,"Item charge rim",.05f,.95f,.9f,.025f,RacingDesign.Cyan,0);
-            RacingDesign.Label(root,"E / LB / TAP",RacingType.Caption,.825f,.705f,.13f,.04f,RacingDesign.Muted,TextAnchor.MiddleCenter);
+            RacingDesign.Label(root,"LMB / LB / TAP",RacingType.Caption,.825f,.705f,.13f,.04f,RacingDesign.Muted,TextAnchor.MiddleCenter);
+            walletText=RacingDesign.Label(root,"",RacingType.Caption,.74f,.945f,.21f,.035f,RacingDesign.Gold,TextAnchor.MiddleRight);
+            RefreshWallet();SaveManager.CurrencyChanged+=RefreshWallet;
+            var rear=RacingDesign.Panel(root,"Rear view active",.43f,.81f,.20f,.05f,RacingDesign.Surface);
+            RacingDesign.Label(rear.transform,"◀ REAR VIEW ▶",RacingType.Caption,.04f,.06f,.92f,.88f,RacingDesign.Cyan,TextAnchor.MiddleCenter);
+            rearIndicator=rear.gameObject;rearIndicator.SetActive(false);
+            RacingDesign.Label(root,"RMB / R3 — REAR VIEW",RacingType.Caption,.34f,.018f,.32f,.028f,RacingDesign.Muted,TextAnchor.MiddleCenter);
             var speed=RacingDesign.Panel(root,"Speed",.83f,.08f,.12f,.13f,RacingDesign.Surface);speedText=RacingDesign.Label(speed.transform,"0",RacingType.Mmr,.10f,.20f,.63f,.70f,RacingDesign.Ink);
             RacingDesign.Label(speed.transform,"KM/H",RacingType.Caption,.62f,.15f,.32f,.25f,RacingDesign.Muted);
             var charge=RacingDesign.Area(root,"Drift charge",.34f,.06f,.32f,.018f).gameObject.AddComponent<Image>();charge.color=new Color(.05f,.13f,.18f,.6f);
@@ -32,10 +39,17 @@ namespace AnimeHillRacing.Racing3D
             foreach(float tick in new[]{RacingDriftFeedback.GreenCharge,RacingDriftFeedback.CyanCharge})
                 RacingDesign.Panel(charge.transform,"Turbo threshold",tick/RacingDriftFeedback.PurpleCharge,0,.007f,1,RacingDesign.Ink,0);
             driftText=RacingDesign.Label(root,"",RacingType.Caption,.34f,.085f,.32f,.04f,RacingDesign.Cyan,TextAnchor.MiddleCenter);
-            routeText=RacingDesign.Label(root,"",RacingType.Caption,.04f,.415f,.23f,.08f,RacingDesign.Cyan);
             countdownText=RacingDesign.Label(root,"",RacingType.Position,.32f,.34f,.36f,.28f,RacingDesign.Ink,TextAnchor.MiddleCenter);countdownText.fontSize=132;countdownText.resizeTextMaxSize=132;countdownText.resizeTextMinSize=110;
             var message=RacingDesign.Panel(root,"Race announcement",.30f,.21f,.40f,.07f,RacingDesign.Surface);banner=message.gameObject;bannerText=RacingDesign.Label(message.transform,"",RacingType.Section,.05f,.08f,.90f,.84f,RacingDesign.Ink,TextAnchor.MiddleCenter);banner.SetActive(false);
-            var mapRect=RacingDesign.Area(root,"Race map",.04f,.52f,.14f,.20f);Map=mapRect.gameObject.AddComponent<RacingRaceMap>();Map.color=RacingDesign.Ink;Map.gameObject.SetActive(PlayerPrefs.GetInt("AHR.Racing.Map",0)==1);
+            
+            // Full track minimap panel
+            var mapPanel=RacingDesign.Panel(root,"Minimap card",.035f,.46f,.16f,.28f,new Color(.02f,.06f,.09f,.85f));
+            RacingDesign.Panel(mapPanel.transform,"Minimap rim",.04f,.96f,.92f,.02f,RacingDesign.Cyan,0);
+            var mapRect=RacingDesign.Area(mapPanel.transform,"Race map",.06f,.06f,.88f,.88f);
+            Map=mapRect.gameObject.AddComponent<RacingRaceMap>();
+            Map.color=RacingDesign.Ink;
+            mapPanel.gameObject.SetActive(PlayerPrefs.GetInt("AHR.Racing.Map",1)==1);
+
             var pauseButton=RacingDesign.Button(root,"II",.47f,.90f,.055f,.06f,TogglePause);var nav=pauseButton.navigation;nav.mode=Navigation.Mode.None;pauseButton.navigation=nav;
             raceManager.OnCountdownTick+=Countdown;raceManager.OnStateChanged+=StateChanged;
             BuildLobby();
@@ -49,6 +63,7 @@ namespace AnimeHillRacing.Racing3D
             vehicle.OnLandingBoost += HandleLandingBoost;
             vehicle.OnJump += HandleJump;
             vehicle.OnMiniTurboReleased += HandleMiniTurbo;
+            inventory.OnItemUsed += HandleItemUsed;
             BuildControls();
         }
         void HandleTrick(int count)
@@ -63,11 +78,18 @@ namespace AnimeHillRacing.Racing3D
         }
         void HandleJump()
         {
+            Announce("JUMP!  J / A — AIR TRICK",.65f);
             RacingFeedback.Play(RacingCue.Landing);
+        }
+        void RefreshWallet(){if(walletText!=null)walletText.text="COINS "+SaveManager.TotalCoins.ToString("N0");}
+        void HandleItemUsed(RaceItemType item)
+        {
+            Announce(item==RaceItemType.Coin10?"COIN +10 — SHARED WALLET":RaceItemUtility.DisplayName(item)+"!",.8f);
+            bannerText.color=RaceItemUtility.ColorFor(item);
         }
         void HandleMiniTurbo(MiniTurboStage stage)
         {
-            Announce(stage==MiniTurboStage.UltraMiniTurbo?"MAX TURBO!":stage==MiniTurboStage.SuperMiniTurbo?"SUPER TURBO!":"MINI TURBO!",.9f);
+            Announce(stage==MiniTurboStage.UltraMiniTurbo?"SUPER TURBO!":stage==MiniTurboStage.SuperMiniTurbo?"MEDIUM TURBO!":"MINI TURBO!",.9f);
             bannerText.color=RacingDriftFeedback.ColorForStage(stage);
             RacingFeedback.Play(RacingCue.MiniTurbo);
         }
@@ -79,6 +101,8 @@ namespace AnimeHillRacing.Racing3D
             if(banner.activeSelf&&Time.unscaledTime>bannerUntil)banner.SetActive(false);
             if(lobby!=null){bool preparing=raceManager.State==RaceState.Preparing;lobby.SetActive(preparing);if(preparing)UpdateLobby();}
             if(vehicle==null)return;
+            bool rearActive=input!=null&&input.LookBack&&vehicle.RaceEnabled&&!paused;
+            if(rearIndicator.activeSelf!=rearActive)rearIndicator.SetActive(rearActive);
             float pulse=Mathf.Clamp01((positionPulse-Time.unscaledTime)*4);positionText.rectTransform.localScale=Vector3.one*(1+pulse*.08f);
             chargeFill.rectTransform.anchorMax=new Vector2(vehicle.DriftCharge,1);chargeFill.rectTransform.offsetMax=Vector2.zero;
             if(Time.unscaledTime<nextRefresh)return;nextRefresh=Time.unscaledTime+.12f;
@@ -86,12 +110,13 @@ namespace AnimeHillRacing.Racing3D
             if(place!=lastPosition){positionPulse=Time.unscaledTime+.28f;if(place<lastPosition)RacingFeedback.Play(RacingCue.PositionUp);lastPosition=place;}
             lapText.text=$"LAP {Mathf.Min(progress.CurrentLap,raceManager.Rules.TotalLaps)} / {raceManager.Rules.TotalLaps}";timerText.text=RacerResultEntry.FormatTime(raceManager.RaceElapsed);speedText.text=Mathf.RoundToInt(vehicle.SpeedKmh).ToString();
             var stage=vehicle.CurrentMiniTurboStage;Color color=RacingDriftFeedback.ColorForStage(stage);chargeFill.color=color;driftText.color=color;
-            driftText.text=vehicle.IsDrifting?RacingDriftFeedback.ChargeLabel(stage):vehicle.IsBoosting?"TURBO ACTIVE":"SHIFT / RB - DRIFT     J / A - JUMP + TRICK";
-            var route=raceManager.ProgressTracker.TrackGraph.FindUpcomingShortcut(progress.DistanceAlongTrack,120,out float routeDistance);
-            routeText.text=route!=null?route.displayName+" / "+Mathf.RoundToInt(routeDistance)+" M\n"+(route.requiresBoost?(route.requiresJump?"BOOST + JUMP / PRECISE LINE":"BOOST / INSIDE LINE"):"PRECISE JUMP / HAIRPIN SKIP"):"";
-            var item=inventory.IsRolling?(RaceItemType)(1+Mathf.FloorToInt((1-Mathf.Pow(1-inventory.RouletteProgress,2.7f))*27)%6):inventory.HeldItem;
+            driftText.text=vehicle.IsLancerActive?$"LANCER / {vehicle.EffectiveLancerTargetKmh:0} KM/H / {vehicle.LancerRemainingSeconds:0.0}S":vehicle.IsMiniHopping?"MINI HOP / HOLD TO DRIFT":vehicle.IsDrifting?RacingDriftFeedback.ChargeLabel(stage):vehicle.IsBoosting?"TURBO ACTIVE":"SHIFT: HOP / HOLD DRIFT     J / A: JUMP";
+            if(vehicle.IsLancerActive)driftText.color=RaceItemUtility.ColorFor(RaceItemType.Lancer);
+            var candidates=ItemDistributionTable.WeightsForPosition(progress.RacePosition);
+            var item=inventory.IsRolling?candidates[Mathf.FloorToInt((1-Mathf.Pow(1-inventory.RouletteProgress,2.7f))*53)%candidates.Length].Type:inventory.HeldItem;
+            if(!inventory.HasItem&&!inventory.IsRolling&&vehicle.IsLancerActive)item=RaceItemType.Lancer;
             if(itemIcon.Item!=item){itemIcon.Item=item;itemIcon.SetVerticesDirty();}
-            itemIcon.color=inventory.IsRolling?RacingDesign.Gold:inventory.HasItem?RacingDesign.Cyan:RacingDesign.Muted;itemText.text=inventory.IsRolling?"CHARGING":inventory.HasItem?RacingDesign.ItemName(item):inventory.HasShield?"SHIELDED":"EMPTY";
+            itemIcon.color=inventory.IsRolling?RacingDesign.Gold:inventory.HasItem||vehicle.IsLancerActive?RaceItemUtility.ColorFor(item):RacingDesign.Muted;itemText.text=inventory.IsRolling?"CHARGING":inventory.HasItem?RacingDesign.ItemName(item):vehicle.IsLancerActive?"LANCER ACTIVE":inventory.HasShield?"SHIELDED":"EMPTY";
         }
         public static string Ordinal(int position)=>position==1?"1ST":position==2?"2ND":position==3?"3RD":position+"TH";
         void Countdown(int count){lastCount=count;countdownAge=0;countdownText.text=count==0?"GO!":count.ToString();countdownText.color=count==0?RacingDesign.Cyan:RacingDesign.Ink;RacingFeedback.Play(count==0?RacingCue.Go:RacingCue.Countdown);}
@@ -107,22 +132,39 @@ namespace AnimeHillRacing.Racing3D
             if(state==RaceState.PlayerFinished){Announce("FINISH!  "+Ordinal(progress.RacePosition),3f);RacingFeedback.Play(RacingCue.Finish);}
             if(state==RaceState.Results){root.gameObject.SetActive(false);if(controls!=null)controls.SetActive(false);RacingFeedback.Music(RacingMusicPhase.Results);}
         }
-        Text[] lobbyNames=new Text[12];
+        Text[] lobbyNames=new Text[12], lobbyTitles=new Text[12];
+        RacingTitleView[] lobbyTitleViews=new RacingTitleView[12]; RacingRankBadge[] lobbyBadges=new RacingRankBadge[12];
         void BuildLobby()
         {
             var panel=RacingDesign.Panel(root,"Grid assembly",.12f,.18f,.76f,.63f,RacingDesign.Surface);lobby=panel.gameObject;
             RacingDesign.Label(panel.transform,"ASSEMBLING THE GRID",RacingType.Title,.06f,.78f,.88f,.16f,RacingDesign.Ink,TextAnchor.MiddleCenter);
-            RacingDesign.Label(panel.transform,"RANKED / OFFLINE OPPONENTS / NIGHT CITY",RacingType.Caption,.05f,.70f,.90f,.07f,RacingDesign.Cyan,TextAnchor.MiddleCenter);
-            for(int i=0;i<12;i++)lobbyNames[i]=RacingDesign.Label(panel.transform,"",RacingType.Body,.05f+(i%3)*.31f,.53f-(i/3)*.13f,.28f,.10f,RacingDesign.Ink);
+            RacingDesign.Label(panel.transform,"RANKED / OFFLINE OPPONENTS / "+RacingTrackSelection.ShortName,RacingType.Caption,.05f,.70f,.90f,.07f,RacingDesign.Cyan,TextAnchor.MiddleCenter);
+            for(int i=0;i<12;i++) {
+                float x=.04f+(i%3)*.315f,y=.53f-(i/3)*.13f;
+                lobbyBadges[i]=RacingDesign.RankBadge(panel.transform,0,x,y,.055f,.095f);
+                lobbyNames[i]=RacingDesign.Label(panel.transform,"",RacingType.Caption,x+.061f,y+.025f,.235f,.075f,RacingDesign.Ink);
+                lobbyTitles[i]=RacingDesign.Label(panel.transform,"",RacingType.Caption,x+.061f,y-.007f,.235f,.027f,RacingDesign.Muted);
+                lobbyTitles[i].fontSize=12;lobbyTitleViews[i]=lobbyTitles[i].gameObject.AddComponent<RacingTitleView>();
+            }
         }
         int lastLobbyReveal=-1;
-        void UpdateLobby(){if(raceManager.LobbyRacers==null||lastLobbyReveal==raceManager.LobbyRevealCount)return;lastLobbyReveal=raceManager.LobbyRevealCount;for(int i=0;i<12;i++)lobbyNames[i].text=i<lastLobbyReveal?$"{raceManager.LobbyRacers[i].displayName}\n{raceManager.LobbyRacers[i].mmr:N0} MMR":"";}
+        void UpdateLobby() {
+            if(raceManager.LobbyRacers==null || lastLobbyReveal==raceManager.LobbyRevealCount)return;
+            lastLobbyReveal=raceManager.LobbyRevealCount;
+            for(int i=0;i<12;i++) {
+                bool shown=i<lastLobbyReveal;lobbyBadges[i].gameObject.SetActive(shown);
+                if(!shown){lobbyNames[i].text=lobbyTitles[i].text="";continue;}
+                var identity=raceManager.LobbyRacers[i];lobbyBadges[i].Configure(identity.mmr);
+                lobbyNames[i].text=$"{identity.displayName} / {identity.mmr:N0}\n{MmrTierUtility.GetDisplayName(identity.mmr)}";
+                lobbyTitleViews[i].Configure(lobbyTitles[i],identity.titleId,RacingProgressionService.State.currentSeasonNumber,identity.mmr);
+            }
+        }
+
         void BuildControls()
         {
-            var rt=RacingDesign.Area(root,"Touch controls",0,0,1,1);controls=rt.gameObject;controls.SetActive(Application.isMobilePlatform||PlayerPrefs.GetInt("AHR.Racing.ShowTouch",0)==1);
-            Hold(rt,"<",.04f,.07f,.09f,.14f,pressed=>input.SetTouchSteer(pressed?-1:0));Hold(rt,">",.145f,.07f,.09f,.14f,pressed=>input.SetTouchSteer(pressed?1:0));
-            Hold(rt,"GAS",.72f,.23f,.12f,.13f,input.SetTouchGas);Hold(rt,"BRAKE",.86f,.23f,.10f,.13f,input.SetTouchBrake);Hold(rt,"DRIFT",.58f,.23f,.12f,.13f,input.SetTouchDrift);
-            Hold(rt,"JUMP",.45f,.23f,.11f,.13f,input.SetTouchJump);
+            var mobile = RacingMobileControls.Create(root, input);
+            controls = mobile.gameObject;
+            controls.SetActive(Application.isMobilePlatform || PlayerPrefs.GetInt("AHR.Racing.ShowTouch", 0) == 1);
         }
         void Hold(Transform parent,string label,float x,float y,float w,float h,System.Action<bool> action)
         {
@@ -140,37 +182,13 @@ namespace AnimeHillRacing.Racing3D
         }
         void OnDestroy()
         {
+            SaveManager.CurrencyChanged-=RefreshWallet;
+            if(inventory!=null)inventory.OnItemUsed-=HandleItemUsed;
             if(vehicle!=null){vehicle.OnTrick-=HandleTrick;vehicle.OnLandingBoost-=HandleLandingBoost;vehicle.OnJump-=HandleJump;vehicle.OnMiniTurboReleased-=HandleMiniTurbo;}
             if(raceManager!=null){raceManager.OnCountdownTick-=Countdown;raceManager.OnStateChanged-=StateChanged;if(raceManager.ProgressTracker!=null)raceManager.ProgressTracker.OnRacerLapCompleted-=Lap;}
             if(paused)Time.timeScale=1;
         }
     }
-    public sealed class RacingHoldControl:MonoBehaviour,IPointerDownHandler,IPointerUpHandler,IPointerExitHandler
-    {
-        public System.Action<bool> Action;
-        int pointer=int.MinValue;
-        public void OnPointerDown(PointerEventData e){if(pointer!=int.MinValue)return;pointer=e.pointerId;Action?.Invoke(true);}
-        public void OnPointerUp(PointerEventData e){if(e.pointerId!=pointer)return;pointer=int.MinValue;Action?.Invoke(false);}
-        public void OnPointerExit(PointerEventData e){OnPointerUp(e);}
-        void OnDisable(){pointer=int.MinValue;Action?.Invoke(false);}
-    }
-    [RequireComponent(typeof(CanvasRenderer))]
-    public sealed class RacingRaceMap:MaskableGraphic
-    {
-        TrackProgressTracker tracker;float nextRefresh;Vector2 min,max;
-        public void Bind(TrackProgressTracker progress)
-        {
-            tracker=progress;min=new Vector2(float.MaxValue,float.MaxValue);max=new Vector2(float.MinValue,float.MinValue);
-            for(int i=0;i<tracker.TrackGraph.NodeCount;i++){var p=tracker.TrackGraph.GetNode(i).Position;min=Vector2.Min(min,new Vector2(p.x,p.z));max=Vector2.Max(max,new Vector2(p.x,p.z));}
-        }
-        void Update(){if(Time.unscaledTime>nextRefresh){nextRefresh=Time.unscaledTime+.1f;SetVerticesDirty();}}
-        Vector2 Project(Vector3 p){Rect r=rectTransform.rect;float scale=Mathf.Min(r.width/Mathf.Max(1,max.x-min.x),r.height/Mathf.Max(1,max.y-min.y))*.86f;return r.center+(new Vector2(p.x,p.z)-(min+max)*.5f)*scale;}
-        protected override void OnPopulateMesh(VertexHelper vh)
-        {
-            vh.Clear();if(tracker==null)return;
-            for(int i=0;i<tracker.TrackGraph.NodeCount;i++)RacingEmblem.Line(vh,Project(tracker.TrackGraph.GetNode(i).Position),Project(tracker.TrackGraph.GetNode(i+1).Position),2,new Color(.65f,.78f,.82f,.55f));
-            var leaderboard=tracker.Leaderboard;
-            for(int i=0;i<leaderboard.Count;i++){var racer=leaderboard[i];Vector2 p=Project(racer.Vehicle.transform.position);float size=racer.Identity.isHuman?5:3;RacingEmblem.Line(vh,p-Vector2.right*size,p+Vector2.right*size,size*2,racer.Identity.isHuman?RacingDesign.Secondary:RacingDesign.Cyan);}
-        }
-    }
+
+
 }

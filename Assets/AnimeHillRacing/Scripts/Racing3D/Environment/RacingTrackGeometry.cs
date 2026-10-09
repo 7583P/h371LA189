@@ -21,7 +21,7 @@ namespace AnimeHillRacing.Racing3D
         }
         // Tangent-matched approaches surround a straight launch/landing corridor.
         // Geometry and navigation share these samples, including both exact endpoints.
-        public static Vector3[] ShortcutPath(TrackNode entry, TrackNode exit, bool precision = false)
+        public static Vector3[] ShortcutPath(TrackNode entry, TrackNode exit, bool precision = false, float portalFraction = .28f, float approachHandle = 0)
         {
             Vector3 chord = exit.Position - entry.Position;
             Vector3 direction = chord.normalized;
@@ -29,7 +29,8 @@ namespace AnimeHillRacing.Racing3D
             // The longer general-route handles produced an S at both ends of
             // the precision links, consuming the straight landing/braking room.
             float handle = precision ? Mathf.Clamp(chord.magnitude * .08f, 6, 14) : Mathf.Clamp(chord.magnitude * .18f, 18, 34);
-            Vector3 first = entry.Position + chord * .28f, last = entry.Position + chord * .72f;
+            if(approachHandle>0)handle=approachHandle;
+            Vector3 first = entry.Position + chord * portalFraction, last = entry.Position + chord * (1-portalFraction);
             var path = new Vector3[25];
             for (int i = 0; i <= 8; i++)
             {
@@ -42,7 +43,7 @@ namespace AnimeHillRacing.Racing3D
             }
             return path;
         }
-        public static void MatchRoadPortals(TrackShortcut route,TrackNode[] road)
+        public static void MatchRoadPortals(TrackShortcut route,TrackNode[] road,bool holdLaunchApproach = true,float portalMargin = 1,float maximumGrade = .10f)
         {
             var points=route.pathPoints;float launchHeight=points[0].y;
             for(int i=1;i<points.Length-1;i++)
@@ -59,22 +60,25 @@ namespace AnimeHillRacing.Racing3D
                 // Match both portals, including the full width of the shortcut.
                 // A centerline-only check let the exit ribbon cross underneath
                 // the road edge and turn that edge into a head-on collision.
-                float portal=width*.5f+route.width*.5f+1;
+                float portal=width*.5f+route.width*.5f+portalMargin;
                 if(best<portal*portal)points[i].y=Mathf.Max(points[i].y,height+.06f);
                 if(i<=8)launchHeight=Mathf.Max(launchHeight,points[i].y);
             }
             // Hold a supported approach until the straight launch. Descending
             // underneath the main road here would make cars fall before the pad.
-            for(int i=5;i<=route.gapStartNodeIndex;i++)points[i].y=Mathf.Max(points[i].y,launchHeight);
-            float landingHeight=points[16].y;
-            for(int i=route.gapStartNodeIndex+1;i<16;i++)points[i].y=Mathf.Max(points[i].y,Mathf.Lerp(points[route.gapStartNodeIndex].y,landingHeight,(i-route.gapStartNodeIndex)/(float)(16-route.gapStartNodeIndex)));
+            if(holdLaunchApproach)
+            {
+                for(int i=5;i<=route.gapStartNodeIndex;i++)points[i].y=Mathf.Max(points[i].y,launchHeight);
+                float landingHeight=points[16].y;
+                for(int i=route.gapStartNodeIndex+1;i<16;i++)points[i].y=Mathf.Max(points[i].y,Mathf.Lerp(points[route.gapStartNodeIndex].y,landingHeight,(i-route.gapStartNodeIndex)/(float)(16-route.gapStartNodeIndex)));
+            }
             // Spread a raised exit portal backward over its supported deck.
             // The old local height correction created a 20-degree crest that
             // launched a landed car again, removing its braking/yaw authority.
             for(int i=points.Length-2;i>0;i--)
             {
                 float horizontal=Vector3.ProjectOnPlane(points[i+1]-points[i],Vector3.up).magnitude;
-                points[i].y=Mathf.Max(points[i].y,points[i+1].y-horizontal*.10f);
+                points[i].y=Mathf.Max(points[i].y,points[i+1].y-horizontal*maximumGrade);
             }
         }
         public static GameObject Ribbon(Transform parent, string name, TrackNode[] nodes, float innerOffset, float outerOffset, Material material, RacingSurfaceKind surface, bool collider = true, bool relativeWidth = false, int gapStart = -1, int gapEnd = -1, float outerDrop = 0, bool closed = true, TrackShortcut[] clearRoutes = null)
@@ -177,9 +181,5 @@ namespace AnimeHillRacing.Racing3D
             return root;
         }
     }
-    public sealed class RacingGeneratedMesh : MonoBehaviour
-    {
-        public Mesh Mesh;
-        private void OnDestroy() { if (Mesh != null) Destroy(Mesh); }
-    }
+
 }

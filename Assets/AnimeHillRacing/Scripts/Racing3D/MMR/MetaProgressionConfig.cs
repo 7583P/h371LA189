@@ -34,10 +34,10 @@ namespace AnimeHillRacing.Racing3D
     /// </summary>
     public static class MetaProgressionConfig
     {
-        // Authoritative Meta Specification: Formula Apex
+        // DAPEX retains the proven Racing performance and saved vehicle identifier.
         public const string MetaVehicleId = "formula-01";
-        public const string MetaWheelId = "wheel-plasma";
-        public const string MetaWheelVisualId = "wheel-luxury-black";
+        public const string MetaWheelId = "wheel-whity";
+        public const string MetaWheelVisualId = "wheel-whity";
 
         // Elite lobbies may be completely META; the human choice is always preserved.
         public const int MinimumNonMetaRacers = 0;
@@ -47,10 +47,10 @@ namespace AnimeHillRacing.Racing3D
         public static readonly VehicleBuildDefinition[] NearMetaBuildPool = new[]
         {
             new VehicleBuildDefinition("rally-01", "wheel-plasma", "Rally Apex", new Color(0.20f, 0.88f, 0.55f)),
-            new VehicleBuildDefinition("formula-01", "wheel-racing", "Formula Pro", new Color(0.12f, 0.85f, 0.95f)),
+            new VehicleBuildDefinition("formula-01", "wheel-racing", "DAPEX Sprint", new Color(0.12f, 0.85f, 0.95f)),
             new VehicleBuildDefinition("sport-bike-01", "wheel-racing", "Apex Carver Pro", new Color(0.95f, 0.38f, 0.15f)),
             new VehicleBuildDefinition("aerial-satelite-01", "wheel-plasma", "Orbit Turbo", new Color(0.25f, 0.65f, 0.92f)),
-            new VehicleBuildDefinition("formula-01", "wheel-carbon", "Monocoque GT", new Color(0.55f, 0.22f, 0.88f))
+            new VehicleBuildDefinition("formula-01", "wheel-carbon", "DAPEX Carbon", new Color(0.55f, 0.22f, 0.88f))
         };
 
         public static readonly VehicleBuildDefinition[] CompetitiveAlternativePool = new[]
@@ -75,11 +75,11 @@ namespace AnimeHillRacing.Racing3D
         };
 
         // Continuous piecewise knots (MMR, Probability)
-        // Individual adoption rises from 6% at 10k to 82% at 50k and 99.8% at
-        // 100k. Matchmaking adds seeded elite convergence to 10 or 11 exact builds.
+        // Individual adoption rises from 6% at 1k to 82% at 5k and 99.8% at
+        // 10k. Matchmaking adds seeded elite convergence to 10 or 11 exact builds.
         private static readonly float[] MmrKnots = new float[]
         {
-            0f, 10000f, 20000f, 30000f, 40000f, 50000f, 60000f, 70000f, 80000f, 90000f, 100000f, 125000f
+            0f, 1000f, 2000f, 3000f, 4000f, 5000f, 6000f, 7000f, 8000f, 9000f, 10000f, 12500f
         };
 
         private static readonly float[] ProbKnots = new float[]
@@ -132,8 +132,8 @@ namespace AnimeHillRacing.Racing3D
             }
 
             // Distribute remaining non-meta probability dynamically
-            float nearMetaShare = Mathf.Lerp(0.20f, 0.70f, Mathf.Clamp01(mmr / 70000f));
-            float specialistShare = Mathf.Lerp(0.15f, 0.25f, Mathf.Clamp01(mmr / 50000f));
+            float nearMetaShare = Mathf.Lerp(0.20f, 0.70f, Mathf.Clamp01(mmr / 7000f));
+            float specialistShare = Mathf.Lerp(0.15f, 0.25f, Mathf.Clamp01(mmr / 5000f));
 
             float subRoll = rng.NextFloat();
             if (subRoll < nearMetaShare)

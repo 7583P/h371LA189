@@ -35,75 +35,32 @@ namespace AnimeHillRacing.Racing3D
             previewCamera.cullingMask=1<<29;
             foreach(var part in stage.GetComponentsInChildren<Transform>())part.gameObject.layer=29;
         }
-        public void Show(string id,string wheels,Color? paint=null)
+        public void Show(string id,string wheels,Color? paint=null,string character="cobalt-driver",string accessory="none")
         {
             if(PreviewVehicle!=null)Destroy(PreviewVehicle);
             PreviewVehicle=new GameObject("Studio "+id);PreviewVehicle.transform.SetParent(stage.transform,false);
             bool isMeta=(id=="formula-01"||id==MetaProgressionConfig.MetaVehicleId);
-            Color c = paint ?? (isMeta ? RacingVehicleFactory.MetaBlack : (id=="car-01" ? new Color(0.95f, 0.45f, 0.10f) : RacingDesign.Cyan));
+            Color c = paint ?? (isMeta ? RacingVehicleFactory.MetaNavy : (id=="car-01" ? new Color(0.95f, 0.45f, 0.10f) : RacingDesign.Cyan));
             string w = (wheels==MetaProgressionConfig.MetaWheelId || wheels=="wheel-meta-cyan") ? MetaProgressionConfig.MetaWheelVisualId : wheels;
-            RacingVehicleVisuals.Build(PreviewVehicle,id,w,c,preview:false,isHuman:isMeta);
+            var visual=RacingVehicleVisuals.Build(PreviewVehicle,id,w,c,preview:false,isHuman:isMeta);
+            RacingLoadoutVisuals.Apply(visual,character,accessory);
             foreach(var part in PreviewVehicle.GetComponentsInChildren<Transform>())part.gameObject.layer=29;
         }
         void LateUpdate()
         {
             if(previewCamera==null||PreviewVehicle==null)return;
+            bool visible=!RacingMenuOverlay.CoversShowroom&&!RacingProgressionService.IsRaceActive;
+            previewCamera.enabled=visible;
+            if(stage.activeSelf!=visible)stage.SetActive(visible);
+            if(!visible)return;
             if(Time.unscaledTime-idleTime>2)yaw+=Time.unscaledDeltaTime*6;
             PreviewVehicle.transform.localRotation=Quaternion.Euler(0,yaw,0);
             previewCamera.transform.localPosition=new Vector3(0,zoom*.38f,zoom);previewCamera.transform.LookAt(stage.transform.position+Vector3.up*.15f);
         }
         public void OnDrag(PointerEventData e){yaw+=e.delta.x*.3f;idleTime=Time.unscaledTime;}
         public void OnScroll(PointerEventData e){zoom=Mathf.Clamp(zoom-e.scrollDelta.y*.35f,4.5f,8.5f);idleTime=Time.unscaledTime;}
+        void OnDisable(){if(stage!=null)stage.SetActive(false);}
         void OnDestroy(){for(int i=0;i<sceneLights.Count;i++)if(sceneLights[i]!=null)sceneLights[i].cullingMask=lightMasks[i];if(texture!=null){texture.Release();Destroy(texture);}if(stage!=null)Destroy(stage);}
     }
-    [RequireComponent(typeof(CanvasRenderer))]
-    public sealed class RacingEmblem:MaskableGraphic
-    {
-        public RaceItemType Item;
-        public int Tier=-1;
-        public bool Contours;
-        protected override void OnPopulateMesh(VertexHelper vh)
-        {
-            vh.Clear();Rect r=rectTransform.rect;
-            if(Contours)
-            {
-                for(int line=0;line<10;line++)for(int s=0;s<40;s++)
-                {
-                    float x1=s/40f,x2=(s+1)/40f;
-                    float y1=.25f+line*.05f+Mathf.Sin(x1*6+line*.13f)*.09f;
-                    float y2=.25f+line*.05f+Mathf.Sin(x2*6+line*.13f)*.09f;
-                    Line(vh,new Vector2(r.xMin+x1*r.width,r.yMin+y1*r.height),new Vector2(r.xMin+x2*r.width,r.yMin+y2*r.height),1.2f,color);
-                }
-                return;
-            }
-            Vector2 center=r.center;float size=Mathf.Min(r.width,r.height)*.42f;
-            if(Tier>=0)
-            {
-                for(int i=0;i<6;i++){float a=(i*60+30)*Mathf.Deg2Rad,b=((i+1)*60+30)*Mathf.Deg2Rad;Line(vh,center+new Vector2(Mathf.Cos(a),Mathf.Sin(a))*size,center+new Vector2(Mathf.Cos(b),Mathf.Sin(b))*size,3,color);}
-                Line(vh,center+new Vector2(-.7f,-.25f)*size,center+new Vector2(0,.6f)*size,5,color);
-                Line(vh,center+new Vector2(0,.6f)*size,center+new Vector2(.7f,-.25f)*size,5,color);
-                for(int i=0;i<Mathf.Min(4,Tier/3+1);i++)Line(vh,center+new Vector2(-.4f,-.35f-i*.12f)*size,center+new Vector2(.4f,-.35f-i*.12f)*size,2,color);
-            }
-            else if(Item==RaceItemType.TurboPulse||Item==RaceItemType.HyperCharge)
-            {
-                int count=Item==RaceItemType.HyperCharge?3:2;
-                for(int i=0;i<count;i++){float x=(i-(count-1)*.5f)*.45f;Line(vh,center+new Vector2(x-.24f,-.6f)*size,center+new Vector2(x+.24f,0)*size,6,color);Line(vh,center+new Vector2(x+.24f,0)*size,center+new Vector2(x-.24f,.6f)*size,6,color);}
-            }
-            else if(Item==RaceItemType.KineticMissile)
-            {
-                Line(vh,center+new Vector2(-.6f,-.6f)*size,center+new Vector2(.55f,.6f)*size,7,color);Line(vh,center+new Vector2(.55f,.6f)*size,center+new Vector2(-.05f,.38f)*size,5,color);Line(vh,center+new Vector2(.55f,.6f)*size,center+new Vector2(.35f,-.05f)*size,5,color);
-            }
-            else
-            {
-                int edges=Item==RaceItemType.MagneticShield?6:Item==RaceItemType.ElectroSpike?8:24;
-                for(int i=0;i<edges;i++){float a=i*Mathf.PI*2/edges,b=(i+1)*Mathf.PI*2/edges;float radius=Item==RaceItemType.ElectroSpike&&(i&1)==0?size:size*.72f;float nextRadius=Item==RaceItemType.ElectroSpike&&((i+1)&1)==0?size:size*.72f;Line(vh,center+new Vector2(Mathf.Cos(a),Mathf.Sin(a))*radius,center+new Vector2(Mathf.Cos(b),Mathf.Sin(b))*nextRadius,4,color);}
-                if(Item==RaceItemType.ShockwavePulse)for(int i=0;i<24;i++){float a=i*Mathf.PI/12,b=(i+1)*Mathf.PI/12;Line(vh,center+new Vector2(Mathf.Cos(a),Mathf.Sin(a))*size*.38f,center+new Vector2(Mathf.Cos(b),Mathf.Sin(b))*size*.38f,3,color);}
-            }
-        }
-        public static void Line(VertexHelper vh,Vector2 a,Vector2 b,float width,Color color)
-        {
-            Vector2 side=new Vector2(-(b-a).y,(b-a).x).normalized*width*.5f;int i=vh.currentVertCount;
-            vh.AddVert(a-side,color,Vector2.zero);vh.AddVert(a+side,color,Vector2.zero);vh.AddVert(b+side,color,Vector2.zero);vh.AddVert(b-side,color,Vector2.zero);vh.AddTriangle(i,i+1,i+2);vh.AddTriangle(i,i+2,i+3);
-        }
-    }
+
 }

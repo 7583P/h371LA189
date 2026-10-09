@@ -8,7 +8,7 @@ namespace AnimeHillRacing.Racing3D
         int aa,pixelLights,vSync,fps;ShadowQuality shadows;float shadowDistance;ShadowResolution resolution;
         static RacingQuality? cached,validationQuality;
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void Reset(){cached=validationQuality=null;}
+        static void SubsystemReset(){cached=validationQuality=null;}
         public static RacingQuality Current
         {
             get
@@ -35,7 +35,8 @@ namespace AnimeHillRacing.Racing3D
             QualitySettings.pixelLightCount=quality==RacingQuality.High?2:1;
             QualitySettings.shadows=quality==RacingQuality.Low?ShadowQuality.Disable:ShadowQuality.HardOnly;
             QualitySettings.shadowDistance=quality==RacingQuality.High?85:45;QualitySettings.shadowResolution=quality==RacingQuality.High?ShadowResolution.Medium:ShadowResolution.Low;
-            QualitySettings.vSyncCount=0;Application.targetFrameRate=60;
+            QualitySettings.vSyncCount=0;
+            Application.targetFrameRate=Application.isMobilePlatform?60:-1;
         }
         void OnDestroy(){QualitySettings.antiAliasing=aa;QualitySettings.pixelLightCount=pixelLights;QualitySettings.shadows=shadows;QualitySettings.shadowDistance=shadowDistance;QualitySettings.shadowResolution=resolution;QualitySettings.vSyncCount=vSync;Application.targetFrameRate=fps;}
     }

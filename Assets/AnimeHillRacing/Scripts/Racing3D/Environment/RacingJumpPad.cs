@@ -12,7 +12,9 @@ namespace AnimeHillRacing.Racing3D
         public float VerticalImpulse { get; set; } = 6.5f;
         public bool RequiresBoost { get; set; }
 
-        private void OnTriggerEnter(Collider other)
+        private void OnTriggerEnter(Collider other) => TryLaunch(other);
+        private void OnTriggerStay(Collider other) => TryLaunch(other);
+        private void TryLaunch(Collider other)
         {
             var vehicle = other.GetComponentInParent<RacingVehiclePhysics>();
             if (vehicle == null || !vehicle.RaceEnabled || vehicle.ForwardSpeedMps < 4f) return;

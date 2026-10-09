@@ -1,11 +1,13 @@
 using System;
 using UnityEngine;
+using Unity.Profiling;
 
 namespace AnimeHillRacing.Racing3D
 {
     [RequireComponent(typeof(RacingVehiclePhysics))]
     public sealed class VehicleRecovery : MonoBehaviour
     {
+        static readonly ProfilerMarker RecoveryMarker=new ProfilerMarker("Racing.Recovery.Guards");
         [Header("Thresholds")]
         [SerializeField] private float fallKillPlaneY = -30f;
         [SerializeField] private float flippedDurationThreshold = 1.8f;
@@ -48,22 +50,26 @@ namespace AnimeHillRacing.Racing3D
 
         private void Start() { EnsureComponents(); graph = FindFirstObjectByType<TrackSplineGraph>(); }
 
-        private void Update()
+        // These guards observe physical motion, at the same cadence as the car.
+        // Projection and route checks no longer repeat for every rendered frame.
+        private void FixedUpdate()
+        { using(RecoveryMarker.Auto()) StepRecovery(); }
+        private void StepRecovery()
         {
             if (vehiclePhysics == null || !vehiclePhysics.RaceEnabled) return;
             if (recoveryPenaltyRemaining > 0f)
             {
-                recoveryPenaltyRemaining -= Time.deltaTime;
+                recoveryPenaltyRemaining -= Time.fixedDeltaTime;
                 if (recoveryPenaltyRemaining <= 0f)
                 {
                     recoveryPenaltyRemaining = 0f;
                 }
             }
 
-            CheckFlipped(Time.deltaTime);
-            CheckStuck(Time.deltaTime);
+            CheckFlipped(Time.fixedDeltaTime);
+            CheckStuck(Time.fixedDeltaTime);
             CheckFallPlane();
-            CheckOutsideCourse(Time.deltaTime);
+            CheckOutsideCourse(Time.fixedDeltaTime);
         }
 
         private void CheckOutsideCourse(float dt)

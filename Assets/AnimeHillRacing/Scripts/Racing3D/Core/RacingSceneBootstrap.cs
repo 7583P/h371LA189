@@ -89,7 +89,11 @@ namespace AnimeHillRacing.Racing3D
             {
                 if (FindFirstObjectByType<TestCircuit3DBuilder>() == null) new GameObject("TestCircuit3D").AddComponent<TestCircuit3DBuilder>();
             }
-            else if (FindFirstObjectByType<CanyonRushBuilder>() == null) new GameObject("Canyon Rush").AddComponent<CanyonRushBuilder>();
+            else if (FindFirstObjectByType<TrackSplineGraph>() == null)
+            {
+                if(RacingTrackSelection.Id==VerdantCircuit.Id)new GameObject("Verdant Run").AddComponent<VerdantCircuitBuilder>();
+                else new GameObject("Night City Sky").AddComponent<CanyonRushBuilder>();
+            }
             if (FindFirstObjectByType<RacingQualityScope>() == null) gameObject.AddComponent<RacingQualityScope>();
             RacingFeedback.Ensure();RacingVfxPool.Ensure();RacingItemPool.ForScene();
 
@@ -133,7 +137,10 @@ namespace AnimeHillRacing.Racing3D
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             // Race telemetry is diagnostic work; release players must not record
             // profiler samples or write reports beside the installed game.
-            if (FindFirstObjectByType<RacingRaceMetrics>() == null) gameObject.AddComponent<RacingRaceMetrics>();
+            // Human Gate remains a development build, but its normal play path
+            // must not continuously sample native GPU timers or export QA files.
+            if ((Application.isEditor || Array.IndexOf(Environment.GetCommandLineArgs(), "--closure-player") >= 0) && FindFirstObjectByType<RacingRaceMetrics>() == null)
+                gameObject.AddComponent<RacingRaceMetrics>();
 #endif
 
             Debug.Log("[RacingSceneBootstrap] Scene components verified and bootstrapped successfully.");

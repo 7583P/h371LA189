@@ -19,7 +19,10 @@ namespace AnimeHillRacing.Racing3D
                     Weight = 1100f,
                     MiniTurbo = 1.0f,
                     Offroad = 0.72f,
-                    Stability = 1.2f
+                    Stability = 1.2f,
+                    MiniTurboDuration1 = 0.70f,
+                    MiniTurboDuration2 = 1.40f,
+                    MiniTurboDuration3 = 2.10f
                 },
                 ["rally-01"] = new RacingVehicleStats // Rally Car
                 {
@@ -31,9 +34,12 @@ namespace AnimeHillRacing.Racing3D
                     Weight = 980f,
                     MiniTurbo = 1.2f,
                     Offroad = 0.68f,
-                    Stability = 1.05f
+                    Stability = 1.05f,
+                    MiniTurboDuration1 = 0.85f,
+                    MiniTurboDuration2 = 1.65f,
+                    MiniTurboDuration3 = 2.45f
                 },
-                ["formula-01"] = new RacingVehicleStats // Formula 1
+                ["formula-01"] = new RacingVehicleStats // Formula 1 - Formula Apex (MAX capability: 1.0s, 2.0s, 3.0s)
                 {
                     Speed = 175f,
                     Acceleration = 16.0f,
@@ -43,7 +49,10 @@ namespace AnimeHillRacing.Racing3D
                     Weight = 750f,
                     MiniTurbo = 1.35f,
                     Offroad = 0.40f,
-                    Stability = 1.45f
+                    Stability = 1.45f,
+                    MiniTurboDuration1 = 1.0f,
+                    MiniTurboDuration2 = 2.0f,
+                    MiniTurboDuration3 = 3.0f
                 },
                 ["buggy-01"] = new RacingVehicleStats // Dunes Buggy
                 {
@@ -55,7 +64,10 @@ namespace AnimeHillRacing.Racing3D
                     Weight = 880f,
                     MiniTurbo = 1.1f,
                     Offroad = 0.88f,
-                    Stability = 1.35f
+                    Stability = 1.35f,
+                    MiniTurboDuration1 = 0.75f,
+                    MiniTurboDuration2 = 1.50f,
+                    MiniTurboDuration3 = 2.20f
                 },
                 ["sport-bike-01"] = new RacingVehicleStats // Sport Bike
                 {
@@ -67,7 +79,10 @@ namespace AnimeHillRacing.Racing3D
                     Weight = 620f,
                     MiniTurbo = 1.45f,
                     Offroad = 0.50f,
-                    Stability = 0.85f
+                    Stability = 0.85f,
+                    MiniTurboDuration1 = 0.90f,
+                    MiniTurboDuration2 = 1.80f,
+                    MiniTurboDuration3 = 2.65f
                 },
                 ["hill-adventurer"] = new RacingVehicleStats // Hill Adventurer
                 {
@@ -79,7 +94,10 @@ namespace AnimeHillRacing.Racing3D
                     Weight = 1050f,
                     MiniTurbo = 1.1f,
                     Offroad = 0.75f,
-                    Stability = 1.15f
+                    Stability = 1.15f,
+                    MiniTurboDuration1 = 0.75f,
+                    MiniTurboDuration2 = 1.50f,
+                    MiniTurboDuration3 = 2.15f
                 },
                 ["aerial-satelite-01"] = new RacingVehicleStats // Aerial Satellite
                 {
@@ -91,7 +109,10 @@ namespace AnimeHillRacing.Racing3D
                     Weight = 790f,
                     MiniTurbo = 1.5f,
                     Offroad = 0.65f,
-                    Stability = 1.25f
+                    Stability = 1.25f,
+                    MiniTurboDuration1 = 0.95f,
+                    MiniTurboDuration2 = 1.85f,
+                    MiniTurboDuration3 = 2.75f
                 }
             };
 
@@ -161,7 +182,12 @@ namespace AnimeHillRacing.Racing3D
                 }
             };
 
-        static RacingStatsCalculator() { BaseVehicleStats["hill-adventurer-01"] = BaseVehicleStats["hill-adventurer"]; }
+        static RacingStatsCalculator()
+        {
+            BaseVehicleStats["hill-adventurer-01"] = BaseVehicleStats["hill-adventurer"];
+            // Whity is a new identity for the existing META specification, with no performance inflation.
+            BaseWheelModifiers["wheel-whity"] = BaseWheelModifiers["wheel-plasma"];
+        }
         public static string NormalizeVehicleId(string id) => id == "hill-adventurer" ? "hill-adventurer-01" : !string.IsNullOrEmpty(id) && BaseVehicleStats.ContainsKey(id) ? id : "car-01";
         public static string NormalizeWheelId(string id) => !string.IsNullOrEmpty(id) && BaseWheelModifiers.ContainsKey(id) ? id : "wheel-default";
 
@@ -203,6 +229,9 @@ namespace AnimeHillRacing.Racing3D
             float finalMiniTurbo = Mathf.Clamp(baseStats.MiniTurbo + wheelMods.MiniTurboDelta, 0.4f, 3.0f);
             float finalOffroad = Mathf.Clamp01(baseStats.Offroad + wheelMods.OffroadDelta);
             float finalStability = Mathf.Clamp(baseStats.Stability + wheelMods.StabilityDelta, 0.4f, 3.0f);
+            float finalDuration1 = Mathf.Clamp(baseStats.MiniTurboDuration1 > 0.01f ? baseStats.MiniTurboDuration1 : 0.75f, 0.4f, 1.0f);
+            float finalDuration2 = Mathf.Clamp(baseStats.MiniTurboDuration2 > 0.01f ? baseStats.MiniTurboDuration2 : 1.50f, 0.8f, 2.0f);
+            float finalDuration3 = Mathf.Clamp(baseStats.MiniTurboDuration3 > 0.01f ? baseStats.MiniTurboDuration3 : 2.25f, 1.2f, 3.0f);
 
             return new FinalRacingStats
             {
@@ -214,7 +243,10 @@ namespace AnimeHillRacing.Racing3D
                 WeightKg = finalWeight,
                 MiniTurboMultiplier = finalMiniTurbo,
                 OffroadRetention = Mathf.Max(0.2f, finalOffroad),
-                Stability = finalStability
+                Stability = finalStability,
+                MiniTurboDuration1 = finalDuration1,
+                MiniTurboDuration2 = finalDuration2,
+                MiniTurboDuration3 = finalDuration3
             };
         }
     }

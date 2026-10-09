@@ -218,13 +218,14 @@ namespace AnimeHillRacing.Editor
             v.wheelVisualDiameter = 1.06f;
             v.flipBodyX = false;
             v.previewSprite = body;
-            v.skins = new[]
+            v.skins = PreserveAdditionalCustomization(v.skins, new[]
             {
                 Option("buggy-skin-default", "BROWN", body),
                 Option("buggy-skin-red", "RACING RED", redBody, false, 500),
                 Option("buggy-skin-black-gold", "BLACK & GOLD", blackGoldBody, false, 500)
-            };
-            v.wheels = new[] { Option("buggy-wheel-default", "MOUNTAIN GRIP", wheel) };
+            });
+            v.wheels = PreserveAdditionalCustomization(v.wheels,
+                new[] { Option("buggy-wheel-default", "MOUNTAIN GRIP", wheel) });
 
             VehicleDefinition hill = AssetDatabase.LoadAssetAtPath<VehicleDefinition>(
                 Root + "/VehicleData/HillAdventurerVehicle.asset");
@@ -236,6 +237,18 @@ namespace AnimeHillRacing.Editor
                 v.driverPose.rootPosition = new Vector2(-.33f, .29f);
                 v.driverPose.rootScale = .80f;
             }
+        }
+
+        private static VehicleDefinition.CustomizationOption[] PreserveAdditionalCustomization(
+            VehicleDefinition.CustomizationOption[] existing, VehicleDefinition.CustomizationOption[] canonical)
+        {
+            var options = new List<VehicleDefinition.CustomizationOption>(canonical);
+            var canonicalIds = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var option in canonical) canonicalIds.Add(option.optionId);
+            if (existing != null)
+                foreach (var option in existing)
+                    if (option != null && !canonicalIds.Contains(option.optionId)) options.Add(option);
+            return options.ToArray();
         }
 
         private static VehicleDefinition.CustomizationOption Option(string id, string name, Sprite sprite,
@@ -705,8 +718,11 @@ namespace AnimeHillRacing.Editor
             {
                 "countryside", "city", "neon-city", "mountains", "rainyer", "space", "north-pole"
             };
-            if (catalog == null || catalog.CountMaps(GameModeType.Adventure2_5D) != expected.Length)
-                throw new InvalidOperationException("Adventure catalog does not contain all seven tracks.");
+            // These are the required base tracks; later content such as Last Horizon may follow them.
+            int adventureTrackCount = catalog != null ? catalog.CountMaps(GameModeType.Adventure2_5D) : 0;
+            if (catalog == null || adventureTrackCount < expected.Length)
+                throw new InvalidOperationException(
+                    $"Adventure catalog requires at least {expected.Length} tracks; found {adventureTrackCount}.");
             for (int i = 0; i < expected.Length; i++)
                 if (catalog.GetCompatibleMap(GameModeType.Adventure2_5D, i)?.mapId != expected[i])
                     throw new InvalidOperationException(

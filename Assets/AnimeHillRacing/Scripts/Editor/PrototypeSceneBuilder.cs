@@ -2203,7 +2203,8 @@ namespace AnimeHillRacing.Editor
                 Mathf.Abs((lockedYLow + 80f) - (lockedYHigh - 120f)) > .001f)
                 throw new System.InvalidOperationException(
                     "Neon City background must remain vertically locked to the camera with horizontal parallax enabled.");
-            if (assets.catalog.CountMaps(GameModeType.Adventure2_5D) != 7 ||
+            // Keep the seven base tracks in order while allowing additional tracks such as Last Horizon.
+            if (assets.catalog.CountMaps(GameModeType.Adventure2_5D) < 7 ||
                 assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 0)?.mapId != "countryside" ||
                 assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 1)?.mapId != "city" ||
                 assets.catalog.GetCompatibleMap(GameModeType.Adventure2_5D, 2)?.mapId != "neon-city" ||
@@ -2214,7 +2215,7 @@ namespace AnimeHillRacing.Editor
                 rainyer == null || assets.catalog.FindMap("rainyer", GameModeType.Adventure2_5D) != rainyer ||
                 mountains == null || assets.catalog.FindMap("mountains", GameModeType.Adventure2_5D) != mountains)
                 throw new System.InvalidOperationException(
-                    "Adventure track selector requires all seven profiles in ascending coin-price order: " +
+                    "Adventure track selector requires the seven base profiles in ascending coin-price order: " +
                     "Countryside, City, Neon City, Mountains, Rainyer, Space and North Pole.");
             if (profile == null || !profile.supportsLiquidExposure || profile.liquidChallenges == null ||
                 profile.liquidChallenges.cycleLength != 6000f ||

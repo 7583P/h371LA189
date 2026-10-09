@@ -221,6 +221,7 @@ namespace AnimeHillRacing.UI
             EnsureOptionStateVisuals();
             if (Application.isPlaying) starterPackShop = StarterPackShopUI.Attach(storePanel, catalog);
             if (Application.isPlaying) gemPackShop = GemPackShopUI.Attach(storePanel);
+            if (Application.isPlaying) VipSubscriptionShopUI.Attach(storePanel);
             if (Application.isPlaying) coinPackShop = CoinPackShopUI.Attach(storePanel);
             if (Application.isPlaying) googlePlayStatus = GooglePlayStatusUI.Attach(settingsPanel);
             FindSavedVehicle();

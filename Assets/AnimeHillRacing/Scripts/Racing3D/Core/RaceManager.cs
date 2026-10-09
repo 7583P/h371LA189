@@ -1,8 +1,9 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using AnimeHillRacing.Racing3D.ML;
 
 namespace AnimeHillRacing.Racing3D
 {
@@ -113,16 +114,18 @@ namespace AnimeHillRacing.Racing3D
             string playerVehicle = RacingSaveManager.SelectedVehicleId;
             string playerWheel = RacingSaveManager.SelectedWheelId;
 
-            lobbyRacers = MatchmakingService.GenerateRankedLobby(
+            bool diagnosticLobby = RacingTestSession.Active || rules.EqualBuildBenchmark;
+            int lobbySeed = EffectiveSeed = RacingTestSession.Active ? RacingTestSession.Seed : rules.RaceSeed != 0 ? rules.RaceSeed : UnityEngine.Random.Range(1, int.MaxValue);
+            lobbyRacers = diagnosticLobby ? MatchmakingService.GenerateSeededTestLobby(playerMmr, playerVehicle, playerWheel, "PLAYER", lobbySeed) : MatchmakingService.GenerateRankedLobby(
                 playerMmr,
                 playerVehicle,
                 playerWheel,
                 "PLAYER",
-                EffectiveSeed = RacingTestSession.Active ? RacingTestSession.Seed : rules.RaceSeed != 0 ? rules.RaceSeed : UnityEngine.Random.Range(1, int.MaxValue)
+                lobbySeed
             );
             if (rules.EqualBuildBenchmark)
                 foreach (var racer in lobbyRacers)
-                { racer.vehicleId = MetaProgressionConfig.MetaVehicleId; racer.wheelId = MetaProgressionConfig.MetaWheelId; }
+                { racer.vehicleId = MetaProgressionConfig.MetaVehicleId; racer.wheelId = MetaProgressionConfig.MetaWheelId;if(rules.BenchmarkMmr>=0)racer.mmr=rules.BenchmarkMmr; }
         }
 
         private void SpawnRacers()
@@ -162,10 +165,15 @@ namespace AnimeHillRacing.Racing3D
                 if (identity.isHuman)
                 {
                     playerVehicle = vehicle;
+                    racerObj.AddComponent<RacingTechniqueObserver>().Initialize(vehicle,trackGraph);
                     playerInput = racerObj.GetComponent<PlayerRacingInput>();
                     if (playerInput == null) playerInput = racerObj.AddComponent<PlayerRacingInput>();
                     playerInput.SetInputEnabled(false);
                     vehicle.Initialize(identity.vehicleId, identity.wheelId, playerInput);
+
+                    var recorder = racerObj.GetComponent<RacingTelemetryRecorder>() ?? racerObj.AddComponent<RacingTelemetryRecorder>();
+                    string trackId = FindFirstObjectByType<RacingTrackInfo>()?.TrackId ?? "NightCityGrandCircuit";
+                    recorder.StartSession(trackId, EffectiveSeed, identity.mmr, true);
 
                     if (racingCamera != null)
                     {
@@ -178,13 +186,19 @@ namespace AnimeHillRacing.Racing3D
                     if (aiController == null) aiController = racerObj.AddComponent<AiVehicleController>();
 
                     AiRacerProfile profile = AiSkillModel.CreateProfile(identity.mmr, identity.personalitySeed);
+                    if (identity.hasPersistentStyle) profile.style = identity.preferredStyle;
                     aiController.Initialize(profile, trackGraph, progressTracker, identity.displayName);
                     vehicle.Initialize(identity.vehicleId, identity.wheelId, aiController);
+
+                    var mlAdapter = racerObj.GetComponent<RacingMlInferenceAdapter>() ?? racerObj.AddComponent<RacingMlInferenceAdapter>();
+                    mlAdapter.executionMode = MlExecutionMode.Shadow;
+                    mlAdapter.mmr = identity.mmr;
                 }
 
                 if (progressTracker != null)
                 {
                     progressTracker.RegisterRacer(identity, vehicle, recovery);
+                    inventory.BindRaceProgress(progressTracker);
                 }
 
                 spawnedVehicles.Add(vehicle);
@@ -258,13 +272,26 @@ namespace AnimeHillRacing.Racing3D
             if (progressTracker?.GetPlayerProgress()?.Finished != true) return;
 
             SetState(RaceState.Results);
+            // Coin items already updated the shared wallet. Flush once outside active
+            // gameplay, rather than synchronously writing preferences on every pickup.
+            playerVehicle?.GetComponent<ItemInventory>()?.FlushCoinRewards();
             BuildResults();
 
             // Persist human player MMR
             var playerEntry = finalResults.GetPlayerEntry();
             if (playerEntry != null && PersistResults)
             {
-                RacingSaveManager.RecordRaceResult(playerEntry.finishPosition, playerEntry.mmrDelta);
+                RacingProgressionService.RecordRankedResults(finalResults);
+                RacingSaveManager.RecordRecentFinish(playerEntry.finishPosition);
+            }
+
+            // End telemetry recording session
+            var recorder = playerVehicle?.GetComponent<RacingTelemetryRecorder>();
+            if (recorder != null && playerEntry != null)
+            {
+                var progress=progressTracker.FindRacer(playerVehicle);
+                float bestLap = progress!=null?progress.GetDisplayBestLap():0;
+                recorder.EndSession(playerEntry.finishPosition, progress!=null&&progress.Finished?progress.FinishTime:finalResults.totalRaceTime, bestLap, progress!=null?progress.MeasuredLapTimes.ToArray():Array.Empty<float>());
             }
 
             OnRaceCompleted?.Invoke(finalResults);
@@ -293,10 +320,14 @@ namespace AnimeHillRacing.Racing3D
                 allPositions[i] = leaderboard[i].RacePosition;
             }
 
+            var deviations = new float[count]; var ratingDeltas = new int[count];
+            for (int i = 0; i < count; i++) deviations[i] = PersistResults ? RacingProgressionService.Find(leaderboard[i].Identity.racerId)?.uncertainty ?? .5f : .5f;
+            if (count > 1) LocalLeagueEngine.CalculateDeltas(allMmrs, allPositions, deviations, RacingProgressionService.Engine.Configuration, ratingDeltas);
+
             for (int i = 0; i < count; i++)
             {
                 RacerProgress r = leaderboard[i];
-                int delta = MmrSystem.CalculateMmrDelta(i, r.Identity.mmr, r.RacePosition, allMmrs, allPositions);
+                int delta = ratingDeltas[i];
                 int newMmr = MmrSystem.ApplyDelta(r.Identity.mmr, delta);
 
                 finalResults.entries[i] = new RacerResultEntry
@@ -312,7 +343,11 @@ namespace AnimeHillRacing.Racing3D
                     bestLapTime = r.GetDisplayBestLap(),
                     oldMmr = r.Identity.mmr,
                     mmrDelta = delta,
-                    newMmr = newMmr
+                    newMmr = newMmr,
+                    titleId = r.Identity.titleId,
+                    shortcutSuccesses = r.Identity.isHuman ? r.Vehicle.GetComponent<RacingTechniqueObserver>()?.ShortcutSuccesses ?? 0 : r.Vehicle.GetComponent<AiVehicleController>()?.ShortcutCompletions ?? 0,
+                    aerialSuccesses = r.Identity.isHuman ? r.Vehicle.GetComponent<RacingTechniqueObserver>()?.AerialSuccesses ?? 0 : r.Vehicle.JumpTrickLandingChains,
+                    landingSuccesses = r.Vehicle.LandingBoosts
                 };
             }
         }
@@ -320,6 +355,7 @@ namespace AnimeHillRacing.Racing3D
         private void SetState(RaceState newState)
         {
             currentState = newState;
+            RacingProgressionService.SetRaceActive(newState == RaceState.Preparing || newState == RaceState.Countdown || newState == RaceState.Racing || newState == RaceState.PlayerFinished);
             OnStateChanged?.Invoke(newState);
         }
 
@@ -336,6 +372,7 @@ namespace AnimeHillRacing.Racing3D
         private void OnDestroy()
         {
             if (progressTracker != null) progressTracker.OnRacerFinished -= HandleRacerFinished;
+            RacingProgressionService.SetRaceActive(false);
         }
     }
 }

@@ -1,0 +1,1856 @@
+{
+  "status": "LOCAL_CANDIDATE_ONLY",
+  "audit": {
+    "accepted": 282,
+    "rejected": [
+      {
+        "file": "Logs\\RacingPhase2\\closure\\rc-mmr-matrix-complete-20261006\\telemetry\\race_NightCityGrandCircuit_100000_8c2591002fe9423eb5216a85d9d7db91.json",
+        "reasons": [
+          "sample 1353: unexplained discontinuity",
+          "runtime legality gate rejected session"
+        ]
+      },
+      {
+        "file": "Logs\\RacingPhase2\\closure\\rc-mmr-matrix-complete-20261006\\telemetry\\race_NightCityGrandCircuit_100000_e99ef59d50244b709383ec7b4acbcc52.json",
+        "reasons": [
+          "sample 992: unexplained discontinuity",
+          "runtime legality gate rejected session"
+        ]
+      },
+      {
+        "file": "Logs\\RacingPhase2\\closure\\rc-mmr-matrix-complete-20261006\\telemetry\\race_NightCityGrandCircuit_97000_304d27360d9e4b019d7138a11ac1b41b.json",
+        "reasons": [
+          "sample 1411: unexplained discontinuity",
+          "runtime legality gate rejected session"
+        ]
+      },
+      {
+        "file": "Logs\\RacingPhase2\\closure\\rc-mmr-matrix-complete-20261006\\telemetry\\race_NightCityGrandCircuit_97000_3e852ca6e792475ebba6ddaa2b46380c.json",
+        "reasons": [
+          "sample 1586: unexplained discontinuity",
+          "runtime legality gate rejected session"
+        ]
+      },
+      {
+        "file": "Logs\\RacingPhase2\\closure\\rc-mmr-matrix-complete-20261006\\telemetry\\race_NightCityGrandCircuit_97000_84cafdd5da044fc5928372bb3abefb64.json",
+        "reasons": [
+          "sample 685: unexplained discontinuity",
+          "runtime legality gate rejected session"
+        ]
+      },
+      {
+        "file": "Logs\\RacingPhase2\\closure\\rc-mmr-matrix-complete-20261006\\telemetry\\race_NightCityGrandCircuit_97000_f3c6c13eedb24b6bb122f18b31770666.json",
+        "reasons": [
+          "sample 710: unexplained discontinuity",
+          "runtime legality gate rejected session"
+        ]
+      }
+    ],
+    "duplicates": []
+  },
+  "feature_version": "racing-context-2",
+  "features": [
+    "skill",
+    "speed",
+    "world_vx",
+    "world_vy",
+    "world_vz",
+    "pitch",
+    "roll",
+    "yaw",
+    "airborne",
+    "lateral_offset",
+    "leader_gap",
+    "local_vx",
+    "local_vy",
+    "local_vz",
+    "angular_x",
+    "angular_y",
+    "angular_z",
+    "heading_error",
+    "curvature_15",
+    "curvature_35",
+    "curvature_70",
+    "slope",
+    "bank",
+    "drift_charge",
+    "boost_remaining",
+    "jump_distance",
+    "checkpoint_progress",
+    "race_position",
+    "gap_ahead",
+    "gap_behind",
+    "closing_speed",
+    "item",
+    "nearby_traffic"
+  ],
+  "targets": [
+    "steering",
+    "throttle",
+    "brake",
+    "drift",
+    "jump",
+    "aerial_boost",
+    "pitch",
+    "air_roll"
+  ],
+  "models": {
+    "behavior_mlp": {
+      "continuous_mae": {
+        "steering": 0.08457572013139725,
+        "throttle": 0.08644139766693115,
+        "brake": 0.031793881207704544,
+        "pitch": 0.009487718343734741,
+        "air_roll": 0.010037259198725224
+      },
+      "discrete": {
+        "drift": {
+          "positives": 76549,
+          "false_positives": 3059,
+          "precision": 0.9607014388489209,
+          "recall": 0.9769036826085252,
+          "f1": 0.9687348191904863
+        },
+        "jump": {
+          "positives": 263,
+          "false_positives": 300,
+          "precision": 0.33774834437086093,
+          "recall": 0.5817490494296578,
+          "f1": 0.4273743016759777
+        },
+        "aerial_boost": {
+          "positives": 449,
+          "false_positives": 819,
+          "precision": 0.33197389885807504,
+          "recall": 0.9064587973273942,
+          "f1": 0.48597014925373133
+        }
+      },
+      "history": [
+        {
+          "epoch": 1,
+          "train_loss": 0.053506227561097214,
+          "validation_loss": 0.03429456055164337
+        },
+        {
+          "epoch": 2,
+          "train_loss": 0.031214467824415514,
+          "validation_loss": 0.028466787189245224
+        },
+        {
+          "epoch": 3,
+          "train_loss": 0.027285664172661848,
+          "validation_loss": 0.026996096596121788
+        },
+        {
+          "epoch": 4,
+          "train_loss": 0.025155111822428848,
+          "validation_loss": 0.024591900408267975
+        },
+        {
+          "epoch": 5,
+          "train_loss": 0.023793437447799968,
+          "validation_loss": 0.024020053446292877
+        },
+        {
+          "epoch": 6,
+          "train_loss": 0.022874222795515636,
+          "validation_loss": 0.022721530869603157
+        },
+        {
+          "epoch": 7,
+          "train_loss": 0.021861859312855617,
+          "validation_loss": 0.022878142073750496
+        },
+        {
+          "epoch": 8,
+          "train_loss": 0.021312219773344,
+          "validation_loss": 0.02204570546746254
+        },
+        {
+          "epoch": 9,
+          "train_loss": 0.02099696547853496,
+          "validation_loss": 0.021340293809771538
+        },
+        {
+          "epoch": 10,
+          "train_loss": 0.020409961022806834,
+          "validation_loss": 0.021874133497476578
+        },
+        {
+          "epoch": 11,
+          "train_loss": 0.019931421573726966,
+          "validation_loss": 0.022108569741249084
+        },
+        {
+          "epoch": 12,
+          "train_loss": 0.019622462571214878,
+          "validation_loss": 0.020250344648957253
+        }
+      ],
+      "held_out_metrics_by_mmr": {
+        "1000": {
+          "samples": 43497,
+          "continuous_mae": {
+            "steering": 0.059000447392463684,
+            "throttle": 0.06498529016971588,
+            "brake": 0.016725590452551842,
+            "pitch": 0.00661636283621192,
+            "air_roll": 0.006726130377501249
+          },
+          "discrete": {
+            "drift": {
+              "positives": 0,
+              "false_positives": 0,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            },
+            "jump": {
+              "positives": 0,
+              "false_positives": 0,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            },
+            "aerial_boost": {
+              "positives": 0,
+              "false_positives": 0,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            }
+          }
+        },
+        "10000": {
+          "samples": 40420,
+          "continuous_mae": {
+            "steering": 0.056531406939029694,
+            "throttle": 0.06323498487472534,
+            "brake": 0.018180077895522118,
+            "pitch": 0.007391778752207756,
+            "air_roll": 0.00797824002802372
+          },
+          "discrete": {
+            "drift": {
+              "positives": 0,
+              "false_positives": 0,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            },
+            "jump": {
+              "positives": 0,
+              "false_positives": 0,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            },
+            "aerial_boost": {
+              "positives": 0,
+              "false_positives": 0,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            }
+          }
+        },
+        "25000": {
+          "samples": 35663,
+          "continuous_mae": {
+            "steering": 0.05863884463906288,
+            "throttle": 0.06984103471040726,
+            "brake": 0.020167823880910873,
+            "pitch": 0.007363974582403898,
+            "air_roll": 0.009281112812459469
+          },
+          "discrete": {
+            "drift": {
+              "positives": 0,
+              "false_positives": 2,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            },
+            "jump": {
+              "positives": 0,
+              "false_positives": 0,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            },
+            "aerial_boost": {
+              "positives": 0,
+              "false_positives": 0,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            }
+          }
+        },
+        "50000": {
+          "samples": 29522,
+          "continuous_mae": {
+            "steering": 0.09411322325468063,
+            "throttle": 0.08465633541345596,
+            "brake": 0.027457840740680695,
+            "pitch": 0.00785883143544197,
+            "air_roll": 0.011232112534344196
+          },
+          "discrete": {
+            "drift": {
+              "positives": 18606,
+              "false_positives": 652,
+              "precision": 0.9656118143459915,
+              "recall": 0.9839836611845642,
+              "f1": 0.9747111749986689
+            },
+            "jump": {
+              "positives": 0,
+              "false_positives": 0,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            },
+            "aerial_boost": {
+              "positives": 0,
+              "false_positives": 0,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            }
+          }
+        },
+        "75000": {
+          "samples": 26246,
+          "continuous_mae": {
+            "steering": 0.10309524089097977,
+            "throttle": 0.0919291228055954,
+            "brake": 0.034718312323093414,
+            "pitch": 0.010088207200169563,
+            "air_roll": 0.011405435390770435
+          },
+          "discrete": {
+            "drift": {
+              "positives": 17099,
+              "false_positives": 645,
+              "precision": 0.9630075705437027,
+              "recall": 0.9819872507164161,
+              "f1": 0.9724048067178225
+            },
+            "jump": {
+              "positives": 0,
+              "false_positives": 0,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            },
+            "aerial_boost": {
+              "positives": 0,
+              "false_positives": 42,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            }
+          }
+        },
+        "90000": {
+          "samples": 25560,
+          "continuous_mae": {
+            "steering": 0.11410122364759445,
+            "throttle": 0.11016692221164703,
+            "brake": 0.04947102442383766,
+            "pitch": 0.012313973158597946,
+            "air_roll": 0.011747881770133972
+          },
+          "discrete": {
+            "drift": {
+              "positives": 15177,
+              "false_positives": 504,
+              "precision": 0.9672003123779773,
+              "recall": 0.9792449100612769,
+              "f1": 0.9731853452509576
+            },
+            "jump": {
+              "positives": 19,
+              "false_positives": 18,
+              "precision": 0.5135135135135135,
+              "recall": 1.0,
+              "f1": 0.6785714285714285
+            },
+            "aerial_boost": {
+              "positives": 68,
+              "false_positives": 43,
+              "precision": 0.5567010309278351,
+              "recall": 0.7941176470588235,
+              "f1": 0.6545454545454544
+            }
+          }
+        },
+        "97000": {
+          "samples": 21701,
+          "continuous_mae": {
+            "steering": 0.11845671385526657,
+            "throttle": 0.1120106652379036,
+            "brake": 0.059260960668325424,
+            "pitch": 0.015471097081899643,
+            "air_roll": 0.013515804894268513
+          },
+          "discrete": {
+            "drift": {
+              "positives": 12935,
+              "false_positives": 662,
+              "precision": 0.9498674744414994,
+              "recall": 0.9696946269810591,
+              "f1": 0.9596786534047437
+            },
+            "jump": {
+              "positives": 118,
+              "false_positives": 53,
+              "precision": 0.5092592592592593,
+              "recall": 0.4661016949152542,
+              "f1": 0.48672566371681414
+            },
+            "aerial_boost": {
+              "positives": 197,
+              "false_positives": 350,
+              "precision": 0.3445692883895131,
+              "recall": 0.934010152284264,
+              "f1": 0.5034199726402189
+            }
+          }
+        },
+        "100000": {
+          "samples": 20798,
+          "continuous_mae": {
+            "steering": 0.12849518656730652,
+            "throttle": 0.14465202391147614,
+            "brake": 0.061781346797943115,
+            "pitch": 0.015045704320073128,
+            "air_roll": 0.013105873949825764
+          },
+          "discrete": {
+            "drift": {
+              "positives": 12732,
+              "false_positives": 594,
+              "precision": 0.9538497397249631,
+              "recall": 0.964263273641219,
+              "f1": 0.9590282388782565
+            },
+            "jump": {
+              "positives": 126,
+              "false_positives": 229,
+              "precision": 0.2564935064935065,
+              "recall": 0.626984126984127,
+              "f1": 0.36405529953917043
+            },
+            "aerial_boost": {
+              "positives": 184,
+              "false_positives": 384,
+              "precision": 0.30560578661844484,
+              "recall": 0.9184782608695652,
+              "f1": 0.45861601085481685
+            }
+          }
+        }
+      },
+      "feature_permutation_delta_mae": {
+        "legacy": 0.08658991008996964,
+        "attitude": 0.026611924171447754,
+        "track": 0.06402038037776947,
+        "traffic": 0.0008587241172790527,
+        "mmr": 0.07465318590402603
+      },
+      "same_scenario_mmr_sweep": {
+        "1000": [
+          -0.008329280652105808,
+          0.943543016910553,
+          0.0012401043204590678,
+          4.660417607382783e-10,
+          2.556522638030856e-08,
+          8.020128348107392e-07,
+          0.015029407106339931,
+          0.013921139761805534
+        ],
+        "10000": [
+          -0.008788500912487507,
+          0.974093496799469,
+          0.001042413292452693,
+          7.455089878760646e-09,
+          3.354401556521225e-08,
+          1.210152959174593e-06,
+          0.016821665689349174,
+          0.014651230536401272
+        ],
+        "25000": [
+          0.023778432980179787,
+          0.9924784898757935,
+          0.0005082960706204176,
+          1.4615165127906948e-05,
+          2.3314109398597793e-07,
+          4.3662950588441163e-07,
+          0.008992591872811317,
+          0.01736680045723915
+        ],
+        "50000": [
+          -0.021067488938570023,
+          0.9975647926330566,
+          5.855021299794316e-05,
+          0.3120095729827881,
+          4.7491832333435013e-07,
+          4.105088180494931e-08,
+          0.004689090885221958,
+          0.024106353521347046
+        ],
+        "75000": [
+          -0.061639454215765,
+          0.9984292387962341,
+          3.469107468845323e-05,
+          0.8615850806236267,
+          1.989397730994824e-07,
+          6.489822368394016e-08,
+          0.009834880009293556,
+          0.024806039407849312
+        ],
+        "90000": [
+          -0.06339102238416672,
+          0.9981694221496582,
+          3.827438558801077e-05,
+          0.9417637586593628,
+          1.676292527008627e-07,
+          1.296232028380473e-07,
+          0.0120322834700346,
+          0.022901039570569992
+        ],
+        "97000": [
+          -0.052904658019542694,
+          0.9978147745132446,
+          4.530047226580791e-05,
+          0.9531282782554626,
+          1.7574782873452932e-07,
+          1.9404873796702304e-07,
+          0.013506021350622177,
+          0.020886456593871117
+        ],
+        "100000": [
+          -0.04851754382252693,
+          0.9976226687431335,
+          4.937544508720748e-05,
+          0.9560155272483826,
+          1.835717284848215e-07,
+          2.3302041540773644e-07,
+          0.01397932693362236,
+          0.019949516281485558
+        ]
+      },
+      "conditioning_claim": "Response sensitivity only; skill competence requires held-out MMR behavior and competitive human race comparison.",
+      "runtime": {
+        "onnx_bytes": 124030,
+        "sha256": "e3c4baf1ec2548de09c9543d95720f18920031534eedf45249635da49c1fcb03",
+        "onnx_max_absolute_error": 4.76837158203125e-07,
+        "cpu_latency_us_p50": 39.5,
+        "cpu_latency_us_p95": 42.809999999999995,
+        "device": "Windows host CPU, one thread; mobile performance unmeasured"
+      },
+      "native": {
+        "bytes": 120632,
+        "sha256": "75dae7b848febed359ba1c359276360618cd48937e0736d716d5167d0480c59a",
+        "format": "ML02",
+        "authority": "SHADOW_ONLY_EXPLICIT_QA_OPT_IN"
+      }
+    },
+    "temporal_gru": {
+      "continuous_mae": {
+        "steering": 0.08775751292705536,
+        "throttle": 0.0837068110704422,
+        "brake": 0.032598238438367844,
+        "pitch": 0.008587758056819439,
+        "air_roll": 0.007527675945311785
+      },
+      "discrete": {
+        "drift": {
+          "positives": 76549,
+          "false_positives": 4488,
+          "precision": 0.9438283811860122,
+          "recall": 0.9851206416804922,
+          "f1": 0.9640325477637793
+        },
+        "jump": {
+          "positives": 263,
+          "false_positives": 534,
+          "precision": 0.25314685314685315,
+          "recall": 0.688212927756654,
+          "f1": 0.37014314928425357
+        },
+        "aerial_boost": {
+          "positives": 449,
+          "false_positives": 661,
+          "precision": 0.3770028275212064,
+          "recall": 0.89086859688196,
+          "f1": 0.5298013245033112
+        }
+      },
+      "history": [
+        {
+          "epoch": 1,
+          "train_loss": 0.07032959239160175,
+          "validation_loss": 0.04012744128704071
+        },
+        {
+          "epoch": 2,
+          "train_loss": 0.03271597572920485,
+          "validation_loss": 0.030042065307497978
+        },
+        {
+          "epoch": 3,
+          "train_loss": 0.02645973393049546,
+          "validation_loss": 0.026407752186059952
+        },
+        {
+          "epoch": 4,
+          "train_loss": 0.023717947282074464,
+          "validation_loss": 0.024920187890529633
+        },
+        {
+          "epoch": 5,
+          "train_loss": 0.021933012227402463,
+          "validation_loss": 0.02345133014023304
+        },
+        {
+          "epoch": 6,
+          "train_loss": 0.020850963935865316,
+          "validation_loss": 0.022507518529891968
+        },
+        {
+          "epoch": 7,
+          "train_loss": 0.019862737705233058,
+          "validation_loss": 0.023040685802698135
+        },
+        {
+          "epoch": 8,
+          "train_loss": 0.019265280089747955,
+          "validation_loss": 0.020966878160834312
+        },
+        {
+          "epoch": 9,
+          "train_loss": 0.0184977697324216,
+          "validation_loss": 0.021194301545619965
+        },
+        {
+          "epoch": 10,
+          "train_loss": 0.018144004479316727,
+          "validation_loss": 0.021175391972064972
+        },
+        {
+          "epoch": 11,
+          "train_loss": 0.01768037930466466,
+          "validation_loss": 0.02058388479053974
+        },
+        {
+          "epoch": 12,
+          "train_loss": 0.01702480610434976,
+          "validation_loss": 0.02020174264907837
+        }
+      ],
+      "held_out_metrics_by_mmr": {
+        "1000": {
+          "samples": 43497,
+          "continuous_mae": {
+            "steering": 0.05587990954518318,
+            "throttle": 0.06258144974708557,
+            "brake": 0.01917334645986557,
+            "pitch": 0.00484875962138176,
+            "air_roll": 0.00580972246825695
+          },
+          "discrete": {
+            "drift": {
+              "positives": 0,
+              "false_positives": 0,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            },
+            "jump": {
+              "positives": 0,
+              "false_positives": 0,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            },
+            "aerial_boost": {
+              "positives": 0,
+              "false_positives": 0,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            }
+          }
+        },
+        "10000": {
+          "samples": 40420,
+          "continuous_mae": {
+            "steering": 0.056817423552274704,
+            "throttle": 0.061348412185907364,
+            "brake": 0.018926506862044334,
+            "pitch": 0.005120070185512304,
+            "air_roll": 0.005885944701731205
+          },
+          "discrete": {
+            "drift": {
+              "positives": 0,
+              "false_positives": 1,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            },
+            "jump": {
+              "positives": 0,
+              "false_positives": 0,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            },
+            "aerial_boost": {
+              "positives": 0,
+              "false_positives": 0,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            }
+          }
+        },
+        "25000": {
+          "samples": 35663,
+          "continuous_mae": {
+            "steering": 0.06078521907329559,
+            "throttle": 0.06846967339515686,
+            "brake": 0.018546979874372482,
+            "pitch": 0.005314657464623451,
+            "air_roll": 0.0064868563786149025
+          },
+          "discrete": {
+            "drift": {
+              "positives": 0,
+              "false_positives": 3,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            },
+            "jump": {
+              "positives": 0,
+              "false_positives": 0,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            },
+            "aerial_boost": {
+              "positives": 0,
+              "false_positives": 0,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            }
+          }
+        },
+        "50000": {
+          "samples": 29522,
+          "continuous_mae": {
+            "steering": 0.10369548201560974,
+            "throttle": 0.08559989184141159,
+            "brake": 0.029806457459926605,
+            "pitch": 0.006926437374204397,
+            "air_roll": 0.0066956509836018085
+          },
+          "discrete": {
+            "drift": {
+              "positives": 18606,
+              "false_positives": 905,
+              "precision": 0.9530163015263212,
+              "recall": 0.9866172202515318,
+              "f1": 0.9695257209253195
+            },
+            "jump": {
+              "positives": 0,
+              "false_positives": 0,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            },
+            "aerial_boost": {
+              "positives": 0,
+              "false_positives": 0,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            }
+          }
+        },
+        "75000": {
+          "samples": 26246,
+          "continuous_mae": {
+            "steering": 0.10725388675928116,
+            "throttle": 0.09325020015239716,
+            "brake": 0.03861162066459656,
+            "pitch": 0.010033044032752514,
+            "air_roll": 0.008313783444464207
+          },
+          "discrete": {
+            "drift": {
+              "positives": 17099,
+              "false_positives": 884,
+              "precision": 0.950180342651037,
+              "recall": 0.9860225744195567,
+              "f1": 0.9677697098412881
+            },
+            "jump": {
+              "positives": 0,
+              "false_positives": 0,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            },
+            "aerial_boost": {
+              "positives": 0,
+              "false_positives": 7,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            }
+          }
+        },
+        "90000": {
+          "samples": 25560,
+          "continuous_mae": {
+            "steering": 0.12104693800210953,
+            "throttle": 0.10738668590784073,
+            "brake": 0.05174699053168297,
+            "pitch": 0.012769448570907116,
+            "air_roll": 0.009012538939714432
+          },
+          "discrete": {
+            "drift": {
+              "positives": 15177,
+              "false_positives": 768,
+              "precision": 0.9511854064704761,
+              "recall": 0.9860314950253674,
+              "f1": 0.9682950501455839
+            },
+            "jump": {
+              "positives": 19,
+              "false_positives": 39,
+              "precision": 0.25,
+              "recall": 0.6842105263157895,
+              "f1": 0.36619718309859156
+            },
+            "aerial_boost": {
+              "positives": 68,
+              "false_positives": 149,
+              "precision": 0.2696078431372549,
+              "recall": 0.8088235294117647,
+              "f1": 0.40441176470588236
+            }
+          }
+        },
+        "97000": {
+          "samples": 21701,
+          "continuous_mae": {
+            "steering": 0.12583859264850616,
+            "throttle": 0.11295472085475922,
+            "brake": 0.057882558554410934,
+            "pitch": 0.016688503324985504,
+            "air_roll": 0.011215317994356155
+          },
+          "discrete": {
+            "drift": {
+              "positives": 12935,
+              "false_positives": 971,
+              "precision": 0.9290308434439409,
+              "recall": 0.9826826439891767,
+              "f1": 0.9551038809783221
+            },
+            "jump": {
+              "positives": 118,
+              "false_positives": 208,
+              "precision": 0.2852233676975945,
+              "recall": 0.7033898305084746,
+              "f1": 0.40586797066014674
+            },
+            "aerial_boost": {
+              "positives": 197,
+              "false_positives": 226,
+              "precision": 0.44878048780487806,
+              "recall": 0.934010152284264,
+              "f1": 0.6062602965403624
+            }
+          }
+        },
+        "100000": {
+          "samples": 20798,
+          "continuous_mae": {
+            "steering": 0.13293465971946716,
+            "throttle": 0.12311852723360062,
+            "brake": 0.05779869109392166,
+            "pitch": 0.015702003613114357,
+            "air_roll": 0.01061238069087267
+          },
+          "discrete": {
+            "drift": {
+              "positives": 12732,
+              "false_positives": 956,
+              "precision": 0.9290432717286424,
+              "recall": 0.9831134150172793,
+              "f1": 0.955313871398588
+            },
+            "jump": {
+              "positives": 126,
+              "false_positives": 287,
+              "precision": 0.22849462365591397,
+              "recall": 0.6746031746031746,
+              "f1": 0.34136546184738953
+            },
+            "aerial_boost": {
+              "positives": 184,
+              "false_positives": 279,
+              "precision": 0.3659090909090909,
+              "recall": 0.875,
+              "f1": 0.5160256410256411
+            }
+          }
+        }
+      },
+      "feature_permutation_delta_mae": {
+        "legacy": 0.08085587620735168,
+        "attitude": 0.023828420788049698,
+        "track": 0.07808572053909302,
+        "traffic": 0.0006656907498836517,
+        "mmr": 0.0654066801071167
+      },
+      "same_scenario_mmr_sweep": {
+        "1000": [
+          -0.018142571672797203,
+          0.9946439266204834,
+          0.0007765556802041829,
+          4.571703811961925e-06,
+          1.258720840269234e-05,
+          5.55845574012892e-08,
+          0.017356034368276596,
+          0.005779805593192577
+        ],
+        "10000": [
+          -0.011511659249663353,
+          0.9958981871604919,
+          0.000605909968726337,
+          6.710196612402797e-05,
+          1.6022842828533612e-05,
+          5.863255125859723e-08,
+          0.01036052219569683,
+          0.0019867767114192247
+        ],
+        "25000": [
+          0.02103969268500805,
+          0.9972234964370728,
+          0.00017977875540964305,
+          0.08211694657802582,
+          8.387459274672437e-06,
+          3.212259969131992e-08,
+          0.01966697722673416,
+          -0.007180843036621809
+        ],
+        "50000": [
+          0.021636677905917168,
+          0.9978266358375549,
+          0.00010869077232200652,
+          0.7631921172142029,
+          2.1287563868099824e-05,
+          7.215023600792847e-08,
+          0.021044734865427017,
+          -0.008100600913167
+        ],
+        "75000": [
+          0.004109515808522701,
+          0.9964565634727478,
+          0.00032136053778231144,
+          0.9584951996803284,
+          0.00017177501285914332,
+          5.759497980761807e-07,
+          0.017061615362763405,
+          -0.006683127023279667
+        ],
+        "90000": [
+          -0.03265214338898659,
+          0.9955374002456665,
+          0.0005951698985882103,
+          0.9783355593681335,
+          0.00047431117855012417,
+          2.058304289676016e-06,
+          0.01594492793083191,
+          -0.0046253991313278675
+        ],
+        "97000": [
+          -0.05502743273973465,
+          0.9954160451889038,
+          0.0006901355227455497,
+          0.9824821949005127,
+          0.0007389948004856706,
+          3.6760081911779707e-06,
+          0.017532864585518837,
+          -0.0049774497747421265
+        ],
+        "100000": [
+          -0.06457974761724472,
+          0.9953813552856445,
+          0.000724789802916348,
+          0.9836138486862183,
+          0.0008782290387898684,
+          4.814090971194673e-06,
+          0.01821872591972351,
+          -0.005176218692213297
+        ]
+      },
+      "conditioning_claim": "Response sensitivity only; skill competence requires held-out MMR behavior and competitive human race comparison.",
+      "runtime": {
+        "onnx_bytes": 199682,
+        "sha256": "5807a6c1f0bfb504e11e6590818eaf7c04e24e4f500c0932cc6e4280de0c0c44",
+        "onnx_max_absolute_error": 4.76837158203125e-07,
+        "cpu_latency_us_p50": 151.64999999999998,
+        "cpu_latency_us_p95": 220.56999999999994,
+        "device": "Windows host CPU, one thread; mobile performance unmeasured"
+      }
+    },
+    "compact_attention_gru": {
+      "continuous_mae": {
+        "steering": 0.10882554948329926,
+        "throttle": 0.09380562603473663,
+        "brake": 0.03329893946647644,
+        "pitch": 0.009468453004956245,
+        "air_roll": 0.006487314123660326
+      },
+      "discrete": {
+        "drift": {
+          "positives": 76549,
+          "false_positives": 4800,
+          "precision": 0.9398729816737859,
+          "recall": 0.9801695645926138,
+          "f1": 0.9595984141194526
+        },
+        "jump": {
+          "positives": 263,
+          "false_positives": 309,
+          "precision": 0.3071748878923767,
+          "recall": 0.5209125475285171,
+          "f1": 0.38645980253878703
+        },
+        "aerial_boost": {
+          "positives": 449,
+          "false_positives": 603,
+          "precision": 0.40473840078973344,
+          "recall": 0.9131403118040089,
+          "f1": 0.560875512995896
+        }
+      },
+      "history": [
+        {
+          "epoch": 1,
+          "train_loss": 0.07615672594503216,
+          "validation_loss": 0.050816792994737625
+        },
+        {
+          "epoch": 2,
+          "train_loss": 0.04221243095655557,
+          "validation_loss": 0.0379619374871254
+        },
+        {
+          "epoch": 3,
+          "train_loss": 0.03410470066688508,
+          "validation_loss": 0.03327925130724907
+        },
+        {
+          "epoch": 4,
+          "train_loss": 0.030205240388310226,
+          "validation_loss": 0.031475093215703964
+        },
+        {
+          "epoch": 5,
+          "train_loss": 0.027659568336925337,
+          "validation_loss": 0.02929181419312954
+        },
+        {
+          "epoch": 6,
+          "train_loss": 0.02589145865422475,
+          "validation_loss": 0.028064651414752007
+        },
+        {
+          "epoch": 7,
+          "train_loss": 0.024667938810138814,
+          "validation_loss": 0.028971698135137558
+        },
+        {
+          "epoch": 8,
+          "train_loss": 0.023822432023320756,
+          "validation_loss": 0.02638908289372921
+        },
+        {
+          "epoch": 9,
+          "train_loss": 0.023076402554654867,
+          "validation_loss": 0.025622006505727768
+        },
+        {
+          "epoch": 10,
+          "train_loss": 0.022537473255602593,
+          "validation_loss": 0.025698427110910416
+        },
+        {
+          "epoch": 11,
+          "train_loss": 0.022091998975130096,
+          "validation_loss": 0.025357529520988464
+        },
+        {
+          "epoch": 12,
+          "train_loss": 0.021601396740084478,
+          "validation_loss": 0.024189669638872147
+        }
+      ],
+      "held_out_metrics_by_mmr": {
+        "1000": {
+          "samples": 43497,
+          "continuous_mae": {
+            "steering": 0.07077405601739883,
+            "throttle": 0.06588084250688553,
+            "brake": 0.021121932193636894,
+            "pitch": 0.005661947652697563,
+            "air_roll": 0.004099510610103607
+          },
+          "discrete": {
+            "drift": {
+              "positives": 0,
+              "false_positives": 0,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            },
+            "jump": {
+              "positives": 0,
+              "false_positives": 0,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            },
+            "aerial_boost": {
+              "positives": 0,
+              "false_positives": 0,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            }
+          }
+        },
+        "10000": {
+          "samples": 40420,
+          "continuous_mae": {
+            "steering": 0.07096856087446213,
+            "throttle": 0.06753239035606384,
+            "brake": 0.021057041361927986,
+            "pitch": 0.0063040778040885925,
+            "air_roll": 0.0033607962541282177
+          },
+          "discrete": {
+            "drift": {
+              "positives": 0,
+              "false_positives": 4,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            },
+            "jump": {
+              "positives": 0,
+              "false_positives": 0,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            },
+            "aerial_boost": {
+              "positives": 0,
+              "false_positives": 0,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            }
+          }
+        },
+        "25000": {
+          "samples": 35663,
+          "continuous_mae": {
+            "steering": 0.07512477040290833,
+            "throttle": 0.07856123149394989,
+            "brake": 0.01860118843615055,
+            "pitch": 0.006628802511841059,
+            "air_roll": 0.0032003517262637615
+          },
+          "discrete": {
+            "drift": {
+              "positives": 0,
+              "false_positives": 70,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            },
+            "jump": {
+              "positives": 0,
+              "false_positives": 0,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            },
+            "aerial_boost": {
+              "positives": 0,
+              "false_positives": 0,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            }
+          }
+        },
+        "50000": {
+          "samples": 29522,
+          "continuous_mae": {
+            "steering": 0.12906786799430847,
+            "throttle": 0.09843474626541138,
+            "brake": 0.02766094170510769,
+            "pitch": 0.00738159567117691,
+            "air_roll": 0.005861359648406506
+          },
+          "discrete": {
+            "drift": {
+              "positives": 18606,
+              "false_positives": 941,
+              "precision": 0.9509205653783968,
+              "recall": 0.9798989573255938,
+              "f1": 0.9651923026019746
+            },
+            "jump": {
+              "positives": 0,
+              "false_positives": 0,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            },
+            "aerial_boost": {
+              "positives": 0,
+              "false_positives": 2,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            }
+          }
+        },
+        "75000": {
+          "samples": 26246,
+          "continuous_mae": {
+            "steering": 0.13918739557266235,
+            "throttle": 0.09870266169309616,
+            "brake": 0.0368073508143425,
+            "pitch": 0.009628650732338428,
+            "air_roll": 0.0074844639748334885
+          },
+          "discrete": {
+            "drift": {
+              "positives": 17099,
+              "false_positives": 935,
+              "precision": 0.9473802690078226,
+              "recall": 0.9845020176618515,
+              "f1": 0.9655844900768613
+            },
+            "jump": {
+              "positives": 0,
+              "false_positives": 48,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            },
+            "aerial_boost": {
+              "positives": 0,
+              "false_positives": 21,
+              "precision": null,
+              "recall": null,
+              "f1": null
+            }
+          }
+        },
+        "90000": {
+          "samples": 25560,
+          "continuous_mae": {
+            "steering": 0.15133412182331085,
+            "throttle": 0.12234499305486679,
+            "brake": 0.050192590802907944,
+            "pitch": 0.013597269542515278,
+            "air_roll": 0.00962233729660511
+          },
+          "discrete": {
+            "drift": {
+              "positives": 15177,
+              "false_positives": 854,
+              "precision": 0.9459767206477733,
+              "recall": 0.9853067141068722,
+              "f1": 0.9652412457640793
+            },
+            "jump": {
+              "positives": 19,
+              "false_positives": 51,
+              "precision": 0.2714285714285714,
+              "recall": 1.0,
+              "f1": 0.42696629213483145
+            },
+            "aerial_boost": {
+              "positives": 68,
+              "false_positives": 70,
+              "precision": 0.43548387096774194,
+              "recall": 0.7941176470588235,
+              "f1": 0.5625
+            }
+          }
+        },
+        "97000": {
+          "samples": 21701,
+          "continuous_mae": {
+            "steering": 0.15150456130504608,
+            "throttle": 0.12345843017101288,
+            "brake": 0.06065398082137108,
+            "pitch": 0.01791561208665371,
+            "air_roll": 0.012569867074489594
+          },
+          "discrete": {
+            "drift": {
+              "positives": 12935,
+              "false_positives": 1018,
+              "precision": 0.9253337245122488,
+              "recall": 0.9753382296095864,
+              "f1": 0.9496781963942941
+            },
+            "jump": {
+              "positives": 118,
+              "false_positives": 95,
+              "precision": 0.3870967741935484,
+              "recall": 0.5084745762711864,
+              "f1": 0.43956043956043955
+            },
+            "aerial_boost": {
+              "positives": 197,
+              "false_positives": 209,
+              "precision": 0.4708860759493671,
+              "recall": 0.9441624365482234,
+              "f1": 0.6283783783783784
+            }
+          }
+        },
+        "100000": {
+          "samples": 20798,
+          "continuous_mae": {
+            "steering": 0.15594588220119476,
+            "throttle": 0.15064364671707153,
+            "brake": 0.062031347304582596,
+            "pitch": 0.01732044480741024,
+            "air_roll": 0.012624361552298069
+          },
+          "discrete": {
+            "drift": {
+              "positives": 12732,
+              "false_positives": 978,
+              "precision": 0.9268675689822777,
+              "recall": 0.973531259817782,
+              "f1": 0.9496265083317372
+            },
+            "jump": {
+              "positives": 126,
+              "false_positives": 115,
+              "precision": 0.3352601156069364,
+              "recall": 0.4603174603174603,
+              "f1": 0.38795986622073575
+            },
+            "aerial_boost": {
+              "positives": 184,
+              "false_positives": 301,
+              "precision": 0.3609341825902335,
+              "recall": 0.9239130434782609,
+              "f1": 0.5190839694656488
+            }
+          }
+        }
+      },
+      "feature_permutation_delta_mae": {
+        "legacy": 0.074891097843647,
+        "attitude": 0.020166266709566116,
+        "track": 0.0690813735127449,
+        "traffic": 0.0005662292242050171,
+        "mmr": 0.05664510279893875
+      },
+      "same_scenario_mmr_sweep": {
+        "1000": [
+          0.08498033881187439,
+          0.9023556709289551,
+          0.000746358186006546,
+          7.692888175370172e-06,
+          2.5900033051584614e-07,
+          2.9714893740040438e-12,
+          -0.004237626679241657,
+          -0.0037472054827958345
+        ],
+        "10000": [
+          0.07535818964242935,
+          0.9266908168792725,
+          0.0005472032353281975,
+          5.155865801498294e-05,
+          3.510241128878988e-07,
+          4.410985032093917e-12,
+          -0.0034701386466622353,
+          -0.004314602818340063
+        ],
+        "25000": [
+          0.057456858456134796,
+          0.9494194388389587,
+          0.00035719259176403284,
+          0.0014031936880201101,
+          3.65773956900739e-07,
+          4.9388535795780175e-12,
+          -0.0014469166053459048,
+          -0.003977335523813963
+        ],
+        "50000": [
+          0.03053704835474491,
+          0.9643555879592896,
+          0.00021868926705792546,
+          0.3069796860218048,
+          1.746740849739581e-07,
+          2.183196332050663e-12,
+          0.0018006692407652736,
+          -1.85500830411911e-05
+        ],
+        "75000": [
+          0.09653706103563309,
+          0.9697716236114502,
+          0.00020974823564756662,
+          0.7034398913383484,
+          7.447261509696546e-07,
+          1.0424827667776526e-11,
+          0.000804439012426883,
+          0.0011218725703656673
+        ],
+        "90000": [
+          0.1604759246110916,
+          0.9777977466583252,
+          0.0002199181471951306,
+          0.7874032855033875,
+          3.0082169359957334e-06,
+          8.484354191429233e-11,
+          0.0005901604308746755,
+          0.002447497798129916
+        ],
+        "97000": [
+          0.18709535896778107,
+          0.9810667037963867,
+          0.00022308729239739478,
+          0.8205402493476868,
+          6.0182610468473285e-06,
+          2.3672508397964975e-10,
+          0.00042568144272081554,
+          0.003201058367267251
+        ],
+        "100000": [
+          0.1981290727853775,
+          0.9823551774024963,
+          0.00022401554451789707,
+          0.8341964483261108,
+          8.111161150736734e-06,
+          3.674948401144462e-10,
+          0.00034912675619125366,
+          0.003544347360730171
+        ]
+      },
+      "conditioning_claim": "Response sensitivity only; skill competence requires held-out MMR behavior and competitive human race comparison.",
+      "runtime": {
+        "onnx_bytes": 39771,
+        "sha256": "9f9688d9639e4af6c8a001e23f564f2aea987a036298b5e4aac32537e4c31e28",
+        "onnx_max_absolute_error": 7.152557373046875e-07,
+        "cpu_latency_us_p50": 92.0,
+        "cpu_latency_us_p95": 117.405,
+        "device": "Windows host CPU, one thread; mobile performance unmeasured"
+      }
+    }
+  },
+  "promotion": "SHADOW",
+  "promotion_reasons": [
+    "No verified human expert demonstrations.",
+    "No closed-loop assist/authority safety or expert ghost gates; candidates are not installed."
+  ],
+  "target_alignment": "NEXT_TELEMETRY_COMMAND",
+  "meta_tech_clusters": 327,
+  "splits": {
+    "train": {
+      "groups": [
+        "NightCityGrandCircuit:night-city-192-v3:4207"
+      ],
+      "trajectories": [
+        "4538541f8c25a71075b64e856bb9353b7083ce8f218dfc2c8382d4c4b27a06f2",
+        "98e0a51466432c0e4d4105481c43e3fd0e417ec43cefe9352a140b5de8ded604",
+        "8091aa347a4f84706ad9656309cf8e8b3787e4fc70c5a1871a1d8728144c3e1b",
+        "9fdd9cb4bd4ebfbc20e969b183952b6449b0569170aba31b6b52fa9659294764",
+        "f93faa67be1fe97f82e0768bba26eb4a245d96c3eab2521fd9b0386be69b6547",
+        "d9f6dc202c9182bdf4872f0510939f30f7b58d6b517154511142d05f16021cd9",
+        "f955c02107c755c9d2346015aaf7619e18d13b3c4ec27643df0f828680f36ba0",
+        "c69f46470d8991a0f2264c3200c8a2d8f9e87c0130c0e79d900b569d3949065f",
+        "13fcbc7909efe5edfd069dd998b89893eff6b8d08450ade01142804ae2faa0a1",
+        "a34cc501a8c0171e7b9f725ccd73a2b9bbcab34360a02bc0ba608327500eb53b",
+        "3231897415be770546f6c7617db7b292c05b61b053cf0ada5fb818283e2d4297",
+        "f0b66c5fad7b253a24cd5e0b04a38d41b2ba97f4da8d13652b661410dd3cd3a4",
+        "f526da1f7486c63799178b06b9fcb2c3ea13b0f71636494468ec231711c973c8",
+        "9b92b10472c22a5f39a83583ab7001f81646f02a75f1de6e65c823d5965de261",
+        "0f2039d15a8e4e1ee89adc1e59c12cf5f0e304df0323057f6baca5b0dc2177c4",
+        "4233af63bef62a9968b07588bee41a5fb4584e83d1ac22e13fa77a3987244357",
+        "98c6969e88f64539a762800a4cbc94ed7540303e7a05f07d7ee721b8f1b3531c",
+        "be801d935d8fed6094cf2d01279145b08a132d7f88459d6c3b6e857a15477e18",
+        "39e2412a2cee12a638c83d3c20a3c15ad227d47884e55a6bb4c611c325976e55",
+        "156159049f56cb9f2999d2a122c2366c5ab9fba4c4a393fe0e41b3a5eff75ddd",
+        "53955cefd0b3c02269fcffff5deaf7f08aad8a289476c50057c79c478cc937ba",
+        "8d51a9be86cfcf078e4bdf47a7f188bfb0c5ac41ce528001f82d66f92c0dc520",
+        "0bd9d74ec4043ef47d6234e3a51dba00c6fa95c6693f47b885d6f1927b6b8c2a",
+        "6b1a4b879d5a85fa6a5bf7b6978b874636e6ea5a969835241e73024019745675",
+        "4e8f9a261fbe32524edef1391c32012fbda943ce92c390e0b37dfb7f6e61edea",
+        "3c85b4cdaf27d6ef96648b737e4353c30f05c5c2ed5e3514da1f73df3ccfef34",
+        "97bc5e3addc3eb01fb1f4aeb65a2ff4815fa4d1f75fc2787f5ff74733e5f4827",
+        "0da8aa1cdddbbfc7fc6d9ccf6b83e55c1e8029a661daac617f357f148976cb4b",
+        "d4eb322396be39985cd5edf6c9713acdce859c57965fab4151cc80e5716088ba",
+        "18fe3f8c21061eb2c01e609b0f102d34a38195d368b7559fe3179515d98bd046",
+        "2ed804447ce61c1d1b0db229f505e0fc586faa6dc4517a2b1352dde060727568",
+        "5cb12947ee515281003d8b159cf69707ae1e2f58910028644420b5699b1a0b68",
+        "92ad7cbb92748d3a1d7c5fc12020f9b3b5cf61769ddd4c49e0eb4ab2c24a9f16",
+        "9b731ffc7b5d3ea5a7de475312f5b17a3469b54bffce33a21cffa6de2c1067e2",
+        "259aa3780e462c4efdd1e8ce1863b8f69840f850643a4dc0642ccc40c62bad26",
+        "82522ebb4df1b9ff430cb8761a7cda6c845d8385ff4c2ff16b8b9f22872b0f17",
+        "0f9ae0dc0df88056b8fe6bd7be34ed23729819cdd391722f848ee466a87f23c6",
+        "c020e4e539a213060f8d003764c299d8569e13c36f9f1c7886e92e42025f2a5c",
+        "0d70e36efafcca12c37825047550226d682643d8d55886218fb6fb3a054b867c",
+        "6fcd79e1f1c6556236b679ab6c42a9bd36aa59d1ab2f14ff2a24c1a8cf11026d",
+        "813979aefac34377e4125a82a315aa396a8b1f8c6abec299ee1402da492ed5a4",
+        "c3a4317925700d5e7243ec3ef9475d28ca969be069cd9ec49b75a762b066aee1",
+        "c88d2cc8450923855ce09070453b3f3fc2e4a8272b38e29bd6a3cc0b7121c6c7",
+        "1374e1f5350ded4b8b10f03cbb8c26a9443070c772ab9b52c3b4dd7c0e9d0f6f",
+        "75f567fda6a228f603a1170b8cddf882cbf1ce96c8c5d847cb862c7c41ea6144",
+        "c382809fefe0827e9965d932bae106db4a37e85187da2d7d32a5646c88ac44e7",
+        "647d48dfdf1cae0d503df7a519adc2e949e0379d423ddc97237d7e8cdc51e8ba",
+        "ce611a093c2599d7ea81d9e114e335ab4dc9645595b19b596713d62059b5892d",
+        "f157b1fa667fbd730c89715f09896b8c49f14db542108843bb5e91adf9f15a22",
+        "909a85c725632e1bf44f82f54926c2973cef182960cf44bebd3da500a48c18e6",
+        "b1ee0e1219f559680642a0891495aa4b82af1fec07ad841f8acd4db31a569f48",
+        "253390893c22ae420617420f36b614d2ddeed982c750d2f03d3cad689d41b0e3",
+        "9290a20633264249fdc22664b60900bfffa368873588d358b042fe39f63f3067",
+        "0919c075ee0f8cc29b0b0271a2a996424b0fe8993e0d7dd48bf830b210391435",
+        "7a735fa7b4b5c2701dfe24b990df9341ee19c3e919d0981c80853c4258947603",
+        "a31e401610d8730b7ac364034faae9cc0d28ec0cb721ce14923492a9e5b0e6e7",
+        "dddec3c368e3bedc329ffcb41f9a611180eec80679aaf2a8b9b8bcc819f2a70a",
+        "598a6133ff1e5793cd079900b059e0845b3f98529a80b2917a290be45aaa3ed6",
+        "19ee865dfb23136bfe4f8ead3f170f3b7728c43d673f58484124f09e3a3fab4d",
+        "92774bb13dfaae611d8c05fece0f12478cd645b9ea4d9e56406fab15e0de6ef7",
+        "ffe62c0649f2d01b4f2eb72cf306239010cb5d2a62e2bc4e915d08a8c9ed2069",
+        "d574c9b16959c1f38efc09fe1a13b3044c64736e297e6f9ce78c9b081517691a",
+        "cec2cdd05871ac3bc5cd56f6eb801572a9d100ac584d41dd5163d71a1efec1f4",
+        "327fa9a5710ba33985b16630af3f15951ba589157fedf1647d00a6ff5428040d",
+        "10a629393c75a7ad7f32ee54ce2ca4888f4c6adeb6752cf4e266dcc552525a8b",
+        "c70ec4e7bda512f5a1adbd1f44e9dbf94209846ddb77d25c79c9899406371687",
+        "ae2ddcdac6a907563e94c8e23e4dd03e8a68ce674d19842397b2de359b0c0da3",
+        "48b5e7c8f780269692f3a1186e1bec96ac1d847cf8a4b4c1ef4a59159285a65a",
+        "a66ab5031a4a86d9c1ff03290641149d8fd7046aa6ca0ff901c8ca3396781137",
+        "ba6ffdc35e1e0b13dca9e67e726b44d7b9996f9726dcb47ae87ae7fc94934ba1",
+        "a6c76644ba2bd1c69ce988492492bb1e4de8c50c425bda91cfcfb665a56abd7c",
+        "ea830beed70df8c4cc51e6c790dc86d5d2b2ecc5d63e2e779a25f725dc070a36",
+        "0306d6af1acf1b8b896db76cee3ca4342039838947f54d08adf50eea21b77819",
+        "85d866715dfca49aa6ce73328bf2740557b50def16d0bdcbbd949b80a86ae4b0",
+        "22f6aa74fd658dc6e49ee3bb2cc9bda7dbb0f4911795638d2ba958cc8a4cbbb1",
+        "f49a2e8dd39f6da91508ca7e480f02df3ccf134e8becc590a96e7a36e19fc54b",
+        "61be9fea0b3512c875a25ac184cf47389055e9cf31e85bb69de751160c7f3ab2",
+        "9d50ce154e82dc6bcd507352e86742cc7f30690a3a46a0686bb4ed58489987f3",
+        "90a119a566dcd241df90100af8c58797767b3f635272d3852244f646101e91cf",
+        "ec63f3d6127a181e12afd825bc5dbe590381cb3178750e91e0a709e3c2a51dc0",
+        "b780bccd73ad37782635b9e873813722f5786734add0535fa361f984d3415034",
+        "ec559686ae83bd7f5df19422becfdaebd139dc353f73c77648fef6b46617e5bc",
+        "b208df906a20a8d2e8ae8a13965f6299c9992b234f27c302fee6f753cb58ea11",
+        "b0ed8589ab2796c6c50330fb3f37a16c122e3cbfe243cfc1c770ae12edce3aea",
+        "41e898134c7762a52e7ded76eec10ed098cf60a31a353620d42d34f8fe1c7180",
+        "8d4169e9f31a1dfb9996cf1f24a9af98eb823dfbb60e7671eb9653d23e85dc08",
+        "3dec4c1f287fe1d3cdfa03f92391991e996ecead7d29977849ffb6bdf38c4c86",
+        "ac09a79fb278eadf8651ec2284be9d57f1af9fe6f0a0f8595ef2affcb604f9b5",
+        "f47276fe61a8bdd2c448de5c8ae9855367f2aa655ea865d4972d49602093e913",
+        "f566d8aae1fa634758b0b5c110f3081c36e1147994f8b1ce974152242bb113ef",
+        "1f6c04d1f99a4c114cd13ba615f924b937f3abd69945091c83b52bb5fa18f644",
+        "d8ae7483a38283bd5aad577389ff943d25d01c990fa1d026e3e882dcb84e514e",
+        "8c79a381680fb1c7cda11987355ea9ba9bcd20a8e25c6d19914b75745d517cb3",
+        "4876f41c013b42c4880ab323dc63639db7d774fce5961de7393bacdfa4fbcbfd"
+      ]
+    },
+    "validation": {
+      "groups": [
+        "NightCityGrandCircuit:night-city-192-v3:4211"
+      ],
+      "trajectories": [
+        "41f5d5f7cc16351d557e5f9ec69260c8b11f4b1fe376287db7c5873c68b64544",
+        "724210fe714f6a40ec3cf54144c6e4f1f2ba0b8ed0bdec1976ae263903339602",
+        "1ebf8426ca9d5a75efd1b45d273f5acea0633346e1433fa2c040640c36a162ee",
+        "e8ec38d2474158f288001ef03fc80678cf082fe659a72db446d08eafd4757488",
+        "dbeeb9519b55ebae0301145692d03bbbc1d1ee817823a9f030590df745fe8dbd",
+        "b139ade704366d52cacca41bd0726b080b64f1f3149944b2bc64f519ed85be08",
+        "f46903ea0fe83f88b5cbfc5fd3279ad7c55ccbf3ae1312f5f0732f1200b64d30",
+        "39d2e7cb05a94577d97353a267ad50214e443919f4c609d9ad54002bae0e1f78",
+        "d8cb1043ee02f13bc55cc145b213b9a925354ed2a4b74b164be08646dc670e34",
+        "e64975cfab0c63d79e3c0fdb1e166c474d0ece008b0f4f2ead07f2ef12272d2e",
+        "6d55e61412a96da3046a64e1ad559fe4dc58797f5760b35e7175a4d1c201b3bc",
+        "e806256061abd02ec54baf6e49bc0ac7ac913cf427d0bcd1a2b77d9b7175629d",
+        "21e1227cb0a6b548550b2284b014016b9972b03c43b32dc5e644d8f41d40ec54",
+        "052680abfc25721fb2588d9d8603cd4ad83b204378f56fd1ebd688217686b222",
+        "cef26644d8f0fcc5dc78e1ff1d0ab1ab61dc317328c0432d33384e68454a9406",
+        "e8d6e04060ef938c76368be5049dfbb092ad0d9bb371575a1713425da3de9be0",
+        "3b6e711072439351ffee00b6d1fab37ae094c29f996f405b55072cffe450c386",
+        "4a79359983ef9c63edeabda6363a6d9233dd5dc41697d9e492151e06cc6b1eaf",
+        "4cc4a4c6e8547c0bb5bd5cf8d5fd0b2778f8ae028c30732588d4b5eac579d00e",
+        "7c0442e75ea0801faacba5d5eea46d9a39d45f9343520af10c9d6c45081160fc",
+        "3a3312887284d0323df99f1b6ea7fc35e9f3d7532b1de4b627fa6fee273ee868",
+        "55e1f5b7aa6bc48ba067062d0d9defb61d61af8e12cedee55cb4abcc8606e0ae",
+        "1f96c2acbf5990060c52295b0205f590a8253798fa1659f7d2e19fe3df908d36",
+        "932b9e68505831d6d01a986df3aab1f40f6d45c0fb6c8d9d2e3348c4f7cbdf83",
+        "7eca0e79cf9eef64bb23966be93213c8ec17ce9c10f4231764e66bc41e8f18a3",
+        "c695f7787dc94e98478bc5b503b561853386a9f44250d702fadc202f52af7a97",
+        "b695d1bbea1c887b8fed0170b614f7071f82630016e821ef39817dfba50336de",
+        "d4e873041772b9e6cf782b1010709136ab843a7b0d4d0841519bb3de2fd29ada",
+        "22e06b2062457b683b428b76291294215d946d5dd666883727d9d7109b044684",
+        "9a599b9fe7827d52d72be1be6b98b980800599cc5e5ac6086f2ed7da3296c06a",
+        "7f388716ecf56f9c6160e84a1b55df25c3636b5135f84199b611e450a49453c6",
+        "2d11c384f1c3dd963112d55414ae3d2b59e0085e63fc6e57a676477584bbc76f",
+        "8ecf61a8893beabbb84b545be04da6b7f1b814a4e33be1033a4804293020a6da",
+        "35cc0bd8652a72805114621b3e6ac6936035dc9fca1b741a2bae89b63a237849",
+        "eddb7cb9be5e35d6af4bf73e084d5aab955b4c7ac403da273c86fa21c0d7a61c",
+        "cad2dcfec884000857b607049f94b98999b18f78ab9d6a203470b25284d9119a",
+        "19cf4564cb8624df7ee281b838cf013f19702755ea84f2f3a4ad9105eaafc7bc",
+        "90af176e5cf1f7098bf56d6d04518809e63b28cbb524d860277c1dc3e082e7fb",
+        "b5eb6961e5ecf05b197a21125452382543650e2575095ace56cad1164abc4833",
+        "22b1d741469d25740f6668f22d854c50b7f5dd0c425f3f468ae8377360c023ad",
+        "cf84e977e7f474fe57239a6793f397f53efc3c98debcd8ec290d5ef7533713ff",
+        "21a2659371d891f30d831a044beedad503ffa72a683eabe677c7fdfa4beaf446",
+        "21aeeacc983dd8162049958b8257255f118113d6d61d4a73891cdc9854a3b8cb",
+        "0575ba222000219bef344c8ddc182f1e6dd4ffa9cbd20cad8515e0ae861810b6",
+        "517a10e58e2abe4c545d59a73804a95e4b6cbaa13d4b5523bb1e5f1c99df7c30",
+        "643830a6cd9c3e41800e0f377a9e7edd2a0373ae88897c5550085fd9fe5b29ab",
+        "02c1d0578df3deb22e39297a2f19a05cde5642089c1add8265f0c818edd82fdc",
+        "36f5b2b5d57f5ef2ee8677edc345aeae9140d6ceb4e1c59cc879bd3ebb5591b8",
+        "d05983c6824995a9ed2485906748c942da00d586e84df586d8e6f43e3490a4c4",
+        "9bbf31ca210a9b5f47527dac0550e56301cd7aa7361b9738b363b8c6396e23a5",
+        "fc64cfb7c8e90592a53195403d2f8cef83e6b292ed74873c380d534c29f1d8f3",
+        "3dc3c25b9e522fb0abd2c281576548d2e544b755a630b2cab2480234258c8e83",
+        "511a410984ffc8b7721fd96e192c63b99b8dfad7fac5e7eaa2c5faa76cb08e32",
+        "183b8e060768d08dcb8a255f879016e4f28ef75da7df30c20a1a103932d0b594",
+        "b572e75127718cffc25173b8c3999254f00d32314316a437b84baba850240bed",
+        "57626cd96fcc8097882457a062fc24169785f601c74d8aa3f971c168a0f4a552",
+        "e9848ef4ce63838bddc41786bc0b0b2f5d0e8449753e45e81b886178c58e79cf",
+        "578eec5bf74f71dbda14800da5535ad6e9fc5b9ce2e2a3607bead96892e6164d",
+        "76db3a7f3b707e09c191665fef78304fdfa53ce13709c9be8a48cb09ba445749",
+        "2bcd7f4ed1f8c79c11221852e115d09f7ba4359e9f4b8d29078c8c8252cfc2fd",
+        "4f697ca359b73d2d8989e8bed89ba6c4f2c4361558df417d09ca0145d7f7298b",
+        "8028534f9708094e685be500c8eb2d5a86047bdc2c9a6c4d2702fa1dc865c343",
+        "871e015872db138660943e3a358426638d77dd3fdce1c1a14b726ca73cf2ef2e",
+        "7bac6cd97b4fd3bb71b9d9078fd0df492141449057d8beffe4abcc09e8f4d962",
+        "cafacf2411dc9455d9987bcc0fcf17eefbf3cc13cd97e23f9c27b6f909bdd6c9",
+        "bf3f1f9a38f89c90c760afbb95373b99be55962105771b9d17b8154412dd7872",
+        "c75326ee55f1aff4c8a4ae0e929dd1f2cc8335282015ed0bcb9d6b883ffd593c",
+        "a3eb3c009dcf8192f5d2ce5169257e6cb86417f2a9c4c56c69ff0bdf8b855330",
+        "29691eb1f1c279bcfc335ee1d1e9ff16678d8099b0f698e4210be5fae3c057af",
+        "ad3ed14eb688ef17bd7143ca075f99698953ad6d698137d2ed5d9f1f43571047",
+        "6c117353e6aa140f7848fc8a5ba2191183f8df71c7ccdd416319ffe8ad56965e",
+        "2abc16b09732738d003d4b773823b7e0c230dbe9ec1ae8aaa8e019fa290bd5ff",
+        "56e65cf4c0124e223fed7e8285babf44b7033995847888d1aa268d3ddc874d13",
+        "9c425c5c607f2a37cda03a4ad37f05278fcdc41c7d36cb236d52fc4adbc9a3b6",
+        "a3b2aa3d17d1fa550abeeb0bf9dc083a357c8d500104c5b9a6d1cadb46d4cf6b",
+        "bb280716c4699a9e297d638c8828ed9cf7336783bb05f70aa67792fc344a4822",
+        "8f2ef6b4320197db0bb370ec705a7daccf1ad75675a28ea372181a4d21dec20b",
+        "2e99035a9847f1da70497ee82f2fa41066acd1ed37784954e287e72da719117f",
+        "24e8ac0f43697afb7e4c3468136a75410816a435fdda44b8aec8e223f8776b87",
+        "47d128f1b7b19cabd33c5e532d5d21f1d0af8846b175d61ebcb057d386422e76",
+        "0965bfcfa007cf6aab1000b1254f252908e79422fba3611baa55acee5fbf201a",
+        "19e78f6811574fb4b678850dcd548c4c83285a7cab48f4e71c65cf656c60beb6",
+        "f9457c9beea5d328badb4e50c456ad9ff6ac3f921e738aadcaa8730a20a64a30",
+        "ba843ce136c9566a2d6989ef96bb7fc3c0a4604b3fb38f6177cc970322e84e1c",
+        "30b5d815ce1fa13488253016bb078ebb2c3b6e3ab0c56dedd1cb389be8eb478e",
+        "ded01e144a2c5ba0330374efbdf12d62c493ce87445fae7fde51b067ffc8cbfb",
+        "065e46183e256f795f60f00cdb6c1e8a4059849083383f9704b08a4ceaf97589",
+        "a573421283701911273e02eff16aacb1fecd6119ae4ddb0066952e172d78e731",
+        "be2fb62f69c7895cacd0f56facd49b8a8e1241429d82d8963171dd1f06ee0b37",
+        "ba2b8d1f26f41f9fc0074548e5d714d4df52f4e5a440399cb89d0b86905e1403",
+        "b26be88a70e6cf05f49406904a6ddb36e1d432907c659ac4259aba4b16378e8d",
+        "9a34afc2c8b5c1a91d0871c12cbd4d18c7e1534ff3f651af97d7335ddf989b7c",
+        "c25a10fc208e4e529492552d5a5c00e91dde82afb9b945d1b5a80f253b55b225",
+        "b6afb13b047a2b409734ea732908eeb5cc1e922dc8afdf25f4a7b08b44e34713",
+        "87938c0c4a70e5f36b390ddddf49f23ada5a5303507bfeecaed1d0cbe615a80d",
+        "c0032385f5c24cf18c6f9671c7db5bf0d06cad0f17930eb34d36f00400765d7b"
+      ]
+    },
+    "test": {
+      "groups": [
+        "NightCityGrandCircuit:night-city-192-v3:4219"
+      ],
+      "trajectories": [
+        "91a036beea3dc32ed74b9659c060f94a0002e66a45efe78157edaac48a389a28",
+        "c1049388a87b37d3d1a360fdc5ae13cc167697b0113744e0bf7513632e481928",
+        "b453d59873e03161789d9479658d37a690adff9ff983a0c5ef6bc8e36f958b07",
+        "e01eef7c1b4f02e86e7d1cb18c967723fe636488bffd431ab6cb7eafcaffd7c4",
+        "aa408db3cc52c43f8c59b3a1ea6742bf3c0a725843d21b145decabd330ae1604",
+        "74e4c1929d1c7c26109e499cdc37efabe0287fc43e9e4754687448321944acfc",
+        "03284c760b9c3e04a6f817864c4182e26358484e4b4cd7c57b1b01066fcd77a5",
+        "86deebada24169204ea8093963fb12579d9e717cacd90c8e938ff823207fc051",
+        "79a8ec4a20ee65f97ceb470f90c9710313c00d88d24725d7bab3debd605c9641",
+        "01e94c7977056841476e6430a564adeaeab5d4388f6ea4834215494eca1cbcbb",
+        "850268523c1169f81527cb7dcb8116b54e842edbea45f6273b9e7c8250f3a921",
+        "9941a650e414dbc314cbef45cb2c8a8e61b6ee6276519175c5cae8719b33c999",
+        "56e5f8f8cb88d255401075dd858f7a79b225b73879c0ebfa7c0681042fa292b9",
+        "7110a75edbcd863ea6b4caeddda043904689cd63e54d0ce2f9ccdf5386348ddc",
+        "3b29cb4d6a18fbc16225e8239eec06842fba4fac112a8ada721a91370d3395c4",
+        "7f46482d26b40f630bdd5cd9530b8c16a05272c2101ff06d7b7c56e8c5fd3db0",
+        "3ff5402f5e0ebf13f73f6423e088522ad202517124934e87a00ae44a1bb39b10",
+        "245bbefa00fe0f65d9380dcb416f677888eaacd1b3bf53fa73a76bc13c4d0d4f",
+        "7356778007fba620c4e901dace0b8a68751f34c957af5650310c7b938023e46f",
+        "0c5296699966edb8ec6ff25cc6b5742fa5482318a41f0c65058ff9980d3929ce",
+        "7f3d8ad51c817a9ec9ca70a53da195896cef58826c99438aae582145f11b398e",
+        "ada23dcbb0b0c1f78fe786824fbe26c9827410f992d843aef21fe3b5659677c6",
+        "001c16192bdb0f5a41287a7214e6a3855740f43d497d48829c70eefd02e0be23",
+        "e6192a6ea13dd61e9dd0908c837a7acd698c307584e8033a57264b2e22c496e0",
+        "4113df6bfcf3c85f39bd7839bf56506f22f6badbd3faf54c3625f9a6ba8e38c0",
+        "2fb61f778f4fcac19e3176d892be35363a76b0b550e0c8bd59b5760e36016a53",
+        "553bae7f60ff49a1976a085c04d818183f16ec24fca056cac02f10c639761366",
+        "71198637a5f797fa543739019b41ac3607db46ee4f28996f4cb51069908974a7",
+        "e8e1bf43e1d2a942c8da32cf439251f174928ee1a0c685186e13d813a57d061f",
+        "e49ea83a5264be40f559db8b836bec27777610606b2e50e481f05b7d47c21107",
+        "c0b08d0c64230f1635e8ae1ed74cf17d11fdc937253e5273ffff98168ec9e961",
+        "4aaf08024d90f4ee760e96d759063fa0d84a322b29a8c585ec010bbb34f3d126",
+        "8efcf7415c31bd7e117709dd983011b138cf14877e0a3756a15e646fea1043a0",
+        "d79a1f11ac36936e4955e0e9abd78a7511635a6fe657372be09e0ffd436e5c3c",
+        "40272e1e2b8ee14da70a245797685c717ca4ab91caeb3a436e5110d3cba8c97f",
+        "8bba84c80568c1f17a85656334bb58025bd57c9bf507dd648647741648ad47c5",
+        "c5656f710c44b650aae7af7836884a5806e61efdc2c7aa6848f7fc8731209352",
+        "931ed73cd4e13a4e1df8bc132145ca7df7637cf28482ff3fcd4d535de0f19fce",
+        "71df74f805445a34dd7cd6fce5ad756144315e0f4f9b6102e89374e50e89c4d5",
+        "30ed8c0c2924a2b4bd88a11e6366988726c0f752a77d447d33cc7ba96a58c318",
+        "9d6dc7164c92e2a80140a18213ad7658842a713a4c63f810fc3222d0ef52481f",
+        "20e4c31815be7bb8432d63016fe279feb14e57e4a2d7f4fb801a3ab563d0d810",
+        "6f21d72d84bb3567a8d7b809a6dc36cbda5c091f82ade5e459c2bc5d2a628bba",
+        "db70157c4360db1fc9a6564c1bf29b4937f54470894e9d82f4b3527afec3a75d",
+        "cd6fc257a448afcaefbe3166595a1a728201475ccc29c3b621c1c359d36ebb80",
+        "1ea41a2faf8b74d9b488ff69bbe91f641241ee2c8c97397784ec4676263b26ff",
+        "59737acffce52914b050a157ca19b837f57350f93df2a3fe12c7df54937e47bc",
+        "22b7ff001da4120cee30af7d409c1349327f2a059ed8c7216c61a8650174dc3a",
+        "e7a1ab25ecb4ac944c4e8454185f87f0ddb345f0ee0d307457ae754d624004d0",
+        "4612f5c104957016f804bf55168e5d1c55658b734f067e70faf7311560749252",
+        "dc1e92e674a4e7fe9d6eeb6af9c43dd181b8bc1f46240a16be98634852c7ecc0",
+        "8f580bec88a9b68b9923d0d51d11f147b8f62deb19e2237c7d374278addd37ee",
+        "8297a74d784ab2a8336b7fb8be86fa4883a1185a609ba6539908cebd0c13b0ec",
+        "70ff03876dd03cae066393fab94427a39447d262c6157871c4c826900b2ad313",
+        "c3c86691fd2d24119747ebca65547741ef97bd38d8d283f82bfd6c69447ed3ab",
+        "b37938d79992986cc626a4c408f9d5a896845b35ddd5d4aac8adc4a0f6a92885",
+        "f19b60d65eb0c8361ad9a0b6db5bb7bfc5f6f1ad45c2110e19db9a0bc24250f0",
+        "ea53de7fe49f6269c0012c86be6361cdcf00b4d18d4b2d2e04d483688a1ff422",
+        "05db541f1691adb7d87d3f593751583bb26d20ebc662b476874bdfe71f82ecba",
+        "048c12d22baabfda64d3da6a1d6e353eb3bcd1dca775c3565a69c47c12d915ad",
+        "9e15fa416ed6ee376f38d31066620f974912a15440477321fa79cb1b60e71b0b",
+        "25534950324ad7cc5c7fdaf77174cbbbab00a13f4f186651fcb4a89820b7d602",
+        "8ec4fddd83c9e96f351c3fcacfcd58d3d59e91834041a8ceba853a17442a9240",
+        "1f9e700883cd66db2917a57db15bf4a9f8981c1d6ead508f602eaaa4d1d43a1b",
+        "cf9f67be05f09438bea806c9c05990c2c9d840cd2f1944cd36d0d4afa1f6c386",
+        "4ce56f22dee37e4ebb8cdf5923de0ac9438cabc0ccb1489ab0266664dfb80f98",
+        "90ae90aeaf9060b79385b59690924742abd43abe8b85ee9c378eb1a6fb1dec40",
+        "439e8425305b6f2308fc7e6ba256c41f47b33079633482ca6e9643cd62eed539",
+        "22c5dc093bebcb28b98bbe7f3a54ba2a78b436ccccd07821b6ebc8ed65edae44",
+        "db4d809f54d17b6113e8088da89c1e3e92d01dac2161b8582164724d28b5ff5c",
+        "10b064731c89f2dcca7128378272b6f58d2c9b7b1fc733ad6b4f6d2c276368e9",
+        "89a763de1e9511e158367d2ddfb8e26f981887251ab8c4c16c8a27a174783b50",
+        "12d183e0da6895ab740e513395c05235fba2b003f71cf592f1eec369f0a42429",
+        "9186cb70ac4946822967fa2b0725b3536c718f69015df528c8eb259409a1d5f9",
+        "081976afb7e0927a7942b5e5d963fd2f2c65977925b267a4a5cd26aed562d9ed",
+        "f4d6825bcede50d81f9ff90df38fe8ba3c2f4b0105b5a44c25df09d262181edc",
+        "e41d507ef46d3ee73e4a814df5b3dbad88d1252917bd7358e7a082f235e79255",
+        "8ad45587e4f986489119268241d96ed64b8d3566edfbab42c57b9df95a6b94e8",
+        "4872b4ba78627868b2b860f058225b7263ad8c8769f622664bec04700299e355",
+        "0ad44bf0aaf0680ac3f56de3093ea495fad035498079e9b227d3cc9eb85956e1",
+        "07af5832ea3c697c61fc65c9d26b5b89f050724342579a771f9d833fe7d93a83",
+        "a4c77428d09be19aaee317057eb691eb03840bdd46c1c7c85811c3d5c89cae0c",
+        "267682803ce399da2bcfd4894d1c7d4ecd8ab8e9500578d4020442fbd75cac2e",
+        "66467b07538cef8bf117afac7cac27d713ef126be9dc851e97bf6d18f6fa39da",
+        "b9d1a6763184b6a79fea4e8872a9ccfed5bc7b332cfa792a0dcb2e4f479a5e1a",
+        "a9fdd2800e5ff38e99969bc05bb559e437be79c0e410858bd680c3c352e97716",
+        "239fdc5f461f568dc28e82cacabf386da399e4f12416f64e94bca63f0253693d",
+        "4de2e45f7e8ef0ef780af257621c1c225129fbce48376e4afba2c1e87b980bd2",
+        "8530f0114050e7a33a8b49c1421c7a1c33fd028fd55b7f1462f028498cbb7822",
+        "d6c42f4b2a6db1795dc1e65369889e29f8e5c661591975c2be84e2e6324251e1",
+        "beeba5032de8a74b947fa881798dc7b66d33f772cd1ee36051ad45af4cf5c60a",
+        "6a82345183f004607cf7ab435dee6ad1a3f5733d97a2f56f4f664be1168ce4ca"
+      ]
+    }
+  },
+  "quality_pace_references": [
+    {
+      "context": [
+        "NightCityGrandCircuit",
+        "night-city-192-v3",
+        "formula-01",
+        "wheel-whity"
+      ],
+      "training_10th_percentile_lap_seconds": 67.77588272094727
+    }
+  ],
+  "quality_scope": "Measured train-only lap and sector consistency, collisions, recoveries and route execution; never expert-human ground truth or an MMR reward.",
+  "samples_by_split": [
+    247085,
+    248229,
+    243407
+  ],
+  "held_out_persistence_baseline": {
+    "continuous_mae": {
+      "steering": 0.04930897057056427,
+      "throttle": 0.07732544094324112,
+      "brake": 0.028245635330677032,
+      "pitch": 0.0020916168577969074,
+      "air_roll": 0.0010175455827265978
+    },
+    "discrete": {
+      "drift": {
+        "positives": 76549,
+        "false_positives": 2673,
+        "precision": 0.9650798212839339,
+        "recall": 0.9650419992423154,
+        "f1": 0.9650609098925503
+      },
+      "jump": {
+        "positives": 263,
+        "false_positives": 263,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0
+      },
+      "aerial_boost": {
+        "positives": 449,
+        "false_positives": 310,
+        "precision": 0.30957683741648107,
+        "recall": 0.30957683741648107,
+        "f1": 0.30957683741648107
+      }
+    }
+  },
+  "prediction_horizon_seconds_median": 0.10009765625,
+  "prediction_scope": "Next observed command; all state features precede the predicted action. Persistence is an explicit held-out reference.",
+  "human_sessions": 0,
+  "mmr_distribution": {
+    "1000": 36,
+    "10000": 36,
+    "25000": 36,
+    "50000": 36,
+    "75000": 36,
+    "90000": 36,
+    "97000": 32,
+    "100000": 34
+  },
+  "training_device": "cuda",
+  "recommended_candidate": "behavior_mlp",
+  "selection_scope": "Latency candidate for further Shadow testing, not best competitive driver."
+}

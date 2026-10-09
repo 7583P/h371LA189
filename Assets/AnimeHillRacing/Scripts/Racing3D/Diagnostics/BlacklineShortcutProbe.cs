@@ -1,3 +1,4 @@
+// current-10k QA presets
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System;
 using System.Collections;
@@ -25,14 +26,14 @@ namespace AnimeHillRacing.Racing3D
         {
             string output=Path.GetFullPath(Arg("--blackline-output","Logs/Blackline/shortcut-fixtures"));Directory.CreateDirectory(output);
             Application.runInBackground=true;RacingQualityScope.OverrideForValidation(RacingQuality.Low);
-            RacingTestSession.Set(100000,4207);SceneManager.LoadScene("Racing3D");
+            RacingTestSession.Set(10000,4207);SceneManager.LoadScene("Racing3D");
             RaceManager manager=null;while(manager==null||manager.PlayerVehicle==null){manager=FindFirstObjectByType<RaceManager>();yield return null;}
             manager.PersistResults=false;manager.StopAllCoroutines();manager.enabled=false;manager.ProgressTracker.enabled=false;
             foreach(var car in manager.SpawnedVehicles)car.gameObject.SetActive(false);
             var metrics=FindFirstObjectByType<RacingRaceMetrics>();if(metrics!=null)metrics.enabled=false;
             var graph=manager.ProgressTracker.TrackGraph;Time.timeScale=float.Parse(Arg("--blackline-timescale","4"),System.Globalization.CultureInfo.InvariantCulture);
             int samples=int.Parse(Arg("--blackline-shortcut-samples","1"));
-            int[] ratings=Array.ConvertAll(Arg("--blackline-ratings","75000,100000").Split(','),int.Parse);
+            int[] ratings=Array.ConvertAll(Arg("--blackline-ratings","7500,10000").Split(','),int.Parse);
             string routes=Arg("--blackline-routes","crest_cut,return_drop,overpass_launch,skyway_jump,ridge_cut,waterfall_gap");
             bool mainline=Array.IndexOf(Environment.GetCommandLineArgs(),"--blackline-fixture-mainline")>=0;
             File.WriteAllText(Path.Combine(output,"geometry.json"),JsonUtility.ToJson(new ShortcutGeometry{routes=graph.Shortcuts},true));
@@ -43,7 +44,7 @@ namespace AnimeHillRacing.Racing3D
                 {
                     if(Array.IndexOf(routes.Split(','),route.shortcutId)<0)continue;
                     int seed=4207+sample*997;
-                    var identity=new RacerIdentity("fixture","SHORTCUT FIXTURE","formula-01","wheel-plasma",rating,false,seed,1);
+                    var identity=new RacerIdentity("fixture","SHORTCUT FIXTURE",MetaProgressionConfig.MetaVehicleId,MetaProgressionConfig.MetaWheelId,rating,false,seed,1);
                     var root=RacingVehicleFactory.Create(identity);var car=root.GetComponent<RacingVehiclePhysics>();
                     var start=graph.SampleDistance(graph.GetNode(route.entryNodeIndex).CumulativeDistance-25);
                     float offset=samples>3?(sample%3-1)*.65f:0;

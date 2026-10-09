@@ -7,9 +7,9 @@ namespace AnimeHillRacing.Racing3D
     [Serializable]
     public sealed class RacingSaveData
     {
-        public int Version = 1;
-        public int CurrentMmr = 1000;
-        public int HighestMmr = 1000;
+        public int Version = 3;
+        public int CurrentMmr = 0;
+        public int HighestMmr = 0;
         public int RacesCount = 0;
         public int WinsCount = 0;
         public int PodiumsCount = 0;
@@ -34,18 +34,12 @@ namespace AnimeHillRacing.Racing3D
             get
             {
                 EnsureMigration();
-                return Mathf.Max(0, PlayerPrefs.GetInt(MmrKey, 1000));
+                return RacingProgressionService.State.human.currentMmr;
             }
             set
             {
                 EnsureMigration();
-                int safeVal = Mathf.Max(0, value);
-                PlayerPrefs.SetInt(MmrKey, safeVal);
-                if (safeVal > HighestMmr)
-                {
-                    HighestMmr = safeVal;
-                }
-                PlayerPrefs.Save();
+                RacingProgressionService.SetHumanMmr(value);
             }
         }
 
@@ -54,31 +48,31 @@ namespace AnimeHillRacing.Racing3D
             get
             {
                 EnsureMigration();
-                return Mathf.Max(CurrentMmr, PlayerPrefs.GetInt(HighestMmrKey, 1000));
+                return RacingProgressionService.State.human.peakMmr;
             }
             private set
             {
-                PlayerPrefs.SetInt(HighestMmrKey, value);
-                PlayerPrefs.Save();
+                RacingProgressionService.State.human.peakMmr = Mathf.Max(CurrentMmr, value);
+                RacingProgressionService.MarkChanged(); RacingProgressionService.Save();
             }
         }
 
         public static int RacesCount
         {
-            get => Mathf.Max(0, PlayerPrefs.GetInt(RacesCountKey, 0));
-            set { PlayerPrefs.SetInt(RacesCountKey, value); PlayerPrefs.Save(); }
+            get => RacingProgressionService.State.human.races;
+            set { RacingProgressionService.State.human.races = Mathf.Max(0, value); RacingProgressionService.MarkChanged(); RacingProgressionService.Save(); }
         }
 
         public static int WinsCount
         {
-            get => Mathf.Max(0, PlayerPrefs.GetInt(WinsCountKey, 0));
-            set { PlayerPrefs.SetInt(WinsCountKey, value); PlayerPrefs.Save(); }
+            get => RacingProgressionService.State.human.wins;
+            set { RacingProgressionService.State.human.wins = Mathf.Max(0, value); RacingProgressionService.MarkChanged(); RacingProgressionService.Save(); }
         }
 
         public static int PodiumsCount
         {
-            get => Mathf.Max(0, PlayerPrefs.GetInt(PodiumsCountKey, 0));
-            set { PlayerPrefs.SetInt(PodiumsCountKey, value); PlayerPrefs.Save(); }
+            get => RacingProgressionService.State.human.podiums;
+            set { RacingProgressionService.State.human.podiums = Mathf.Max(0, value); RacingProgressionService.MarkChanged(); RacingProgressionService.Save(); }
         }
 
         public static string SelectedVehicleId
@@ -94,8 +88,11 @@ namespace AnimeHillRacing.Racing3D
             }
             set
             {
-                PlayerPrefs.SetString(SelectedVehicleKey, RacingStatsCalculator.NormalizeVehicleId(value));
+                string id=RacingStatsCalculator.NormalizeVehicleId(value);
+                PlayerPrefs.SetString(SelectedVehicleKey, id);
                 PlayerPrefs.Save();
+                RacingProgressionService.State.human.vehiclePreference=id;
+                RacingProgressionService.MarkChanged();RacingProgressionService.Save();
             }
         }
 
@@ -106,14 +103,17 @@ namespace AnimeHillRacing.Racing3D
                 string id = PlayerPrefs.GetString(SelectedWheelKey, "");
                 if (string.IsNullOrEmpty(id))
                 {
-                    id = "wheel-plasma";
+                    id = MetaProgressionConfig.MetaWheelId;
                 }
                 return RacingStatsCalculator.NormalizeWheelId(id);
             }
             set
             {
-                PlayerPrefs.SetString(SelectedWheelKey, RacingStatsCalculator.NormalizeWheelId(value));
+                string id=RacingStatsCalculator.NormalizeWheelId(value);
+                PlayerPrefs.SetString(SelectedWheelKey, id);
                 PlayerPrefs.Save();
+                RacingProgressionService.State.human.wheelPreference=id;
+                RacingProgressionService.MarkChanged();RacingProgressionService.Save();
             }
         }
 
@@ -121,12 +121,14 @@ namespace AnimeHillRacing.Racing3D
         {
             if (finishPosition < 1 || finishPosition > 12) return;
             EnsureMigration();
-            int mmr = MmrSystem.ApplyDelta(CurrentMmr, mmrDelta);
-            PlayerPrefs.SetInt(RacesCountKey, RacesCount + 1);
-            if (finishPosition == 1) PlayerPrefs.SetInt(WinsCountKey, WinsCount + 1);
-            if (finishPosition <= 3) PlayerPrefs.SetInt(PodiumsCountKey, PodiumsCount + 1);
-            PlayerPrefs.SetInt(HighestMmrKey, Mathf.Max(HighestMmr, mmr));
-            PlayerPrefs.SetInt(MmrKey, mmr);
+            LocalLeagueEngine.RecordResult(RacingProgressionService.State.human, finishPosition, mmrDelta, 0);
+            RacingTitleCatalog.UpdateAchievements(RacingProgressionService.State.human);
+            RecordRecentFinish(finishPosition);
+            RacingProgressionService.MarkChanged(); RacingProgressionService.Save();
+        }
+
+        public static void RecordRecentFinish(int finishPosition)
+        {
             string[] recent = PlayerPrefs.GetString("AHR.Racing.Recent.V1", "").Split(new[] { " / " }, StringSplitOptions.RemoveEmptyEntries);
             string history = "P" + finishPosition;
             for (int i = 0; i < Mathf.Min(4, recent.Length); i++) history += " / " + recent[i];
@@ -142,11 +144,11 @@ namespace AnimeHillRacing.Racing3D
             // Existing Adventure keys (e.g. AHR.TotalCoins) remain untouched!
             if (!PlayerPrefs.HasKey(MmrKey))
             {
-                PlayerPrefs.SetInt(MmrKey, 1000);
+                PlayerPrefs.SetInt(MmrKey, MmrSystem.DefaultStartingMmr);
             }
             if (!PlayerPrefs.HasKey(HighestMmrKey))
             {
-                PlayerPrefs.SetInt(HighestMmrKey, 1000);
+                PlayerPrefs.SetInt(HighestMmrKey, MmrSystem.DefaultStartingMmr);
             }
             if (!PlayerPrefs.HasKey(SelectedVehicleKey))
             {

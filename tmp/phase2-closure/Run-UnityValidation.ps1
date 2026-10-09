@@ -119,14 +119,16 @@ if ($Mode -eq 'profile-player' -or $Mode -eq 'profile-rendered' -or $Mode -eq 'm
 }
 $validationExit = 1
 try {
-    if ($Mode -eq 'profile-rendered' -or $Mode -eq 'manual-player') {
+    if ($Mode -eq 'manual-player') {
+        $validationProcess = Start-Process -FilePath $unityExecutable -ArgumentList $unityArguments -WindowStyle Normal -PassThru
+    } elseif ($Mode -eq 'profile-rendered') {
         # Render the full player workload without taking over the user's desktop.
         $validationProcess = Start-Process -FilePath $unityExecutable -ArgumentList $unityArguments -WindowStyle Hidden -PassThru
     } else {
         $validationProcess = Start-Process -FilePath $unityExecutable -ArgumentList $unityArguments -WindowStyle Hidden -PassThru
     }
     Write-Output ('Unity validation PID: ' + $validationProcess.Id)
-    $validationTimeoutMs = if ($Mode -eq 'benchmark') { 2400000 } else { 1200000 }
+    $validationTimeoutMs = if ($Mode -eq 'manual-player') { 86400000 } elseif ($Mode -eq 'benchmark') { 2400000 } else { 1200000 }
     if (!$validationProcess.WaitForExit($validationTimeoutMs)) {
         $validationProcess.Kill()
         $validationProcess.WaitForExit()

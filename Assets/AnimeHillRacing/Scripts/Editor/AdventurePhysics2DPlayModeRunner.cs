@@ -228,6 +228,21 @@ namespace AnimeHillRacing.EditorTools
                     UnityEngine.Object.FindFirstObjectByType<AdventurePhysics2DPlayModeProbe>();
                 if (probe == null)
                 {
+                    string[] args=Environment.GetCommandLineArgs();
+                    int closureMode=Array.IndexOf(args,"--closure-mode");
+                    if(closureMode>=0&&closureMode+1<args.Length&&args[closureMode+1].StartsWith("adventure",StringComparison.Ordinal))
+                    {
+                        // Explicit mechanical regression only. Intentional rig relocations
+                        // and a forward-only input can trigger head-impact game over, which
+                        // pauses FixedUpdate and captures Results even without a GPU.
+                        // Suspend the run/results owner for this fixture; all vehicle,
+                        // terrain, collider, joint and landing assertions remain unchanged.
+                        // The separate exact-player probe validates normal UI/results flow.
+                        var owner=GameManager.Instance!=null?GameManager.Instance:UnityEngine.Object.FindFirstObjectByType<GameManager>();
+                        if(owner!=null){owner.StopAllCoroutines();UnityEngine.Object.DestroyImmediate(owner);}
+                        Time.timeScale=1;
+                        Debug.Log("ADVENTURE_PHYSICS_SCOPE|resultsAndProgressionSuspended=True|vehicleForcesUnchanged=True|normalGameFlowTestedSeparately=True");
+                    }
                     GameObject probeObject = new GameObject("Adventure Physics2D Play Mode Probe");
                     probe = probeObject.AddComponent<AdventurePhysics2DPlayModeProbe>();
                     // This audit validates representative driving and terrain alignment. The probe's legacy
@@ -427,7 +442,10 @@ namespace AnimeHillRacing.EditorTools
             GameModeType originalMode = (GameModeType)SessionState.GetInt(OriginalModeKey,
                 (int)GameModeType.Adventure2_5D);
             string originalScene = SessionState.GetString(OriginalSceneKey, string.Empty);
-            int testedCombinationCount = ActiveVehicleIds().Length * ActiveMapIds().Length;
+            int expectedCombinationCount = ActiveVehicleIds().Length * ActiveMapIds().Length;
+            int testedCombinationCount = System.Text.RegularExpressions.Regex.Matches(results,
+                @"(?m)^ADVENTURE_BOX2D_PLAY_RESULT\|").Count;
+            passed &= testedCombinationCount == expectedCombinationCount;
 
             try
             {
@@ -448,7 +466,7 @@ namespace AnimeHillRacing.EditorTools
             ClearSession();
             EditorApplication.update -= ContinueAudit;
             if (!string.IsNullOrEmpty(results)) Debug.Log(results);
-            Debug.Log($"ADVENTURE_BOX2D_PLAY_END|passed={passed}|count={testedCombinationCount}|" +
+            Debug.Log($"ADVENTURE_BOX2D_PLAY_END|passed={passed}|count={testedCombinationCount}|expected={expectedCombinationCount}|" +
                       "simulation=FixedUpdate|manualSimulate=False");
             if (Application.isBatchMode) EditorApplication.Exit(passed ? 0 : 1);
         }

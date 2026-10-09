@@ -4,11 +4,14 @@ namespace AnimeHillRacing.Racing3D
     public static class RacingVehicleFactory
     {
         static PhysicsMaterial contact;
-        public static readonly Color MetaCyan = new Color(0.08f, 0.94f, 0.98f);
-        public static readonly Color MetaBlack = new Color(.018f, .025f, .037f);
-        public static readonly Color MetaBlueHelmet = new Color(.025f, .24f, .95f);
-        public static readonly Color MetaRed = new Color(.98f, .045f, .08f);
-        public static readonly Color MetaGreen = new Color(.08f, .94f, .32f);
+        public static readonly Color MetaNavy = new Color(.018f, .060f, .20f);
+        public static readonly Color MetaWhite = new Color(.92f, .97f, 1f);
+        public static readonly Color MetaCyan = new Color(0.08f, 0.92f, 1.0f);
+        public static readonly Color MetaBlue = new Color(0.06f, 0.42f, 0.98f);
+        public static readonly Color MetaBlack = new Color(.010f, .012f, .016f); // Deep jet black body
+        public static readonly Color MetaBlueHelmet = new Color(0.08f, 0.48f, 1.0f);
+        public static readonly Color MetaRed = new Color(.98f, .05f, .10f);
+        public static readonly Color MetaGreen = new Color(0.08f, 0.92f, 1.0f); // Green removed: redirected to Cyan
 
         public static GameObject Create(RacerIdentity identity)
         {
@@ -60,7 +63,7 @@ namespace AnimeHillRacing.Racing3D
             }
             else if (identity.buildCategory == MetaBuildCategory.Meta || identity.vehicleId == "formula-01" || identity.vehicleId == MetaProgressionConfig.MetaVehicleId)
             {
-                paint = MetaBlack;
+                paint = MetaNavy;
             }
             else
             {
@@ -69,7 +72,8 @@ namespace AnimeHillRacing.Racing3D
 
             string wheel = (identity.wheelId == MetaProgressionConfig.MetaWheelId || identity.wheelId == "wheel-meta-cyan") ? MetaProgressionConfig.MetaWheelVisualId : identity.wheelId;
 
-            RacingVehicleVisuals.Build(root, identity.vehicleId, wheel, paint, isHuman: identity.isHuman);
+            var visual=RacingVehicleVisuals.Build(root, identity.vehicleId, wheel, paint, isHuman: identity.isHuman);
+            RacingLoadoutVisuals.Apply(visual,identity.characterId,identity.accessoryId);
             return root;
         }
     }

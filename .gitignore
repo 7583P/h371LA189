@@ -73,3 +73,20 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+
+# Local Python environments and generated caches
+.venv/
+__pycache__/
+*.pyc
+
+# Local validation output (existing tracked test sources remain tracked)
+/tmp/
+**/bin/
+**/obj/
+
+# Local ML recordings and training outputs
+/Tools/ML/Data/
+/Tools/ML/Models/
+
+# Machine-specific validation launcher
+/Launch-Game.ps1

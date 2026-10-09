@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using AnimeHillRacing.Vehicle;
 using UnityEngine;
+using AnimeHillRacing.Ads;
 
 namespace AnimeHillRacing.Core
 {
@@ -31,7 +32,8 @@ namespace AnimeHillRacing.Core
         {
             StarterPack,
             Skin,
-            GemPack
+            GemPack,
+            Vip
         }
 
         private sealed class Entitlement
@@ -68,18 +70,25 @@ namespace AnimeHillRacing.Core
             entitlements.TryGetValue(productId, out Entitlement entitlement) &&
             entitlement.ProductType == StoreProductType.Consumable;
 
+        public bool IsVip(string productId) => !string.IsNullOrEmpty(productId) && productId == AdEntitlementService.VipProductId;
+
         public bool TryFulfillNewPurchase(string productId, string transactionId, out string error)
         {
             if (!TryGet(productId, out Entitlement entitlement, out error)) return false;
+            if (string.IsNullOrWhiteSpace(transactionId)) { error = "STORE TRANSACTION ID IS MISSING"; return false; }
+            bool fulfilled;
             if (entitlement.Kind == EntitlementKind.StarterPack)
-                return SaveManager.TryGrantStarterPack(catalog, starterPack, out error);
-            if (entitlement.Kind == EntitlementKind.GemPack)
-                return SaveManager.TryGrantPurchasedGems(productId, transactionId,
+                fulfilled = SaveManager.TryGrantStarterPack(catalog, starterPack, out error);
+            else if (entitlement.Kind == EntitlementKind.GemPack)
+                fulfilled = SaveManager.TryGrantPurchasedGems(productId, transactionId,
                     entitlement.GemAmount, out error);
-            if (SaveManager.GrantPermanentCustomization(entitlement.VehicleId, "Skin",
-                    entitlement.SkinId)) return true;
-            error = "IAP SKIN ENTITLEMENT CONFIGURATION IS INVALID";
-            return false;
+            else if (entitlement.Kind == EntitlementKind.Vip) fulfilled = true;
+            else {
+                fulfilled = SaveManager.GrantPermanentCustomization(entitlement.VehicleId, "Skin", entitlement.SkinId);
+                if (!fulfilled) error = "IAP SKIN ENTITLEMENT CONFIGURATION IS INVALID";
+            }
+            if (fulfilled) AdEntitlementService.CompleteConfirmedPurchase(transactionId);
+            return fulfilled;
         }
 
         public bool TryRestorePermanentEntitlement(string productId, out string error)
@@ -92,6 +101,7 @@ namespace AnimeHillRacing.Core
             }
             if (entitlement.Kind == EntitlementKind.StarterPack)
                 return SaveManager.RestoreStarterPackOwnership(catalog, starterPack, out error);
+            if (entitlement.Kind == EntitlementKind.Vip) return true;
             if (SaveManager.GrantPermanentCustomization(entitlement.VehicleId, "Skin",
                     entitlement.SkinId)) return true;
             error = "IAP SKIN ENTITLEMENT CONFIGURATION IS INVALID";
@@ -100,6 +110,8 @@ namespace AnimeHillRacing.Core
 
         private void BuildMappings()
         {
+            if (!string.IsNullOrWhiteSpace(AdEntitlementService.VipProductId))
+                Add(AdEntitlementService.VipProductId, new Entitlement { Kind = EntitlementKind.Vip, ProductType = StoreProductType.Subscription }, StoreProductType.Subscription);
             if (starterPack != null && !string.IsNullOrWhiteSpace(starterPack.googlePlayProductId))
                 Add(starterPack.googlePlayProductId, new Entitlement
                 {

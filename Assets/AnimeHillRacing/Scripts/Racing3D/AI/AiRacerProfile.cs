@@ -3,11 +3,15 @@ using UnityEngine;
 
 namespace AnimeHillRacing.Racing3D
 {
+    public enum AiRacingStyle { AerialAggressive, DriftPrecision, ShortcutHeavy, ItemTactical, SafeConsistency, Opportunistic, Balanced }
     [Serializable]
     public sealed class AiRacerProfile
     {
         public int mmr;
         public int personalitySeed;
+        public AiRacingStyle style;
+        public float NormalizedSkill => AiSkillModel.Normalize(mmr);
+        public int PlanningDepth => 1 + Mathf.FloorToInt(Mathf.Pow(NormalizedSkill, 4f) * 4f);
 
         [Header("Driving Skills (0.0 to 1.0)")]
         [Range(0f, 1f)] public float racingLineSkill;

@@ -19,28 +19,29 @@ namespace AnimeHillRacing.Racing3D
             var skyline=RacingDesign.Area(root,"Layered hub skyline",.45f,.12f,.55f,.85f).gameObject.AddComponent<RawImage>();skyline.texture=Resources.Load<Texture2D>("RacingArt/NeonDepthCity");skyline.color=new Color(.42f,.50f,.64f);skyline.raycastTarget=false;
             RacingDesign.Label(root,"HILL ADVENTURER",RacingType.Section,.05f,.86f,.48f,.08f,RacingDesign.Ink,display:true);
             RacingDesign.Label(root,"RACING",RacingType.Display,.05f,.75f,.52f,.12f,RacingDesign.Cyan,display:true);
-            RacingDesign.Label(root,"CHASE THE CITY LIGHTS.",RacingType.Caption,.05f,.70f,.46f,.04f,RacingDesign.Muted);
+            RacingDesign.Label(root,"FIND YOUR LINE. OWN THE NEXT TURN.",RacingType.Caption,.05f,.70f,.46f,.04f,RacingDesign.Muted);
             int mmr=RacingSaveManager.CurrentMmr;
-            var badge=RacingDesign.Area(root,"Rank badge",.82f,.83f,.1f,.12f).gameObject.AddComponent<RacingEmblem>();badge.Tier=(int)MmrTierUtility.GetTier(mmr);badge.color=RacingDesign.TierColor(mmr);
+            RacingDesign.RankBadge(root,mmr,.82f,.79f,.12f,.17f);
             RacingDesign.Label(root,mmr.ToString("N0")+" MMR",RacingType.Stat,.61f,.89f,.2f,.055f,RacingDesign.Ink,TextAnchor.MiddleRight);
             RacingDesign.Label(root,MmrTierUtility.GetTierDisplayName(MmrTierUtility.GetTier(mmr)),RacingType.Caption,.62f,.845f,.19f,.04f,RacingDesign.TierColor(mmr),TextAnchor.MiddleRight);
             var ranked=RacingDesign.Button(root,"RANKED",.05f,.34f,.45f,.31f,()=>RacingLoadingScreen.Load("RacingGarage","BUILD YOUR RACING LINE"),RacingDesign.Surface);
             RacingDesign.Label(ranked.transform,"12 RACERS / 3 LAPS",RacingType.Caption,.08f,.15f,.75f,.14f,RacingDesign.Cyan);
             RacingDesign.Label(ranked.transform,"BUILD YOUR LINE. EARN YOUR RANK.",RacingType.Caption,.08f,.02f,.79f,.15f,RacingDesign.Muted);
             RacingDesign.Panel(ranked.transform,"Gold edge",0,0,.01f,1,RacingDesign.Gold,0);
-            RacingDesign.Label(root,"NIGHT CITY CIRCUIT",RacingType.Title,.55f,.67f,.4f,.07f,RacingDesign.Ink);
+            var trackTitle=RacingDesign.Label(root,RacingTrackSelection.ShortName,RacingType.Title,.55f,.73f,.4f,.05f,RacingDesign.Ink);
+            RacingDesign.Button(root,"NIGHT CITY SKY",.55f,.665f,.19f,.05f,()=>{RacingTrackSelection.Select("night_city");trackTitle.text=RacingTrackSelection.ShortName;},RacingDesign.Surface);
+            RacingDesign.Button(root,"VERDANT RUN",.75f,.665f,.19f,.05f,()=>{RacingTrackSelection.Select(VerdantCircuit.Id);trackTitle.text=RacingTrackSelection.ShortName;},RacingDesign.Surface);
             var preview=RacingShowroom.Create(root,.53f,.31f,.43f,.35f,RacingSaveManager.SelectedVehicleId,RacingSaveManager.SelectedWheelId);
             RacingDesign.Label(root,RacingDesign.VehicleName(RacingSaveManager.SelectedVehicleId),RacingType.Section,.55f,.25f,.37f,.05f,RacingDesign.Ink);
             RacingDesign.Label(root,$"BEST {RacingSaveManager.HighestMmr:N0}  /  {RacingSaveManager.RacesCount} RACES  /  {RacingSaveManager.WinsCount} WINS",RacingType.Caption,.55f,.20f,.39f,.04f,RacingDesign.Muted);
             RacingDesign.Label(root,"RECENT FORM  "+RacingSaveManager.RecentPerformance,RacingType.Caption,.55f,.15f,.39f,.04f,RacingDesign.Muted);
-            string[] modes={"GRAND PRIX","TIME TRIAL","PRACTICE"};
+            string[] modes={"LEAGUE","TITLES","SEASON"};
             for(int i=0;i<3;i++)
             {
-                var card=RacingDesign.Button(root,modes[i],.05f+i*.155f,.17f,.145f,.125f,null,RacingDesign.Surface);card.interactable=false;
-                RacingDesign.Label(card.transform,"IN DEVELOPMENT",RacingType.Caption,.08f,.02f,.86f,.22f,RacingDesign.Muted);
+                int action=i;var card=RacingDesign.Button(root,modes[i],.05f+i*.155f,.17f,.145f,.125f,()=>{if(action==0)RacingLeaderboardUI.Open();else if(action==1)RacingProfileUI.Open();else RacingSeasonUI.Open();},RacingDesign.Surface);
             }
             RacingDesign.Button(root,"MAIN MENU",.05f,.045f,.18f,.075f,()=>RacingLoadingScreen.Load("MainMenu","HILL ADVENTURER"));
-            RacingDesign.Button(root,"TEST MMR",.24f,.045f,.16f,.075f,()=>OpenMmrTestTool(root));
+            if(Debug.isDebugBuild)RacingDesign.Button(root,"TEST MMR",.24f,.045f,.16f,.075f,()=>OpenMmrTestTool(root));
             qualityButtons[0]=RacingDesign.Button(root,"LOW",.58f,.04f,.1f,.065f,()=>RacingQualityScope.Select(RacingQuality.Low));
             qualityButtons[1]=RacingDesign.Button(root,"MEDIUM",.69f,.04f,.13f,.065f,()=>RacingQualityScope.Select(RacingQuality.Medium));
             qualityButtons[2]=RacingDesign.Button(root,"HIGH",.83f,.04f,.11f,.065f,()=>RacingQualityScope.Select(RacingQuality.High));
@@ -58,7 +59,7 @@ namespace AnimeHillRacing.Racing3D
         int testMmr=1000,testSeed=42,selectedRacer=1;
         RectTransform inspector,detail;
         RacerIdentity[] inspectedLobby;
-        static readonly int[] Presets={1000,10000,25000,50000,75000,90000,100000,125000};
+        static readonly int[] Presets={100,1000,2500,5000,7500,9000,9700,10000};
         void OpenMmrTestTool(RectTransform root)
         {
             if(mmrToolPanel!=null){CloseInspector();return;}
@@ -83,10 +84,10 @@ namespace AnimeHillRacing.Racing3D
             RacingDesign.Button(inspector,"REROLL",.83f,.855f,.14f,.05f,()=>{testSeed+=17;RefreshMmrToolView();});
             for(int p=0;p<Presets.Length;p++)
             {
-                int value=Presets[p];string label=value==125000?"100K+":(value/1000)+"K";
+                int value=Presets[p];string label=value.ToString("N0");
                 RacingDesign.Button(inspector,label,.03f+p*.118f,.775f,.11f,.06f,()=>{testMmr=value;RefreshMmrToolView();},testMmr==value?RacingDesign.Cyan:RacingDesign.Highlight);
             }
-            inspectedLobby=MatchmakingService.GenerateRankedLobby(testMmr,RacingSaveManager.SelectedVehicleId,RacingSaveManager.SelectedWheelId,"TEST PLAYER",testSeed);
+            inspectedLobby=MatchmakingService.GenerateSeededTestLobby(testMmr,RacingSaveManager.SelectedVehicleId,RacingSaveManager.SelectedWheelId,"TEST PLAYER",testSeed);
             int exact=0,near=0;foreach(var racer in inspectedLobby){if(racer.isHuman)continue;if(racer.buildCategory==MetaBuildCategory.Meta)exact++;if(racer.buildCategory==MetaBuildCategory.NearMeta)near++;}
             RacingDesign.Label(inspector,$"{exact}/11 EXACT BLACKLINE META     {near} NEAR META     {11-exact-near} SPECIALIST / STANDARD   |   SELECT A RACER",RacingType.Caption,.03f,.72f,.94f,.045f,exact>=10?RacingDesign.Success:RacingDesign.Ink);
             var grid=RacingDesign.Area(inspector,"Lobby rows",.03f,.265f,.94f,.44f);
@@ -101,7 +102,7 @@ namespace AnimeHillRacing.Racing3D
                 RacingDesign.Label(row.transform,$"{r.gridPosition:00} / {r.displayName}",RacingType.Caption,.01f,0,.26f,1,r.isHuman?RacingDesign.Cyan:RacingDesign.Ink);
                 RacingDesign.Label(row.transform,r.mmr.ToString("N0"),RacingType.Caption,.28f,0,.15f,1,RacingDesign.TierColor(r.mmr));
                 RacingDesign.Label(row.transform,$"{(r.buildCategory==MetaBuildCategory.Meta?"EXACT META":r.buildCategory.ToString().ToUpperInvariant())} / {r.metaProbabilityUsed:P0}",RacingType.Caption,.44f,0,.23f,1,r.buildCategory==MetaBuildCategory.Meta?RacingDesign.Cyan:RacingDesign.Ink);
-                RacingDesign.Label(row.transform,RacingDesign.VehicleName(r.vehicleId)+" / "+(r.wheelId==MetaProgressionConfig.MetaWheelId?"BLACK LUXURY":r.wheelId.Replace("wheel-","").ToUpperInvariant()),RacingType.Caption,.68f,0,.31f,1,RacingDesign.Ink);
+                RacingDesign.Label(row.transform,RacingDesign.VehicleName(r.vehicleId)+" / "+(r.wheelId==MetaProgressionConfig.MetaWheelId?"WHITY":r.wheelId.Replace("wheel-","").ToUpperInvariant()),RacingType.Caption,.68f,0,.31f,1,RacingDesign.Ink);
             }
             detail=RacingDesign.Area(inspector,"Selected AI skills",.03f,.065f,.76f,.18f);
             var selected=inspectedLobby[selectedRacer];var skill=AiSkillModel.CreateProfile(selected.mmr,selected.personalitySeed);

@@ -33,6 +33,15 @@ namespace AnimeHillRacing.Racing3D
         [Tooltip("Resistance to rolling/flipping, downforce, and center-of-mass righting torque")]
         [Range(0.5f, 2.5f)] public float Stability;
 
+        [Tooltip("Mini Turbo tier 1 duration in seconds (Green)")]
+        public float MiniTurboDuration1;
+
+        [Tooltip("Medium Turbo tier 2 duration in seconds (Cyan)")]
+        public float MiniTurboDuration2;
+
+        [Tooltip("Super Turbo tier 3 duration in seconds (Purple)")]
+        public float MiniTurboDuration3;
+
         public static RacingVehicleStats Default => new RacingVehicleStats
         {
             Speed = 150f,
@@ -43,7 +52,10 @@ namespace AnimeHillRacing.Racing3D
             Weight = 950f,
             MiniTurbo = 1.0f,
             Offroad = 0.65f,
-            Stability = 1.0f
+            Stability = 1.0f,
+            MiniTurboDuration1 = 0.75f,
+            MiniTurboDuration2 = 1.50f,
+            MiniTurboDuration3 = 2.25f
         };
     }
 
@@ -75,6 +87,9 @@ namespace AnimeHillRacing.Racing3D
         public float MiniTurboMultiplier;
         public float OffroadRetention;
         public float Stability;
+        public float MiniTurboDuration1;
+        public float MiniTurboDuration2;
+        public float MiniTurboDuration3;
 
         public override string ToString() =>
             $"Speed: {SpeedKmh:F1} km/h | Accel: {AccelerationMps2:F1} | Grip: {LateralGrip:F2} | Drift: {DriftMultiplier:F2} | Weight: {WeightKg:F0}kg";

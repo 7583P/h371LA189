@@ -151,7 +151,7 @@ MonoBehaviour:
     hasExplicitRarity: 1
     rarity: 5
     visibleDiameter: 0
-    visibleSize: {x: 27.111473, y: 6.528515}
+    visibleSize: {x: 27.111473, y: 6.513403}
     visualOffset: {x: 0, y: 0}
     overrideGlitchTransform: 1
     glitchManualSize: {x: 6.3, y: 1.25}

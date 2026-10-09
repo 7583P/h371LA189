@@ -20,8 +20,6 @@ namespace AnimeHillRacing.Ads
     public sealed class AdMobManager : MonoBehaviour, IRewardedAdProvider
     {
         public const int InterstitialFrequency = 3;
-        public const float BannerVisibleSeconds = 300f;
-        public const float BannerHiddenSeconds = 120f;
 
         private const float RewardCloseGraceSeconds = 2f;
         private const float FullScreenWatchdogSeconds = 600f;
@@ -69,7 +67,6 @@ namespace AnimeHillRacing.Ads
         private int bannerLoadGeneration;
         private int bannerScreenWidth;
 
-        private double applicationStartedRealtime;
         private double rewardedLoadedRealtime;
         private double interstitialLoadedRealtime;
         private double rewardedLoadStartedRealtime;
@@ -83,8 +80,12 @@ namespace AnimeHillRacing.Ads
         private double lastRewardedClosedRealtime = double.NegativeInfinity;
 
         public static AdMobManager Instance => instance;
+        public static float ReservedBottomPixels => instance != null && instance.bannerShowing ? instance.bannerHeightPixels : 0f;
+        private float bannerHeightPixels;
+        private float nextEntitlementRefresh;
+        private bool previouslyAdFree;
 
-        public bool IsReady => initialized && !shuttingDown && !fullScreenAdInProgress &&
+        public bool IsReady => !AdEntitlementService.IsAdFree && initialized && !shuttingDown && !fullScreenAdInProgress &&
                                !consentFormInProgress &&
                                rewardedAd != null && rewardedAd.CanShowAd();
 
@@ -141,10 +142,11 @@ namespace AnimeHillRacing.Ads
 
             instance = this;
             DontDestroyOnLoad(gameObject);
-            applicationStartedRealtime = Time.realtimeSinceStartupAsDouble;
             configuration = Resources.Load<AdMobConfiguration>("AdMobConfiguration");
             RewardedAdService.RegisterProvider(this);
             SceneManager.sceneLoaded += OnSceneLoaded;
+            bannerLocationAllowed = true;
+            AdEntitlementService.Changed += UpdateBannerVisibility;
 
             if (configuration == null)
             {
@@ -307,6 +309,11 @@ namespace AnimeHillRacing.Ads
 
         private void Update()
         {
+            if (Time.unscaledTime >= nextEntitlementRefresh) {
+                nextEntitlementRefresh = Time.unscaledTime + 1f;
+                bool adFree = AdEntitlementService.IsAdFree;
+                if (adFree != previouslyAdFree) { previouslyAdFree = adFree; UpdateBannerVisibility(); }
+            }
             // A desktop player never starts the mobile consent flow. Do not
             // query UMP every frame there: its unsupported client throws.
             if (shuttingDown || !consentUpdateStarted) return;
@@ -414,7 +421,7 @@ namespace AnimeHillRacing.Ads
 
         private void RequestRewardedAd()
         {
-            if (!initialized || shuttingDown || rewardedLoadInProgress || rewardedAd != null ||
+            if (AdEntitlementService.IsAdFree || !initialized || shuttingDown || rewardedLoadInProgress || rewardedAd != null ||
                 string.IsNullOrWhiteSpace(configuration.RewardedAdUnitId)) return;
 
             rewardedLoadInProgress = true;
@@ -522,7 +529,7 @@ namespace AnimeHillRacing.Ads
 
         private void RequestInterstitialAd()
         {
-            if (!initialized || shuttingDown || interstitialLoadInProgress || interstitialAd != null ||
+            if (AdEntitlementService.IsAdFree || !initialized || shuttingDown || interstitialLoadInProgress || interstitialAd != null ||
                 string.IsNullOrWhiteSpace(configuration.InterstitialAdUnitId)) return;
 
             interstitialLoadInProgress = true;
@@ -593,6 +600,7 @@ namespace AnimeHillRacing.Ads
 
         private void TryShowDueInterstitial()
         {
+            if (AdEntitlementService.IsAdFree) return;
             double now = Time.realtimeSinceStartupAsDouble;
             if (fullScreenAdInProgress || consentFormInProgress || gameplayActive ||
                 now - lastRewardedClosedRealtime < InterstitialAfterRewardedCooldownSeconds)
@@ -643,7 +651,7 @@ namespace AnimeHillRacing.Ads
 
         private void RequestBannerAd()
         {
-            if (!initialized || shuttingDown || bannerView != null || bannerLoadInProgress ||
+            if (AdEntitlementService.IsAdFree || !initialized || shuttingDown || bannerView != null || bannerLoadInProgress ||
                 string.IsNullOrWhiteSpace(configuration.BannerAdUnitId)) return;
 
             try
@@ -662,6 +670,10 @@ namespace AnimeHillRacing.Ads
                     if (generation != bannerLoadGeneration || bannerView != newBanner) return;
                     bannerLoadInProgress = false;
                     bannerLoaded = true;
+                    // The Editor SDK mock uses a scene object that can already be
+                    // destroyed when its delayed callback arrives. Only a real
+                    // mobile banner reserves native screen pixels.
+                    bannerHeightPixels = Application.isEditor ? 0f : newBanner.GetHeightInPixels();
                     bannerLoadFailures = 0;
                     Debug.Log("[AdMob] Banner loaded");
                     UpdateBannerVisibility();
@@ -706,10 +718,7 @@ namespace AnimeHillRacing.Ads
         private void UpdateBannerVisibility()
         {
             if (bannerView == null || !bannerLoaded) return;
-            double elapsed = Math.Max(0d, Time.realtimeSinceStartupAsDouble - applicationStartedRealtime);
-            double cyclePosition = elapsed % (BannerVisibleSeconds + BannerHiddenSeconds);
-            bool cycleVisible = cyclePosition < BannerVisibleSeconds;
-            bool shouldShow = cycleVisible && bannerLocationAllowed && !gameplayActive &&
+            bool shouldShow = !AdEntitlementService.IsAdFree && bannerLocationAllowed &&
                               !fullScreenAdInProgress && !consentFormInProgress &&
                               !applicationPaused;
             if (shouldShow == bannerShowing) return;
@@ -720,6 +729,7 @@ namespace AnimeHillRacing.Ads
                 {
                     bannerView.Show();
                     bannerShowing = true;
+                    AdBannerCanvasInset.InstallOnSceneCanvases();
                     Debug.Log("[AdMob] Banner visible");
                 }
                 catch (Exception exception)
@@ -747,20 +757,6 @@ namespace AnimeHillRacing.Ads
             if (active && !gameplayActive)
                 runRegisteredForCurrentGameplay = false;
             gameplayActive = active;
-            if (active && bannerShowing)
-            {
-                try
-                {
-                    bannerView?.Hide();
-                    bannerShowing = false;
-                    Debug.Log("[AdMob] Banner hidden because gameplay started");
-                }
-                catch (Exception exception)
-                {
-                    HandleBannerRuntimeError("hide for gameplay", exception);
-                }
-                return;
-            }
             UpdateBannerVisibility();
         }
 
@@ -768,9 +764,10 @@ namespace AnimeHillRacing.Ads
         {
             bool containsGameplayAuthority = FindFirstObjectByType<GameManager>() != null ||
                                              FindFirstObjectByType<TimeTrialManager>() != null;
-            bannerLocationAllowed = !containsGameplayAuthority;
+            bannerLocationAllowed = true;
             if (containsGameplayAuthority) ApplyGameplayActive(true);
             else ApplyGameplayActive(false);
+            AdBannerCanvasInset.InstallOnSceneCanvases();
         }
 
         private void BeginFullScreenAd()
@@ -807,6 +804,7 @@ namespace AnimeHillRacing.Ads
         private void OnApplicationPause(bool paused)
         {
             applicationPaused = paused;
+            if (paused) AdEntitlementService.Persist();
             UpdateBannerVisibility();
         }
 
@@ -816,13 +814,14 @@ namespace AnimeHillRacing.Ads
             UpdateBannerVisibility();
         }
 
-        private void OnApplicationQuit() => shuttingDown = true;
+        private void OnApplicationQuit() { AdEntitlementService.Persist(); shuttingDown = true; }
 
         private void OnDestroy()
         {
             if (instance != this) return;
             shuttingDown = true;
             SceneManager.sceneLoaded -= OnSceneLoaded;
+            AdEntitlementService.Changed -= UpdateBannerVisibility;
             RewardedAdService.RegisterProvider(null);
             CompleteRewardedRequest(false);
             DestroyRewarded(rewardedAd);
@@ -839,6 +838,7 @@ namespace AnimeHillRacing.Ads
             bannerLoadInProgress = false;
             bannerLoaded = false;
             bannerShowing = false;
+            bannerHeightPixels = 0;
             if (bannerView == null) return;
             try
             {

@@ -1,3 +1,4 @@
+// current-10k QA presets
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System;
 using System.Collections;
@@ -39,7 +40,7 @@ namespace AnimeHillRacing.Racing3D
             output = Path.GetFullPath(Arg("--blackline-output", "Logs/BlacklineValidation"));
             Directory.CreateDirectory(output);
             errors+=BlacklineContracts.Pure(output);
-            ratings = Array.ConvertAll(Arg("--blackline-ratings", "75000,100000").Split(','), int.Parse);
+            ratings = Array.ConvertAll(Arg("--blackline-ratings", "7500,10000").Split(','), int.Parse);
             seeds = Array.ConvertAll(Arg("--blackline-seeds", "4207").Split(','), int.Parse);
             scale = Mathf.Clamp(float.Parse(Arg("--blackline-timescale", "4"), System.Globalization.CultureInfo.InvariantCulture), 1, 6);
             equalBuild = Array.IndexOf(Environment.GetCommandLineArgs(), "--blackline-equal-build") >= 0;
@@ -95,6 +96,7 @@ namespace AnimeHillRacing.Racing3D
                     foreach(var racer in manager.SpawnedVehicles)
                         racer.gameObject.AddComponent<BlacklineShortcutRecorder>().Bind(manager.ProgressTracker.TrackGraph,Path.Combine(directory,"physical-"+racer.name+".csv"));
                 errors+=BlacklineContracts.World(manager,directory);
+                if(rating>=7500)errors+=NightCityRedesignContracts.World(manager,directory);
                 RacingRenderedPlayerProbe render=null;
                 if(rendered){render=manager.gameObject.AddComponent<RacingRenderedPlayerProbe>();render.Bind(Camera.main,manager);}
                 while (manager.State != RaceState.Racing) yield return null;
@@ -115,6 +117,17 @@ namespace AnimeHillRacing.Racing3D
                     }
                 }
                 metrics.Export(metrics.ExportPath);
+                int expectedVisits=1+manager.ProgressTracker.TotalLaps*manager.ProgressTracker.TrackGraph.CheckpointNodeIndices.Length;
+                bool[] positions=new bool[manager.SpawnedVehicles.Count+1];
+                bool completed=manager.State==RaceState.Results;
+                foreach(var racer in metrics.Report.racers)
+                {
+                    completed&=racer.finished&&racer.checkpointVisits==expectedVisits&&racer.position>0&&racer.position<positions.Length;
+                    if(racer.position>0&&racer.position<positions.Length)
+                    {completed&=!positions[racer.position];positions[racer.position]=true;}
+                }
+                if(!completed)errors++;
+                File.WriteAllText(Path.Combine(directory,"finish-validation.txt"),"allFinishedWithOrderedGatesAndUniquePositions="+completed+"\nexpectedCheckpointVisits="+expectedVisits);
                 if(render!=null)render.Export(Path.Combine(directory,"render-proof.json"));
                 if(onscreen)File.WriteAllText(Path.Combine(directory,"onscreen-proof.txt"),
                     "batchMode="+Application.isBatchMode+"\ntimeScale="+Time.timeScale+"\ncameraEnabled="+Camera.main.enabled+

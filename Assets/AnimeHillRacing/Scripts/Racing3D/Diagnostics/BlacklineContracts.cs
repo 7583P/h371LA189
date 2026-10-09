@@ -1,3 +1,4 @@
+// current-10k QA presets
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System;
 using System.Collections.Generic;
@@ -12,14 +13,14 @@ namespace AnimeHillRacing.Racing3D
         {
             var lines=new List<string>();int failed=0;
             void Check(bool valid,string label){lines.Add((valid?"PASS ":"FAIL ")+label);if(!valid)failed++;}
-            int[] ratings={1000,10000,25000,50000,75000,90000,100000,125000};
+            int[] ratings={100,1000,2500,5000,7500,9000,10000,12500};
             foreach(int rating in ratings)
             {
                 bool seeded=true,builds=true,skills=true,human=true;int exactTotal=0,allMeta=0,smallest=11;
                 for(int seed=1;seed<=128;seed++)
                 {
-                    var lobby=MatchmakingService.GenerateRankedLobby(rating,"car-01","wheel-offroad","CUSTOM HUMAN",seed*7919);
-                    var repeat=MatchmakingService.GenerateRankedLobby(rating,"car-01","wheel-offroad","CUSTOM HUMAN",seed*7919);
+                    var lobby=MatchmakingService.GenerateSeededTestLobby(rating,"car-01","wheel-offroad","CUSTOM HUMAN",seed*7919);
+                    var repeat=MatchmakingService.GenerateSeededTestLobby(rating,"car-01","wheel-offroad","CUSTOM HUMAN",seed*7919);
                     var grid=new HashSet<int>();int exact=0;
                     human&=lobby.Length==12&&lobby[0].isHuman&&lobby[0].vehicleId=="car-01"&&lobby[0].wheelId=="wheel-offroad";
                     for(int i=0;i<lobby.Length;i++)
@@ -36,14 +37,14 @@ namespace AnimeHillRacing.Racing3D
                 Check(seeded,rating+" MMR / all lobby identities reproduce RaceSeed");
                 Check(human&&builds,rating+" MMR / unique slots, exact META IDs, human build preserved");
                 Check(skills,rating+" MMR / finite imperfect execution profiles");
-                if(rating>=75000)Check(smallest>=10&&allMeta>=80,rating+" MMR / elite convergence (min="+smallest+", all META="+allMeta+"/128)");
-                if(rating==1000)Check(exactTotal<128*4,"Low MMR retains build variety");
+                if(rating>=7500)Check(smallest>=10&&allMeta>=80,rating+" MMR / elite convergence (min="+smallest+", all META="+allMeta+"/128)");
+                if(rating==100)Check(exactTotal<128*4,"Low MMR retains build variety");
             }
             Check(RacingDriftFeedback.StageForCharge(.649f)==MiniTurboStage.None&&RacingDriftFeedback.StageForCharge(.65f)==MiniTurboStage.MiniTurbo&&RacingDriftFeedback.StageForCharge(1.55f)==MiniTurboStage.SuperMiniTurbo&&RacingDriftFeedback.StageForCharge(2.7f)==MiniTurboStage.UltraMiniTurbo,"Drift thresholds: green -> cyan -> purple");
             float previous=0;bool monotonic=true;
-            for(int mmr=0;mmr<=125000;mmr+=1000){float p=MetaProgressionConfig.EvaluateMetaProbability(mmr);monotonic&=p>=previous;previous=p;}
+            for(int mmr=0;mmr<=12500;mmr+=100){float p=MetaProgressionConfig.EvaluateMetaProbability(mmr);monotonic&=p>=previous;previous=p;}
             Check(monotonic,"META adoption probability is continuous and monotonic");
-            var low=AiSkillModel.CreateProfile(25000,42);var high=AiSkillModel.CreateProfile(75000,42);
+            var low=AiSkillModel.CreateProfile(2500,42);var high=AiSkillModel.CreateProfile(7500,42);
             Check(high.throttleSkill>.96f&&high.shortcutExecution>.97f&&high.racingLineSkill-low.racingLineSkill>.35f,"75k has elite execution and a substantial gap over 25k");
             File.WriteAllLines(Path.Combine(output,"pure-contracts.txt"),lines);return failed;
         }

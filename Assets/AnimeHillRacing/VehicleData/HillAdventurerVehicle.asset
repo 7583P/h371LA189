@@ -36,7 +36,7 @@ MonoBehaviour:
     hasExplicitRarity: 0
     rarity: 5
     visibleDiameter: 0
-    visibleSize: {x: 21.72, y: 6.91}
+    visibleSize: {x: 21.72, y: 6.55}
     visualOffset: {x: 0, y: 0}
     overrideGlitchTransform: 0
     glitchManualSize: {x: 0, y: 0}
@@ -221,7 +221,7 @@ MonoBehaviour:
     hasExplicitRarity: 0
     rarity: 5
     visibleDiameter: 0
-    visibleSize: {x: 7.45, y: 7.57}
+    visibleSize: {x: 7.39, y: 7.29}
     visualOffset: {x: 0, y: 0}
     overrideGlitchTransform: 0
     glitchManualSize: {x: 0, y: 0}

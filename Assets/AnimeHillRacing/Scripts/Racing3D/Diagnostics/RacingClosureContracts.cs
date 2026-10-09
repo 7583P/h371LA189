@@ -63,8 +63,16 @@ namespace AnimeHillRacing.Racing3D
         public static IEnumerator ItemsAndDrift(ClosureContractReport report,string output)
         {
             SceneManager.LoadScene("Racing3D");
-            yield return new WaitForSecondsRealtime(2);
-            var manager = UnityEngine.Object.FindFirstObjectByType<RaceManager>();
+            RaceManager manager = null;
+            float readyDeadline = Time.realtimeSinceStartup + 30;
+            while (Time.realtimeSinceStartup < readyDeadline)
+            {
+                manager = UnityEngine.Object.FindFirstObjectByType<RaceManager>();
+                if (manager != null && manager.ProgressTracker != null && manager.ProgressTracker.TrackGraph != null && manager.SpawnedVehicles.Count == 12) break;
+                yield return null;
+            }
+            report.Check(manager != null && manager.ProgressTracker != null && manager.ProgressTracker.TrackGraph != null && manager.SpawnedVehicles.Count == 12,"Race initialization completes before runtime contracts");
+            if (manager == null || manager.ProgressTracker == null || manager.ProgressTracker.TrackGraph == null || manager.SpawnedVehicles.Count != 12) yield break;
             manager.enabled=false;
             manager.StopAllCoroutines();
             foreach(var car in manager.SpawnedVehicles) car.SetRaceEnabled(false);
@@ -104,18 +112,24 @@ namespace AnimeHillRacing.Racing3D
             while(!rival.IsSpunOut&&Time.time<deadline)yield return null;
             report.Check(rival.IsSpunOut&&pool.ActiveCount==0,"Unshielded missile produces a real hit and returns to pool");
             rival.ResetVelocities();owner.ResetVelocities();
-            yield return new WaitForSeconds(.3f);
-            Place(owner,new Vector3(5000,100.6f,0));Place(rival,new Vector3(5000,100.6f,8));
+            // A prior hit grants shared spin immunity. Exercise a fresh firing
+            // window after it expires, with the rival initially outside the path.
+            yield return new WaitForSeconds(2.3f);
+            Place(owner,new Vector3(5000,100.6f,0));Place(rival,new Vector3(5010,100.6f,12));
             yield return new WaitForFixedUpdate();yield return new WaitForFixedUpdate();
             Use(inventory,RaceItemType.ElectroSpike,report);
-            yield return new WaitForSeconds(.55f);
-            Place(rival,new Vector3(5000,100.6f,-2.1f));
+            var rock=UnityEngine.Object.FindFirstObjectByType<TrapItemEntity>();
+            Vector3 rockStart=rock!=null?rock.transform.position:Vector3.zero;
+            yield return new WaitForSeconds(.1f);
+            report.Check(rock!=null&&rock.gameObject.activeInHierarchy&&rock.transform.position.z>rockStart.z+1,"Forward Rock follows its shared ballistic trajectory");
+            if(rock!=null)Place(rival,rock.transform.position+Vector3.forward*3);
             deadline=Time.time+1;
             while(!rival.IsSpunOut&&Time.time<deadline)yield return null;
-            report.Check(rival.IsSpunOut&&pool.ActiveCount==0,"ElectroSpike arms, hits and returns to pool");
+            report.Check(rival.IsSpunOut&&pool.ActiveCount==0,"Forward Rock hits a rival on its actual trajectory and returns to pool");
             rival.ResetVelocities();owner.ResetVelocities();
+            yield return new WaitForSeconds(2.6f);
             rival.Body.position=new Vector3(5004,100.6f,0);Physics.SyncTransforms();
-            yield return new WaitForSeconds(.3f);
+            yield return new WaitForFixedUpdate();yield return new WaitForFixedUpdate();
             Use(inventory,RaceItemType.ShockwavePulse,report);
             report.Check(rival.IsSpunOut,"ShockwavePulse affects a nearby rival");
             yield return new WaitForSeconds(.3f);
@@ -136,6 +150,58 @@ namespace AnimeHillRacing.Racing3D
             }
             report.Check(reusedExisting,"100 pool requests reuse prewarmed instance IDs");
             report.Check(pool.ActiveCount==0&&pool.GetComponentsInChildren<ItemEntityBase>(true).Length==entities.Length&&pool.DroppedRequests==0,"Pool capacity is unchanged after repeated item use");
+            // Observe new mechanics through native physics, rather than just enum/table checks.
+            Place(owner,new Vector3(5000,100.6f,0));Place(rival,new Vector3(5080,100.6f,-100));
+            command.value=VehicleCommands.Idle;yield return new WaitForSeconds(.3f);
+            inventory.AcquireItem(RaceItemType.TripleTurbo,false);int tripleUses=inventory.ItemsUsed;
+            report.Check(inventory.UseItem() && inventory.ChargesRemaining==2 && inventory.HeldItem==RaceItemType.TripleTurbo,"Triple Turbo retains its two remaining physical boosts after the first use");
+            report.Check(!inventory.UseItem() && inventory.ChargesRemaining==2,"Triple Turbo rejects a repeated command inside its cooldown");
+            yield return new WaitForSeconds(.5f);inventory.UseItem();yield return new WaitForSeconds(.5f);inventory.UseItem();
+            report.Check(!inventory.HasItem && inventory.ItemsUsed==tripleUses+3 && owner.IsBoosting,"Triple Turbo delivers exactly three ordinary boosts and then clears inventory");
+            yield return new WaitForSeconds(1.3f);Use(inventory,RaceItemType.TwinRock,report);
+            report.Check(pool.ActiveCount==2,"Twin Rock emits two real prewarmed rolling hazards");
+            foreach(var entity in entities)if(entity.gameObject.activeSelf)pool.Release(entity);
+            // Keep the rival in the mine's trigger radius without overlapping the
+            // owner's long chassis. Chassis separation impulses are unrelated to
+            // this shield/mine contract and can move the target before arming.
+            Place(owner,new Vector3(5000,100.6f,6));Place(rival,new Vector3(5001.8f,100.6f,3.6f));yield return new WaitForSeconds(.3f);
+            Use(defense,RaceItemType.MagneticShield,report);Use(inventory,RaceItemType.PulseMine,report);
+            yield return new WaitForSeconds(.8f);
+            File.WriteAllText(Path.Combine(output,"pulse-mine-native-observation.txt"),$"shieldRemaining={defense.HasShield}\nrivalSpin={rival.IsSpunOut}\nactivePool={pool.ActiveCount}\nowner={owner.Body.position}\nrival={rival.Body.position}\n");
+            report.Check(!defense.HasShield && !rival.IsSpunOut && pool.ActiveCount==0,"An armed Pulse Mine consumes a nearby rival's shield once and returns to the pool");
+            Place(owner,new Vector3(5000,100.6f,0));yield return new WaitForSeconds(.3f);
+            inventory.AcquireItem(RaceItemType.AerialRecovery,false);
+            report.Check(owner.IsGrounded && !inventory.UseItem() && inventory.HasItem,"Aerial Recovery stays held when its grounded activation is rejected");
+            Place(owner,new Vector3(5000,105.6f,0));yield return new WaitForFixedUpdate();yield return new WaitForFixedUpdate();
+            Vector3 recoveryPosition=owner.Body.position,recoveryVelocity=owner.Body.linearVelocity;
+            bool aerialUsed=inventory.UseItem(),noRelocation=Vector3.Distance(recoveryPosition,owner.Body.position)<.001f;
+            yield return new WaitForFixedUpdate();
+            // AddForce is accumulated until the next native simulation step.
+            float observedImpulse=owner.Body.linearVelocity.y-recoveryVelocity.y-Physics.gravity.y*Time.fixedDeltaTime;
+            report.Check(aerialUsed && inventory.HasShield && noRelocation && Mathf.Abs(observedImpulse-3.2f)<.15f,"Aerial Recovery applies its universal bounded impulse and protection without relocating the racer");
+            File.WriteAllText(Path.Combine(output,"aerial-recovery-impulse.txt"),$"used={aerialUsed}\nnoInstantRelocation={noRelocation}\nobservedImpulse={observedImpulse}\n");
+            yield return new WaitForSeconds(1.3f);report.Check(!inventory.HasShield,"Aerial Recovery protection expires through the ordinary clock");
+            foreach(var entity in entities)if(entity.gameObject.activeSelf)pool.Release(entity);
+            Place(rival,new Vector3(5080,104,25));
+            var dart=pool.Fire(owner,new Vector3(5070,104,0),Quaternion.identity,RaceItemType.KineticMissile);
+            var tracking=pool.Fire(owner,new Vector3(5071,104,0),Quaternion.identity,RaceItemType.TrackingDart);
+            var rocket=pool.Fire(owner,new Vector3(5072,104,0),Quaternion.identity,RaceItemType.HomingRocket);
+            dart.SetTarget(rival.transform);tracking.SetTarget(rival.transform);rocket.SetTarget(rival.transform);
+            yield return new WaitForSeconds(.15f);
+            report.Check(Vector3.Angle(dart.transform.forward,Vector3.forward)<.01f && Vector3.Angle(tracking.transform.forward,Vector3.forward)>2 && Vector3.Angle(rocket.transform.forward,Vector3.forward)>2,"Dart retains its launch line while Tracking Dart and Homing Rocket turn within their physical tracking limits");
+            foreach(var entity in entities)if(entity.gameObject.activeSelf)pool.Release(entity);
+            Place(owner,new Vector3(5000,100.6f,0));command.value=VehicleCommands.Idle;
+            yield return new WaitForSeconds(.3f);
+            var launchStrip=new GameObject("Delayed boost shared launch fixture");launchStrip.transform.position=new Vector3(5000,100,0);
+            var launchCollider=launchStrip.AddComponent<BoxCollider>();launchCollider.isTrigger=true;launchCollider.center=Vector3.up;launchCollider.size=new Vector3(8,3,8);
+            var sharedPad=launchStrip.AddComponent<RacingJumpPad>();sharedPad.RequiresBoost=true;sharedPad.VerticalImpulse=6;
+            owner.Body.linearVelocity=Vector3.forward*5;Physics.SyncTransforms();yield return new WaitForFixedUpdate();yield return new WaitForFixedUpdate();
+            report.Check(sharedPad.LaunchCount==0,"A racer occupying the shared launch strip cannot launch without its required boost");
+            Use(inventory,RaceItemType.TurboPulse,report);yield return new WaitForFixedUpdate();yield return new WaitForFixedUpdate();
+            report.Check(sharedPad.LaunchCount==1 && owner.Body.linearVelocity.y>4,"Activating ordinary boost while inside the shared launch strip produces the common physical impulse");
+            for(int i=0;i<4;i++)yield return new WaitForFixedUpdate();
+            report.Check(sharedPad.LaunchCount==1,"Trigger Stay and multiple chassis colliders cannot duplicate the shared launch impulse");
+            UnityEngine.Object.Destroy(launchStrip);Place(owner,new Vector3(5000,100.6f,0));
             owner.Body.position=new Vector3(5000,100.6f,0);owner.Body.rotation=Quaternion.identity;
             owner.ResetVelocities();rival.SetRaceEnabled(false);
             Physics.SyncTransforms();command.value=new VehicleCommands{Throttle=1};
@@ -169,8 +235,8 @@ namespace AnimeHillRacing.Racing3D
             report.Check(owner.LandingBoosts==landings+1&&owner.IsBoosting,"The trick produces a shared landing boost on physical contact");
             Place(owner,new Vector3(5000,100.6f,0));Place(rival,new Vector3(5000,100.6f,8));yield return new WaitForSeconds(.3f);
             manager.ProgressTracker.Initialize(manager.ProgressTracker.TrackGraph,3,6);
-            manager.ProgressTracker.RegisterRacer(new RacerIdentity("fixture-owner","Fixture owner","car-01","wheel-default",100000,true,1,1),owner,null);
-            manager.ProgressTracker.RegisterRacer(new RacerIdentity("fixture-rival","Fixture rival","car-01","wheel-default",100000,false,2,2),rival,null);
+            manager.ProgressTracker.RegisterRacer(new RacerIdentity("fixture-owner","Fixture owner","car-01","wheel-default",10000,true,1,1),owner,null);
+            manager.ProgressTracker.RegisterRacer(new RacerIdentity("fixture-rival","Fixture rival","car-01","wheel-default",10000,false,2,2),rival,null);
             typeof(RaceManager).GetField("currentState",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).SetValue(manager,RaceState.Racing);
             var gate=new GameObject("Stationary checkpoint crossing fixture");gate.transform.position=new Vector3(5000,101,1);
             var volume=gate.AddComponent<BoxCollider>();volume.isTrigger=true;volume.size=new Vector3(6,3,6);
@@ -188,7 +254,7 @@ namespace AnimeHillRacing.Racing3D
             report.Check(crossing.CheckpointVisits==1,"A physical reverse crossing is rejected");
             UnityEngine.Object.Destroy(gate);command.value=VehicleCommands.Idle;
             Place(owner,new Vector3(5000,100.6f,0));Place(rival,new Vector3(5000,100.6f,8));yield return new WaitForSeconds(.3f);
-            var tactical=new AiItemAgent(AiSkillModel.CreateProfile(100000,42),inventory,owner,manager.ProgressTracker.TrackGraph,new AiDecisionLogger());
+            var tactical=new AiItemAgent(AiSkillModel.CreateProfile(10000,42),inventory,owner,manager.ProgressTracker.TrackGraph,new AiDecisionLogger());
             inventory.AcquireItem(RaceItemType.TurboPulse,false);yield return new WaitForSeconds(.25f);
             report.Check(!tactical.ShouldUseItem(new AiItemContext{reserveBoost=true}),"Elite AI holds boost for a known shortcut");
             report.Check(tactical.ShouldUseItem(new AiItemContext{reserveBoost=true,shortcutEntryReady=true}),"Elite AI releases its reserved boost at a controlled route entry");

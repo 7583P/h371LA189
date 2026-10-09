@@ -1,3 +1,4 @@
+// current-10k QA presets
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System;
 using System.Collections;
@@ -89,12 +90,12 @@ namespace AnimeHillRacing.Racing3D
             yield return Loaded("RacingSelect");
             Capture("racing-hub");yield return null;
             var hub=FindFirstObjectByType<RacingModeSelectUI>();
-            foreach(int rating in new[]{1000,10000,25000,50000,75000,90000,100000,125000})
+            foreach(int rating in new[]{100,1000,2500,5000,7500,9000,10000,12500})
             {
                 hub.ShowMmrInspector(rating,4207);yield return null;yield return null;
                 var rows=GameObject.Find("Lobby rows");Check(rows!=null&&rows.GetComponentsInChildren<Button>().Length==12,"MMR inspector twelve rows: "+rating);
             }
-            hub.ShowMmrInspector(75000,4207);yield return new WaitForSecondsRealtime(.2f);Capture("03a-mmr-75000-lobby");yield return null;
+            hub.ShowMmrInspector(7500,4207);yield return new WaitForSecondsRealtime(.2f);Capture("03a-mmr-7500-lobby");yield return null;
             Click("DRIVE TEST");yield return Loaded("RacingGarage");
             Capture("04-formula-blackline-closeup");yield return null;
             Click("CONFIRM BUILD");yield return new WaitForSecondsRealtime(.35f);Capture("ranked-briefing");yield return null;
@@ -129,7 +130,7 @@ namespace AnimeHillRacing.Racing3D
             }
             if(hud!=null)hud.SetActive(true);if(follow!=null)follow.enabled=true;camera.fieldOfView=60;
             var player=manager.PlayerVehicle;player.GetComponent<PlayerRacingInput>().SetInputEnabled(false);
-            var ai=player.gameObject.AddComponent<AiVehicleController>();ai.Initialize(AiSkillModel.CreateProfile(75000,manager.LobbyRacers[0].personalitySeed),graph,manager.ProgressTracker,"EXPLICIT EVIDENCE DRIVER");
+            var ai=player.gameObject.AddComponent<AiVehicleController>();ai.Initialize(AiSkillModel.CreateProfile(7500,manager.LobbyRacers[0].personalitySeed),graph,manager.ProgressTracker,"EXPLICIT EVIDENCE DRIVER");
             foreach(var racer in manager.SpawnedVehicles)
             {
                 var observed=racer;

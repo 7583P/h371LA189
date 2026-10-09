@@ -48,7 +48,16 @@ namespace AnimeHillRacing.Racing3D
                 collectors[slot]=vehicle;collectedAt[slot]=Time.time;
                 inventory.AcquireItem(fixedItem,false);
             }
-            else {inventory.AcquireItem(ItemDistributionTable.RollItem(position,inventory.ItemRng));availableAt=Time.time+respawnTime;}
+            else {
+                var racer = tracker != null ? tracker.FindRacer(vehicle) : null;
+                float gap = tracker != null && tracker.Leaderboard.Count > 0 && racer != null ?
+                    Mathf.Max(0, tracker.Leaderboard[0].TotalDistance - racer.TotalDistance) / Mathf.Max(20, vehicle.SpeedMps) : 0;
+                inventory.AcquireItem(ItemDistributionTable.RollItem(new ItemRollContext {
+                    position=position, gapLeaderSeconds=gap, lap=racer != null ? racer.CurrentLap : 1,
+                    totalLaps=tracker != null ? tracker.TotalLaps : 3, held=inventory.HeldItem,
+                    previous=inventory.PreviousItem, previousPrevious=inventory.PreviousPreviousItem
+                },inventory.ItemRng));availableAt=Time.time+respawnTime;
+            }
             RacingVfxPool.Burst(transform.position,RacingDesign.Cyan,12);
             if(other.GetComponentInParent<PlayerRacingInput>()!=null)RacingFeedback.Play(RacingCue.Pickup);
         }
@@ -56,19 +65,20 @@ namespace AnimeHillRacing.Racing3D
         // and must collect, hold and activate the ordinary inventory item.
         public static ItemBox CreateBoostSupply(Transform parent,Vector3 position,float width)
         {
-            var root=Create(parent,position);root.name="Visible shortcut boost cell";
+            var root=Create(parent,position,RaceItemType.TurboPulse);root.name="Visible shortcut boost cell";
             var box=root.GetComponent<ItemBox>();box.fixedItem=RaceItemType.TurboPulse;
             root.GetComponent<SphereCollider>().enabled=false;
             var trigger=root.AddComponent<BoxCollider>();trigger.isTrigger=true;trigger.size=new Vector3(width,2.5f,2);
             box.trigger=trigger;
             return box;
         }
-        public static GameObject Create(Transform parent,Vector3 position)
+        public static GameObject Create(Transform parent,Vector3 position,RaceItemType knownItem = RaceItemType.None)
         {
             var root=new GameObject("Energy item pod");root.transform.SetParent(parent,false);root.transform.position=position;
             var trigger=root.AddComponent<SphereCollider>();trigger.radius=1.1f;trigger.isTrigger=true;
             var visual=new GameObject("Floating pod");visual.transform.SetParent(root.transform,false);
-            RacingItemArt.Pickup(visual.transform);root.AddComponent<ItemBox>();return root;
+            if (knownItem == RaceItemType.None) RacingItemArt.Pickup(visual.transform); else RacingItemArt.Build(visual.transform, knownItem);
+            var box=root.AddComponent<ItemBox>();box.fixedItem=knownItem;return root;
         }
     }
 }

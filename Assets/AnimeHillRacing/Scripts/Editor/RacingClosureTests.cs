@@ -6,7 +6,9 @@ using System.Collections.Generic;
 using AnimeHillRacing.Racing3D;
 using UnityEditor;
 using UnityEditor.Compilation;
+using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace AnimeHillRacing.EditorTools
 {
@@ -36,6 +38,23 @@ namespace AnimeHillRacing.EditorTools
     {
         public static void Run(string output,Action completed)
         {
+            // Edit fixtures create generated meshes and runtime-only components.
+            // Keep them out of the user's open scene and Unity's Play Mode snapshot.
+            var previous=SceneManager.GetActiveScene();
+            // Batch startup has an empty, untitled scene; anchor it to the same
+            // authored entry scene this launcher uses before entering Play Mode.
+            if(Application.isBatchMode&&string.IsNullOrEmpty(previous.path))
+                previous=EditorSceneManager.OpenScene("Assets/AnimeHillRacing/Scenes/PreStart.unity");
+            var fixtureScene=EditorSceneManager.NewScene(NewSceneSetup.EmptyScene,NewSceneMode.Additive);
+            try { SceneManager.SetActiveScene(fixtureScene); RunIsolated(output,completed); }
+            finally
+            {
+                if(previous.IsValid()&&previous.isLoaded)SceneManager.SetActiveScene(previous);
+                EditorSceneManager.CloseScene(fixtureScene,true);
+            }
+        }
+        static void RunIsolated(string output,Action completed)
+        {
             var foundation=RacingSystemAuditor.RunAllTests();
             var summary=new ClosureContractReport{passed=foundation.Passed,failed=foundation.Failed,failures=foundation.FailureMessages};
             File.WriteAllText(Path.Combine(output,"foundation-tests.json"),JsonUtility.ToJson(summary,true));
@@ -45,7 +64,11 @@ namespace AnimeHillRacing.EditorTools
             var improvements=new ClosureContractReport();
             using(new RacingPlayerPrefsTestScope())RacingImprovementContracts.Edit(improvements,output);
             File.WriteAllText(Path.Combine(output,"improvement-edit-contracts.json"),JsonUtility.ToJson(improvements,true));
-            SessionState.SetBool("AHR.Racing.Closure.ContractsPassed",foundation.Failed==0&&additional.failed==0&&improvements.failed==0);
+            var release=new ClosureContractReport();RacingReleaseContracts.Run(release,output);
+            File.WriteAllText(Path.Combine(output,"release-edit-contracts.json"),JsonUtility.ToJson(release,true));
+            var product=new ClosureContractReport();RacingProductContracts.Run(product,output);
+            File.WriteAllText(Path.Combine(output,"product-edit-contracts.json"),JsonUtility.ToJson(product,true));
+            SessionState.SetBool("AHR.Racing.Closure.ContractsPassed",product.failed==0&&foundation.Failed==0&&additional.failed==0&&improvements.failed==0&&release.failed==0);
             // Compile the existing test Program.cs with Unity's compiler and real
             // project assemblies, then invoke it inside Unity (no duplicated tests).
             var builder=new AssemblyBuilder(Path.Combine(output,"ExistingRacingTests.dll"),new[]{Path.GetFullPath("tmp/racing-test/Program.cs")});

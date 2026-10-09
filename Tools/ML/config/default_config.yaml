@@ -1,0 +1,29 @@
+# Default Training and Inference Configuration for Hill Adventurer Racing 3D ML
+model:
+  type: "temporal_gru" # "baseline_mlp" or "temporal_gru"
+  input_dim: 11
+  hidden_dim: 64
+  num_layers: 2
+  output_dim: 5       # [steering, throttle, brake, drift_prob, jump_prob]
+  dropout: 0.1
+
+training:
+  sequence_length: 20 # 2.0 seconds at 10 Hz
+  batch_size: 64
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  epochs: 25
+  quality_weighting: true
+  device: "cuda"      # Falls back to "cpu" automatically if cuda is unavailable
+
+data:
+  data_dir: "Tools/ML/Data"
+  models_dir: "Tools/ML/Models"
+  train_split: 0.8
+  val_split: 0.1
+  test_split: 0.1
+  min_quality_score: 0.15
+
+onnx:
+  opset_version: 17
+  export_path: "Tools/ML/Models/racing_temporal_model.onnx"

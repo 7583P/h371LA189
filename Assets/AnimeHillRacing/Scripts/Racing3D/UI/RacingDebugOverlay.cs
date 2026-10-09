@@ -82,7 +82,13 @@ namespace AnimeHillRacing.Racing3D
                     botStyle.normal.textColor = Color.white;
 
                     string botHeader = $"<b>{log?.BotName}</b> (MMR: {ai.Profile.mmr} [{tier}]) | Speed: {v.SpeedKmh:F0} km/h";
-                    GUILayout.Box($"{botHeader}\n{summary}", botStyle);
+                    var ml=v.GetComponent<ML.RacingMlInferenceAdapter>();
+                    string model=ml!=null?$"{ml.EffectiveMode} {ml.ModelVersion} / {ml.AvgInferenceTimeMicroseconds:F1} us":"Off";
+                    var cmd=v.LastCommands;
+                    string proposals=ml!=null&&ml.ModelAvailable&&ml.EffectiveMode!=ML.MlExecutionMode.Off
+                        ?$"Heuristic S/T/B {cmd.Steering:F2}/{cmd.Throttle:F2}/{cmd.Brake:F2} J/D/A {cmd.Jump}/{cmd.Drift}/{cmd.AerialBoost}\nML S/T/B {ml.MlProposedSteer:F2}/{ml.MlProposedThrottle:F2}/{ml.MlProposedBrake:F2} p(J/D/A) {ml.MlJumpProbability:F2}/{ml.MlDriftProbability:F2}/{(ml.HasAerialOutput?ml.MlAerialBoostProbability.ToString("F2"):"n/a")}\n{ml.TargetAlignment} / interval {ml.LastPredictionHorizonSeconds:F2}s / {ml.ShadowComparisonTicks} comparisons / confidence uncalibrated"
+                        :"ML proposals unavailable";
+                    GUILayout.Box($"{botHeader}\nSkill {ai.Profile.NormalizedSkill:F3} / {ai.Profile.style} / plan {ai.PlannedActionDepth}/{ai.Profile.PlanningDepth} / {ai.CurrentIntent}\n{ai.PlanSummary}\nLanding {ai.TargetLanding} / ML {model}\n{proposals}\n{summary}", botStyle);
                 }
             }
             GUILayout.EndScrollView();

@@ -14,11 +14,15 @@ namespace AnimeHillRacing.Racing3D
         Vector3 velocity,followForward=Vector3.forward;
         float impact,landing,introEnd,introDuration;
         bool reversing;
+        PlayerRacingInput targetInput;
+        bool lastRearView;
+        public bool IsLookingBack => targetInput != null && targetInput.LookBack && targetPhysics != null && targetPhysics.RaceEnabled;
         public RacingCameraPreset Preset => (RacingCameraPreset)Mathf.Clamp(PlayerPrefs.GetInt("AHR.Racing.Camera",0),0,2);
         void Awake(){cam=GetComponent<Camera>();if(cam!=null){cam.nearClipPlane=.18f;cam.farClipPlane=1500;}}
         public void SetTarget(Transform newTarget,RacingVehiclePhysics physics=null)
         {
             Unsubscribe();target=newTarget;targetPhysics=physics!=null?physics:newTarget?.GetComponent<RacingVehiclePhysics>();
+            targetInput=newTarget!=null?newTarget.GetComponent<PlayerRacingInput>():null;lastRearView=false;
             if(targetPhysics!=null){targetPhysics.OnImpact+=Impact;targetPhysics.OnLanding+=Land;}
             graph=FindFirstObjectByType<TrackSplineGraph>();SnapToTarget();
         }
@@ -47,18 +51,21 @@ namespace AnimeHillRacing.Racing3D
             float yawAnticipation=targetPhysics.LastCommands.Steering*ratio*(targetPhysics.IsDrifting?4:6);
             forward=Quaternion.AngleAxis(yawAnticipation,Vector3.up)*forward;
             followForward=Vector3.Slerp(followForward,forward,1-Mathf.Exp(-dt*(targetPhysics.IsDrifting?9:12))).normalized;
+            bool rear=IsLookingBack;bool viewChanged=rear!=lastRearView;lastRearView=rear;
+            Vector3 viewForward=rear?-followForward:followForward;
+            if(viewChanged)velocity=Vector3.zero;
             float baseDistance=Preset==RacingCameraPreset.Close?5.7f:Preset==RacingCameraPreset.Comfortable?8.5f:7.3f;
             float height=Preset==RacingCameraPreset.Close?2.7f:Preset==RacingCameraPreset.Comfortable?4:3.3f;
             float distance=baseDistance+ratio*1.2f+(targetPhysics.IsBoosting?.45f:0);
-            Vector3 look=target.position+Vector3.up*.9f+followForward*(3+ratio*3);
-            if(graph!=null&&!reversing)
+            Vector3 look=target.position+Vector3.up*.7f+viewForward*(.8f+ratio*1.4f);
+            if(graph!=null&&!reversing&&!rear)
             {
                 graph.ProjectPosition(target.position,out _,out float along,out _);
                 Vector3 curve=graph.SampleDistance(along+8+ratio*7).Position-target.position;
                 curve.y=0;look+=Vector3.ClampMagnitude(curve-followForward*curve.magnitude,3f)*.23f;
             }
             Vector3 anchor=target.position+Vector3.up*1.0f;
-            Vector3 desired=target.position-followForward*distance+Vector3.up*(height+ratio*.25f+(targetPhysics.IsGrounded?0:.35f));
+            Vector3 desired=target.position-viewForward*distance+Vector3.up*(height+ratio*.25f+(targetPhysics.IsGrounded?0:.35f));
             Vector3 ray=desired-anchor;float allowed=ray.magnitude;
             int count=Physics.SphereCastNonAlloc(anchor,.3f,ray.normalized,hits,allowed,obstacleLayer,QueryTriggerInteraction.Ignore);
             for(int i=0;i<count;i++)
@@ -67,7 +74,7 @@ namespace AnimeHillRacing.Racing3D
                 if(hits[i].distance<allowed)allowed=Mathf.Max(.75f,hits[i].distance-.3f);
             }
             Vector3 corrected=anchor+ray.normalized*allowed;
-            Vector3 smooth=Vector3.SmoothDamp(transform.position,corrected,ref velocity,positionSmoothTime,Mathf.Infinity,dt);
+            Vector3 smooth=viewChanged?corrected:Vector3.SmoothDamp(transform.position,corrected,ref velocity,positionSmoothTime,Mathf.Infinity,dt);
             // Apply obstruction correction after smoothing too; easing must never move the camera through a wall.
             Vector3 finalRay=smooth-anchor;int finalCount=Physics.SphereCastNonAlloc(anchor,.25f,finalRay.normalized,hits,finalRay.magnitude,obstacleLayer,QueryTriggerInteraction.Ignore);
             float finalDistance=finalRay.magnitude;
@@ -75,7 +82,14 @@ namespace AnimeHillRacing.Racing3D
             impact=Mathf.MoveTowards(impact,0,dt*3);landing=Mathf.MoveTowards(landing,0,dt*1.8f);
             Vector3 shake=new Vector3(Mathf.Sin(Time.time*47),Mathf.Sin(Time.time*53)*.4f,0)*impact*.035f+Vector3.down*landing*.075f;
             transform.position=anchor+finalRay.normalized*finalDistance+shake;
-            if((look-transform.position).sqrMagnitude>.01f)transform.rotation=Quaternion.Slerp(transform.rotation,Quaternion.LookRotation(look-transform.position,Vector3.up),1-Mathf.Exp(-dt*15));
+            if((look-transform.position).sqrMagnitude>.01f) {
+                Quaternion rotation=Quaternion.LookRotation(look-transform.position,Vector3.up);
+                transform.rotation=viewChanged?rotation:Quaternion.Slerp(transform.rotation,rotation,1-Mathf.Exp(-dt*15));
+            }
+            // Keep the complete vehicle readable when yaw damping lags during a drift.
+            Vector3 framing=cam.WorldToViewportPoint(target.position+Vector3.up*.35f);
+            if(framing.z>0&&(framing.x<.22f||framing.x>.78f||framing.y<.22f||framing.y>.60f))
+                transform.rotation=Quaternion.LookRotation(target.position+Vector3.up*.65f+viewForward*.6f-transform.position,Vector3.up);
             float fov=(Preset==RacingCameraPreset.Comfortable?59:63)+ratio*9+(targetPhysics.IsBoosting?3:0);
             cam.fieldOfView=Mathf.Lerp(cam.fieldOfView,fov,1-Mathf.Exp(-dt*5));
         }

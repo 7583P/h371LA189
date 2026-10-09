@@ -10,6 +10,8 @@ namespace AnimeHillRacing.Racing3D
         public string displayName;
         public string vehicleId;
         public string wheelId;
+        public string characterId = "cobalt-driver";
+        public string accessoryId = "none";
         public int mmr;
         public bool isHuman;
         public int personalitySeed;
@@ -18,6 +20,9 @@ namespace AnimeHillRacing.Racing3D
         public float metaProbabilityUsed;
         public Color paintColor = Color.clear;
         public string buildName = "";
+        public string titleId = "";
+        public AiRacingStyle preferredStyle;
+        public bool hasPersistentStyle;
 
         public RacerIdentity(string id, string name, string vehicle, string wheel, int rating, bool human, int seed, int grid)
         {

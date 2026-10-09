@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -50,20 +50,41 @@ namespace AnimeHillRacing.Racing3D
             var collider = root.AddComponent<SphereCollider>(); collider.radius = typeof(T)==typeof(TrapItemEntity)? .8f : .3f; collider.isTrigger = true;
             var body = root.AddComponent<Rigidbody>(); body.isKinematic=true; body.useGravity=false;
             var visual=new GameObject("Item mesh");visual.transform.SetParent(root.transform,false);
-            RacingItemArt.Build(visual.transform,typeof(T)==typeof(ProjectileItemEntity));
+            var variants=root.AddComponent<RacingItemVisualSet>();
+            variants.BuildVariants(visual.transform,typeof(T)==typeof(ProjectileItemEntity) ? new[] { RaceItemType.KineticMissile, RaceItemType.TrackingDart, RaceItemType.HomingRocket, RaceItemType.GoldenRock } : new[] { RaceItemType.ElectroSpike, RaceItemType.PulseMine },false);
             var entity = root.AddComponent<T>(); entity.Pool=this;
             root.SetActive(false); CreatedCount++;
             (entity is ProjectileItemEntity ? MissileCounters : TrapCounters).created++;
             return entity;
         }
-        public ProjectileItemEntity Fire(RacingVehiclePhysics owner,Vector3 position,Quaternion rotation)
+        public ProjectileItemEntity Fire(RacingVehiclePhysics owner,Vector3 position,Quaternion rotation,RaceItemType type = RaceItemType.KineticMissile)
         {
-            foreach(var missile in missiles) if(!missile.gameObject.activeSelf) { Activate(missile,owner,position,rotation); return missile; }
+            foreach(var missile in missiles) if(!missile.gameObject.activeSelf) { Activate(missile,owner,position,rotation); missile.ConfigureItem(type); return missile; }
             DroppedRequests++; return null;
         }
         public void Drop(RacingVehiclePhysics owner,Vector3 position,Quaternion rotation)
         {
-            foreach(var trap in traps) if(!trap.gameObject.activeSelf) { Activate(trap,owner,position,rotation); return; }
+            foreach(var trap in traps) if(!trap.gameObject.activeSelf) { Activate(trap,owner,position,rotation); trap.ConfigureItem(RaceItemType.ElectroSpike); trap.DropStationary(); return; }
+            DroppedRequests++;
+        }
+        public void ThrowRock(RacingVehiclePhysics owner, Vector3 position, Vector3 direction, bool backward)
+        {
+            foreach(var trap in traps)
+            {
+                if(!trap.gameObject.activeSelf)
+                {
+                    Activate(trap, owner, position, Quaternion.LookRotation(direction, Vector3.up)); trap.ConfigureItem(RaceItemType.ElectroSpike);
+                    if(backward) trap.DropStationary();
+                    else trap.LaunchForward(direction);
+                    return;
+                }
+            }
+            DroppedRequests++;
+        }
+        public void DropPulseMine(RacingVehiclePhysics owner,Vector3 position,Quaternion rotation) {
+            foreach(var trap in traps)if(!trap.gameObject.activeSelf) {
+                Activate(trap,owner,position,rotation);trap.ConfigureItem(RaceItemType.PulseMine);trap.DropStationary();return;
+            }
             DroppedRequests++;
         }
         void Activate(ItemEntityBase entity,RacingVehiclePhysics owner,Vector3 position,Quaternion rotation)

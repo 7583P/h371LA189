@@ -19,7 +19,7 @@ namespace AnimeHillRacing.Racing3D
         [Serializable] sealed class Curves { public List<CurveRow> rows=new List<CurveRow>(); }
         public static void Edit(ClosureContractReport checks,string output)
         {
-            int[] ratings={0,1000,10000,20000,30000,40000,50000,60000,70000,80000,90000,100000,125000};
+            int[] ratings={0,100,1000,2000,3000,4000,5000,6000,7000,8000,9000,10000,12500};
             var curves=new Curves();CurveRow previous=null;var highCounts=new HashSet<int>();
             foreach(int rating in ratings)
             {
@@ -34,8 +34,8 @@ namespace AnimeHillRacing.Racing3D
                     row.line+=p.racingLineSkill/64;row.braking+=p.brakingSkill/64;row.drift+=p.driftSkill/64;
                     row.knowledge+=p.shortcutKnowledge/64;row.execution+=p.shortcutExecution/64;row.items+=p.itemTiming/64;
                     row.consistency+=p.consistency/64;row.awareness+=p.awareness/64;row.aggression+=p.aggression/64;row.tricks+=p.trickSkill/64;row.chaining+=p.chainingSkill/64;
-                    var lobby=MatchmakingService.GenerateRankedLobby(rating,"formula-01","wheel-plasma","TEST",seed*7919);
-                    var repeat=MatchmakingService.GenerateRankedLobby(rating,"formula-01","wheel-plasma","TEST",seed*7919);
+                    var lobby=MatchmakingService.GenerateSeededTestLobby(rating,"formula-01","wheel-plasma","TEST",seed*7919);
+                    var repeat=MatchmakingService.GenerateSeededTestLobby(rating,"formula-01","wheel-plasma","TEST",seed*7919);
                     var grid=new HashSet<int>();var names=new HashSet<string>();int exact=0;
                     lobbies&=lobby.Length==12&&lobby[0].isHuman;
                     for(int i=0;i<lobby.Length;i++)
@@ -46,10 +46,10 @@ namespace AnimeHillRacing.Racing3D
                         lobbies&=!lobby[i].isHuman&&lobby[i].mmr>=0;
                         if(lobby[i].buildCategory==MetaBuildCategory.Meta)
                         {exact++;lobbies&=lobby[i].vehicleId==MetaProgressionConfig.MetaVehicleId&&lobby[i].wheelId==MetaProgressionConfig.MetaWheelId;}
-                        if(rating>=70000)lobbies&=lobby[i].buildCategory!=MetaBuildCategory.Standard;
+                        if(rating>=7000)lobbies&=lobby[i].buildCategory!=MetaBuildCategory.Standard;
                     }
                     lobbies&=grid.Count==12&&grid.Contains(1)&&grid.Contains(12)&&names.Count==12;
-                    diverse&=exact<=11&&(rating<75000||exact>=10);meta+=exact;if(rating==100000)highCounts.Add(exact);
+                    diverse&=exact<=11&&(rating<7500||exact>=10);meta+=exact;if(rating==10000)highCounts.Add(exact);
                 }
                 row.observedMetaRate=meta/(64f*11);curves.rows.Add(row);
                 checks.Check(bounded,$"{rating} MMR: all skills remain finite and imperfect");
@@ -58,9 +58,9 @@ namespace AnimeHillRacing.Racing3D
                 checks.Check(previous==null||(row.line>=previous.line&&row.braking>=previous.braking&&row.drift>=previous.drift&&row.consistency>=previous.consistency&&row.execution>=previous.execution&&row.items>=previous.items&&row.chaining>=previous.chaining&&row.tricks>=previous.tricks&&row.aggression>=previous.aggression),$"{rating} MMR: aggregate driving, tactics and chaining progress");
                 previous=row;
             }
-            checks.Check(curves.rows[11].line-curves.rows[3].line>.4f&&curves.rows[11].execution-curves.rows[3].execution>.4f,"100k retains a substantial skill gap over 20k");
+            checks.Check(curves.rows[11].line-curves.rows[3].line>.4f&&curves.rows[11].execution-curves.rows[3].execution>.4f,"10k retains a substantial skill gap over 2k");
             checks.Check(highCounts.Contains(10)&&highCounts.Contains(11),"High-MMR seeds produce eleven META bots or ten META plus one specialist");
-            var custom=MatchmakingService.GenerateRankedLobby(100000,"formula-01","wheel-default","TEST",42);
+            var custom=MatchmakingService.GenerateSeededTestLobby(10000,"formula-01","wheel-default","TEST",42);
             checks.Check(custom[0].buildCategory!=MetaBuildCategory.Meta,"Formula with default tuning is not mislabeled exact META");
             const string vehicleKey="AHR.Racing.SelectedVehicle.V1",wheelKey="AHR.Racing.SelectedWheel.V1";
             bool hadVehicle=PlayerPrefs.HasKey(vehicleKey),hadWheel=PlayerPrefs.HasKey(wheelKey);
@@ -77,8 +77,8 @@ namespace AnimeHillRacing.Racing3D
                 if(hadWheel)PlayerPrefs.SetString(wheelKey,savedWheel);else PlayerPrefs.DeleteKey(wheelKey);
             }
             int mmr=RacingSaveManager.CurrentMmr,highest=RacingSaveManager.HighestMmr,races=RacingSaveManager.RacesCount;
-            RacingTestSession.Set(125000,42);
-            checks.Check(RacingTestSession.Active&&RacingTestSession.Mmr==125000&&RacingSaveManager.CurrentMmr==mmr&&RacingSaveManager.HighestMmr==highest&&RacingSaveManager.RacesCount==races,"Test race override preserves live rating and progression");
+            RacingTestSession.Set(12500,42);
+            checks.Check(RacingTestSession.Active&&RacingTestSession.Mmr==12500&&RacingSaveManager.CurrentMmr==mmr&&RacingSaveManager.HighestMmr==highest&&RacingSaveManager.RacesCount==races,"Test race override preserves live rating and progression");
             RacingTestSession.Clear();
             File.WriteAllText(Path.Combine(output,"skill-and-meta-curves.json"),JsonUtility.ToJson(curves,true));
         }
@@ -127,7 +127,7 @@ namespace AnimeHillRacing.Racing3D
             }
             RacingQualityScope.Select(quality);
             Click("TEST MMR",checks);yield return null;
-            string[] presets={"1K","10K","25K","50K","75K","90K","100K","100K+"};
+            string[] presets={"100","1,000","2,500","5,000","7,500","9,000","9,700","10,000"};
             foreach(string preset in presets)
             {
                 Click(preset,checks);yield return null;
@@ -135,9 +135,9 @@ namespace AnimeHillRacing.Racing3D
                 checks.Check(rows!=null&&rows.GetComponentsInChildren<Button>().Length==12,"MMR inspector shows all twelve racers at "+preset);
                 checks.Check(RacingSaveManager.CurrentMmr==original&&RacingSaveManager.HighestMmr==highest&&RacingSaveManager.RacesCount==races,"MMR preset preserves saved rank and rewards: "+preset);
             }
-            capture?.Invoke("test-mmr-100k-plus");
+            capture?.Invoke("test-mmr-10k");
             Click("DRIVE TEST",checks);yield return Loaded("RacingGarage");
-            checks.Check(SceneManager.GetActiveScene().name=="RacingGarage"&&RacingTestSession.Active&&RacingTestSession.Mmr==125000&&RacingSaveManager.CurrentMmr==original,"Visible Drive Test enters Garage with a read-only 100k+ override");
+            checks.Check(SceneManager.GetActiveScene().name=="RacingGarage"&&RacingTestSession.Active&&RacingTestSession.Mmr==10000&&RacingSaveManager.CurrentMmr==original,"Visible Drive Test enters Garage with a read-only 10k override");
             Click("RACING HUB",checks);yield return Loaded("RacingSelect");
             checks.Check(!RacingTestSession.Active&&RacingSaveManager.CurrentMmr==original,"Returning to Hub clears the test override and preserves rank");
             Click("MAIN MENU",checks);yield return Loaded("MainMenu");

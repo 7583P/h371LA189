@@ -30,7 +30,7 @@ namespace AnimeHillRacing.Racing3D
         /// Generates a competitive 12-racer lobby around the player's MMR.
         /// Guaranteed: exactly 1 human, exactly 11 AI bots.
         /// </summary>
-        public static RacerIdentity[] GenerateRankedLobby(
+        public static RacerIdentity[] GenerateSeededTestLobby(
             int playerMmr,
             string playerVehicleId,
             string playerWheelId,
@@ -56,12 +56,14 @@ namespace AnimeHillRacing.Racing3D
             // 2. Compute spread parameters based on MMR tier
             // Lower MMR: narrow cluster (~120-200 stdDev). Higher MMR: wider natural spread (~300-500).
             float baseSpread;
-            if (playerMmr < 2000) baseSpread = 140f;
-            else if (playerMmr < 5000) baseSpread = 220f;
-            else if (playerMmr < 15000) baseSpread = 380f;
-            else if (playerMmr < 40000) baseSpread = 750f;
-            else if (playerMmr < 70000) baseSpread = 1400f;
-            else if (playerMmr < 100000) baseSpread = 2200f;
+            bool eliteRanked = playerMmr >= 9700 && playerMmr <= 10000;
+            if (eliteRanked) baseSpread = 90f;
+            else if (playerMmr < 2000) baseSpread = 140f;
+            else if (playerMmr < 500) baseSpread = 220f;
+            else if (playerMmr < 1500) baseSpread = 380f;
+            else if (playerMmr < 4000) baseSpread = 750f;
+            else if (playerMmr < 7000) baseSpread = 1400f;
+            else if (playerMmr < 10000) baseSpread = 2200f;
             else baseSpread = 3000f; // Apex uncapped
 
             // Pick 11 unique names from the bot pool
@@ -85,6 +87,7 @@ namespace AnimeHillRacing.Racing3D
                 float tierOffset = targetDeltas[i] * (baseSpread * 0.45f);
                 float randomJitter = rng.NextGaussian(0f, baseSpread * 0.35f);
                 int rivalMmr = Mathf.Max(0, Mathf.RoundToInt(playerMmr + tierOffset + randomJitter));
+                if (eliteRanked) rivalMmr = Mathf.Clamp(rivalMmr, 9700, 10000);
                 rivalMmrs[i] = rivalMmr;
 
                 categories[i] = MetaProgressionConfig.RollBuildCategory(rivalMmr, rng, out float p);
@@ -95,7 +98,7 @@ namespace AnimeHillRacing.Racing3D
             // High-MMR Convergence Calibration:
             // At high MMR (70k+), lobbies strongly converge toward META and Near-META setups.
             // Category rolls remain probabilistic; upgrade only remaining beginner builds.
-            if (playerMmr >= 70000)
+            if (playerMmr >= 7000)
             {
                 // Convert any remaining Standard builds to NearMeta or Specialist
                 for (int i = 0; i < AiOpponentsCount; i++)
@@ -107,17 +110,17 @@ namespace AnimeHillRacing.Racing3D
                 }
             }
 
-            // A seeded lobby-level adoption roll gives 75k+ grids ten or eleven exact
+            // A seeded benchmark adoption roll gives 7.5k+ grids ten or eleven exact
             // META opponents. Lower grids retain their individual build probabilities.
-            float eliteConvergence = Mathf.InverseLerp(50000, 75000, playerMmr);
+            float eliteConvergence = Mathf.InverseLerp(5000, 7500, playerMmr);
             if (rng.NextFloat() < eliteConvergence)
             {
-                float allMetaChance = Mathf.Lerp(.78f, .94f, Mathf.InverseLerp(75000, 125000, playerMmr));
+                float allMetaChance = Mathf.Lerp(.78f, .94f, Mathf.InverseLerp(7500, 12500, playerMmr));
                 int specialist = rng.NextFloat() < allMetaChance ? -1 : rng.Next(AiOpponentsCount);
                 for (int i = 0; i < AiOpponentsCount; i++)
                     categories[i] = i == specialist ? MetaBuildCategory.Specialist : MetaBuildCategory.Meta;
             }
-            else if (playerMmr >= 50000 && metaCount == 0)
+            else if (playerMmr >= 5000 && metaCount == 0)
             {
                 // Extreme zero guard at mid-to-high MMR
                 int highestIdx = 0;
@@ -141,11 +144,11 @@ namespace AnimeHillRacing.Racing3D
                     case MetaBuildCategory.Meta:
                         botVehicle = MetaProgressionConfig.MetaVehicleId;
                         botWheel = MetaProgressionConfig.MetaWheelId;
-                        botPaint = RacingVehicleFactory.MetaBlack;
-                        buildTitle = "Formula Apex Blackline";
+                        botPaint = RacingVehicleFactory.MetaNavy;
+                        buildTitle = "DAPEX / WHITY";
                         break;
                     case MetaBuildCategory.NearMeta:
-                        var nearPool = playerMmr >= 90000 ? MetaProgressionConfig.CompetitiveAlternativePool : MetaProgressionConfig.NearMetaBuildPool;
+                        var nearPool = playerMmr >= 9000 ? MetaProgressionConfig.CompetitiveAlternativePool : MetaProgressionConfig.NearMetaBuildPool;
                         var nearDef = nearPool[rng.Next(nearPool.Length)];
                         botVehicle = nearDef.vehicleId;
                         botWheel = nearDef.wheelId;
@@ -194,8 +197,8 @@ namespace AnimeHillRacing.Racing3D
             bool humanHasMetaWheels = lobby[0].wheelId == MetaProgressionConfig.MetaWheelId || lobby[0].wheelId == MetaProgressionConfig.MetaWheelVisualId;
             bool humanIsMeta = humanIsFormula && humanHasMetaWheels;
             lobby[0].buildCategory = humanIsMeta ? MetaBuildCategory.Meta : (humanIsFormula ? MetaBuildCategory.NearMeta : MetaBuildCategory.Specialist);
-            lobby[0].paintColor = humanIsFormula ? RacingVehicleFactory.MetaBlack : RacingDesign.Cyan;
-            lobby[0].buildName = humanIsMeta ? "Formula Apex Blackline" : (humanIsFormula ? "Formula Apex" : "Custom Setup");
+            lobby[0].paintColor = humanIsFormula ? RacingVehicleFactory.MetaNavy : RacingDesign.Cyan;
+            lobby[0].buildName = humanIsMeta ? "DAPEX / WHITY" : (humanIsFormula ? "DAPEX" : "Custom Setup");
             lobby[0].metaProbabilityUsed = MetaProgressionConfig.EvaluateMetaProbability(playerMmr);
 
             // 4. Assign Starting Grid Positions (1 to 12)
@@ -204,12 +207,43 @@ namespace AnimeHillRacing.Racing3D
             return lobby;
         }
 
+        // Production opponents are selected from saved careers, never invented for a race.
+        public static RacerIdentity[] GenerateRankedLobby(int playerMmr, string playerVehicleId, string playerWheelId, string playerDisplayName = "PLAYER", int seed = 0)
+        {
+            if (seed == 0) seed = unchecked((int)(DateTime.UtcNow.Ticks & int.MaxValue));
+            var rng = new DeterministicRng(seed);
+            var selected = RacingProgressionService.Engine.SelectOpponents(playerMmr, seed, true);
+            var lobby = new RacerIdentity[12];
+            var human = RacingProgressionService.State.human;
+            lobby[0] = new RacerIdentity(human.id, playerDisplayName, playerVehicleId, playerWheelId, playerMmr, true, rng.Next(1, 999999), 1) { titleId = human.selectedTitleId, characterId=human.characterPreference, accessoryId=human.accessoryPreference };
+            bool humanMeta = RacingStatsCalculator.NormalizeVehicleId(playerVehicleId) == MetaProgressionConfig.MetaVehicleId && RacingStatsCalculator.NormalizeWheelId(playerWheelId) == MetaProgressionConfig.MetaWheelId;
+            lobby[0].buildCategory = humanMeta ? MetaBuildCategory.Meta : MetaBuildCategory.Specialist;
+            lobby[0].buildName = humanMeta ? "DAPEX / WHITY" : "Custom Setup";
+            lobby[0].paintColor = humanMeta ? RacingVehicleFactory.MetaNavy : RacingDesign.Cyan;
+            for (int i = 0; i < selected.Length; i++) {
+                var bot = selected[i];
+                string vehicle = bot.vehiclePreference;
+                string wheel = bot.wheelPreference;
+                bool meta = vehicle == MetaProgressionConfig.MetaVehicleId && wheel == MetaProgressionConfig.MetaWheelId;
+                lobby[i + 1] = new RacerIdentity(bot.id, bot.displayName, vehicle, wheel, bot.currentMmr, false, bot.personalitySeed, i + 2) {
+                    titleId = bot.selectedTitleId, preferredStyle = bot.profile.preferredStyle, hasPersistentStyle = true, characterId=bot.characterPreference, accessoryId=bot.accessoryPreference,
+                    buildCategory = meta ? MetaBuildCategory.Meta : MetaBuildCategory.Standard,
+                    metaProbabilityUsed = MetaProgressionConfig.EvaluateMetaProbability(bot.currentMmr),
+                    paintColor = meta ? RacingVehicleFactory.MetaNavy : Color.HSVToRGB((bot.personalitySeed % 1000) / 1000f, .65f, .65f),
+                    buildName = meta ? "DAPEX / WHITY" : RacingDesign.VehicleName(vehicle)
+                };
+            }
+            AssignGridPositions(lobby, rng);
+            RacingProgressionService.MarkChanged(); RacingProgressionService.Save();
+            return lobby;
+        }
+
         private static string PickVehicleForMmr(int mmr, DeterministicRng rng)
         {
             string[] pool;
-            if (mmr < 20000) pool = StarterVehicles;
-            else if (mmr < 50000) pool = MidVehicles;
-            else if (mmr < 80000) pool = AdvancedVehicles;
+            if (mmr < 2000) pool = StarterVehicles;
+            else if (mmr < 5000) pool = MidVehicles;
+            else if (mmr < 8000) pool = AdvancedVehicles;
             else pool = ApexVehicles;
 
             return pool[rng.Next(pool.Length)];
@@ -217,7 +251,7 @@ namespace AnimeHillRacing.Racing3D
 
         private static string PickWheelForMmr(int mmr, DeterministicRng rng)
         {
-            string[] pool = (mmr >= 70000) ? ApexWheels : StandardWheels;
+            string[] pool = (mmr >= 7000) ? ApexWheels : StandardWheels;
             return pool[rng.Next(pool.Length)];
         }
 

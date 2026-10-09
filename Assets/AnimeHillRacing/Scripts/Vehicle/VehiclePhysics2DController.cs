@@ -549,7 +549,8 @@ namespace AnimeHillRacing.Vehicle
             if (body == null) return;
 
             Vector2 target = new Vector2(targetPosition.x, targetPosition.y);
-            Vector2 delta = target - body.position;
+            Vector2 oldOrigin = body.position;
+            Quaternion upright = Quaternion.Euler(0f, 0f, -body.rotation);
             body.position = target;
             body.rotation = 0f;
             body.linearVelocity = Vector2.zero;
@@ -557,8 +558,8 @@ namespace AnimeHillRacing.Vehicle
             transform.position = new Vector3(target.x, target.y, targetPosition.z);
             transform.rotation = Quaternion.identity;
 
-            MoveWheelWithChassis(frontSuspension, delta);
-            MoveWheelWithChassis(rearSuspension, delta);
+            MoveWheelWithChassis(frontSuspension, oldOrigin, target, upright);
+            MoveWheelWithChassis(rearSuspension, oldOrigin, target, upright);
             frontSuspension?.ResetTerrainState();
             rearSuspension?.ResetTerrainState();
             Physics2D.SyncTransforms();
@@ -604,11 +605,15 @@ namespace AnimeHillRacing.Vehicle
             Destroy(suspension.gameObject);
         }
 
-        private static void MoveWheelWithChassis(Suspension2DController suspension, Vector2 delta)
+        private static void MoveWheelWithChassis(Suspension2DController suspension, Vector2 oldOrigin, Vector2 target, Quaternion upright)
         {
             Rigidbody2D wheel = suspension != null ? suspension.WheelBody : null;
             if (wheel == null) return;
-            wheel.position += delta;
+            // The chassis is reset upright by TeleportToPosition. Detached wheel
+            // offsets must rotate with it as well as translate, retaining the
+            // current suspension displacement without straining the wheel joint.
+            Vector2 uprightOffset = upright * (Vector3)(wheel.position - oldOrigin);
+            wheel.position = target + uprightOffset;
             wheel.rotation = 0f;
             wheel.linearVelocity = Vector2.zero;
             wheel.angularVelocity = 0f;

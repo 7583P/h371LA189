@@ -1,0 +1,62 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1b580c6701ae5a90942f9d6696174a5c, type: 3}
+  m_Name: RacingItemBalanceConfiguration
+  m_EditorClassIdentifier: 
+  leader:
+  - Type: 13
+    Weight: 65
+  - Type: 3
+    Weight: 35
+  front:
+  - Type: 4
+    Weight: 40
+  - Type: 13
+    Weight: 40
+  - Type: 16
+    Weight: 20
+  middle:
+  - Type: 4
+    Weight: 30
+  - Type: 13
+    Weight: 30
+  - Type: 14
+    Weight: 20
+  - Type: 16
+    Weight: 20
+  rear:
+  - Type: 1
+    Weight: 20
+  - Type: 3
+    Weight: 6
+  - Type: 2
+    Weight: 18
+  - Type: 4
+    Weight: 8
+  - Type: 12
+    Weight: 8
+  - Type: 8
+    Weight: 8
+  - Type: 9
+    Weight: 3
+  - Type: 10
+    Weight: 4
+  - Type: 6
+    Weight: 2
+  - Type: 5
+    Weight: 1
+  - Type: 11
+    Weight: 2
+  - Type: 15
+    Weight: 8
+  - Type: 16
+    Weight: 12

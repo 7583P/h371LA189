@@ -1,43 +1,48 @@
 using UnityEngine;
+
 namespace AnimeHillRacing.Racing3D
 {
     public static class AiSkillModel
     {
         // Decisions improve with rating; vehicle physics never consumes these fields.
+        // Pure decision-making and route execution intelligence.
         public static AiRacerProfile CreateProfile(int mmr, int personalitySeed)
         {
-            float t = ExecutionCurve(mmr);
-            float apex = mmr > 100000 ? .0015f * (1 - Mathf.Exp(-(mmr - 100000f) / 60000f)) : 0;
+            float t = Normalize(mmr);
+            float apex = Mathf.Pow(Mathf.InverseLerp(.90f, 1f, t), 2f) * .035f;
             var rng = new DeterministicRng(personalitySeed == 0 ? 99991 : personalitySeed);
-            float aggression = rng.Range(-.14f, .14f), risk = rng.Range(-.10f, .10f), temperament = rng.Range(-.04f, .04f);
-            float variation = Mathf.Lerp(.045f, .002f, t);
+            float aggression = rng.Range(-.08f, .08f), risk = rng.Range(-.06f, .06f), temperament = rng.Range(-.02f, .02f);
+            float variation = Mathf.Lerp(.035f, .003f, t);
             float Skill(float start, float end, float exponent = 1f)
-                => Mathf.Clamp(Mathf.Lerp(start, end, Mathf.Pow(t, exponent)) + apex + rng.Range(-variation, variation), .02f, .999f);
+                => Mathf.Clamp(Mathf.Lerp(start, end, Mathf.Pow(t, exponent)) + apex - rng.Range(.001f, variation), 0f, .999f);
+
             return new AiRacerProfile
             {
-                mmr = Mathf.Max(0, mmr), personalitySeed = personalitySeed,
-                racingLineSkill = Skill(.12f, .996f), brakingSkill = Skill(.10f, .997f), throttleSkill = Skill(.12f, .998f),
-                driftSkill = Skill(.02f, .995f, 1.08f), overtakingSkill = Skill(.08f, .996f), recoverySkill = Skill(.18f, .997f, .85f),
-                shortcutKnowledge = Skill(.01f, .997f, 1.08f), shortcutExecution = Skill(.04f, .995f, 1.08f),
-                itemKnowledge = Skill(.10f, .997f), itemTiming = Skill(.06f, .995f, 1.08f),
-                defensiveAwareness = Skill(.06f, .995f), offensiveAwareness = Skill(.07f, .996f),
-                aggression = Mathf.Clamp(Mathf.Lerp(.30f, .94f, t) + aggression * (1 - .75f * t), .15f, .985f),
-                consistency = Mathf.Clamp(Mathf.Lerp(.30f, .996f, t) + apex + temperament * (1 - .95f * t), .20f, .999f),
-                riskTolerance = Mathf.Clamp(Mathf.Lerp(.20f, .94f, t) + risk * (1 - .8f * t), .10f, .98f),
-                awareness = Mathf.Clamp(Mathf.Lerp(.18f, .997f, t) + apex, .10f, .999f),
-                reactionSkill = Mathf.Clamp(Mathf.Lerp(.20f, .997f, t) + apex, .10f, .999f),
-                trickSkill = Skill(.03f, .995f, 1.08f), chainingSkill = Skill(.02f, .995f, 1.08f)
+                mmr = Mathf.Max(0, mmr),
+                personalitySeed = personalitySeed,
+                racingLineSkill = Skill(.40f, .958f),
+                brakingSkill = Skill(.32f, .958f),
+                throttleSkill = Skill(.40f, .958f),
+                driftSkill = Skill(.08f, .958f, 1.25f),
+                overtakingSkill = Skill(.42f, .998f),
+                recoverySkill = Skill(.55f, .999f, .90f),
+                shortcutKnowledge = Skill(.05f, .958f, 1.1f),
+                shortcutExecution = Skill(.15f, .958f, 1.2f),
+                itemKnowledge = Skill(.35f, .999f),
+                itemTiming = Skill(.30f, .998f, 1.02f),
+                defensiveAwareness = Skill(.30f, .998f),
+                offensiveAwareness = Skill(.35f, .999f),
+                aggression = Mathf.Clamp(Mathf.Lerp(.40f, .95f, t) + aggression * (1 - .65f * t), .25f, .99f),
+                consistency = Mathf.Clamp(Mathf.Lerp(.52f, .958f, t) + apex + temperament * (1 - .85f * t), .40f, .999f),
+                riskTolerance = Mathf.Clamp(Mathf.Lerp(.25f, .93f, t) + risk * (1 - .65f * t), .20f, .98f),
+                awareness = Mathf.Clamp(Mathf.Lerp(.25f, .958f, t) + apex, .20f, .999f),
+                reactionSkill = Mathf.Clamp(Mathf.Lerp(.15f, .958f, t) + apex, .10f, .999f),
+                trickSkill = Skill(.01f, .958f, 1.45f),
+                chainingSkill = Skill(.01f, .958f, 2.4f),
+                style = (AiRacingStyle)(Mathf.Abs(personalitySeed % 6))
             };
         }
 
-        static float ExecutionCurve(int mmr)
-        {
-            if (mmr <= 1000) return Mathf.Lerp(0, .06f, Mathf.Clamp01(mmr / 1000f));
-            if (mmr <= 10000) return Mathf.Lerp(.06f, .28f, (mmr - 1000f) / 9000f);
-            if (mmr <= 25000) return Mathf.Lerp(.28f, .55f, (mmr - 10000f) / 15000f);
-            if (mmr <= 50000) return Mathf.Lerp(.55f, .92f, (mmr - 25000f) / 25000f);
-            if (mmr <= 75000) return Mathf.Lerp(.92f, .985f, (mmr - 50000f) / 25000f);
-            return Mathf.Lerp(.985f, 1, Mathf.Clamp01((mmr - 75000f) / 25000f));
-        }
+        public static float Normalize(int mmr) => Mathf.Clamp01(mmr / 10000f);
     }
 }

@@ -1,4 +1,5 @@
 using UnityEngine;
+using AnimeHillRacing.Ads;
 
 namespace AnimeHillRacing.UI
 {
@@ -8,6 +9,7 @@ namespace AnimeHillRacing.UI
         private RectTransform rectTransform;
         private Rect lastSafeArea;
         private Vector2Int lastScreenSize;
+        private float lastBannerInset;
 
         private void Awake()
         {
@@ -17,7 +19,7 @@ namespace AnimeHillRacing.UI
 
         private void Update()
         {
-            if (lastSafeArea != Screen.safeArea || lastScreenSize.x != Screen.width || lastScreenSize.y != Screen.height)
+            if (lastSafeArea != Screen.safeArea || lastScreenSize.x != Screen.width || lastScreenSize.y != Screen.height || lastBannerInset != AdMobManager.ReservedBottomPixels)
                 Apply();
         }
 
@@ -25,8 +27,10 @@ namespace AnimeHillRacing.UI
         {
             Rect safe = Screen.safeArea;
             lastSafeArea = safe;
+            lastBannerInset = AdMobManager.ReservedBottomPixels;
             lastScreenSize = new Vector2Int(Screen.width, Screen.height);
             Vector2 min = safe.position;
+            min.y = Mathf.Max(min.y, lastBannerInset);
             Vector2 max = safe.position + safe.size;
             min.x /= Mathf.Max(1f, Screen.width);
             min.y /= Mathf.Max(1f, Screen.height);

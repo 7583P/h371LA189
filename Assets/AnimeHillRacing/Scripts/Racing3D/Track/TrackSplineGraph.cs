@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using Unity.Profiling;
 
 namespace AnimeHillRacing.Racing3D
 {
-    public sealed class TrackSplineGraph : MonoBehaviour
+    public sealed partial class TrackSplineGraph : MonoBehaviour
     {
+        static readonly ProfilerMarker ProjectionMarker=new ProfilerMarker("Racing.Navigation.Project");
         [SerializeField] private TrackNode[] nodes = Array.Empty<TrackNode>();
         [SerializeField] private TrackShortcut[] shortcuts = Array.Empty<TrackShortcut>();
         [SerializeField] private float totalLength;
@@ -16,6 +18,7 @@ namespace AnimeHillRacing.Racing3D
         public float TotalLength => totalLength;
         public TrackShortcut[] Shortcuts => shortcuts;
         public int[] CheckpointNodeIndices => checkpointNodeIndices;
+        void Awake() => RecomputeDistances();
 
         public void InitializeFromNodes(TrackNode[] authoredNodes, TrackShortcut[] authoredShortcuts = null, int[] checkpointNodes = null)
         {
@@ -30,6 +33,7 @@ namespace AnimeHillRacing.Racing3D
             if (nodes == null || nodes.Length < 2)
             {
                 totalLength = 0f;
+                projectionIndex = null;
                 return;
             }
 
@@ -62,6 +66,7 @@ namespace AnimeHillRacing.Racing3D
             }
 
             totalLength = runningDist;
+            BuildProjectionIndex();
         }
 
         public TrackNode GetNode(int index)
@@ -80,6 +85,15 @@ namespace AnimeHillRacing.Racing3D
             out int nearestNodeIndex,
             out float distanceAlongTrack,
             out float lateralDistance)
+        {
+            using(ProjectionMarker.Auto()) {
+                if (TryIndexedProjection(worldPos, out nearestNodeIndex, out distanceAlongTrack, out lateralDistance)) return;
+                ProjectPositionReference(worldPos, out nearestNodeIndex, out distanceAlongTrack, out lateralDistance);
+            }
+        }
+
+        // Exact reference retained for diagnostic equivalence checks.
+        public void ProjectPositionReference(Vector3 worldPos, out int nearestNodeIndex, out float distanceAlongTrack, out float lateralDistance)
         {
             nearestNodeIndex = 0;
             distanceAlongTrack = 0f;

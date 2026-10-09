@@ -28,16 +28,13 @@ namespace AnimeHillRacing.Racing3D
             var renderer=root.GetComponent<MeshRenderer>();renderer.shadowCastingMode=ShadowCastingMode.Off;renderer.receiveShadows=false;
         }
     }
-    public sealed class RacingGeneratedMaterial : MonoBehaviour
-    {
-        public Material Material;
-        void OnDestroy(){if(Material!=null)Destroy(Material);}
-    }
+
     public static class RacingCityArt
     {
         public static Material Asphalt()
         {
-            var material=RacingArt.Material(new Color(.038f,.048f,.068f),.55f);
+            var material=RacingArt.Material(new Color(.044f,.059f,.080f),.90f);
+            var wet=Resources.Load<Shader>("RacingWetCityRoad");if(wet!=null && wet.isSupported){material.shader=wet;material.SetFloat("_Metallic",.48f);}
             if(material.mainTexture!=null)return material;
             var texture=new Texture2D(64,64,TextureFormat.RGB24,true){name="Native fine asphalt grain",wrapMode=TextureWrapMode.Repeat,filterMode=FilterMode.Trilinear};
             var pixels=new Color32[4096];var rng=new DeterministicRng(34971);

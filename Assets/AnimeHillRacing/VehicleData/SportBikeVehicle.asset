@@ -59,7 +59,7 @@ MonoBehaviour:
     hasExplicitRarity: 0
     rarity: 5
     visibleDiameter: 0
-    visibleSize: {x: 15.09, y: 8.04}
+    visibleSize: {x: 15.09, y: 8.03}
     visualOffset: {x: 0.005, y: 0.185}
     overrideGlitchTransform: 0
     glitchManualSize: {x: 0, y: 0}
@@ -105,7 +105,7 @@ MonoBehaviour:
     hasExplicitRarity: 0
     rarity: 5
     visibleDiameter: 0
-    visibleSize: {x: 15.35, y: 9.09}
+    visibleSize: {x: 15.34, y: 9.09}
     visualOffset: {x: 0.01, y: 0.205}
     overrideGlitchTransform: 0
     glitchManualSize: {x: 0, y: 0}
@@ -128,7 +128,7 @@ MonoBehaviour:
     hasExplicitRarity: 1
     rarity: 5
     visibleDiameter: 0
-    visibleSize: {x: 14.64, y: 6.7}
+    visibleSize: {x: 14.64, y: 6.69}
     visualOffset: {x: 0, y: 0}
     overrideGlitchTransform: 1
     glitchManualSize: {x: 3.3, y: 2.2}

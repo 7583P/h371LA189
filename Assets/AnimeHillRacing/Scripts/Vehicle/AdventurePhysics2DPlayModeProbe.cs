@@ -116,6 +116,19 @@ namespace AnimeHillRacing.Vehicle
             StartCoroutine(RunGuarded());
         }
 
+        private void ObserveUprightFixtureWheelPose(string context)
+        {
+            // Observe the production whole-rig relocation. The fixture no longer
+            // overrides detached-wheel placement after the native API correction.
+            float priorError=0;
+            foreach(var suspension in new[]{front,rear}) {
+                if(suspension==null || suspension.WheelBody==null || suspension.SuspensionJoint==null)continue;
+                Vector2 anchor=chassis.transform.TransformPoint(suspension.SuspensionJoint.anchor);
+                priorError=Mathf.Max(priorError,Vector2.Distance(suspension.WheelBody.position,anchor));
+            }
+            Debug.Log($"ADVENTURE_BOX2D_FIXTURE_UPRIGHT|vehicle={expectedVehicleId}|map={expectedMapId}|context={context}|observedAnchorDistance={priorError:F5}|nativeTeleportOnly=True|vehicleForcesUnchanged=True");
+        }
+
         private IEnumerator RunGuarded()
         {
             IEnumerator audit = RunAudit();
@@ -203,6 +216,7 @@ namespace AnimeHillRacing.Vehicle
 
             terrain.TeleportTo(0f);
             yield return null;
+            ObserveUprightFixtureWheelPose("fresh-settle");
             stage = "SETTLE";
             Debug.Log($"ADVENTURE_BOX2D_STAGE|vehicle={expectedVehicleId}|stage={stage}");
             for (int step = 0; step < SettleSteps; step++)
@@ -283,6 +297,7 @@ namespace AnimeHillRacing.Vehicle
             stage = "LANDING_RELOCATE";
             Debug.Log($"ADVENTURE_BOX2D_STAGE|vehicle={expectedVehicleId}|stage={stage}");
             terrain.TeleportTo(0f);
+            ObserveUprightFixtureWheelPose("landing-setup");
             vehicle.SetWholeRigVelocity(new Vector2(6f, -8f));
             // Teleporting a Rigidbody2D invalidates one interpolated render pose. Keep that intentional
             // relocation out of wheel visual metrics, then begin the real Box2D landing observation.

@@ -6,9 +6,9 @@ namespace AnimeHillRacing.Racing3D
     public sealed class RacingTitleView : MonoBehaviour
     {
         Text label; TitleDefinition definition; float nextPulse;
-        public void Configure(Text target, string id, int season, int achievedMmr)
+        public void Configure(Text target, string id, int season, int achievedMmr, int officialPosition=0)
         {
-            label = target; definition = RacingTitleCatalog.Resolve(id,season,achievedMmr);
+            label = target; definition = RacingTitleCatalog.Resolve(id,season,achievedMmr,officialPosition);
             label.text = definition == null ? "" : definition.displayName;
             if (definition == null) return;
             label.color = definition.primaryColor;

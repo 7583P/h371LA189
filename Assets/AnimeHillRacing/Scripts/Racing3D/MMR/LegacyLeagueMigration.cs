@@ -27,6 +27,10 @@ namespace AnimeHillRacing.Racing3D
         {
             if(old==null || old.version!=2 || old.human==null || old.bots==null || old.bots.Length!=1000 || old.installationTimestamp<=0)throw new ArgumentException("Invalid legacy local league.");
             var state=LocalLeagueEngine.Create(old.installationTimestamp,old.populationSeed,Math.Max(population,old.bots.Length));
+            // V2 data predates CPPS: mark it pre-CPPS so the inaugural migration runs once afterwards.
+            state.competitiveContract=0;state.ledger.appliedMigrations.Clear();state.version=3;state.human.placementGames=CompetitiveRating.PlacementRaces;
+            for(int i=0;i<state.bots.Length;i++){state.bots[i].placementGames=CompetitiveRating.PlacementRaces;state.bots[i].flags=0;}
+            state.botNames=null;
             state.currentSeasonNumber=old.currentSeasonNumber;state.lastProcessedSeasonNumber=old.lastProcessedSeasonNumber;state.seasonStartTimestamp=old.seasonStartTimestamp;state.seasonEndTimestamp=old.seasonEndTimestamp;
             state.lastKnownUtcTimestamp=old.lastKnownUtcTimestamp;state.lastLeagueSimulationUtc=old.lastLeagueSimulationUtc;state.simulationEventNumber=old.simulationEventNumber;state.skippedCatchupEvents=old.skippedCatchupEvents;state.matchmakingSequence=old.matchmakingSequence;
             state.human=old.human.CopyForSave();Scale(state.human);state.recentOpponentIds=new List<string>(old.recentOpponentIds??new List<string>());
@@ -51,7 +55,7 @@ namespace AnimeHillRacing.Racing3D
                 }
             }
             state.archives.Sort((a,b)=>a.seasonNumber.CompareTo(b.seasonNumber));while(state.archives.Count>20)state.archives.RemoveAt(0);
-            if(!LocalLeagueStore.Valid(state))throw new ArgumentException("Legacy migration produced contradictory state.");return state;
+            if(state.bots.Length<12 || state.human==null)throw new ArgumentException("Legacy migration produced contradictory state.");return state;
         }
     }
 }

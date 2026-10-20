@@ -7,6 +7,7 @@ namespace AnimeHillRacing.Racing3D
     {
         public int position, lap, totalLaps;
         public float gapLeaderSeconds;
+        public float gapLeaderMeters, gapPackMeters, packSpreadMeters, lapProgress;
         public RaceItemType held, previous, previousPrevious;
     }
     public static class ItemDistributionTable
@@ -24,16 +25,21 @@ namespace AnimeHillRacing.Racing3D
         {
             var c = Config;
             if(position<=1)return c!=null&&c.leader!=null&&c.leader.Length>0?c.leader:RacingItemBalanceConfiguration.LeaderDefaults;
-            var entries = position <= 3 ? c != null ? c.front : null : position <= 6 ? c != null ? c.middle : null : c != null ? c.rear : null;
+            var entries = position <= 3 ? c != null ? c.front : null : position <= MiddleLastPosition ? c != null ? c.middle : null : c != null ? c.rear : null;
             return entries != null && entries.Length > 0 ? entries : position <= 3 ? RacingItemBalanceConfiguration.FrontDefaults :
-                position <= 6 ? RacingItemBalanceConfiguration.MiddleDefaults : RacingItemBalanceConfiguration.RearDefaults;
+                position <= MiddleLastPosition ? RacingItemBalanceConfiguration.MiddleDefaults : RacingItemBalanceConfiguration.RearDefaults;
         }
+        // Front P2-P3, midfield P4-P8, rear P9-P12.
+        public const int MiddleLastPosition = 8;
         public static bool IsAllowedAtPosition(RaceItemType type, int position)
         {
             if (type <= RaceItemType.None || (int)type > RaceItemUtility.Count) return false;
             if (position <= 1) return type == RaceItemType.Coin10 || type == RaceItemType.ElectroSpike;
-            if (position <= 3) return type == RaceItemType.MagneticShield || type == RaceItemType.Coin10 || type == RaceItemType.GoldenRock;
-            if (position <= 6) return type == RaceItemType.MagneticShield || type == RaceItemType.Coin10 || type == RaceItemType.MiniTurbo || type == RaceItemType.GoldenRock;
+            if (position <= 3) return type == RaceItemType.MagneticShield || type == RaceItemType.Coin10 || type == RaceItemType.MiniTurbo ||
+                type == RaceItemType.ElectroSpike || type == RaceItemType.GoldenRock;
+            if (position <= MiddleLastPosition) return type == RaceItemType.MagneticShield || type == RaceItemType.Coin10 || type == RaceItemType.MiniTurbo ||
+                type == RaceItemType.GoldenRock || type == RaceItemType.ElectroSpike || type == RaceItemType.KineticMissile ||
+                type == RaceItemType.TurboPulse || type == RaceItemType.TwinRock;
             return true;
         }
         public static RaceItemType RollItem(ItemRollContext context, DeterministicRng rng = null)
@@ -56,14 +62,37 @@ namespace AnimeHillRacing.Racing3D
         {
             if (!IsAllowedAtPosition(entry.Type, context.position)) return 0;
             float result = Mathf.Max(0, entry.Weight);
-            // Rear-only catch-up transformation. Last place is eight times as
-            // likely as seventh to roll it before normalizing the other weights.
+            // Rear-only catch-up transformation; P12 weights it 3.3x P9 before
+            // normalizing the other weights.
             if (entry.Type == RaceItemType.Lancer)
-                result *= Mathf.Lerp(.25f, 2f, Mathf.InverseLerp(7, 12, context.position));
+                result *= Mathf.Lerp(.6f, 2f, Mathf.InverseLerp(9, 12, context.position));
             bool mobility = RaceItemUtility.IsBoost(entry.Type) || entry.Type == RaceItemType.AerialRecovery;
             float gap = Mathf.Clamp01(context.gapLeaderSeconds / 18f);
             // Strong mobility stays in its placement pool. No assignment of a winner.
             result *= mobility ? 1 + gap * .55f : 1 - gap * .15f;
+            if (context.position > 3)
+            {
+                // Distances are ordered race progress, not straight-line proximity
+                // across a hairpin. A tightly packed rear racer needs less help than
+                // an isolated racer at the same position. All effects remain items.
+                float leaderGap = Mathf.Clamp01(context.gapLeaderMeters / 240f);
+                float isolation = Mathf.Clamp01(context.gapPackMeters / 100f);
+                float spread = Mathf.Clamp01(context.packSpreadMeters / 360f);
+                float raceProgress = context.totalLaps > 0
+                    ? Mathf.Clamp01((context.lap - 1 + Mathf.Clamp01(context.lapProgress)) / context.totalLaps) : 0;
+                float need = Mathf.Clamp01(leaderGap * spread * .55f + isolation * .65f) * Mathf.Lerp(.65f, 1f, raceProgress);
+                bool tracking = entry.Type == RaceItemType.GoldenRock || entry.Type == RaceItemType.TrackingDart || entry.Type == RaceItemType.HomingRocket;
+                if (mobility) result *= 1 + need * (context.position >= 9 ? 2.2f : 1.1f);
+                else if (tracking) result *= 1 + need * 1.2f;
+                else result *= 1 - need * .30f;
+                // Gradual catch-up still uses ordinary boosts and tactical hits.
+                // Only a genuinely detached tail racer gets extra odds of a
+                // burst; the item must still be collected and driven on the road.
+                float burstNeed = context.position >= 9
+                    ? Mathf.InverseLerp(.35f, 1f, isolation) * leaderGap * spread * Mathf.Lerp(.65f, 1f, raceProgress) : 0;
+                if (entry.Type == RaceItemType.Lancer) result *= 1 + burstNeed;
+                else if (entry.Type == RaceItemType.HyperCharge) result *= 1 + burstNeed * .5f;
+            }
             if (context.totalLaps > 0 && context.lap >= context.totalLaps)
                 result *= mobility ? 1.10f : context.position > 3 ? 1.18f : 1f;
             if (entry.Type == context.previous) result *= .30f;

@@ -18,10 +18,11 @@ namespace AnimeHillRacing.Racing3D
             var bg=RacingDesign.Panel(root,"Profile backdrop",0,0,1,1,RacingDesign.Background,0);bg.raycastTarget=true;
             RacingDesign.Label(root,owner.displayName,RacingType.Title,.05f,.87f,.70f,.09f,RacingDesign.Ink);
             RacingDesign.Button(root,"CLOSE",.83f,.885f,.12f,.06f,()=>Destroy(root.GetComponentInParent<Canvas>().gameObject));
-            RacingDesign.RankBadge(root,owner.currentMmr,.055f,.45f,.30f,.36f);
+            if(SeasonQualification.IsOfficial(owner,RacingProgressionService.State.currentSeasonNumber))RacingDesign.RankBadge(root,owner.currentMmr,.055f,.45f,.30f,.36f);
+            else if(!owner.Ranked)RacingDesign.PlacementPips(root,owner.placementGames,.08f,.60f,.25f,.035f);
             RacingComboThumbnail.Create(root,.06f,.28f,.29f,.16f).Configure(owner);
-            RacingDesign.Label(root,owner.currentMmr.ToString("N0")+" MMR",RacingType.Mmr,.05f,.205f,.30f,.065f,RacingDesign.Ink,TextAnchor.MiddleCenter);
-            RacingDesign.Label(root,MmrTierUtility.GetDisplayName(owner.currentMmr),RacingType.Section,.04f,.15f,.32f,.045f,RacingDesign.TierColor(owner.currentMmr),TextAnchor.MiddleCenter);
+            RacingDesign.Label(root,owner.Ranked?owner.currentMmr.ToString("N0")+" MMR":MmrTierUtility.UnrankedName,RacingType.Mmr,.05f,.205f,.30f,.065f,RacingDesign.Ink,TextAnchor.MiddleCenter);
+            RacingDesign.Label(root,SeasonQualification.DisplayRank(owner,RacingProgressionService.State.currentSeasonNumber),RacingType.Section,.04f,.15f,.32f,.045f,owner.Ranked?RacingDesign.TierColor(owner.currentMmr):RacingDesign.Accent,TextAnchor.MiddleCenter);
             RacingDesign.Label(root,$"PEAK {owner.peakMmr:N0}  /  SEASON PEAK {owner.seasonPeakMmr:N0}\n{owner.races:N0} RACES  ·  {owner.wins:N0} WINS  ·  {owner.podiums:N0} PODIUMS",RacingType.Caption,.05f,.075f,.33f,.065f,RacingDesign.Muted,TextAnchor.MiddleCenter);
             selectedTitle=RacingDesign.Label(root,"",RacingType.Section,.41f,.79f,.54f,.055f);titleView=selectedTitle.gameObject.AddComponent<RacingTitleView>();
             RacingDesign.Label(root,owner==RacingProgressionService.State.human?"CHOOSE YOUR TITLE":"CAREER TITLES",RacingType.Caption,.41f,.855f,.54f,.04f,RacingDesign.Muted);
@@ -47,16 +48,17 @@ namespace AnimeHillRacing.Racing3D
         void RefreshTitles()
         {
             foreach(Transform child in list){child.gameObject.SetActive(false);Destroy(child.gameObject);}
-            titleView.Configure(selectedTitle,owner.selectedTitleId,RacingProgressionService.State.currentSeasonNumber,owner.seasonPeakMmr);
+            int position=RacingProgressionService.Engine.OfficialPosition(owner.id);
+            titleView.Configure(selectedTitle,owner.selectedTitleId,RacingProgressionService.State.currentSeasonNumber,owner.seasonPeakMmr,position);
             if(string.IsNullOrEmpty(owner.selectedTitleId)){selectedTitle.text="NO TITLE";selectedTitle.color=RacingDesign.Muted;}
             for(int i=0;i<7;i++) {
                 int index=page*7+i;if(index>=titleIds.Count)break;string id=titleIds[index];
-                var definition=RacingTitleCatalog.Resolve(id,RacingProgressionService.State.currentSeasonNumber,owner.seasonPeakMmr);
-                bool owned=id.Length==0||owner.unlockedTitleIds.Contains(id);
-                string label=definition==null?"No title":definition.displayName;
+                var definition=RacingTitleCatalog.Resolve(id,RacingProgressionService.State.currentSeasonNumber,owner.seasonPeakMmr,position);
+                bool owned=id.Length==0||(id=="current-season-rank"?position>0&&position<=1000:owner.unlockedTitleIds.Contains(id));
+                string label=definition==null?(id=="current-season-rank"?"Current season Top 1000 — qualify to earn":"No title"):definition.displayName;
                 var button=RacingDesign.Button(list,label,0,.86f-i*.14f,1,.125f,()=>{if(RacingProgressionService.SelectHumanTitle(id))RefreshTitles();},id==owner.selectedTitleId?RacingDesign.Highlight:RacingDesign.Surface);
                 button.interactable=owned&&owner==RacingProgressionService.State.human;
-                if(!owned&&definition!=null)RacingDesign.Label(button.transform,$"{definition.threshold} {definition.unlockRequirement}",RacingType.Caption,.55f,.015f,.42f,.20f,RacingDesign.Muted,TextAnchor.MiddleRight);
+                if(!owned&&definition!=null)RacingDesign.Label(button.transform,RacingTitleCatalog.RequirementLabel(definition),RacingType.Caption,.04f,.015f,.92f,.24f,RacingDesign.Muted,TextAnchor.MiddleRight);
                 if(definition!=null)button.GetComponentInChildren<Text>().color=definition.primaryColor;
             }
         }

@@ -13,7 +13,7 @@ namespace AnimeHillRacing.Racing3D
         [Serializable] public struct Span {
             public string racer,route;public bool shortcut;public int recoveries;public float seconds,averageKmh;
         }
-        [Serializable] sealed class Report { public string classification="OBSERVED_REAL_ROUTE_PORTAL_TIMES_EQUAL_BUILD_NOT_RANDOMIZED_ROUTE_AB";public List<Span> spans; }
+        [Serializable] sealed class Report { public string classification="OBSERVED_REAL_ROUTE_PORTAL_TIMES_AI_SELECTED_LINK_NOT_RANDOMIZED_ROUTE_AB";public List<Span> spans; }
         struct Window { public bool active,shortcut,previousInside;public float started,speed;public int samples,recoveries; }
         RaceManager manager;RacerProgress[] racers;Window[] windows;TrackShortcut[] routes;
         readonly List<Span> spans=new List<Span>(256);
@@ -33,7 +33,10 @@ namespace AnimeHillRacing.Racing3D
                 float along=Mathf.Repeat(car.DistanceAlongTrack-graph.GetNode(route.entryNodeIndex).CumulativeDistance,graph.TotalLength);
                 bool inside=!car.Finished&&along<length;
                 if(inside&&!w.previousInside){w.active=true;w.started=manager.RaceElapsed;w.speed=0;w.samples=0;w.shortcut=false;w.recoveries=car.Recovery.RecoveryCount;}
-                if(w.active&&inside){w.shortcut|=car.Vehicle.ActiveShortcut==route;w.speed+=car.Vehicle.SpeedKmh;w.samples++;}
+                // A physical shortcut zone may overlap the main road. It does
+                // not prove that the driver actually selected and followed it.
+                var driver=car.Vehicle.GetComponent<AiVehicleController>();
+                if(w.active&&inside){w.shortcut|=driver!=null&&driver.ExecutingShortcut&&driver.ActiveRouteIndex==r;w.speed+=car.Vehicle.SpeedKmh;w.samples++;}
                 if(w.active&&!inside) {
                     if(spans.Count<256)spans.Add(new Span{racer=car.Identity.displayName,route=route.shortcutId,shortcut=w.shortcut,recoveries=car.Recovery.RecoveryCount-w.recoveries,seconds=manager.RaceElapsed-w.started,averageKmh=w.samples>0?w.speed/w.samples:0});
                     w.active=false;

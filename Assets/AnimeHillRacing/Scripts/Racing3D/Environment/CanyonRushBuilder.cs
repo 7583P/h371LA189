@@ -18,7 +18,7 @@ namespace AnimeHillRacing.Racing3D
         {
             if(built)return;built=true;
             gameObject.AddComponent<RacingEnvironmentScope>().Capture();
-            var info=gameObject.AddComponent<RacingTrackInfo>();info.Theme="Sunset sky circuit / hidden movement routes / red main-road guidance";
+            var info=gameObject.AddComponent<RacingTrackInfo>();info.Theme="Starry neon sky-road / open edges / hidden movement routes";
             TrackNode[] nodes=NightCityCircuit.CreateNodes();
             TrackShortcut[] routes=NightCityCircuit.CreateShortcuts(nodes);
             int[] checkpoints=NightCityCircuit.Checkpoints;
@@ -38,7 +38,14 @@ namespace AnimeHillRacing.Racing3D
 
             // Relative offsets use a 20 m reference. The road and navigation now have identical widths.
             // The main route remains continuous: only the optional Skyline Link has an intentional gap.
-            RacingTrackGeometry.Ribbon(transform,"Grand Circuit asphalt",nodes,-10,10,road,RacingSurfaceKind.Road,true,true);
+            var mainRoad=RacingTrackGeometry.Ribbon(transform,"Grand Circuit asphalt",nodes,-10,10,road,RacingSurfaceKind.Road,true,true);
+            // Only the main-road renderer changes; undisclosed shortcut decks
+            // retain their materials, collision, topology and navigation.
+            var prismShader=Resources.Load<Shader>("RacingPrismaticRoad");
+            if(prismShader!=null){
+                var luminousRoad=new Material(prismShader){name="Original prismatic energy road",mainTexture=road.mainTexture};
+                GetComponent<RacingEnvironmentScope>().Own(luminousRoad);mainRoad.GetComponent<MeshRenderer>().sharedMaterial=luminousRoad;
+            }
             RacingTrackGeometry.Ribbon(transform,"Left titanium curb",nodes,-10.35f,-10,white,RacingSurfaceKind.Road,false,true);
             RacingTrackGeometry.Ribbon(transform,"Right titanium curb",nodes,10,10.35f,white,RacingSurfaceKind.Road,false,true);
             RacingTrackGeometry.Ribbon(transform,"Left recovery shoulder",nodes,-12,-10.35f,shoulder,RacingSurfaceKind.Dirt,true,true,clearRoutes:routes);
@@ -46,7 +53,7 @@ namespace AnimeHillRacing.Racing3D
 
             var scenery=new GameObject("Batched premium city scenery");scenery.transform.SetParent(transform,false);
             RacingSkyTrack.Build(transform,nodes,routes);
-            BuildBarriers(nodes,scenery.transform,graphite,white,cyan,routes);
+            BuildEdgeWarnings(nodes,scenery.transform,cyan,routes);
             BuildGate(nodes[0],scenery.transform,graphite,white,gold);
             BuildShortcuts(routes,scenery.transform,road,cyan,indigo,white);
             BuildRaceGantries(nodes,scenery.transform,graphite,white,gold);
@@ -80,6 +87,7 @@ namespace AnimeHillRacing.Racing3D
                 }
             }
             BuildSectionGuidance(nodes,scenery.transform,graphite);
+            BuildNeonPolish(nodes,routes,scenery.transform,white);
             RacingArt.Combine(scenery.transform,110);
             ApplyLighting();
             Debug.Log($"NIGHT_CITY_GRAND_CIRCUIT_BUILT nodes={nodes.Length} length={Graph.TotalLength:F1} checkpoints={checkpoints.Length} shortcuts={routes.Length} width=25-30m");
@@ -172,52 +180,19 @@ namespace AnimeHillRacing.Racing3D
             }
         }
 
-        void BuildBarriers(TrackNode[] nodes,Transform parent,Material metal,Material magenta,Material cyan,TrackShortcut[] shortcuts)
+        void BuildEdgeWarnings(TrackNode[] nodes,Transform parent,Material cyan,TrackShortcut[] shortcuts)
         {
-            for(int i=0;i<nodes.Length;i++)
+            for(int i=0;i<nodes.Length;i+=12)
             {
-                var n=nodes[i];var next=nodes[(i+1)%nodes.Length];float length=Vector3.Distance(n.Position,next.Position);
+                var n=nodes[i];
                 for(int side=-1;side<=1;side+=2)
                 {
-                    bool isOpening = false;
-                    float flare = 0f;
-                    if(shortcuts != null)
-                    {
-                        foreach(var sc in shortcuts)
-                        {
-                            if(sc.pathPoints == null || sc.pathPoints.Length < 2) continue;
-                            TrackNode en = nodes[sc.entryNodeIndex % nodes.Length];
-                            int entrySide = Vector3.Dot(sc.pathPoints[1] - en.Position, en.Right) >= 0 ? 1 : -1;
-                            int entryDist = Mathf.Abs(i - sc.entryNodeIndex);
-                            if(side == entrySide)
-                            {
-                                if(entryDist <= 2) { isOpening = true; break; }
-                                if(entryDist == 3) flare = Mathf.Max(flare, 1.8f);
-                            }
-
-                            TrackNode ex = nodes[sc.exitNodeIndex % nodes.Length];
-                            int exitSide = Vector3.Dot(sc.pathPoints[sc.pathPoints.Length - 2] - ex.Position, ex.Right) >= 0 ? 1 : -1;
-                            int exitDist = Mathf.Abs(i - sc.exitNodeIndex);
-                            if(side == exitSide)
-                            {
-                                if(exitDist <= 2) { isOpening = true; break; }
-                                if(exitDist == 3) flare = Mathf.Max(flare, 1.8f);
-                            }
-                        }
-                    }
-                    // Leave this main-road technical sector open for optional
-                    // movement lines. Gate 104 and gate 136 still bound the sector.
-                    if(isOpening || (i>=108&&i<=132)) continue;
-
-                    Vector3 a=n.Position+n.Right*side*(n.TrackWidth*.5f+.7f+flare),b=next.Position+next.Right*side*(next.TrackWidth*.5f+.7f+flare);
-                    if(IntersectsShortcut((a+b)*.5f,3,shortcuts,2.4f))continue;
-                    // Preserve the established thin safety boundary and portal
-                    // openings without rendering a continuous opaque wall.
-                    var rail=new GameObject("Sky edge safety collider");rail.transform.SetParent(parent,false);
-                    rail.transform.position=(a+b)*.5f+Vector3.up*.62f;
-                    rail.transform.rotation=Quaternion.LookRotation(b-a,Vector3.up);
-                    rail.AddComponent<BoxCollider>().size=new Vector3(.25f,1.05f,length+.15f);
-                    if(i%3==0)RacingArt.Box(parent,"Neon beacon",a+Vector3.up*.8f,new Vector3(.3f,.10f,.9f),cyan,.04f);
+                    Vector3 edge=n.Position+n.Right*side*(n.TrackWidth*.5f+.7f);
+                    if(IntersectsShortcut(edge,4,shortcuts,2.4f))continue;
+                    // Sparse visual warnings only. Open edges have no invisible
+                    // continuous collision wall and reveal no shortcut entrance.
+                    var marker=RacingArt.Box(parent,"Open edge warning",edge+Vector3.up*.65f,new Vector3(.16f,.65f,.28f),cyan,.03f);
+                    marker.transform.rotation=Quaternion.LookRotation(n.Forward,Vector3.up);
                 }
             }
         }
@@ -472,10 +447,15 @@ namespace AnimeHillRacing.Racing3D
                 var accent=RacingArt.Box(board.transform,"Living sign edge",new Vector3(0,-1.1f,-.16f),new Vector3(11,.08f,.08f),RacingArt.Material(colors[sector],.3f,true),.01f);
                 accent.AddComponent<RacingBillboardPulse>();
             }
-            var lane=RacingArt.Material(new Color(.69f,.77f,.82f),.12f);
+            // Prism lane guides: an original 12-step hue gradient around the lap
+            // (teal -> electric blue -> violet -> magenta -> amber). Bucketed into
+            // shared materials so the combined scenery keeps its batching.
+            var prism=new Material[PrismSteps];
+            for(int k=0;k<PrismSteps;k++)prism[k]=RacingArt.IdentityMaterial("Night City / prism lane "+k,Prism(k/(float)PrismSteps),.75f);
             for(int i=0;i<nodes.Length;i+=2)
             {
                 var n=nodes[i];if(i>=56&&i<=61)continue;
+                var lane=prism[Mathf.Min(PrismSteps-1,i*PrismSteps/nodes.Length)];
                 for(int side=-1;side<=1;side+=2)
                 {
                     var mark=RacingArt.Box(parent,"Lane guide",n.Position+n.Right*side*3.7f+Vector3.up*.03f,new Vector3(.12f,.025f,2.5f),lane,.01f);
@@ -484,25 +464,87 @@ namespace AnimeHillRacing.Racing3D
             }
         }
 
+        // Static emissive geometry built once and batched with the scenery: it reads
+        // as neon without bloom, adds no lights, Updates, transparency or colliders.
+        public static readonly Color[] SectorNeon={new Color(.22f,.48f,1f),new Color(.64f,.34f,1f),new Color(.16f,.88f,1f)};
+        static void BuildNeonPolish(TrackNode[] nodes,TrackShortcut[] routes,Transform parent,Material white)
+        {
+            int per=nodes.Length/SectorNeon.Length;
+            for(int s=0;s<SectorNeon.Length;s++)
+            {
+                var neon=RacingArt.IdentityMaterial("Night City / sector neon "+s,SectorNeon[s],.95f);
+                int first=s*per,last=s==SectorNeon.Length-1?nodes.Length:(s+1)*per;
+                var slice=new TrackNode[last-first+1];
+                for(int i=0;i<slice.Length;i++)slice[i]=nodes[(first+i)%nodes.Length];
+                // Inner lane strip in the sector colour, inside the cyan edge core.
+                RacingTrackGeometry.Ribbon(parent,"Sector neon lane strip",slice,-9.66f,-9.54f,neon,RacingSurfaceKind.Road,false,true,closed:false,clearRoutes:routes).transform.localPosition=Vector3.up*.06f;
+                RacingTrackGeometry.Ribbon(parent,"Sector neon lane strip",slice,9.54f,9.66f,neon,RacingSurfaceKind.Road,false,true,closed:false,clearRoutes:routes).transform.localPosition=Vector3.up*.06f;
+                // Faint electric under-deck line: visible only from the side/below.
+                var under=RacingArt.IdentityMaterial("Night City / under-deck glow "+s,SectorNeon[s]*.55f,.8f);
+                for(int side=-1;side<=1;side+=2)
+                    RacingTrackGeometry.Ribbon(parent,"Under-deck glow",slice,side<0?-10.42f:10.30f,side<0?-10.30f:10.42f,under,RacingSurfaceKind.Road,false,true,closed:false,clearRoutes:routes).transform.localPosition=Vector3.down*1.7f;
+                if(s==0)continue;
+                // Sector marker: a thin transverse light bar plus two posts. Not a finish line.
+                var n=nodes[first];
+                for(int k=0;k<2;k++)
+                {
+                    var bar=RacingArt.Box(parent,"Sector marker bar",n.Position+n.Forward*(k*1.4f)+Vector3.up*.045f,new Vector3(n.TrackWidth*.86f,.02f,.28f),neon,.01f);
+                    bar.transform.rotation=Quaternion.LookRotation(n.Forward,Vector3.up);
+                }
+            }
+            // Glowing racing-line accents through drift zones (the same optimal offset the AI targets).
+            var line=RacingArt.IdentityMaterial("Night City / racing line accent",new Color(.86f,.95f,1f),.55f);
+            var red=RacingArt.IdentityMaterial("Night City / red corner kerb",new Color(1f,.07f,.12f),1f);
+            for(int i=0;i<nodes.Length;i++)
+            {
+                var n=nodes[i];
+                if(n.IsDriftZone&&i%2==0)
+                {
+                    Vector3 p=n.Position+n.Right*(n.OptimalLineOffset*n.TrackWidth*.4f)+Vector3.up*.035f;
+                    if(!IntersectsShortcut(p,2,routes,3f))
+                    {
+                        var dash=RacingArt.Box(parent,"Racing line accent",p,new Vector3(.22f,.02f,2.2f),line,.01f);
+                        dash.transform.rotation=Quaternion.LookRotation(n.Forward,Vector3.up);
+                    }
+                }
+                // Luminous red/white kerbs on the outside of sharp corners.
+                float corner=Vector3.SignedAngle(nodes[(i+nodes.Length-3)%nodes.Length].Forward,nodes[(i+3)%nodes.Length].Forward,Vector3.up);
+                if(Mathf.Abs(corner)<25)continue;
+                Vector3 kerb=n.Position-n.Right*Mathf.Sign(corner)*(n.TrackWidth*.5f-.45f)+Vector3.up*.04f;
+                if(IntersectsShortcut(kerb,2,routes,3f))continue;
+                var block=RacingArt.Box(parent,"Outside corner kerb",kerb,new Vector3(.85f,.07f,2.6f),i%2==0?red:white,.02f);
+                block.transform.rotation=Quaternion.LookRotation(n.Forward,Vector3.up);
+            }
+        }
+
+        const int PrismSteps=12;
+        // Smooth closed loop through an original neon palette; never pure white.
+        static Color Prism(float t)
+        {
+            Color[] keys={new Color(.10f,.85f,.80f),new Color(.16f,.48f,1f),new Color(.56f,.32f,1f),new Color(.95f,.25f,.75f),new Color(1f,.62f,.22f),new Color(.10f,.85f,.80f)};
+            float f=Mathf.Repeat(t,1f)*(keys.Length-1);int k=Mathf.Min(keys.Length-2,Mathf.FloorToInt(f));
+            return Color.Lerp(keys[k],keys[k+1],f-k);
+        }
+
         public static void ApplyLighting()
         {
             RenderSettings.ambientMode=AmbientMode.Trilight;
-            RenderSettings.ambientSkyColor=new Color(.39f,.45f,.63f);
-            RenderSettings.ambientEquatorColor=new Color(.52f,.31f,.32f);
-            RenderSettings.ambientGroundColor=new Color(.15f,.16f,.22f);
+            RenderSettings.ambientSkyColor=new Color(.20f,.28f,.43f);
+            RenderSettings.ambientEquatorColor=new Color(.14f,.20f,.32f);
+            RenderSettings.ambientGroundColor=new Color(.07f,.09f,.15f);
             RenderSettings.fog=true;
             RenderSettings.fogMode=FogMode.ExponentialSquared;
             RenderSettings.fogDensity=.00045f;
-            RenderSettings.fogColor=new Color(.22f,.19f,.28f);
+            RenderSettings.fogColor=new Color(.012f,.028f,.065f);
             var moon=FindFirstObjectByType<Light>();
-            if(moon==null)moon=new GameObject("Night City Sunset").AddComponent<Light>();
+            if(moon==null)moon=new GameObject("Night City Moonlight").AddComponent<Light>();
             moon.type=LightType.Directional;
-            moon.intensity=1.12f;
-            moon.color=new Color(1f,.76f,.58f);
-            moon.transform.rotation=Quaternion.LookRotation(-RacingSunsetSky.SunDirection,Vector3.up);
+            moon.intensity=.95f;
+            moon.color=new Color(.72f,.84f,1f);
+            moon.transform.rotation=Quaternion.LookRotation(new Vector3(.45f,-.65f,.25f),Vector3.up);
             moon.shadows=LightShadows.Hard;
             RenderSettings.sun=moon;
-            RenderSettings.skybox=RacingSunsetSky.Create(FindFirstObjectByType<RacingEnvironmentScope>());
+            RenderSettings.skybox=RacingNightSky.Create(FindFirstObjectByType<RacingEnvironmentScope>());
         }
     }
 

@@ -12,7 +12,11 @@ namespace AnimeHillRacing.Racing3D
         public string wheelId;
         public string characterId = "cobalt-driver";
         public string accessoryId = "none";
-        public int mmr;
+        public int mmr; // driving skill rating used by the AI (hidden for Placement bots)
+        // Public competitive standing shown in UI. CPPS hides MMR until Placement 3/3.
+        public bool ranked = true;
+        public int placementGames = 3, visibleMmr = -1;
+        public int DisplayMmr => visibleMmr >= 0 ? visibleMmr : mmr;
         public bool isHuman;
         public int personalitySeed;
         public int gridPosition; // 1 to 12

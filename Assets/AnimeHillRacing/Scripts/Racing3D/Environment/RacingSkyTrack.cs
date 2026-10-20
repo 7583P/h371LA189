@@ -52,6 +52,7 @@ namespace AnimeHillRacing.Racing3D
                     tris.Add(v);tris.Add(v+1);tris.Add(v+2);tris.Add(v);tris.Add(v+2);tris.Add(v+3);
                 }
             }
+            BuildHorizonSkyline(parent,material);
             var guides=new GameObject("Sky track / batched guidance");guides.transform.SetParent(parent,false);
             var core=RacingArt.IdentityMaterial("Sky / cyan edge core",new Color(.25f,.85f,1),.9f);
             var glow=RacingArt.Material(new Color(.035f,.16f,.24f),.4f,true);
@@ -67,6 +68,40 @@ namespace AnimeHillRacing.Racing3D
             BuildTurnSigns(guides.transform,road,new Color(1,.035f,.075f));
             RacingArt.Combine(guides.transform,100);
             BuildCityFloor(parent,scope);
+        }
+
+        // Distant skyline that breaks the horizon above road level: one opaque
+        // mesh of tower cards reusing the city atlas (no new texture), fogged by
+        // distance for depth. A single draw call; no colliders or Updates.
+        public const int HorizonTowers=72;
+        static void BuildHorizonSkyline(Transform parent,Material material)
+        {
+            var vertices=new List<Vector3>();var uv=new List<Vector2>();var colors=new List<Color>();var tris=new List<int>();
+            var rng=new DeterministicRng(48611);var center=new Vector3(90,0,-30);
+            for(int i=0;i<HorizonTowers;i++)
+            {
+                float angle=(i+rng.Range(-.3f,.3f))*Mathf.PI*2/HorizonTowers;
+                Vector3 radial=new Vector3(Mathf.Cos(angle),0,Mathf.Sin(angle)),right=Vector3.Cross(Vector3.up,radial);
+                float distance=1650+rng.Range(-80,140),width=rng.Range(60,120),height=rng.Range(150,430)*(i%9==0?1.35f:1f);
+                Vector3 foot=center+radial*distance+Vector3.up*-140;
+                float tint=rng.Range(.42f,.62f);int tile=rng.Next(0,4);
+                Quad(foot,right*width,Vector3.up*height,tile,new Color(tint,tint,tint*1.08f));
+                if(i%4==0)Quad(foot+Vector3.up*height,right*width*.38f,Vector3.up*rng.Range(20,60),tile,new Color(tint,tint,tint*1.08f));
+            }
+            var mesh=new Mesh{name="Sky city horizon skyline"};mesh.SetVertices(vertices);mesh.SetUVs(0,uv);mesh.SetColors(colors);mesh.SetTriangles(tris,0);mesh.RecalculateBounds();
+            var obj=RacingArt.Part(parent,"Sky city / horizon skyline",mesh,material,Vector3.zero,Quaternion.identity);
+            obj.AddComponent<RacingGeneratedMesh>().Mesh=mesh;
+            var renderer=obj.GetComponent<MeshRenderer>();renderer.shadowCastingMode=ShadowCastingMode.Off;renderer.receiveShadows=false;
+            void Quad(Vector3 foot,Vector3 right,Vector3 up,int tile,Color color)
+            {
+                int v=vertices.Count;vertices.Add(foot-right*.5f);vertices.Add(foot+right*.5f);vertices.Add(foot+right*.5f+up);vertices.Add(foot-right*.5f+up);
+                float u0=(tile*64+1)/256f,u1=(tile*64+63)/256f;
+                uv.Add(new Vector2(u0,0));uv.Add(new Vector2(u1,0));uv.Add(new Vector2(u1,1));uv.Add(new Vector2(u0,1));
+                for(int c=0;c<4;c++)colors.Add(color);
+                // Both windings: the ring is seen from inside.
+                tris.Add(v);tris.Add(v+1);tris.Add(v+2);tris.Add(v);tris.Add(v+2);tris.Add(v+3);
+                tris.Add(v);tris.Add(v+2);tris.Add(v+1);tris.Add(v);tris.Add(v+3);tris.Add(v+2);
+            }
         }
 
         static void BuildCityFloor(Transform parent,RacingEnvironmentScope scope)

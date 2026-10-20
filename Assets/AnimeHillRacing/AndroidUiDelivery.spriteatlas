@@ -1,0 +1,133 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!687078895 &4343727234628468602
+SpriteAtlas:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: AndroidUiDelivery
+  m_EditorData:
+    serializedVersion: 2
+    textureSettings:
+      serializedVersion: 2
+      anisoLevel: 0
+      compressionQuality: 0
+      maxTextureSize: 0
+      textureCompression: 0
+      filterMode: 1
+      generateMipMaps: 0
+      readable: 0
+      crunchedCompression: 0
+      sRGB: 1
+    platformSettings:
+    - serializedVersion: 4
+      m_BuildTarget: Android
+      m_MaxTextureSize: 4096
+      m_ResizeAlgorithm: 0
+      m_TextureFormat: 50
+      m_TextureCompression: 2
+      m_CompressionQuality: 100
+      m_CrunchedCompression: 0
+      m_AllowsAlphaSplitting: 0
+      m_Overridden: 1
+      m_IgnorePlatformSupport: 0
+      m_AndroidETC2FallbackOverride: 0
+      m_ForceMaximumCompressionQuality_BC6H_BC7: 0
+    - serializedVersion: 4
+      m_BuildTarget: Standalone
+      m_MaxTextureSize: 4096
+      m_ResizeAlgorithm: 0
+      m_TextureFormat: 25
+      m_TextureCompression: 2
+      m_CompressionQuality: 100
+      m_CrunchedCompression: 0
+      m_AllowsAlphaSplitting: 0
+      m_Overridden: 1
+      m_IgnorePlatformSupport: 0
+      m_AndroidETC2FallbackOverride: 0
+      m_ForceMaximumCompressionQuality_BC6H_BC7: 0
+    packingSettings:
+      serializedVersion: 2
+      padding: 4
+      blockOffset: 0
+      allowAlphaSplitting: 0
+      enableRotation: 0
+      enableTightPacking: 0
+      enableAlphaDilation: 0
+    secondaryTextureSettings: {}
+    variantMultiplier: 1
+    packables:
+    - {fileID: 2800000, guid: 33bbbdb0a648afc4ebf48b080fcbc803, type: 3}
+    - {fileID: 2800000, guid: 4452262a5bebdd24c8a310165727b74d, type: 3}
+    - {fileID: 2800000, guid: 7107179789cc22d488539672b20b3573, type: 3}
+    - {fileID: 2800000, guid: be574f8c10113474096f359130116e98, type: 3}
+    - {fileID: 2800000, guid: bbf737d2cab043c4c922a301a0575adf, type: 3}
+    - {fileID: 2800000, guid: 00e07db9f8038204eb3b2dc351b0f4e1, type: 3}
+    - {fileID: 2800000, guid: 9f6cee813930d57488f9ca0d04598350, type: 3}
+    - {fileID: 2800000, guid: 15081732d7cc84d4889e05b6b4f8fcc5, type: 3}
+    - {fileID: 2800000, guid: d9e4a40f89fd4d0ebaf084660c27778b, type: 3}
+    - {fileID: 2800000, guid: 3a4c54df7fbe4e5382c76af8f304ebc9, type: 3}
+    - {fileID: 2800000, guid: c9027bdbb198d9749ae4b7e27edfe6b2, type: 3}
+    - {fileID: 2800000, guid: 48fa6efc6549f6542ad6bac8a344f023, type: 3}
+    bindAsDefault: 1
+    isAtlasV2: 0
+    cachedData: {fileID: 0}
+    packedSpriteRenderDataKeys:
+    - 33bbbdb0a648afc4ebf48b080fcbc803: 21300000
+    - 9f6cee813930d57488f9ca0d04598350: 21300000
+    - 15081732d7cc84d4889e05b6b4f8fcc5: -6069116708409717666
+    - bbf737d2cab043c4c922a301a0575adf: 21300000
+    - 7107179789cc22d488539672b20b3573: 21300000
+    - 00e07db9f8038204eb3b2dc351b0f4e1: 21300000
+    - 4452262a5bebdd24c8a310165727b74d: 21300000
+    - c9027bdbb198d9749ae4b7e27edfe6b2: 21300000
+    - be574f8c10113474096f359130116e98: 21300000
+    - 48fa6efc6549f6542ad6bac8a344f023: -2405965675668521342
+    - 48fa6efc6549f6542ad6bac8a344f023: 7030095614844968439
+    - 48fa6efc6549f6542ad6bac8a344f023: 1855486159597984556
+    - 48fa6efc6549f6542ad6bac8a344f023: 1096400794093188358
+    - 48fa6efc6549f6542ad6bac8a344f023: -5566725173611432526
+    - 48fa6efc6549f6542ad6bac8a344f023: -1863752284090678905
+    - d9e4a40f89fd4d0ebaf084660c27778b: 21300000
+    - 3a4c54df7fbe4e5382c76af8f304ebc9: 21300000
+  m_MasterAtlas: {fileID: 0}
+  m_PackedSprites:
+  - {fileID: 21300000, guid: 33bbbdb0a648afc4ebf48b080fcbc803, type: 3}
+  - {fileID: 21300000, guid: 9f6cee813930d57488f9ca0d04598350, type: 3}
+  - {fileID: -6069116708409717666, guid: 15081732d7cc84d4889e05b6b4f8fcc5, type: 3}
+  - {fileID: 21300000, guid: bbf737d2cab043c4c922a301a0575adf, type: 3}
+  - {fileID: 21300000, guid: 7107179789cc22d488539672b20b3573, type: 3}
+  - {fileID: 21300000, guid: 00e07db9f8038204eb3b2dc351b0f4e1, type: 3}
+  - {fileID: 21300000, guid: 4452262a5bebdd24c8a310165727b74d, type: 3}
+  - {fileID: 21300000, guid: c9027bdbb198d9749ae4b7e27edfe6b2, type: 3}
+  - {fileID: 21300000, guid: be574f8c10113474096f359130116e98, type: 3}
+  - {fileID: -2405965675668521342, guid: 48fa6efc6549f6542ad6bac8a344f023, type: 3}
+  - {fileID: 7030095614844968439, guid: 48fa6efc6549f6542ad6bac8a344f023, type: 3}
+  - {fileID: 1855486159597984556, guid: 48fa6efc6549f6542ad6bac8a344f023, type: 3}
+  - {fileID: 1096400794093188358, guid: 48fa6efc6549f6542ad6bac8a344f023, type: 3}
+  - {fileID: -5566725173611432526, guid: 48fa6efc6549f6542ad6bac8a344f023, type: 3}
+  - {fileID: -1863752284090678905, guid: 48fa6efc6549f6542ad6bac8a344f023, type: 3}
+  - {fileID: 21300000, guid: d9e4a40f89fd4d0ebaf084660c27778b, type: 3}
+  - {fileID: 21300000, guid: 3a4c54df7fbe4e5382c76af8f304ebc9, type: 3}
+  m_PackedSpriteNamesToIndex:
+  - Coins_Chest
+  - LowFuel
+  - ChestSlotFrame
+  - InclinationBuggyTune
+  - You_Got
+  - ThrustersTune
+  - home
+  - Shelf
+  - DownforceTune
+  - Mythic
+  - Legendary
+  - Common
+  - Epic
+  - Uncommon
+  - Rare
+  - CoinRewardClapperboardBadge
+  - OpenClapperboardBadge
+  m_RenderDataMap: {}
+  m_Tag: AndroidUiDelivery
+  m_IsVariant: 0

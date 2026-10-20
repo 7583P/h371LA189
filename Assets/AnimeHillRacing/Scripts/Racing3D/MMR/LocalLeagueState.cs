@@ -15,6 +15,8 @@ namespace AnimeHillRacing.Racing3D
     public sealed class LocalLeagueConfiguration
     {
         public int historyLimit = 20;
+        // Legacy v3 fields retained for serialized-asset compatibility only. The
+        // v4 league has no race quota; volume emerges from LeagueActivityModel.
         public int eventsPerHour = 120;
         public int maximumCatchupEvents = 8192;
         public float menuBudgetMilliseconds = 1.5f;
@@ -22,6 +24,19 @@ namespace AnimeHillRacing.Racing3D
         public float ratingScale = 1100f;
         public float establishedK = 50f;
         public float uncertaintyK = 120f;
+        // CPPS Placement (exactly CompetitiveRating.PlacementRaces races).
+        public int placementPrior = 2500;
+        public int placementCeiling = 6500;
+        public int provisionalMaximum = 9000;
+        public float[] placementK = { 1500f, 1100f, 800f };
+        public float postPlacementUncertainty = .65f;
+        // Bounded offline catch-up: at most this much simulated league time is
+        // replayed race-by-race; older absent time is fast-forwarded and logged.
+        public int maximumCatchupDays = 7;
+        // Measured Night City Grand Circuit 3-lap finishing times (elite 198-233 s).
+        public float referenceWinnerSeconds = 196f;
+        public float preRaceSeconds = 14f;
+        public float resultsSeconds = 12f;
         public SoftResetPoint[] resetCurve = {
             new SoftResetPoint(0, 0), new SoftResetPoint(1000, 980),
             new SoftResetPoint(2500, 2350), new SoftResetPoint(5000, 4500),
@@ -74,7 +89,7 @@ namespace AnimeHillRacing.Racing3D
     public sealed class LeagueSkillProfile
     {
         public float latentSkill, consistency, aggression, riskTolerance, driftSkill, aerialSkill;
-        public float shortcutSkill, itemSkill, racecraft, recoverySkill, learningPotential;
+        public float shortcutSkill, itemSkill, racecraft, recoverySkill, learningPotential, boostSkill, adaptation;
         public AiRacingStyle preferredStyle;
         internal LeagueSkillProfile CopyForSave() => (LeagueSkillProfile)MemberwiseClone();
     }
@@ -88,6 +103,7 @@ namespace AnimeHillRacing.Racing3D
         public int races, wins, podiums, nextStartingMmr;
         public float bestLap;
         public long seasonStartTimestamp, seasonEndTimestamp;
+        public bool qualificationKnown,officiallyQualified;
         internal RacingSeasonHistory CopyForSave() => (RacingSeasonHistory)MemberwiseClone();
     }
 
@@ -104,6 +120,13 @@ namespace AnimeHillRacing.Racing3D
         public List<string> unlockedTitleIds = new List<string>();
         public string selectedTitleId = "";
         public int lastLeaderboardPosition;
+        // CPPS: placementGames < 3 means UNRANKED; provisionalRating is internal only.
+        public int placementGames = CompetitiveRating.PlacementRaces, provisionalRating, streak, finishSum, dnfs, abandonments;
+        public byte presence, activityProfile;
+        public int drivingRating;
+        public int qualifiedSeason;
+        public bool assassinerEarned;
+        public bool Ranked => placementGames >= CompetitiveRating.PlacementRaces;
 
         internal LeagueCompetitor CopyForSave()
         {
@@ -117,9 +140,18 @@ namespace AnimeHillRacing.Racing3D
     }
 
     [Serializable]
+    public sealed class SimulatedRaceSlot
+    {
+        public long raceSequence, startTicks, endTicks;
+        public int[] participants = new int[12];
+        public SimulatedRaceSlot Copy() { var c = (SimulatedRaceSlot)MemberwiseClone(); c.participants = (int[])participants.Clone(); return c; }
+    }
+
+    [Serializable]
     public sealed class LocalLeagueState
     {
-        public const int CurrentVersion = 3;
+        public const int CurrentVersion = 4;
+        public const int CompetitiveContractCpps = 1;
         public int version = CurrentVersion, populationSeed, currentSeasonNumber = 1, lastProcessedSeasonNumber;
         public long installationTimestamp, seasonStartTimestamp, seasonEndTimestamp, lastKnownUtcTimestamp;
         public long lastLeagueSimulationUtc, simulationEventNumber, skippedCatchupEvents;
@@ -133,6 +165,21 @@ namespace AnimeHillRacing.Racing3D
         public int seasonTransitionCursor=-1;
         public long simulationRatingCreatedAtFloor;
         public List<string> recentOpponentIds = new List<string>();
+        // ---- v4 (CPPS / global seasons / organic league) ----
+        public string profileId = "";
+        public int competitiveContract;
+        [NonSerialized] public string[] botNames;
+        public int nameGeneratorVersion;
+        public long raceSequence, humanRaceSequence, skippedSimulatedTicks, savedRevision;
+        public int utcOffsetMinutes, highestAcceptedSeason;
+        public List<SimulatedRaceSlot> activeSimRaces = new List<SimulatedRaceSlot>();
+        public PendingRankedRace pendingHumanRace;
+        public CompetitiveLedger ledger = new CompetitiveLedger();
+        public int[] hourlyRaces = new int[48];
+        public long hourlyAnchorHour;
+        public long legacySeasonOffsetApplied;
+        public int qualificationContract,qualificationSeason;
+        public bool seasonHistoryIncomplete, expandedCommunityPresence;
 
         // Only the main thread creates this snapshot. The save worker owns every
         // mutable object it serializes, so live matches and season changes cannot
@@ -147,6 +194,12 @@ namespace AnimeHillRacing.Racing3D
             copy.archives=new List<LeagueSeasonArchive>(archives.Count);
             foreach(var archive in archives)copy.archives.Add(archive.CopyForSave());
             copy.pendingSeasonArchive=pendingSeasonArchive?.CopyForSave();
+            copy.botNames=botNames==null?null:(string[])botNames.Clone();
+            copy.activeSimRaces=new List<SimulatedRaceSlot>(activeSimRaces.Count);
+            foreach(var race in activeSimRaces)copy.activeSimRaces.Add(race.Copy());
+            copy.pendingHumanRace=pendingHumanRace?.Copy();
+            copy.ledger=ledger.Copy();
+            copy.hourlyRaces=(int[])hourlyRaces.Clone();
             return copy;
         }
     }

@@ -12,7 +12,7 @@ namespace AnimeHillRacing.EditorTools
 {
     public static class RacingSeasonResetContracts
     {
-        static readonly int[] Ratings = { 9999, 10000, 10001, 10100, 10500, 11000, 12000, 15000, 20000, int.MaxValue };
+        static readonly int[] Ratings = { 9999, 10000, 10001, 10100, 10500, 11000, 12000, 15000, 20000, CompetitiveRating.MaximumMmr };
         [Serializable] sealed class Sample { public string curve, rankAfter; public int oldMmr, normalResult, finalMmr, beyondLevelBefore; }
         [Serializable] sealed class Samples { public Sample[] cases; public string note = "Alternate curves are isolated test fixtures. The installed curve and save schema are unchanged."; }
 
@@ -79,7 +79,7 @@ namespace AnimeHillRacing.EditorTools
             long epoch = new DateTime(2026, 1, 31, 12, 30, 0, DateTimeKind.Utc).Ticks;
             string freshPath = Path.Combine(output, "fresh-install"); var freshStore = Store(freshPath);
             var fresh = LocalLeagueEngine.Create(epoch, 4207);
-            report.Check(freshStore.Save(fresh) && Store(freshPath).Load().bots.All(b => b.currentMmr == 0) && fresh.human.currentMmr == 0, "Fresh 10000-bot v3 install remains zero-rated");
+            report.Check(freshStore.Save(fresh) && Store(freshPath).Load().bots.All(b => b.currentMmr == 0) && fresh.human.currentMmr == 0, "Fresh 10000-bot CPPS install starts UNRANKED with no visible MMR");
             var state = LocalLeagueEngine.Create(epoch, 4207); var config = LowerCurve();
             state.currentSeasonNumber = 2; state.lastProcessedSeasonNumber = 1;
             state.seasonStartTimestamp = LocalSeasonEngine.Boundary(epoch, 1); state.seasonEndTimestamp = LocalSeasonEngine.Boundary(epoch, 2);
@@ -88,17 +88,18 @@ namespace AnimeHillRacing.EditorTools
                 endTimestamp = state.seasonStartTimestamp, records = new CompactBotSeason[state.population] };
             state.archives.Add(oldArchive);
             for (int i = 0; i < state.bots.Length; i++) {
-                var bot = state.bots[i]; bot.currentMmr = Ratings[i % Ratings.Length];
+                var bot = state.bots[i]; bot.placementGames = 3; bot.currentMmr = Ratings[i % Ratings.Length];
                 bot.peakMmr = Math.Max(25000, bot.currentMmr); bot.seasonPeakMmr = Math.Max(11250, bot.currentMmr); bot.seasonStartingMmr = 9000;
                 bot.races = 123; bot.wins = 24; bot.podiums = 51; bot.seasonRaces = 12; bot.seasonWins = 3; bot.seasonPodiums = 6;
                 bot.bestLap = 55; bot.seasonBestLap = 57; bot.titleFlags = 126; bot.selectedTitle = 6;
                 // Preserve the selected career title; ordinary bots may select a newly earned season title.
+                bot.flags |= SeasonQualification.QualifiedFlag;
                 bot.personalitySeed &= ~3; state.bots[i] = bot;
                 oldArchive.records[i] = new CompactBotSeason { startingMmr = 8000, endingMmr = 16500, peakMmr = 18000, nextStartingMmr = 9000, selectedTitle = 6 };
             }
-            var human = state.human; human.currentMmr = 10500; human.peakMmr = 20000; human.seasonStartingMmr = 9000; human.seasonPeakMmr = 11250;
+            var human = state.human; human.placementGames = 3; human.currentMmr = 10500; human.peakMmr = 20000; human.seasonStartingMmr = 9000; human.seasonPeakMmr = 11250;
             human.races = 123; human.wins = 24; human.podiums = 51; human.bestLap = 55;
-            human.seasonRaces = 12; human.seasonWins = 3; human.seasonPodiums = 6; human.seasonBestLap = 57;
+            human.seasonRaces = 12; human.seasonWins = 3; human.seasonPodiums = 6; human.seasonBestLap = 57; human.qualifiedSeason = state.currentSeasonNumber;
             human.unlockedTitleIds.AddRange(new[] { "beyond-apex", "shortcut-hunter", "season:1:20" }); human.selectedTitleId = "beyond-apex";
             human.history.Add(new RacingSeasonHistory { seasonNumber = 1, endingMmr = 16500, peakMmr = 18000, beyondPeakCounter = 8, endingRank = "APEX BEYOND 10K" });
             var before = state.CopyForSave(); long boundary = state.seasonEndTimestamp;
@@ -108,15 +109,15 @@ namespace AnimeHillRacing.EditorTools
             LocalSeasonEngine.AdvanceChunk(state, config, boundary, 137, engine.Index);
             report.Check(state.seasonTransitionCursor == 137 && store.Save(state), "Interrupted season saves the exact cursor and pending archive");
             var resumed = Store(path).Load();
-            report.Check(resumed != null && resumed.version == 3 && resumed.seasonTransitionCursor == 137 && resumed.human.currentMmr == 10500,
-                "Existing v3 journal relaunch resumes the partial transition without a migration");
+            report.Check(resumed != null && resumed.version == LocalLeagueState.CurrentVersion && resumed.seasonTransitionCursor == 137 && resumed.human.currentMmr == 10500,
+                "Existing CPPS journal relaunch resumes the partial transition without a migration");
             bool partial = true;
             for (int i = 0; i < resumed.bots.Length; i++) partial &= resumed.bots[i].currentMmr == (i < 137 ? config.ResetMmr(before.bots[i].currentMmr) : before.bots[i].currentMmr);
             report.Check(partial, "Partial relaunch neither skips nor resets an already processed bot twice");
             Finish(resumed, config, boundary); VerifyCompleted(report, resumed, before, config);
             var saved = Store(path); saved.Load(); report.Check(saved.Save(resumed), "Completed reset and both season archives save durably");
             var reloader = Store(path); var reloaded = reloader.Load();
-            report.Check(reloaded.version == 3 && reloaded.currentSeasonNumber == 3 && !reloader.MigratedLegacy, "Relaunch keeps save schema v3 and the completed transition");
+            report.Check(reloaded.version == LocalLeagueState.CurrentVersion && reloaded.currentSeasonNumber == 3 && !reloader.MigratedLegacy, "Relaunch keeps the current CPPS save schema and the completed transition");
             var humanHistory = reloaded.human.history;
             report.Check(humanHistory.Count == 2 && humanHistory[0].endingMmr == 16500 && humanHistory[0].peakMmr == 18000 && humanHistory[0].beyondPeakCounter == 8,
                 "Existing human career history survives unchanged");
@@ -133,8 +134,8 @@ namespace AnimeHillRacing.EditorTools
                 && ratings.SequenceEqual(reloaded.bots.Select(b => b.currentMmr)) && reloaded.archives.Count == 2 && reloaded.human.history.Count == 2,
                 "Repeated completed season processing is idempotent after relaunch");
             // This directory belongs only to this fixture: simulate a torn latest journal and uncommitted temporary file.
-            File.WriteAllBytes(Path.Combine(path, "league-v3-1.journal"), new byte[] { 1, 2, 3 });
-            File.WriteAllBytes(Path.Combine(path, "league-v3-0.journal.pending"), new byte[] { 4, 5, 6 });
+            File.WriteAllBytes(Path.Combine(path, "league-v4-1.journal"), new byte[] { 1, 2, 3 });
+            File.WriteAllBytes(Path.Combine(path, "league-v4-0.journal.pending"), new byte[] { 4, 5, 6 });
             var recoveryStore = Store(path); var recovered = recoveryStore.Load();
             report.Check(recovered != null && !recoveryStore.ReadOnlyProtection && recovered.seasonTransitionCursor == 137,
                 "Torn latest generation recovers the intact previous cursor; uncommitted temporary bytes are ignored");

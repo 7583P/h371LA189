@@ -46,6 +46,9 @@ namespace AnimeHillRacing.Racing3D
         float angle, trackDistance, lookAheadDistance, trackCurvature, lateralOffset, racingLineOffset;
         float blockedTime, reverseUntil, nextReverse, laneHoldUntil, mistakeUntil, mistakeOffset, routeEntryDistance, nextChainHop, driftStarted;
         int targetNode, currentNode, routeSegment, recoverySeen, routeConsideredLap = -1, routeAttemptLap = -1, routeAttemptMask;
+        int driftTurnSign;
+        float edgeUrgency, edgeSide;
+        float gridLane, raceStartTime = -1;
 
         TrackShortcut activeRoute, consideredRoute;
         DiscoveredRoute activeDiscoveredRoute;
@@ -57,6 +60,7 @@ namespace AnimeHillRacing.Racing3D
         float rejoinDistance = -1, rejoinStableTime;
         int routeIndex = -1;
         int[] routeEntries, routeCompletions;
+        float[] routeValueSeconds;
         readonly float[] laneCosts = new float[3];
         static readonly float[] LaneOptions = { 0, -.40f, .40f };
 
@@ -75,6 +79,9 @@ namespace AnimeHillRacing.Racing3D
         public float LookAheadDistance => lookAheadDistance;
         public float TrackCurvature => trackCurvature;
         public float TargetSpeedKmh => targetSpeed;
+        // Observation only: the final safe command includes the edge/heading caps.
+        public float CommandSpeedKmh { get; private set; }
+        public float EdgeUrgency => edgeUrgency;
         public bool ProtectingRoadBoundary => false;
         public bool TrafficBraking => trafficSpeedLimit<float.MaxValue && vehicle.SpeedKmh>trafficSpeedLimit+4;
         public float LateralOffset => lateralOffset;
@@ -90,6 +97,8 @@ namespace AnimeHillRacing.Racing3D
         public int ActiveRouteIndex => routeIndex;
         public int RouteSegment => routeSegment;
         public int FailedShortcuts { get; private set; }
+        public int EdgeGuardSteps { get; private set; }
+        public int DriftEnvelopeReleases { get; private set; }
         public string LastRouteAbortReason { get; private set; }
         public DiscoveredRoute ActiveDiscoveredRoute => activeDiscoveredRoute;
         public string CurrentIntent => intent;
@@ -138,7 +147,32 @@ namespace AnimeHillRacing.Racing3D
             vehicle.SetCommandProvider(this);
             routeEntries = new int[graph.Shortcuts != null ? graph.Shortcuts.Length : 0];
             routeCompletions = new int[graph.Shortcuts != null ? graph.Shortcuts.Length : 0];
+            routeValueSeconds = new float[routeCompletions.Length];
+            for (int i = 0; i < routeValueSeconds.Length; i++) routeValueSeconds[i] = EstimateRouteValue(graph.Shortcuts[i]);
         }
+
+        // Geometric time value of a link for this car: main-road length at a
+        // typical racing pace versus link length under the shared 50% link speed
+        // rule (boost-fuelled links at the shared boost multiplier). Track
+        // knowledge, not a physics change; a link that loses time is not "secret tech".
+        float EstimateRouteValue(TrackShortcut route)
+        {
+            if (route == null || route.pathPoints == null || route.pathPoints.Length < 2 || vehicle == null) return 0;
+            float linkLength = 0;
+            for (int i = 1; i < route.pathPoints.Length; i++) linkLength += Vector3.Distance(route.pathPoints[i - 1], route.pathPoints[i]);
+            float mainLength = Mathf.Repeat(trackGraph.GetNode(route.exitNodeIndex).CumulativeDistance - trackGraph.GetNode(route.entryNodeIndex).CumulativeDistance, trackGraph.TotalLength);
+            float top = Mathf.Max(10, vehicle.Stats.SpeedKmh / 3.6f);
+            float linkSpeed = top * TrackSplineGraph.ShortcutSpeedScale * (route.requiresBoost ? 1.3f : 1f);
+            float value = mainLength / (top * .80f) - linkLength / linkSpeed;
+            if (!loggedRouteValues.Contains(route.shortcutId))
+            {
+                loggedRouteValues.Add(route.shortcutId);
+                Debug.Log($"[AI] Route {route.shortcutId}: link {linkLength:F0} m, main {mainLength:F0} m, estimated value {value:F2} s");
+            }
+            return value;
+        }
+        const float RouteOverheadSeconds = 3f;
+        static readonly HashSet<string> loggedRouteValues = new HashSet<string>();
 
         private float? simTimeOverride;
         public float CurrentTime => simTimeOverride ?? Time.time;
@@ -181,7 +215,13 @@ namespace AnimeHillRacing.Racing3D
             }
 
             if (launchTime < 0)
+            {
                 launchTime = CurrentTime + Mathf.Lerp(.55f, .03f, profile.reactionSkill) + Mathf.Abs(profile.personalitySeed % 17) * .002f;
+                // Remember the grid column; the opening seconds hold it (see below).
+                trackGraph.ProjectPosition(transform.position, out _, out _, out float gridLateral);
+                gridLane = Mathf.Clamp(gridLateral / Mathf.Max(1, trackGraph.GetNode(0).TrackWidth * .4f), -.85f, .85f);
+                raceStartTime = CurrentTime;
+            }
 
             if (launchTime > 0f && CurrentTime < launchTime)
             {
@@ -238,6 +278,29 @@ namespace AnimeHillRacing.Racing3D
                     Mathf.Abs(offset+sideSpeed*.18f)>road.TrackWidth*.43f)
                     drift=false;
             }
+            // Open road edges: predict the outward slide from the actual velocity.
+            // Lifting/braking is the only remedy once steering is saturated, so it
+            // limits this step's pace command; stats and grip remain untouched.
+            float commandSpeed = targetSpeed;
+            edgeUrgency = 0;
+            if (activeRoute == null && activeDiscoveredRoute == null && rejoinDistance < 0 &&
+                vehicle.IsGrounded && !vehicle.IsSpunOut && vehicle.SpeedMps > 6)
+            {
+                trackGraph.ProjectPosition(transform.position, out _, out float edgeDistance, out float edgeLateral);
+                var edgeRoad = trackGraph.SampleDistance(edgeDistance);
+                float half = edgeRoad.TrackWidth * .5f;
+                float outward = Vector3.Dot(vehicle.Body.linearVelocity, edgeRoad.Right) * Mathf.Sign(edgeLateral);
+                float predicted = Mathf.Abs(edgeLateral) + Mathf.Max(0, outward) * 1.0f;
+                if (outward > .5f && predicted > half - 3f)
+                {
+                    float urgency = Mathf.InverseLerp(half - 3f, half + 1.5f, predicted);
+                    edgeUrgency = urgency; edgeSide = Mathf.Sign(edgeLateral);
+                    // A sliding drift keeps only part of its lateral grip.
+                    if (vehicle.IsDrifting && drift && urgency > .25f) { drift = false; DriftEnvelopeReleases++; }
+                    commandSpeed = Mathf.Min(commandSpeed, vehicle.SpeedKmh * (1f - .30f * urgency) - 4f * urgency);
+                    EdgeGuardSteps++;
+                }
+            }
             if (vehicle.IsGrounded && !vehicle.IsSpunOut && distance > 6)
             {
                 // Reserve actual yaw authority for line correction on every road.
@@ -251,8 +314,16 @@ namespace AnimeHillRacing.Racing3D
                     targetSpeed=Mathf.Min(targetSpeed,authority*margin/pursuitCurvature*3.6f);
                 }
             }
+            commandSpeed = Mathf.Min(commandSpeed, targetSpeed);
+            Vector3 facing = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
+            float faceAngle = Mathf.Abs(Mathf.Atan2(Vector3.Dot(deltaToTarget, Vector3.Cross(Vector3.up, facing)), Vector3.Dot(deltaToTarget, facing))) * Mathf.Rad2Deg;
+            // Facing well away from the road after a spin/contact: turn around at a
+            // radius that fits inside the open road instead of a wide fast U-turn.
+            if (vehicle.IsGrounded && faceAngle > 75f)
+                commandSpeed = Mathf.Min(commandSpeed, Mathf.Lerp(70f, 28f, Mathf.InverseLerp(75f, 100f, faceAngle)));
             // Full throttle commitment: drive at maximum speed when under target speed
-            float overspeed = vehicle.SpeedKmh - targetSpeed;
+            CommandSpeedKmh = commandSpeed;
+            float overspeed = vehicle.SpeedKmh - commandSpeed;
             float throttle = 1f;
             if (overspeed > 0)
             {
@@ -273,14 +344,28 @@ namespace AnimeHillRacing.Racing3D
             // Physics applies UpdateDrift before steering in this same fixed step.
             // Use the steering equation of the requested state, including the
             // first step after releasing; the previous drift equation inverted it.
+            float pathYaw = 2 * Mathf.Max(7, vehicle.SpeedMps) * localX / (distance * distance);
+            // Shared drift steering spans only DriftDirection*[0.01, 1.11]. When the
+            // path needs yaw the other way (reversed corner, wrong-side start), the
+            // drift physically cannot turn there: release to ordinary grip steering.
+            if (vehicle.IsDrifting && drift && vehicle.IsGrounded && pathYaw * vehicle.DriftDirection < -.10f)
+            { drift = false; DriftEnvelopeReleases++; }
             bool steeringInDrift=vehicle.IsDrifting&&drift;
-            float desiredYaw = 2 * Mathf.Max(7, vehicle.SpeedMps) * localX / (distance * distance);
+            float desiredYaw = pathYaw;
             float desiredSlip = steeringInDrift ? -vehicle.DriftDirection * Mathf.Lerp(
                 profile.style == AiRacingStyle.DriftPrecision ? 8 : 6, 13, profile.driftSkill) : 0;
             desiredYaw += (vehicle.SlipAngle - desiredSlip) * Mathf.Deg2Rad * .65f;
             desiredYaw += (desiredYaw - Vector3.Dot(vehicle.Body.angularVelocity, Vector3.up)) * .30f;
             float desiredSteer = Mathf.Clamp(desiredYaw / (vehicle.Stats.HandlingRadPerSec * .5f), -1, 1);
             if (localZ < 0) desiredSteer = Mathf.Sign(localX);
+            // At crawling speed the shared yaw authority scales with speed; the
+            // pursuit law then asks for almost no steering and the car creeps out.
+            else if (vehicle.SpeedMps < 14f && faceAngle > 25f && vehicle.IsGrounded)
+                desiredSteer = Mathf.Sign(Vector3.Dot(deltaToTarget, Vector3.Cross(Vector3.up, facing)));
+            // Sliding toward an open edge: a distant pursuit target under-asks for
+            // yaw. Steer back toward the centre at least in proportion to urgency.
+            if (edgeUrgency > .1f && !steeringInDrift)
+                desiredSteer = -edgeSide * Mathf.Max(-edgeSide * desiredSteer, Mathf.Clamp01(edgeUrgency * 1.6f));
             if (steeringInDrift)
             {
                 float authority = Mathf.Lerp(1, 1.3f, Mathf.Clamp01(vehicle.Stats.DriftMultiplier - .5f));
@@ -353,7 +438,10 @@ namespace AnimeHillRacing.Racing3D
                 Steering = steering,
                 Throttle = throttle,
                 Brake = brake,
-                Drift = drift,
+                // Physics fixes DriftDirection from the steering sign on the start
+                // step. Hold the request until steering already points into the
+                // planned corner instead of locking a drift the wrong way.
+                Drift = drift && (vehicle.IsDrifting || driftTurnSign == 0 || steering * driftTurnSign > .22f),
                 Trick = trick,
                 AerialBoost = aerialBoost,
                 Pitch = pitch,
@@ -405,15 +493,17 @@ namespace AnimeHillRacing.Racing3D
         {
             // A hop preserves horizontal velocity: inspect the whole projected flight.
             // This uses the shared hop envelope, never a new force or a different car.
-            for (int i = 1; i <= 3; i++)
+            float startHeight = trackGraph.SampleDistance(trackDistance).Position.y;
+            for (int i = 1; i <= 6; i++)
             {
                 // Include the full shared hop plus bounded aerial-correction
-                // envelope. The old 0.6 s horizon ended before some landings.
+                // envelope. At ~200 km/h over a falling road a hop stays airborne
+                // for 2 s+, so inspect that whole flight and refuse descents.
                 float seconds = i * .35f;
                 var road = trackGraph.SampleDistance(trackDistance + vehicle.SpeedMps * seconds);
                 Vector3 projected = transform.position + vehicle.Body.linearVelocity * seconds;
                 float side = Mathf.Abs(Vector3.Dot(projected - road.Position, road.Right));
-                if (side > road.TrackWidth * .30f || Vector3.Angle(transform.forward, road.Forward) > 12f)
+                if (side > road.TrackWidth * .30f || Vector3.Angle(transform.forward, road.Forward) > 12f || road.Position.y < startHeight - 2.5f)
                     return false;
             }
             return true;
@@ -488,7 +578,11 @@ namespace AnimeHillRacing.Racing3D
             if (CurrentTime < mistakeUntil) natural += mistakeOffset;
             if (profile.style == AiRacingStyle.DriftPrecision) natural *= 1f - .35f * profile.NormalizedSkill;
 
-            racingLineOffset = Mathf.Clamp((racingOffset + lane + natural) * current.TrackWidth * .4f, -current.TrackWidth * .38f, current.TrackWidth * .38f);
+            // Opening phase: twelve cars converging on one racing line was the main
+            // source of lap-1 contacts. Hold the grid column, then blend before the first corner.
+            float opening = raceStartTime >= 0 ? Mathf.InverseLerp(6.5f, 3f, CurrentTime - raceStartTime) : 0;
+            float lineBlend = Mathf.Lerp(racingOffset + lane, gridLane, opening);
+            racingLineOffset = Mathf.Clamp((lineBlend + natural) * current.TrackWidth * .4f, -current.TrackWidth * .38f, current.TrackWidth * .38f);
             target = future.Position + future.Right * racingLineOffset;
             if (NextGateDistance() < 28) target = future.Position + future.Right * racingLineOffset * .35f;
             float gateDistance=NextGateDistance();
@@ -563,16 +657,19 @@ namespace AnimeHillRacing.Racing3D
                         shouldRelease = true;
                 }
 
-                if (shouldRelease || shortcut || angle > 65f || Mathf.Abs(lateralOffset) > current.TrackWidth * .46f)
+                // A corner that reverses direction ends this drift regardless of
+                // the charge being saved for; the stage boost is still released.
+                bool reversed = vehicle.DriftDirection != 0 && Mathf.Sign(turn) != vehicle.DriftDirection && Mathf.Abs(turn) > 8f;
+                if (shouldRelease || reversed || shortcut || angle > 65f || Mathf.Abs(lateralOffset) > current.TrackWidth * .46f)
                     drift = false;
             }
             else if (activeRoute == null && activeDiscoveredRoute == null)
             {
-                drift = intent != "PrepareJumpAndLanding" && rejoinDistance < 0 && profile.driftSkill > .26f &&
+                drift = intent != "PrepareJumpAndLanding" && rejoinDistance < 0 && profile.driftSkill > .26f && edgeUrgency <= 0f &&
                     Mathf.Abs(turn) > Mathf.Lerp(10f, 4.5f, profile.driftSkill) && Mathf.Abs(turn) < 70f &&
                     vehicle.SpeedKmh > 40f &&
                     Mathf.Abs(lateralOffset) < current.TrackWidth * .42f && !vehicle.IsSpunOut;
-                if (drift) driftStarted = CurrentTime;
+                if (drift) { driftStarted = CurrentTime; driftTurnSign = turn > 0 ? 1 : -1; }
             }
 
             if (drift) intent = "DriftToExitBoost";
@@ -831,6 +928,11 @@ namespace AnimeHillRacing.Racing3D
             if (!routeSelected) return;
             int index = Array.IndexOf(trackGraph.Shortcuts, nearby);
             if (index >= 0 && (routeAttemptMask & (1 << index)) != 0) return;
+            // Knowledgeable drivers skip links that are slower than the road.
+            // Calibrated on clean Night City sectors: braking to the setup speed and
+            // the capped rejoin cost ~4-5 s that pure geometry omits (crest +10.1 s
+            // estimated / +1.8 s measured; apex +1.3 s estimated / -3.2 s measured).
+            if (index >= 0 && profile.shortcutKnowledge > .75f && routeValueSeconds != null && routeValueSeconds[index] < RouteOverheadSeconds) return;
             reserveBoost = nearby.requiresBoost;
             float launchSeconds = .4f;
             if (nearby.requiresJump)
@@ -860,6 +962,15 @@ namespace AnimeHillRacing.Racing3D
             }
             if (distance < 35 && resource && NextGateDistance() > distance && Mathf.Abs(lateralOffset) < trackGraph.GetNode(currentNode).TrackWidth * .27f && vehicle.IsGrounded && !vehicle.IsSpunOut)
             {
+                // A launch link is a single 12 m deck: contacts there cost the
+                // launch speed and the landing. Skip it while the deck is crowded.
+                if (nearby.requiresJump && RacersOnRouteStart(nearby) >= 1)
+                {
+                    if (index >= 0) routeAttemptMask |= 1 << index;
+                    LastRouteAbortReason = "Launch deck crowded";
+                    reserveBoost = false;
+                    return;
+                }
                 activeRoute = nearby;
                 routeIndex = index;
                 routeProgressAt = CurrentTime;
@@ -995,6 +1106,31 @@ namespace AnimeHillRacing.Racing3D
             if (activeRoute.requiresJump && routeSegment >= 8 && routeSegment < activeRoute.launchNodeIndex &&
                 (LaunchAngleError(activeRoute) > 5 || Mathf.Abs(vehicle.SlipAngle) > 5))
                 targetSpeed = Mathf.Min(targetSpeed, activeRoute.width < 8 ? 55 : 78);
+        }
+
+        int RacersOnRouteStart(TrackShortcut route)
+        {
+            if (progressTracker == null) return 0;
+            int last = Mathf.Min(route.launchNodeIndex, route.pathPoints.Length - 1), count = 0;
+            var board = progressTracker.Leaderboard;
+            for (int r = 0; r < board.Count; r++)
+            {
+                var other = board[r].Vehicle;
+                if (other == null || other == vehicle || board[r].Finished) continue;
+                Vector3 position = other.transform.position;
+                // Only genuine conflicts on the 12 m deck: a rival alongside, close
+                // ahead, or slower ahead. A spaced car at pace is not a blocker, so
+                // the gate does not reserve the link for whoever leads in clean air.
+                Vector3 delta = position - transform.position;
+                float ahead = Vector3.Dot(delta, transform.forward), side = Mathf.Abs(Vector3.Dot(delta, transform.right));
+                float slower = vehicle.SpeedKmh - other.SpeedKmh;
+                bool onDeck = false;
+                for (int p = 0; p <= last && !onDeck; p += 2)
+                    onDeck = (position - route.pathPoints[p]).sqrMagnitude < route.width * route.width;
+                bool conflict = side < 5f && ahead > -6f && (ahead < 12f || (ahead < 25f && slower > 10f));
+                if (conflict || (onDeck && ahead < 25f && slower > 10f)) count++;
+            }
+            return count;
         }
 
         bool HasBoostItem() => inventory != null && inventory.HasItem && RaceItemUtility.IsShortcutBoost(inventory.HeldItem);

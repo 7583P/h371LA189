@@ -106,6 +106,7 @@ namespace AnimeHillRacing.Racing3D
         public event Action<bool> OnLancerChanged;
         public event Action OnItemRequested;
 
+        const float MaxAngularVelocity = 3.5f;
         private void Awake()
         {
             if (body == null) body = GetComponent<Rigidbody>();
@@ -115,7 +116,7 @@ namespace AnimeHillRacing.Racing3D
             {
                 body.linearDamping = .12f;
                 body.angularDamping = 3f;
-                body.maxAngularVelocity = 3.5f;
+                body.maxAngularVelocity = MaxAngularVelocity;
                 body.maxDepenetrationVelocity = 15f;
                 body.solverIterations = 16;
                 body.solverVelocityIterations = 8;
@@ -175,6 +176,7 @@ namespace AnimeHillRacing.Racing3D
             boostTimer = Mathf.Max(0,boostTimer-dt);
             if(boostTimer == 0) boostSpeedMultiplier = 1f;
             spinoutTimer = Mathf.Max(0,spinoutTimer-dt);
+            if (spinoutTimer <= 0f && body.maxAngularVelocity != MaxAngularVelocity) body.maxAngularVelocity = MaxAngularVelocity;
             jumpCooldownTimer = Mathf.Max(0, jumpCooldownTimer - dt);
             trickCooldownTimer = Mathf.Max(0, trickCooldownTimer - dt);
 
@@ -212,6 +214,9 @@ namespace AnimeHillRacing.Racing3D
                 {
                     // Constant yaw rate to complete exactly 360 degrees
                     float targetSpinSpeed = spinoutDirection * (360f * Mathf.Deg2Rad) / spinActiveTime;
+                    // The ordinary 3.5 rad/s cap clipped this to ~150-200 degrees and left
+                    // every hit car facing backwards. Lift it for the spin only.
+                    body.maxAngularVelocity = Mathf.Max(MaxAngularVelocity, Mathf.Abs(targetSpinSpeed) + .5f);
                     body.angularVelocity = groundNormal * targetSpinSpeed;
 
                     // Controlled planar momentum decay: slide smoothly along track without erratic jerks
@@ -222,6 +227,7 @@ namespace AnimeHillRacing.Racing3D
                 else
                 {
                     // 3. Crisp recovery phase: damp yaw rotation smoothly to zero
+                    body.maxAngularVelocity = MaxAngularVelocity;
                     Vector3 currentYaw = Vector3.Project(body.angularVelocity, groundNormal);
                     body.angularVelocity -= currentYaw * Mathf.Min(1f, dt * 25f);
                 }

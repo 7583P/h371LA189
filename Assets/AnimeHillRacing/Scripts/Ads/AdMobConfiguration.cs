@@ -39,17 +39,22 @@ namespace AnimeHillRacing.Ads
             ? (UseIosIds ? IosTestAppId : AndroidTestAppId)
             : (UseIosIds ? iosAppId : androidAppId);
 
-        public string RewardedAdUnitId => useTestAds
+        public string RewardedAdUnitId => UseSampleAdUnits
             ? (UseIosIds ? IosTestRewardedId : AndroidTestRewardedId)
             : (UseIosIds ? iosRewardedAdUnitId : androidRewardedAdUnitId);
 
-        public string InterstitialAdUnitId => useTestAds
+        public string InterstitialAdUnitId => UseSampleAdUnits
             ? (UseIosIds ? IosTestInterstitialId : AndroidTestInterstitialId)
             : (UseIosIds ? iosInterstitialAdUnitId : androidInterstitialAdUnitId);
 
-        public string BannerAdUnitId => useTestAds
+        public string BannerAdUnitId => UseSampleAdUnits
             ? (UseIosIds ? IosTestAdaptiveBannerId : AndroidTestAdaptiveBannerId)
             : (UseIosIds ? iosBannerAdUnitId : androidBannerAdUnitId);
+
+        // Development players (QA/Human Gate) always request Google's sample ad
+        // units, even with the production app ID, so testers never load or click
+        // live ads. Release players use the production units when useTestAds is off.
+        public bool UseSampleAdUnits => useTestAds || Debug.isDebugBuild;
 
         public string AndroidAppId => useTestAds ? AndroidTestAppId : androidAppId;
         public string IosAppId => useTestAds ? IosTestAppId : iosAppId;

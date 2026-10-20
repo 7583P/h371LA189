@@ -21,6 +21,13 @@ namespace AnimeHillRacing.Racing3D
         public int Activations { get; private set; }
         public int Releases { get; private set; }
         public int Reuses { get; private set; }
+        public int GoldenRockLaunches { get; private set; }
+        public int GoldenRockImpacts { get; private set; }
+        public int GoldenRockShieldBlocks { get; private set; }
+        public int GoldenRockWorldBlocks { get; private set; }
+        public void RecordGoldenContact(bool shielded)
+        { GoldenRockImpacts++; if (shielded) GoldenRockShieldBlocks++; }
+        public void RecordGoldenWorldBlock() { GoldenRockWorldBlocks++; }
         public RacingPoolCounters MissileCounters { get; } = new RacingPoolCounters();
         public RacingPoolCounters TrapCounters { get; } = new RacingPoolCounters();
         public static RacingItemPool ForScene()
@@ -59,7 +66,7 @@ namespace AnimeHillRacing.Racing3D
         }
         public ProjectileItemEntity Fire(RacingVehiclePhysics owner,Vector3 position,Quaternion rotation,RaceItemType type = RaceItemType.KineticMissile)
         {
-            foreach(var missile in missiles) if(!missile.gameObject.activeSelf) { Activate(missile,owner,position,rotation); missile.ConfigureItem(type); return missile; }
+            foreach(var missile in missiles) if(!missile.gameObject.activeSelf) { Activate(missile,owner,position,rotation); missile.ConfigureItem(type); if(type==RaceItemType.GoldenRock)GoldenRockLaunches++; return missile; }
             DroppedRequests++; return null;
         }
         public void Drop(RacingVehiclePhysics owner,Vector3 position,Quaternion rotation)

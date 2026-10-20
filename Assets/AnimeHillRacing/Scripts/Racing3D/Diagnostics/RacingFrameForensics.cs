@@ -36,19 +36,21 @@ namespace AnimeHillRacing.Racing3D
             "Racing.Combo.Capture", "GC.Collect", "GarbageCollectIncremental", "GC Allocated In Frame",
             "PlayerLoop.PostLateUpdate.ProfilerSynchronizeStats", "PostLateUpdate.ProfilerSynchronizeStats",
             "Racing.Forensics.Sample", "PostLateUpdate.BatchModeUpdate", "PostLateUpdate.ProfilerEndFrame", "Racing.Metrics.FrameTiming",
-            "Racing.Vehicle.Step", "Racing.Shortcut.Zone", "Racing.Items.Tick", "Racing.Lancer.Visual", "Racing.Navigation.Project", "Racing.League.Save"
+            "Racing.Vehicle.Step", "Racing.Shortcut.Zone", "Racing.Items.Tick", "Racing.Lancer.Visual", "Racing.Navigation.Project", "Racing.League.Save", "Racing.Diagnostics.TraceIO"
         };
         [Serializable] sealed class CounterInfo { public string name, unit; public bool available, mainThreadOnly; }
         [Serializable] struct PowerPoint { public double seconds; public int acLineStatus, batteryPercent, energySaver, frameRateLimit, vSyncCount, renderInterval; }
         [Serializable] sealed class Proof
         {
             public string classification = "QA_FRAME_FORENSICS_NOT_ELITE_GATE", variant, renderMode;
-            public string instrumentationVersion = "FRAME_FORENSICS_06_FOCUS_AND_VEHICLE_SCOPES";
+            public string instrumentationVersion = "FRAME_FORENSICS_07_TRACE_IO_SEPARATED";
             public bool focusAtGoRequested, focusAtGoSucceeded;
             public double focusCallMs;
             public int seed, mmr, frames, droppedFrames, mainThreadId, jobWorkers, logicalProcessors;
             public bool nativeCpuTimesAvailable, bufferedDuringRace = true;
             public bool profilerCaptureOverhead;
+            public int synchronousDiagnosticTraceWrites;
+            public double synchronousDiagnosticTraceWriteMs;
             public double seconds, samplingCpuMs, peakWorkingSetBytes, privateBytes;
             public long raceStartQpc, qpcFrequency;
             public bool powerStatusAvailable;
@@ -225,8 +227,14 @@ namespace AnimeHillRacing.Racing3D
         {
             if (captureProfile) { UnityEngine.Profiling.Profiler.enabled = false; UnityEngine.Profiling.Profiler.enableBinaryLog = false; }
             active = false; if (samples == null) return;
-            proof.frames = count; proof.seconds = (System.Diagnostics.Stopwatch.GetTimestamp() - startWall) / (double)System.Diagnostics.Stopwatch.Frequency;
+            // Freeze the sampled interval. Export/JSON serialization after the
+            // race must not lengthen the reported gameplay measurement.
+            proof.frames = count; proof.seconds = (lastWall - startWall) / (double)System.Diagnostics.Stopwatch.Frequency;
             ReadMemory();
+            var closure=FindFirstObjectByType<RacingClosureProbe>();
+            proof.synchronousDiagnosticTraceWrites=closure!=null?closure.SynchronousTraceWrites:0;
+            proof.synchronousDiagnosticTraceWriteMs=closure!=null?closure.SynchronousTraceWriteMs:0;
+            proof.bufferedDuringRace=proof.synchronousDiagnosticTraceWrites==0;
             using (var writer = new StreamWriter(Path.Combine(directory, "frame-forensics.csv")))
             {
                 writer.Write("frame,unity_ms,wall_ms,main_cpu_ms,process_cpu_ms,fixed_steps,race_seconds,gc_collections,focused,ml_ticks");

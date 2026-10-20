@@ -53,7 +53,8 @@ namespace AnimeHillRacing.Racing3D
             scroll.content=content;scroll.onValueChanged.AddListener(_=>RefreshRows());
             // Fourteen reusable rows cover the viewport plus overscan at the 1600x900 reference size.
             for(int i=0;i<14;i++)CreateRow();
-            RacingDesign.Label(root,"YOUR COMPLETE COMBO. Select a racer for details.",RacingType.Caption,.05f,.075f,.70f,.04f,RacingDesign.Muted);
+            RacingDesign.Label(root,"LOCAL OFFLINE COMMUNITY",RacingType.Caption,.05f,.075f,.35f,.04f,RacingDesign.Muted);
+            RacingDesign.Button(root,"HISTORY",.49f,.065f,.24f,.06f,()=>RacingHistoryUI.Open());
             RacingDesign.Button(root,"MY PROFILE",.77f,.065f,.18f,.06f,()=>RacingProfileUI.Open());
             RefreshStandings();
         }
@@ -80,8 +81,9 @@ namespace AnimeHillRacing.Racing3D
             var engine=RacingProgressionService.Engine;engine.RefreshHumanIndex();
             pageCount=Mathf.Min(PageSize,EntityCount-pageStart);content.sizeDelta=new Vector2(0,pageCount*RowHeight);
             observedRevision=RacingProgressionService.Revision;lastFirst=-1;
-            int humanPosition=engine.Rank("player_human")+1;
-            status.text=$"SEASON {engine.State.currentSeasonNumber} / YOU #{humanPosition:N0} / {EntityCount:N0} RACERS / {pageStart+1:N0}–{pageStart+pageCount:N0}";
+            int humanPosition=engine.Rank("player_human")+1;var you=engine.State.human;
+            string standing=SeasonQualification.IsOfficial(you,engine.State.currentSeasonNumber)?$"YOU #{humanPosition:N0}":"YOU "+SeasonQualification.DisplayRank(you,engine.State.currentSeasonNumber);
+            status.text=$"{GlobalSeasonCalendar.Label(engine.State.currentSeasonNumber)} / {standing} / {engine.RankedCount():N0} RANKED OF {EntityCount:N0} / {pageStart+1:N0}–{pageStart+pageCount:N0}";
             RefreshRows();
         }
         void RefreshRows()
@@ -95,16 +97,19 @@ namespace AnimeHillRacing.Racing3D
                 int position=pageStart+index+1;var competitor=engine.View(engine.Index.AtRank(position-1));row.competitor=competitor;row.positionNumber=position;
                 row.area.anchoredPosition=new Vector2(0,-index*RowHeight);
                 row.area.GetComponent<Image>().color=competitor==RacingProgressionService.State.human?RacingDesign.Highlight:(index%2==0?RacingDesign.Surface:RacingDesign.Background);
-                row.position.text=position.ToString("N0");row.name.text=competitor.displayName+(competitor==RacingProgressionService.State.human?" / YOU":"");
-                row.rating.text=competitor.currentMmr.ToString("N0");row.rank.text=MmrTierUtility.GetDisplayName(competitor.currentMmr);row.rank.color=RacingDesign.TierColor(competitor.currentMmr);
-                row.peak.text=competitor.seasonPeakMmr.ToString("N0");row.badge.Configure(competitor.currentMmr);
+                bool ranked=competitor.Ranked;
+                bool official=SeasonQualification.IsOfficial(competitor,engine.State.currentSeasonNumber);
+                row.position.text=official?position.ToString("N0"):"—";row.name.text=competitor.displayName+(competitor==RacingProgressionService.State.human?" / YOU":"");
+                // CPPS: no visible rating or rank before Placement 3/3.
+                row.rating.text=ranked?competitor.currentMmr.ToString("N0"):MmrTierUtility.UnrankedName;row.rank.text=SeasonQualification.DisplayRank(competitor,engine.State.currentSeasonNumber);row.rank.color=official?RacingDesign.TierColor(competitor.currentMmr):RacingDesign.Muted;
+                row.peak.text=ranked?competitor.seasonPeakMmr.ToString("N0"):"—";row.badge.Configure(competitor.currentMmr);row.badge.gameObject.SetActive(official);
                 row.combo.Configure(competitor);
                 int moved=competitor.lastLeaderboardPosition<=0?0:competitor.lastLeaderboardPosition-position;
                 row.movement.text=moved>0?"↑"+moved:moved<0?"↓"+(-moved):"—";row.movement.color=moved>0?RacingDesign.Success:moved<0?RacingDesign.Danger:RacingDesign.Muted;
-                row.titleView.Configure(row.title,competitor.selectedTitleId,RacingProgressionService.State.currentSeasonNumber,competitor.seasonPeakMmr);
+                row.titleView.Configure(row.title,competitor.selectedTitleId,RacingProgressionService.State.currentSeasonNumber,competitor.seasonPeakMmr,official?position:0);
             }
         }
-        void Remember(Row row){if(row.competitor!=null)RacingProgressionService.RememberLeaderboardPosition(row.competitor.id,row.positionNumber);}
+        void Remember(Row row){if(row.competitor!=null&&SeasonQualification.IsOfficial(row.competitor,RacingProgressionService.State.currentSeasonNumber))RacingProgressionService.RememberLeaderboardPosition(row.competitor.id,row.positionNumber);}
         void GoTo(int rank) {
             pageStart=Mathf.Clamp(rank,0,Mathf.Max(0,EntityCount-1));content.anchoredPosition=Vector2.zero;
             lastFirst=-1;RefreshStandings();scroll.verticalNormalizedPosition=1;

@@ -9,7 +9,7 @@ namespace AnimeHillRacing.Racing3D
     public sealed class RacingHUD:MonoBehaviour
     {
         [SerializeField] RaceManager raceManager;
-        RectTransform root;Text positionText,lapText,speedText,timerText,countdownText,itemText,driftText,bannerText;RacingEmblem itemIcon;Image chargeFill;
+        RectTransform root;Text competitiveChip,positionText,lapText,speedText,timerText,countdownText,itemText,driftText,bannerText;RacingEmblem itemIcon;Image chargeFill,speedFill;RacingPanelGraphic positionRim;
         GameObject lobby,controls,banner,pause,rearIndicator;Text walletText;PlayerRacingInput input;RacingVehiclePhysics vehicle;ItemInventory inventory;RacerProgress progress;
         float nextRefresh,countdownAge,bannerUntil,positionPulse;int lastPosition=12,lastCount=-1;bool paused;
         public RacingRaceMap Map{get;private set;}
@@ -19,8 +19,11 @@ namespace AnimeHillRacing.Racing3D
             root=RacingDesign.Canvas("Racing HUD",30);
             var pos=RacingDesign.Panel(root,"Position",.04f,.77f,.13f,.18f,RacingDesign.Surface);positionText=RacingDesign.Label(pos.transform,"12TH",RacingType.Position,.08f,.08f,.80f,.80f,RacingDesign.Ink);
             RacingDesign.Label(pos.transform,"/ 12",RacingType.Caption,.73f,.025f,.23f,.18f,RacingDesign.Muted,TextAnchor.MiddleRight);
+            positionRim=RacingDesign.Panel(pos.transform,"Position accent rim",0,0,1,.035f,RacingDesign.Cyan,0);
             lapText=RacingDesign.Label(root,"LAP 1 / 3",RacingType.Section,.19f,.88f,.24f,.06f,RacingDesign.Ink);
             timerText=RacingDesign.Label(root,"00:00.000",RacingType.Timer,.19f,.81f,.25f,.05f,RacingDesign.Muted);
+            // Competitive chip: visible standing only (CPPS hides MMR during Placement).
+            competitiveChip=RacingDesign.Label(root,"",RacingType.Caption,.19f,.775f,.25f,.035f,RacingDesign.Muted);
             var slot=RacingDesign.Button(root,"",.83f,.75f,.12f,.20f,()=>input?.TriggerTouchItem(),RacingDesign.Surface);
             itemIcon=RacingDesign.Area(slot.transform,"Item silhouette",.18f,.28f,.64f,.60f).gameObject.AddComponent<RacingEmblem>();itemIcon.color=RacingDesign.Cyan;itemIcon.raycastTarget=false;
             itemText=RacingDesign.Label(slot.transform,"EMPTY",RacingType.Caption,.05f,.06f,.90f,.2f,RacingDesign.Muted,TextAnchor.MiddleCenter);
@@ -34,6 +37,8 @@ namespace AnimeHillRacing.Racing3D
             RacingDesign.Label(root,"RMB / R3 — REAR VIEW",RacingType.Caption,.34f,.018f,.32f,.028f,RacingDesign.Muted,TextAnchor.MiddleCenter);
             var speed=RacingDesign.Panel(root,"Speed",.83f,.08f,.12f,.13f,RacingDesign.Surface);speedText=RacingDesign.Label(speed.transform,"0",RacingType.Mmr,.10f,.20f,.63f,.70f,RacingDesign.Ink);
             RacingDesign.Label(speed.transform,"KM/H",RacingType.Caption,.62f,.15f,.32f,.25f,RacingDesign.Muted);
+            var speedTrack=RacingDesign.Area(speed.transform,"Speed track",.08f,.06f,.84f,.06f).gameObject.AddComponent<Image>();speedTrack.color=new Color(.05f,.13f,.18f,.7f);speedTrack.raycastTarget=false;
+            speedFill=RacingDesign.Area(speedTrack.transform,"Speed fill",0,0,0,1).gameObject.AddComponent<Image>();speedFill.color=RacingDesign.Cyan;speedFill.raycastTarget=false;
             var charge=RacingDesign.Area(root,"Drift charge",.34f,.06f,.32f,.018f).gameObject.AddComponent<Image>();charge.color=new Color(.05f,.13f,.18f,.6f);
             chargeFill=RacingDesign.Area(charge.transform,"Charge",0,0,0,1).gameObject.AddComponent<Image>();chargeFill.color=RacingDesign.Cyan;
             foreach(float tick in new[]{RacingDriftFeedback.GreenCharge,RacingDriftFeedback.CyanCharge})
@@ -59,6 +64,9 @@ namespace AnimeHillRacing.Racing3D
             if(vehicle!=null||raceManager.PlayerVehicle==null)return;
             vehicle=raceManager.PlayerVehicle;input=vehicle.GetComponent<PlayerRacingInput>();inventory=vehicle.GetComponent<ItemInventory>();progress=raceManager.ProgressTracker.GetPlayerProgress();
             raceManager.ProgressTracker.OnRacerLapCompleted+=Lap;Map.Bind(raceManager.ProgressTracker);
+            var you=RacingProgressionService.State.human;bool rated=raceManager.PersistResults&&!string.IsNullOrEmpty(raceManager.RankedRaceId);
+            competitiveChip.text=rated?(you.Ranked?you.currentMmr.ToString("N0")+" MMR · "+SeasonQualification.DisplayRank(you,RacingProgressionService.State.currentSeasonNumber):MmrTierUtility.PlacementLabel(you.placementGames)):"UNRATED";
+            competitiveChip.color=!rated?RacingDesign.Muted:you.Ranked?RacingDesign.TierColor(you.currentMmr):RacingDesign.Accent;
             vehicle.OnTrick += HandleTrick;
             vehicle.OnLandingBoost += HandleLandingBoost;
             vehicle.OnJump += HandleJump;
@@ -104,10 +112,14 @@ namespace AnimeHillRacing.Racing3D
             bool rearActive=input!=null&&input.LookBack&&vehicle.RaceEnabled&&!paused;
             if(rearIndicator.activeSelf!=rearActive)rearIndicator.SetActive(rearActive);
             float pulse=Mathf.Clamp01((positionPulse-Time.unscaledTime)*4);positionText.rectTransform.localScale=Vector3.one*(1+pulse*.08f);
+            // Speed bar: cyan cruise -> violet boost -> Lancer orange at 300 km/h.
+            float speedRatio=Mathf.Clamp01(vehicle.SpeedKmh/RaceItemUtility.LancerSpeedKmh);speedFill.rectTransform.anchorMax=new Vector2(speedRatio,1);speedFill.rectTransform.offsetMax=Vector2.zero;
+            speedFill.color=vehicle.IsLancerActive?RaceItemUtility.ColorFor(RaceItemType.Lancer):vehicle.IsBoosting?RacingDesign.Accent:RacingDesign.Cyan;
             chargeFill.rectTransform.anchorMax=new Vector2(vehicle.DriftCharge,1);chargeFill.rectTransform.offsetMax=Vector2.zero;
             if(Time.unscaledTime<nextRefresh)return;nextRefresh=Time.unscaledTime+.12f;
             int place=progress.RacePosition;positionText.text=Ordinal(place);positionText.color=place<lastPosition?RacingDesign.Success:place<=3?RacingDesign.Gold:RacingDesign.Ink;
             if(place!=lastPosition){positionPulse=Time.unscaledTime+.28f;if(place<lastPosition)RacingFeedback.Play(RacingCue.PositionUp);lastPosition=place;}
+            positionRim.color=place==1?RacingDesign.Gold:place<=3?RacingDesign.Cyan:place<=8?RacingDesign.Accent:RacingDesign.Secondary;
             lapText.text=$"LAP {Mathf.Min(progress.CurrentLap,raceManager.Rules.TotalLaps)} / {raceManager.Rules.TotalLaps}";timerText.text=RacerResultEntry.FormatTime(raceManager.RaceElapsed);speedText.text=Mathf.RoundToInt(vehicle.SpeedKmh).ToString();
             var stage=vehicle.CurrentMiniTurboStage;Color color=RacingDriftFeedback.ColorForStage(stage);chargeFill.color=color;driftText.color=color;
             driftText.text=vehicle.IsLancerActive?$"LANCER / {vehicle.EffectiveLancerTargetKmh:0} KM/H / {vehicle.LancerRemainingSeconds:0.0}S":vehicle.IsMiniHopping?"MINI HOP / HOLD TO DRIFT":vehicle.IsDrifting?RacingDriftFeedback.ChargeLabel(stage):vehicle.IsBoosting?"TURBO ACTIVE":"SHIFT: HOP / HOLD DRIFT     J / A: JUMP";
@@ -138,7 +150,8 @@ namespace AnimeHillRacing.Racing3D
         {
             var panel=RacingDesign.Panel(root,"Grid assembly",.12f,.18f,.76f,.63f,RacingDesign.Surface);lobby=panel.gameObject;
             RacingDesign.Label(panel.transform,"ASSEMBLING THE GRID",RacingType.Title,.06f,.78f,.88f,.16f,RacingDesign.Ink,TextAnchor.MiddleCenter);
-            RacingDesign.Label(panel.transform,"RANKED / OFFLINE OPPONENTS / "+RacingTrackSelection.ShortName,RacingType.Caption,.05f,.70f,.90f,.07f,RacingDesign.Cyan,TextAnchor.MiddleCenter);
+            var human=RacingProgressionService.State.human;
+            RacingDesign.Label(panel.transform,(human.Ranked?"RANKED":MmrTierUtility.PlacementLabel(human.placementGames))+" / "+GlobalSeasonCalendar.Label(RacingProgressionService.State.currentSeasonNumber)+" / "+RacingTrackSelection.ShortName,RacingType.Caption,.05f,.70f,.90f,.07f,RacingDesign.Cyan,TextAnchor.MiddleCenter);
             for(int i=0;i<12;i++) {
                 float x=.04f+(i%3)*.315f,y=.53f-(i/3)*.13f;
                 lobbyBadges[i]=RacingDesign.RankBadge(panel.transform,0,x,y,.055f,.095f);
@@ -152,11 +165,15 @@ namespace AnimeHillRacing.Racing3D
             if(raceManager.LobbyRacers==null || lastLobbyReveal==raceManager.LobbyRevealCount)return;
             lastLobbyReveal=raceManager.LobbyRevealCount;
             for(int i=0;i<12;i++) {
-                bool shown=i<lastLobbyReveal;lobbyBadges[i].gameObject.SetActive(shown);
+                bool shown=i<lastLobbyReveal;var identity=shown?raceManager.LobbyRacers[i]:null;
                 if(!shown){lobbyNames[i].text=lobbyTitles[i].text="";continue;}
-                var identity=raceManager.LobbyRacers[i];lobbyBadges[i].Configure(identity.mmr);
-                lobbyNames[i].text=$"{identity.displayName} / {identity.mmr:N0}\n{MmrTierUtility.GetDisplayName(identity.mmr)}";
-                lobbyTitleViews[i].Configure(lobbyTitles[i],identity.titleId,RacingProgressionService.State.currentSeasonNumber,identity.mmr);
+                var persistent=RacingProgressionService.Find(identity.racerId);
+                bool official=persistent!=null&&SeasonQualification.IsOfficial(persistent,RacingProgressionService.State.currentSeasonNumber);
+                lobbyBadges[i].gameObject.SetActive(official);
+                lobbyBadges[i].Configure(identity.DisplayMmr);
+                string rank=persistent!=null?SeasonQualification.DisplayRank(persistent,RacingProgressionService.State.currentSeasonNumber):MmrTierUtility.GetDisplayName(identity.DisplayMmr,identity.ranked);
+                lobbyNames[i].text=identity.ranked?$"{identity.displayName} / {identity.DisplayMmr:N0}\n{rank}":$"{identity.displayName} / {MmrTierUtility.UnrankedName}\n{MmrTierUtility.PlacementLabel(identity.placementGames)}";
+                lobbyTitleViews[i].Configure(lobbyTitles[i],identity.titleId,RacingProgressionService.State.currentSeasonNumber,identity.DisplayMmr,official?RacingProgressionService.Engine.OfficialPosition(identity.racerId):0);
             }
         }
 

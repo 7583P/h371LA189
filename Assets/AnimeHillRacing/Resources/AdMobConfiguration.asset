@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 39a3c29ce1b144119e0435b20f447d92, type: 3}
   m_Name: AdMobConfiguration
   m_EditorClassIdentifier: 
-  useTestAds: 1
+  useTestAds: 0
   androidAppId: ca-app-pub-1413480107943515~1999622115
   androidRewardedAdUnitId: ca-app-pub-1413480107943515/5088819883
   androidInterstitialAdUnitId: ca-app-pub-1413480107943515/2881564142

@@ -4,14 +4,6 @@ using AnimeHillRacing.Racing3D;
 
 namespace AnimeHillRacing.Racing3D.ML
 {
-    public enum MlExecutionMode
-    {
-        Off = 0,
-        Shadow = 1,  // Heuristic controls car, ML predicts in parallel & logs deltas
-        Assist = 2,
-        Authority = 3
-    }
-
     /// <summary>
     /// Staggered low-frequency ML inference adapter for Racing 3D.
     /// Operates at 10 Hz by default. Shadow proposals never replace commands.
@@ -26,8 +18,9 @@ namespace AnimeHillRacing.Racing3D.ML
         [Range(5f, 20f)]
         public float inferenceFrequency = 10f; // 10 Hz
         public int mmr = 7500;
-        public MlExecutionMode EffectiveMode => executionMode==MlExecutionMode.Off?MlExecutionMode.Off:MlExecutionMode.Shadow;
-        public string AuthorityGate => executionMode>MlExecutionMode.Shadow?"Promotion gates pending: heuristic retains control":"Shadow proposals only";
+        MlExecutionMode? qaModeOverride;
+        public MlExecutionMode EffectiveMode => RacingMlExecutionPolicy.Effective(executionMode,qaModeOverride);
+        public string AuthorityGate => (qaModeOverride??executionMode)>MlExecutionMode.Shadow?"Promotion gates pending: heuristic retains control":"Shadow proposals only";
         public string ModelVersion => NativeNeuralEvaluator.ModelVersion;
         public bool ModelAvailable => NativeNeuralEvaluator.IsLoaded;
 
@@ -89,11 +82,7 @@ namespace AnimeHillRacing.Racing3D.ML
 
         private void Awake()
         {
-            if(Debug.isDebugBuild&&Application.companyName=="HillAdventurer.BlacklineQA")
-            {
-                string[] args=Environment.GetCommandLineArgs();int index=Array.IndexOf(args,"--racing-ml-mode");
-                if(index>=0&&index+1<args.Length&&Enum.TryParse(args[index+1],true,out MlExecutionMode requested))executionMode=requested;
-            }
+            qaModeOverride=RacingMlExecutionPolicy.QaOverride(Debug.isDebugBuild,Application.companyName,Environment.GetCommandLineArgs());
             heuristicAi = GetComponent<AiVehicleController>();
             physics = GetComponent<RacingVehiclePhysics>();
             progressTracker = GetComponent<TrackProgressTracker>() ?? FindFirstObjectByType<TrackProgressTracker>();

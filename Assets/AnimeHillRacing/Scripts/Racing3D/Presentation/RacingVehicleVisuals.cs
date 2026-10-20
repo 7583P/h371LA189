@@ -228,6 +228,40 @@ namespace AnimeHillRacing.Racing3D
         public bool BrakeLightsOn {get;private set;}
         public int BrakeLightTransitions {get;private set;}
 
+        const string BrakeLightMaterial="Racing / brake light";
+        static readonly Color BrakeRed=new Color(1f,.06f,.10f);
+
+        // Premium light set from the actual body bounds: headlight pods with a
+        // DRL accent and a tinted side-skirt underglow. Emissive geometry only;
+        // no Light components, transparency or per-frame work.
+        static void AddLightSet(Transform model,Color paint,bool isHuman,bool bike,bool hasBrakeRibbon)
+        {
+            var filters=model.GetComponentsInChildren<MeshFilter>();if(filters.Length==0)return;
+            bool any=false;Bounds b=default;var seat=model.Find("DriverSeat");
+            foreach(var f in filters){
+                if(f.sharedMesh==null||(seat!=null&&f.transform.IsChildOf(seat)))continue;
+                var m=model.worldToLocalMatrix*f.transform.localToWorldMatrix;var mb=f.sharedMesh.bounds;
+                for(int c=0;c<8;c++){var p=m.MultiplyPoint3x4(mb.center+Vector3.Scale(mb.extents,new Vector3((c&1)*2-1,((c>>1)&1)*2-1,((c>>2)&1)*2-1)));if(!any){b=new Bounds(p,Vector3.zero);any=true;}else b.Encapsulate(p);}
+            }
+            if(!any)return;
+            var head=RacingArt.IdentityMaterial("Racing / headlight",new Color(.88f,.96f,1f),1.35f);
+            Color.RGBToHSV(paint,out float hue,out float saturation,out _);
+            Color glow=isHuman?RacingDesign.Cyan:Color.HSVToRGB(hue,Mathf.Max(.55f,saturation),1f);
+            var under=RacingArt.IdentityMaterial("Racing / underglow "+ColorUtility.ToHtmlStringRGB(glow),glow,.85f);
+            float lampY=b.min.y+b.size.y*.32f,front=b.max.z+.004f;
+            if(bike)RacingArt.Box(model,"Headlight pod",new Vector3(0,lampY+.08f,front),new Vector3(.16f,.07f,.03f),head,.015f);
+            else for(int s=-1;s<=1;s+=2){
+                RacingArt.Box(model,"Headlight pod",new Vector3(s*b.extents.x*.62f,lampY,front),new Vector3(b.extents.x*.30f,.065f,.03f),head,.015f);
+                RacingArt.Box(model,"DRL accent",new Vector3(s*b.extents.x*.62f,lampY-.055f,front-.004f),new Vector3(b.extents.x*.34f,.014f,.02f),head,.004f);
+            }
+            if(bike)return;
+            for(int s=-1;s<=1;s+=2)
+                RacingArt.Box(model,"Underglow skirt",new Vector3(s*(b.extents.x-.04f),b.min.y+.035f,b.center.z),new Vector3(.035f,.025f,b.size.z*.62f),under,.006f);
+            if(hasBrakeRibbon)return;
+            var rear=RacingArt.IdentityMaterial(BrakeLightMaterial,BrakeRed,.95f);
+            RacingArt.Box(model,"Rear light bar",new Vector3(0,lampY+.02f,b.min.z-.004f),new Vector3(b.size.x*.55f,.022f,.02f),rear,.005f);
+        }
+
         public static RacingVehicleVisuals Build(GameObject root,string id,string wheelId,Color paint,bool preview=false,bool isHuman=false)
         {
             var visual=root.AddComponent<RacingVehicleVisuals>();visual.vehicle=root.GetComponent<RacingVehiclePhysics>();
@@ -345,19 +379,17 @@ namespace AnimeHillRacing.Racing3D
             if(!formula)for(int s=-1;s<=1;s+=2)
             {
                 RacingArt.Box(model.transform,"Front running light",new Vector3(s*width*.34f,.2f,1.646f),new Vector3(width*.22f,.085f,.04f),accent);
-                RacingArt.Box(model.transform,"Tail lamp",new Vector3(s*width*.34f,.15f,-1.645f),new Vector3(width*.23f,.06f,.025f),RacingArt.Material(RacingDesign.Secondary,.6f,true));
+                RacingArt.Box(model.transform,"Tail lamp",new Vector3(s*width*.34f,.15f,-1.645f),new Vector3(width*.23f,.06f,.025f),RacingArt.IdentityMaterial(BrakeLightMaterial,BrakeRed,.95f));
                 RacingArt.Box(model.transform,"Side rail",new Vector3(s*width*.51f,.05f,0),new Vector3(.07f,.16f,1.65f),dark);
                 RacingArt.Box(model.transform,"Exhaust",new Vector3(s*.4f,-.025f,-1.62f),new Vector3(.15f,.16f,.3f),dark);
             }
+            AddLightSet(model.transform,formula?RacingDesign.Cyan:bodyColor,isHuman,bike,formula);
             RacingArt.Combine(model.transform);
-            if(formula)
-            {
-                // Update only this car's combined rear lamps; the cached material
-                // remains shared by every DAPEX and the garage preview.
-                foreach(var renderer in model.GetComponentsInChildren<MeshRenderer>())
-                    if(renderer.enabled&&renderer.sharedMaterial.name=="DAPEX / rear brake ribbon")
-                    {visual.brakeRenderer=renderer;visual.brakeProperties=new MaterialPropertyBlock();break;}
-            }
+            // Update only this car's combined rear lamps; the cached material
+            // remains shared by every car and the garage preview.
+            foreach(var renderer in model.GetComponentsInChildren<MeshRenderer>())
+                if(renderer.enabled&&(renderer.sharedMaterial.name=="DAPEX / rear brake ribbon"||renderer.sharedMaterial.name==BrakeLightMaterial))
+                {visual.brakeRenderer=renderer;visual.brakeProperties=new MaterialPropertyBlock();break;}
 
             // Whity and legacy wheels share the same collision envelope and suspension animation.
             visual.Wheels=new Transform[4];
@@ -366,7 +398,12 @@ namespace AnimeHillRacing.Racing3D
             bool luxury=wheelId=="wheel-luxury-black"||wheelId=="wheel-plasma"||wheelId=="wheel-meta-cyan";
             var tyre=RacingArt.Material(new Color(.018f,.022f,.027f),.16f);
             var rim=RacingArt.Material(luxury?new Color(.04f,.05f,.065f):wheelId=="wheel-carbon"?RacingDesign.Platinum:bodyColor,.80f);
-            var lip=RacingArt.Material(new Color(.18f,.22f,.27f),.85f);
+            // Preserve wheel meshes/dimensions and the existing material count.
+            // A saturated, restrained plasma lip stays legible against the black
+            // forged rim instead of washing the complete wheel into pale cyan.
+            var lip=wheelId=="wheel-plasma"||wheelId=="wheel-meta-cyan"
+                ?RacingArt.IdentityMaterial("Racing / saturated plasma rim lip",new Color(.035f,.55f,.72f),.28f)
+                :RacingArt.Material(new Color(.18f,.22f,.27f),.85f);
 
             for(int i=0;i<4;i++)
             {

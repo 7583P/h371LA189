@@ -40,6 +40,8 @@ namespace AnimeHillRacing.Racing3D
         public bool SafeHasCrossedStart;
         public int SafeNearestNode;
         public bool HasSafeState;
+        public float LastProgressTime = -1;
+        public int RejectedProgressJumps;
 
         public void SnapshotSafeState(Vector3 pos, Quaternion rot, int node, float distAlongTrack, float totalDist)
         {
@@ -315,6 +317,19 @@ namespace AnimeHillRacing.Racing3D
                         {
                             proposedTotalDist = r.TotalDistance;
                         }
+                        // A forward snap is equally erratic: both distances only ratchet up,
+                        // so one projection onto a nearby later section froze all later
+                        // progress and the respawn anchor until the car caught up with it.
+                        // Links advance main-road distance faster than the car moves.
+                        float elapsed = r.LastProgressTime >= 0 ? Mathf.Clamp(raceTime - r.LastProgressTime, 0f, 1f) : 1f;
+                        float reachable = r.Vehicle.SpeedMps * elapsed * (onShortcut ? 2.5f : 1.25f) + 40f;
+                        if (r.HasSafeState && proposedTotalDist > r.TotalDistance + reachable)
+                        {
+                            proposedTotalDist = r.TotalDistance;
+                            r.RejectedProgressJumps++;
+                            isSafeOnRoad = false;
+                        }
+                        r.LastProgressTime = raceTime;
 
                         r.DistanceAlongTrack = distAlongTrack;
                         r.TotalDistance = Mathf.Max(r.TotalDistance, proposedTotalDist);

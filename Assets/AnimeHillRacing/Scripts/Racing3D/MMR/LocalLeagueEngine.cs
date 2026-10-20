@@ -3,21 +3,27 @@ using System.Collections.Generic;
 
 namespace AnimeHillRacing.Racing3D
 {
-    // compact-v3: only visible profiles and eleven selected opponents become rich views.
+    public sealed class MatchmakingDiagnostics
+    {
+        public int availableBots, candidatePool, window, searchSeconds;
+        public int onlineBots, queuedBots, inMatchBots, cooldownBots, offlineBots;
+        public bool widened, relaxedCooldown;
+    }
+
+    // compact-v4: only visible profiles and eleven selected opponents become rich views.
     public sealed class LocalLeagueEngine
     {
         public const int BotCount=10000;
+        public const string InauguralMigrationId="CPPS-INAUGURAL-1";
         public LocalLeagueState State {get;}
         public LocalLeagueConfiguration Configuration {get;}
         public LeagueRankIndex Index {get;}
+        public LeagueSimulator Simulator {get;}
         public int Population=>State.bots.Length;
-        public int EventsPerHour=>Math.Max(1,(int)Math.Min(int.MaxValue,(long)Configuration.eventsPerHour*Population/1000));
-        public long GainCount {get;private set;}
-        public long LossCount {get;private set;}
-        readonly int[] match=new int[12],mmrs=new int[12],positions=new int[12],deltas=new int[12],candidates=new int[512];
-        readonly float[] uncertainty=new float[12];
-        readonly double[] performance=new double[12],rawDelta=new double[12],candidateWeights=new double[512];
+        public MatchmakingDiagnostics LastMatchmaking {get;private set;}=new MatchmakingDiagnostics();
         readonly Dictionary<int,string> aliases=new Dictionary<int,string>();
+        readonly int[] candidates;
+        readonly double[] candidateWeights;
         static readonly byte[] AlternativeVehicles={2,3,4,6},AlternativeWheels={1,2,3,4};
 
         public LocalLeagueEngine(LocalLeagueState state,LocalLeagueConfiguration config=null)
@@ -25,99 +31,78 @@ namespace AnimeHillRacing.Racing3D
             State=state??throw new ArgumentNullException(nameof(state));Configuration=config??new LocalLeagueConfiguration();
             if(state.bots==null || state.bots.Length<12 || state.bots.Length>1000000 || state.human==null)throw new ArgumentException("Invalid compact population.");
             foreach(var alias in state.botAliases)aliases[alias.index]=alias.displayName;
-            Index=new LeagueRankIndex(state);
+            candidates=new int[state.bots.Length];candidateWeights=new double[state.bots.Length];
+            Index=new LeagueRankIndex(state,true);
+            Simulator=new LeagueSimulator(state,Configuration,Index);
         }
-        public static LocalLeagueState Create(long utcTicks,int seed,int population=BotCount)
+
+        public static string NewProfileId(ref LeagueRandom rng)=>"hp-"+rng.NextUInt().ToString("x8")+rng.NextUInt().ToString("x8");
+
+        // A league born under CPPS: every identity starts UNRANKED 0/3 with an
+        // independent hidden skill. The inaugural reset is recorded as already
+        // satisfied, so it can never run against this profile.
+        public static LocalLeagueState Create(long utcTicks,int seed,int population=BotCount,LocalLeagueConfiguration config=null)
         {
             if(population<12 || population>1000000)throw new ArgumentOutOfRangeException(nameof(population));
-            var rng=new LeagueRandom((uint)seed);var state=new LocalLeagueState{populationSeed=seed,population=population,
-                installationTimestamp=utcTicks,seasonStartTimestamp=utcTicks,seasonEndTimestamp=LocalSeasonEngine.Boundary(utcTicks,1),
-                lastKnownUtcTimestamp=utcTicks,lastLeagueSimulationUtc=utcTicks,human=new LeagueCompetitor{id="player_human",displayName="PLAYER"},
-                bots=new CompactLeagueBot[population]};
+            config=config??new LocalLeagueConfiguration();
+            var rng=new LeagueRandom((uint)seed);int season=GlobalSeasonCalendar.SeasonAt(utcTicks);
+            var state=new LocalLeagueState{populationSeed=seed,population=population,installationTimestamp=utcTicks,
+                currentSeasonNumber=season,lastProcessedSeasonNumber=season-1,highestAcceptedSeason=season,
+                seasonStartTimestamp=GlobalSeasonCalendar.Start(season),seasonEndTimestamp=GlobalSeasonCalendar.End(season),
+                lastKnownUtcTimestamp=utcTicks,lastLeagueSimulationUtc=utcTicks,competitiveContract=LocalLeagueState.CompetitiveContractCpps,
+                human=new LeagueCompetitor{id="player_human",displayName="PLAYER",placementGames=0,provisionalRating=config.placementPrior},
+                bots=new CompactLeagueBot[population],botNames=new string[population],nameGeneratorVersion=BotNameGenerator.GeneratorVersion,
+                qualificationContract=SeasonQualification.ContractVersion,qualificationSeason=season};
+            state.profileId=NewProfileId(ref rng);
+            var names=new BotNameGenerator();
             for(int i=0;i<population;i++){
                 float talent=Clamp01(.40f+.19f*(float)rng.Normal());int activityRoll=rng.Next(100);
                 byte Attribute(float center)=>CompactLeagueBot.PackByte(Clamp01(center+(float)rng.Normal()*.13f));
-                state.bots[i]=new CompactLeagueBot{id=i,personalitySeed=(int)(rng.NextUInt()&0x7fffffff),latent=CompactLeagueBot.Pack01(talent),
+                var b=new CompactLeagueBot{id=i,personalitySeed=(int)(rng.NextUInt()&0x7fffffff),latent=CompactLeagueBot.Pack01(talent),
                     consistency=CompactLeagueBot.Pack01(Clamp01(.68f+talent*.22f+(float)rng.Normal()*.13f)),
                     learning=CompactLeagueBot.Pack01((float)rng.Unit()),uncertainty=ushort.MaxValue,style=(byte)rng.Next(7),
                     activity=(byte)(activityRoll<10?0:activityRoll<35?64:activityRoll<75?160:255),
                     vehicle=(byte)rng.Next(3),wheels=0,character=(byte)rng.Next(4),accessory=(byte)rng.Next(3),
                     aggression=CompactLeagueBot.PackByte((float)rng.Unit()),risk=CompactLeagueBot.PackByte((float)rng.Unit()),
                     drift=Attribute(talent),aerial=Attribute(talent),shortcut=Attribute(talent),item=Attribute(talent),racecraft=Attribute(talent),recovery=Attribute(.45f+talent*.4f)};
-                LeagueBotCatalog.UpdateTitles(ref state.bots[i]);
+                InitializeCompetitive(ref b,ref rng,config,season);
+                state.botNames[i]=names.Generate(LeagueSimulator.Mix(seed,i,0x4e414d45),SkillQuantile(b),out var style);b.nameStyle=(byte)style;b.flags|=CompactLeagueBot.FlagNameAssigned;
+                LeagueBotCatalog.UpdateTitles(ref b);state.bots[i]=b;
             }
+            state.ledger.appliedMigrations.Add(InauguralMigrationId+":born");
             return state;
         }
+
+        // Approximate population quantile of hidden latent skill (N(.40,.19)).
+        public static double SkillQuantile(CompactLeagueBot b){double z=(b.LatentSkill-.40)/.19;return .5*(1+Erf(z/Math.Sqrt(2)));}
+        static double Erf(double x){double t=1/(1+.3275911*Math.Abs(x));double y=1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-.284496736)*t+.254829592)*t*Math.Exp(-x*x);return x>=0?y:-y;}
+
+        // CPPS competitive and activity fields. Hidden skill is untouched.
+        public static void InitializeCompetitive(ref CompactLeagueBot b,ref LeagueRandom rng,LocalLeagueConfiguration config,int season)
+        {
+            float talent=b.LatentSkill;
+            if(b.boost==0)b.boost=CompactLeagueBot.PackByte(Clamp01(talent+(float)rng.Normal()*.13f));
+            if(b.adaptation==0)b.adaptation=CompactLeagueBot.PackByte(Clamp01(.3f+talent*.5f+(float)rng.Normal()*.15f));
+            b.profile=(byte)LeagueActivityModel.RollProfile(ref rng,SkillQuantile(b));
+            double habit=Math.Exp(rng.Normal()*.45-.45*.45/2);b.habit=(float)Math.Max(.2,Math.Min(3.5,habit));
+            b.chronotypeMinutes=(short)Math.Max(-240,Math.Min(240,(int)Math.Round(rng.Normal()*75)));
+            b.placementGames=0;b.provisionalRating=config.placementPrior;b.currentMmr=0;b.seasonStartingMmr=0;b.seasonPeakMmr=0;
+            b.presence=(byte)BotPresence.Offline;b.activeRace=LeagueSimulator.NoRace;b.nextEventTicks=0;b.sessionRacesLeft=0;b.streak=0;
+            b.uncertainty=ushort.MaxValue;if(b.firstSeason<=0)b.firstSeason=season;
+        }
+
+        public string DisplayName(int index){if(aliases.TryGetValue(index,out string alias))return alias;return LeagueBotCatalog.Name(State,index);}
         public LeagueCompetitor View(int index){if(index==Population)return State.human;aliases.TryGetValue(index,out string name);return LeagueBotCatalog.View(State,index,name);}
         public bool TryIndex(string id,out int index){return LeagueBotCatalog.TryIndex(State.populationSeed,id,out index) && index>=0 && index<Population;}
         public void RefreshHumanIndex()=>Index.Update(Population,State.human.currentMmr);
         public LeagueCompetitor[] Page(int first,int count){RefreshHumanIndex();first=Math.Max(0,Math.Min(Index.Count,first));count=Math.Max(0,Math.Min(count,Index.Count-first));var result=new LeagueCompetitor[count];for(int i=0;i<count;i++)result[i]=View(Index.AtRank(first+i));return result;}
         public int Rank(string id){RefreshHumanIndex();if(id=="player_human")return Index.RankOf(Population);return TryIndex(id,out int index)?Index.RankOf(index):-1;}
+        public int OfficialPosition(string id){int node=id==CompetitiveCoordinator.HumanId?Population:TryIndex(id,out int i)?i:-1;return node>=0&&SeasonQualification.IsOfficial(State,node)?Rank(id)+1:0;}
+        public int RankedCount(){int c=State.human.Ranked?1:0;foreach(var b in State.bots)if(b.Ranked)c++;return c;}
 
-        bool Active(int index,ref LeagueRandom rng){var b=State.bots[index];double weight=.06+.94*b.activity/255.0;return rng.Unit()<weight;}
-        public void SimulateOne()
-        {
-            if(State.seasonTransitionCursor>=0)throw new InvalidOperationException("Simulation is frozen during a season transaction.");
-            var rng=new LeagueRandom(unchecked((uint)State.populationSeed^(uint)State.simulationEventNumber*0x9e3779b9u^(uint)(State.simulationEventNumber>>32)));
-            int anchor;do{anchor=rng.Next(Population);}while(!Active(anchor,ref rng));match[0]=anchor;
-            int anchorRank=Index.RankOf(anchor),radius=Math.Max(24,Math.Min(320,Population/35));
-            int nearbyFirst=Math.Max(0,anchorRank-radius),nearbyLast=Math.Min(Population,anchorRank+radius);
-            for(int i=1;i<12;i++){
-                int candidate,attempts=0;
-                // Sample the truncated window uniformly. Clamping an unbounded
-                // rank would oversample the best/last bot hundreds of times.
-                do{candidate=rng.Unit()<.16 || attempts++>50?rng.Next(Population):Index.AtRank(nearbyFirst+rng.Next(nearbyLast-nearbyFirst+1));}
-                while(candidate==Population || Contains(match,i,candidate) || !Active(candidate,ref rng));match[i]=candidate;
-            }
-            for(int i=0;i<12;i++){
-                var b=State.bots[match[i]];mmrs[i]=b.currentMmr;uncertainty[i]=b.Uncertainty;
-                double developed=Math.Min(1.1,b.LatentSkill+b.LearningPotential*.045*(1-Math.Exp(-b.races/1200.0)));
-                double risk=b.risk/255.0;
-                double specialty=(b.drift+b.aerial+b.shortcut+b.item+b.racecraft)/(5*255.0);
-                double ability=.86*developed+.14*specialty,noise=260+1100*(1-b.Consistency)+280*risk;
-                performance[i]=ability*ability*16000+rng.Normal()*noise+b.RecentForm*150;
-                if(rng.Unit()<.012+(1-b.Consistency)*.018)performance[i]-=1700+rng.Unit()*1200;
-            }
-            for(int i=0;i<12;i++){int place=1;for(int j=0;j<12;j++)if(performance[j]>performance[i] || (performance[j]==performance[i] && j<i))place++;positions[i]=place;}
-            CalculateDeltas(mmrs,positions,uncertainty,Configuration,deltas,rawDelta);
-            long net=0;
-            for(int i=0;i<12;i++){
-                int index=match[i];var b=State.bots[index];int before=b.currentMmr;
-                RecordBot(ref b,positions[i],deltas[i],0);
-                if(b.currentMmr>before)GainCount++;if(b.currentMmr<before)LossCount++;net+=b.currentMmr-before;
-                if(rng.Unit()<b.LatentSkill*.5)b.shortcutSuccesses++;
-                if(rng.Unit()<b.LatentSkill*.4)b.aerialSuccesses++;
-                if(rng.Unit()<b.LatentSkill*b.Consistency)b.landingSuccesses++;
-                LeagueBotCatalog.UpdateTitles(ref b);
-                if((b.personalitySeed&3)!=0 && b.races%19==0){int title=1+rng.Next(6);if((b.titleFlags&(1<<title))!=0)b.selectedTitle=(ushort)title;}
-                if(b.races%64==0 && rng.Unit()<.35)UpdatePreference(ref b,ref rng);
-                b.lastSimulationBucket=(int)Math.Min(int.MaxValue,State.simulationEventNumber/64);State.bots[index]=b;Index.Update(index,b.currentMmr);
-            }
-            State.simulationRatingCreatedAtFloor+=Math.Max(0,net);State.simulationEventNumber++;
-        }
-        static void RecordBot(ref CompactLeagueBot b,int position,int delta,float lap)
-        {
-            b.currentMmr=(int)Math.Max(0L,Math.Min(int.MaxValue,(long)b.currentMmr+delta));b.peakMmr=Math.Max(b.peakMmr,b.currentMmr);b.seasonPeakMmr=Math.Max(b.seasonPeakMmr,b.currentMmr);
-            b.races++;b.seasonRaces++;if(position==1){b.wins++;b.seasonWins++;}if(position<=3){b.podiums++;b.seasonPodiums++;}
-            b.uncertainty=CompactLeagueBot.Pack01(Math.Max(.12f,b.Uncertainty*.975f));b.form=CompactLeagueBot.PackForm(b.RecentForm*.85f+(6.5f-position)/5.5f*.15f);
-            if(lap>0 && float.IsFinite(lap)){if(b.bestLap<=0 || lap<b.bestLap)b.bestLap=lap;if(b.seasonBestLap<=0 || lap<b.seasonBestLap)b.seasonBestLap=lap;}
-        }
-        public void RecordLiveResult(int index,int oldMmr,int position,int delta,float lap,int shortcuts,int aerials,int landings)
-        {
-            var b=State.bots[index];b.currentMmr=oldMmr;RecordBot(ref b,position,delta,lap);b.shortcutSuccesses+=Math.Max(0,shortcuts);b.aerialSuccesses+=Math.Max(0,aerials);b.landingSuccesses+=Math.Max(0,landings);
-            LeagueBotCatalog.UpdateTitles(ref b);State.bots[index]=b;Index.Update(index,b.currentMmr);
-        }
-        static void UpdatePreference(ref CompactLeagueBot b,ref LeagueRandom rng)
-        {
-            // Persistent adaptation, not a reroll at matchmaking. Even the top
-            // bracket retains specialists and near-meta choices.
-            double level=Math.Min(1,b.currentMmr/10000.0),metaChance=.03+.89*level*level;
-            if(rng.Unit()<metaChance){b.vehicle=3;b.wheels=5;}
-            else if(level>.3){b.vehicle=AlternativeVehicles[rng.Next(4)];b.wheels=AlternativeWheels[rng.Next(4)];}
-        }
         public static void RecordResult(LeagueCompetitor competitor, int position, int delta, float lap)
         {
-            competitor.currentMmr = (int)Math.Max(0L, Math.Min(int.MaxValue, (long)competitor.currentMmr + delta));
+            competitor.currentMmr = (int)Math.Max(0L, Math.Min(CompetitiveRating.MaximumMmr, (long)competitor.currentMmr + delta));
             competitor.peakMmr = Math.Max(competitor.peakMmr, competitor.currentMmr);
             competitor.seasonPeakMmr = Math.Max(competitor.seasonPeakMmr, competitor.currentMmr);
             competitor.races++; competitor.seasonRaces++;
@@ -131,88 +116,99 @@ namespace AnimeHillRacing.Racing3D
             }
         }
 
+        // Legacy v3 placement-domain allocator, kept only so old fixtures and
+        // diagnostics can compare against it. Settlement uses CompetitiveRating.
         public static void CalculateDeltas(int[] ratings, int[] places, float[] deviations, LocalLeagueConfiguration config, int[] output, double[] scratch = null)
         {
             int n = ratings.Length;
             if (n < 2 || places.Length != n || output.Length != n || deviations.Length != n) throw new ArgumentException("Invalid rating lobby.");
-            scratch = scratch ?? new double[n];
-            double uncertaintyMean = 0; for (int i = 0; i < n; i++) uncertaintyMean += deviations[i];
-            double k = config.establishedK + config.uncertaintyK * Math.Max(0, Math.Min(1, uncertaintyMean / n));
-            int winners = Math.Min(5, Math.Max(1, (n - 1) / 2));
-            double positiveWeight=0, negativeWeight=0;
-            for (int i = 0; i < n; i++) {
-                double residual = 0;
-                for (int j = 0; j < n; j++) if (i != j) {
-                    double scale=config.ratingScale*(1+.18*Math.Max(0,Math.Min(1,deviations[j])));
-                    double expected = 1 / (1 + Math.Pow(10, Math.Max(-20, Math.Min(20, ((double)ratings[j] - ratings[i]) / scale))));
-                    double actual = places[i] < places[j] ? 1 : places[i] == places[j] ? .5 : 0;
-                    residual += actual - expected;
-                }
-                bool gain=places[i]<=winners;double sign=gain?1:-1;
-                double placement=gain?(winners+1.0-places[i])/winners:(places[i]-winners)/(double)(n-winners);
-                double expectationModifier=Math.Max(.15,Math.Min(2,1+sign*residual/(n-1)*1.8));
-                double individualUncertainty=.7+.6*Math.Max(0,Math.Min(1,deviations[i]));
-                scratch[i]=sign*placement*expectationModifier*individualUncertainty;
-                if(gain)positiveWeight+=scratch[i];else negativeWeight-=scratch[i];
-            }
-            if(positiveWeight<=0 || negativeWeight<=0)throw new ArgumentException("Rating positions must include both placement domains.");
-            int budget=Math.Max(n,(int)Math.Round(k,MidpointRounding.AwayFromZero));int positive=0,negative=0;
-            for(int i=0;i<n;i++){
-                bool gain=scratch[i]>0;scratch[i]=Math.Abs(scratch[i])*budget/(gain?positiveWeight:negativeWeight);
-                int magnitude=Math.Max(1,(int)Math.Floor(scratch[i]));output[i]=gain?magnitude:-magnitude;
-                if(gain)positive+=magnitude;else negative+=magnitude;
-            }
-            // Allocate the SAME finite pool on either side. Pairwise expectations
-            // change magnitude, never turn sixth place into a gain. Only the
-            // explicit zero-MMR floor can inject rating after this calculation.
-            for(int domain=0;domain<2;domain++){
-                int total=domain==0?positive:negative,sign=domain==0?1:-1;
-                while(total!=budget){
-                    int direction=total<budget?1:-1,best=-1;double bestResidual=double.NegativeInfinity;
-                    for(int i=0;i<n;i++)if(Math.Sign(output[i])==sign && (direction>0 || Math.Abs(output[i])>1)){
-                        double residual=(scratch[i]-Math.Abs(output[i]))*direction;
-                        if(residual>bestResidual){best=i;bestResidual=residual;}
-                    }
-                    if(best<0)throw new InvalidOperationException("Cannot conserve placement-domain rating.");
-                    output[best]+=sign*direction;total+=direction;
-                }
-            }
+            var p = new RatingParticipant[n]; var o = new RatingOutcome[n]; var s = new double[n];
+            for (int i = 0; i < n; i++) p[i] = new RatingParticipant { rating = Math.Max(0, ratings[i]), ranked = true, placementGames = CompetitiveRating.PlacementRaces, uncertainty = deviations[i], position = places[i], outcome = ParticipantOutcome.Finished };
+            CompetitiveRating.Settle(p, config, o, s);
+            for (int i = 0; i < n; i++) output[i] = o[i].delta;
         }
 
+        public int HumanEffectiveRating=>State.human.Ranked?State.human.currentMmr:State.human.provisionalRating;
 
+        // Human ranked matchmaking over the persistent population. Only bots that
+        // are ONLINE_IDLE or IN_QUEUE right now may be chosen; OFFLINE, IN_MATCH,
+        // COOLDOWN and already-reserved bots are never eligible. The returned bots
+        // are reserved atomically (reserve=true) for this race id.
+        public int[] SelectAvailableOpponents(int seed,long utcTicks,bool reserve,bool includeCooldown=false)
+        {
+            var sim=Simulator;var rng=new LeagueRandom((uint)seed^(uint)State.matchmakingSequence*0x85ebca6bu);
+            int target=HumanEffectiveRating,available=0;var diag=new MatchmakingDiagnostics();
+            var presence=new int[5];sim.CountPresence(presence);
+            diag.offlineBots=presence[0];diag.onlineBots=presence[1];diag.queuedBots=presence[2];diag.inMatchBots=presence[3];diag.cooldownBots=presence[4];
+            for(int i=0;i<Population;i++)if(sim.IsAvailable(i,includeCooldown))available++;
+            diag.availableBots=available;diag.relaxedCooldown=includeCooldown;
+            if(available<11){LastMatchmaking=diag;return null;}
+            long window=State.human.Ranked?300:900;int pool=0;int wanted=Math.Min(available,48);
+            for(int step=0;step<12;step++){
+                pool=0;
+                for(int i=0;i<Population;i++)if(sim.IsAvailable(i,includeCooldown) && Math.Abs((long)sim.EffectiveRating(i)-target)<=window)candidates[pool++]=i;
+                if(pool>=wanted)break;
+                window=Math.Min(20000,(long)(window*1.6));diag.widened=true;
+            }
+            if(pool<11){pool=0;for(int i=0;i<Population;i++)if(sim.IsAvailable(i,includeCooldown))candidates[pool++]=i;window=int.MaxValue;}
+            diag.candidatePool=pool;diag.window=(int)Math.Min(int.MaxValue,window);
+            // A smaller online pool means a longer (simulated) search, not fabricated rivals.
+            diag.searchSeconds=(int)Math.Round(Math.Max(2,Math.Min(25,2+600.0/Math.Max(1,available)+(diag.widened?3:0))));
+            var styles=new int[8];
+            // IDs are stable integers in the compact store. Formatting a string
+            // for every one of 100k candidates dominated allocation/latency;
+            // decode only the bounded recent-opponent list once per query.
+            var recent=new HashSet<int>();foreach(string id in State.recentOpponentIds)if(TryIndex(id,out int prior))recent.Add(prior);
+            for(int i=0;i<pool;i++){
+                var b=State.bots[candidates[i]];double distance=Math.Abs((double)sim.EffectiveRating(candidates[i])-target)/Math.Max(150,window*.6);
+                double weight=Math.Exp(-distance*distance*.5)*(.9+.2*b.Uncertainty);
+                if(!State.human.Ranked){double skillGap=Math.Abs(LeagueSkillMapping.DrivingRating(b.DevelopedSkill)-target)/4000.0;weight*=Math.Exp(-skillGap*skillGap);}
+                if(recent.Contains(candidates[i]))weight*=.16;
+                candidateWeights[i]=Math.Max(1e-9,weight);
+            }
+            var result=new int[11];
+            for(int slot=0;slot<11;slot++){
+                double sum=0;for(int i=0;i<pool;i++)sum+=candidateWeights[i];double roll=rng.Unit()*sum;int chosen=-1;
+                for(int i=0;i<pool;i++){if(candidateWeights[i]<=0)continue;roll-=candidateWeights[i];if(roll<0){chosen=i;break;}}
+                if(chosen<0)for(int i=pool-1;i>=0;i--)if(candidateWeights[i]>0){chosen=i;break;}
+                result[slot]=candidates[chosen];candidateWeights[chosen]=0;
+                // Driving-style diversity: soften further picks of an already-present style.
+                int style=Math.Min(7,(int)State.bots[candidates[chosen]].style);styles[style]++;
+                for(int i=0;i<pool;i++)if(candidateWeights[i]>0 && State.bots[candidates[i]].style==style)candidateWeights[i]*=.8;
+            }
+            LastMatchmaking=diag;
+            if(reserve){
+                if(!sim.Reserve(result,utcTicks,includeCooldown))throw new InvalidOperationException("Atomic reservation failed for an available lobby.");
+                State.matchmakingSequence++;foreach(int i in result)State.recentOpponentIds.Add(LeagueBotCatalog.Id(State.populationSeed,i));
+                while(State.recentOpponentIds.Count>44)State.recentOpponentIds.RemoveAt(0);
+            }
+            return result;
+        }
+
+        // Compatibility wrapper used by legacy fixtures: selection without reservation.
         public LeagueCompetitor[] SelectOpponents(int humanMmr,int seed,bool remember)
         {
-            RefreshHumanIndex();var rng=new LeagueRandom((uint)seed^(remember?(uint)State.matchmakingSequence*0x85ebca6bu:0));
-            bool elite=humanMmr>=9700&&humanMmr<=10000;
-            double span=elite?120:humanMmr>=10000?900:240+Math.Min(10000,humanMmr)*.035;int first=0,count=0;
-            // Elite needs a small real neighborhood, not ninety-six distant rivals.
-            // Sparse saves still expand/fall back to actual persistent identities;
-            // no rating or vehicle is fabricated to fill an elite lobby.
-            int neighborhood=elite?24:96;
-            for(int step=0;step<7;step++){first=Index.CountHigher((int)Math.Min(int.MaxValue,humanMmr+span));int end=Index.CountHigher((int)Math.Max(0,humanMmr-span),true);count=end-first;if(count>=Math.Min(neighborhood,Population))break;span=Math.Min(4500,span*1.55);}
-            if(count<12)
-            {
-                // A sparse prestige field falls back to the nearest ranked
-                // neighborhood, preserving variety without sampling the whole league.
-                count=Math.Min(97,Index.Count);
-                first=Math.Max(0,Math.Min(Index.Count-count,Index.CountHigher(humanMmr)-count/2));
+            var picked=SelectAvailableOpponents(seed,State.lastLeagueSimulationUtc,false);
+            if(picked==null){
+                // No live presence yet (fixtures that never simulated): nearest ranked identities.
+                RefreshHumanIndex();int count=Math.Min(97,Index.Count),first=Math.Max(0,Math.Min(Index.Count-count,Index.CountHigher(humanMmr)-count/2));
+                var list=new List<int>(11);var rng=new LeagueRandom((uint)seed);
+                while(list.Count<11){int c=Index.AtRank(first+rng.Next(count));if(c!=Population && !list.Contains(c))list.Add(c);}
+                picked=list.ToArray();
             }
-            int humanRank=Index.RankOf(Population);
-            int available=count-(humanRank>=first && humanRank<first+count?1:0);
-            int candidateCount=Math.Min(candidates.Length,available),filled=0;
-            while(filled<candidateCount){int candidate=Index.AtRank(first+rng.Next(count));if(candidate==Population || Contains(candidates,filled,candidate))continue;candidates[filled++]=candidate;}
-            for(int i=0;i<filled;i++){
-                var b=State.bots[candidates[i]];double distance=Math.Abs((double)b.currentMmr-humanMmr)/Math.Max(1,span*.60);
-                double activity=.25+.75*b.activity/255.0;candidateWeights[i]=Math.Exp(-distance*distance*.5)*activity*(.9+.2*b.Uncertainty);
-                string id=LeagueBotCatalog.Id(State.populationSeed,candidates[i]);if(State.recentOpponentIds.Contains(id))candidateWeights[i]*=.16;
-            }
-            var result=new LeagueCompetitor[11];
-            for(int slot=0;slot<11;slot++){double sum=0;for(int i=0;i<filled;i++)sum+=candidateWeights[i];double roll=rng.Unit()*sum;int chosen=filled-1;for(int i=0;i<filled;i++){roll-=candidateWeights[i];if(roll<0){chosen=i;break;}}
-                result[slot]=View(candidates[chosen]);candidateWeights[chosen]=0;}
+            var result=new LeagueCompetitor[11];for(int i=0;i<11;i++)result[i]=View(picked[i]);
             if(remember){State.matchmakingSequence++;foreach(var b in result)State.recentOpponentIds.Add(b.id);while(State.recentOpponentIds.Count>44)State.recentOpponentIds.RemoveAt(0);}
             return result;
         }
-        static bool Contains(int[] values,int length,int value){for(int i=0;i<length;i++)if(values[i]==value)return true;return false;}
+
+        public static void UpdatePreference(ref CompactLeagueBot b,ref LeagueRandom rng)
+        {
+            // Persistent adaptation, not a reroll at matchmaking. Even the top
+            // bracket retains specialists and near-meta choices.
+            double level=Math.Min(1,b.currentMmr/10000.0),metaChance=.03+.89*level*level;
+            if(rng.Unit()<metaChance){b.vehicle=3;b.wheels=5;}
+            else if(level>.3){b.vehicle=AlternativeVehicles[rng.Next(4)];b.wheels=AlternativeWheels[rng.Next(4)];}
+        }
         static float Clamp01(float v)=>Math.Max(0,Math.Min(1,v));
     }
 

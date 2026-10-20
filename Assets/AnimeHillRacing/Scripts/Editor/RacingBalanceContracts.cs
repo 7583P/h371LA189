@@ -47,7 +47,7 @@ namespace AnimeHillRacing.EditorTools
         }
         static void Tables(ClosureContractReport report,string output)
         {
-            var evidence=new TableEvidence{groups=new[]{new PositionTable{first=1,last=1,weights=ItemDistributionTable.WeightsForPosition(1)},new PositionTable{first=2,last=3,weights=ItemDistributionTable.WeightsForPosition(2)},new PositionTable{first=4,last=6,weights=ItemDistributionTable.WeightsForPosition(4)},new PositionTable{first=7,last=12,weights=ItemDistributionTable.WeightsForPosition(7)}}};
+            var evidence=new TableEvidence{groups=new[]{new PositionTable{first=1,last=1,weights=ItemDistributionTable.WeightsForPosition(1)},new PositionTable{first=2,last=3,weights=ItemDistributionTable.WeightsForPosition(2)},new PositionTable{first=4,last=8,weights=ItemDistributionTable.WeightsForPosition(4)},new PositionTable{first=9,last=12,weights=ItemDistributionTable.WeightsForPosition(9)}}};
             File.WriteAllText(Path.Combine(output,"item-table.json"),JsonUtility.ToJson(evidence,true));
             foreach(var table in evidence.groups)report.Check(table.weights.Sum(x=>x.Weight)==100&&table.weights.All(x=>x.Weight>0&&ItemDistributionTable.IsAllowedAtPosition(x.Type,table.first)),"Authored position table "+table.first+"–"+table.last+" has 100 legal positive nominal weights");
             for(int position=1;position<=12;position++) {
@@ -59,7 +59,7 @@ namespace AnimeHillRacing.EditorTools
                     context.previousPrevious=context.previous;context.previous=item;
                 }
                 report.Check(legal,"P"+position+": 12000 gap/lap/repeat rolls respect the whitelist");
-                if(position<=6)report.Check(seen[(int)RaceItemType.Coin10]&&seen[(int)(position==1?RaceItemType.ElectroSpike:RaceItemType.MagneticShield)],"P"+position+": Coin +10 and its ordinary Rock/Shield alternative are reachable");
+                if(position<=8)report.Check(seen[(int)RaceItemType.Coin10]&&seen[(int)(position==1?RaceItemType.ElectroSpike:RaceItemType.MagneticShield)],"P"+position+": Coin +10 and its ordinary Rock/Shield alternative are reachable");
             }
             report.Check(ItemDistributionTable.RollItem(new ItemRollContext{position=1,held=RaceItemType.Coin10})==RaceItemType.None,"A held reward cannot be overwritten by another roll");
             var config=Resources.Load<RacingItemBalanceConfiguration>("RacingItemBalanceConfiguration");var original=config.leader;

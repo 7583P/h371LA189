@@ -65,13 +65,14 @@ namespace AnimeHillRacing.EditorTools
             var config=Resources.Load<RacingProgressionConfiguration>("RacingProgressionConfiguration").league;
             long epoch=new DateTime(2026,1,31,12,0,0,DateTimeKind.Utc).Ticks;
             var state=LocalLeagueEngine.Create(epoch,4207);
-            report.Check(state.bots.Length==10000&&state.version==3&&state.human.currentMmr==0,"Fresh v3 fixture retains exactly 10000 zero-rated persistent bots");
-            report.Check(state.seasonEndTimestamp==new DateTime(epoch,DateTimeKind.Utc).AddMonths(3).Ticks,"Season boundary remains three calendar months");
-            state.human.currentMmr=10500;state.human.peakMmr=state.human.seasonPeakMmr=20000;
+            report.Check(state.bots.Length==10000&&state.version==LocalLeagueState.CurrentVersion&&state.human.currentMmr==0&&!state.human.Ranked&&state.bots.All(b=>!b.Ranked&&b.currentMmr==0),"Fresh CPPS fixture: exactly 10000 persistent bots, everyone UNRANKED with no visible MMR");
+            report.Check(state.seasonEndTimestamp==new DateTime(state.seasonStartTimestamp,DateTimeKind.Utc).AddMonths(3).Ticks&&state.seasonStartTimestamp==GlobalSeasonCalendar.Start(GlobalSeasonCalendar.SeasonAt(epoch)),"Global UTC season boundary remains three calendar months, independent of install time");
+            // Ranked (Placement 3/3) competitors: CPPS refuses visible MMR during Placement.
+            state.human.placementGames=3;state.human.currentMmr=10500;state.human.peakMmr=state.human.seasonPeakMmr=20000;
             state.human.selectedTitleId="beyond-apex";state.human.unlockedTitleIds.Add("beyond-apex");
             state.human.vehiclePreference="formula-01";state.human.wheelPreference="wheel-whity";
             state.human.characterPreference="purple-driver";state.human.accessoryPreference="crystal-crest";
-            for(int i=0;i<state.bots.Length;i++){state.bots[i].currentMmr=10000+(i%7)*1000;state.bots[i].peakMmr=state.bots[i].seasonPeakMmr=20000;}
+            for(int i=0;i<state.bots.Length;i++){state.bots[i].placementGames=3;state.bots[i].currentMmr=10000+(i%7)*1000;state.bots[i].peakMmr=state.bots[i].seasonPeakMmr=20000;}
             var previous=(CompactLeagueBot[])state.bots.Clone();
             string path=Path.Combine(output,"focused-10k-journal");var store=Store(path);store.Load();
             report.Check(store.Save(state),"Existing migrated v3 fixture saves through the real binary journal");

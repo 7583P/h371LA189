@@ -57,8 +57,8 @@ namespace AnimeHillRacing.Editor
         public static void BuildReleaseAabBatch()
         {
             ValidateOrThrow();
-            if (PlayerSettings.Android.bundleVersionCode < 19)
-                throw new InvalidOperationException("Release versionCode must be at least 19.");
+            if (PlayerSettings.Android.bundleVersionCode < 20)
+                throw new InvalidOperationException("Release versionCode must be at least 20.");
             string keystorePassword = Environment.GetEnvironmentVariable(
                 "HILL_ADVENTURER_KEYSTORE_PASSWORD");
             string keyaliasPassword = Environment.GetEnvironmentVariable(
@@ -71,6 +71,7 @@ namespace AnimeHillRacing.Editor
             EditorUserBuildSettings.buildAppBundle = true;
             EditorUserBuildSettings.development = false;
             EditorUserBuildSettings.allowDebugging = false;
+            EditorUserBuildSettings.connectProfiler = false;
 
             string root = Directory.GetParent(Application.dataPath).FullName;
             string outputDirectory = Path.Combine(root, "Builds", "Android");

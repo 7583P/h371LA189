@@ -20,6 +20,8 @@ namespace AnimeHillRacing.Racing3D
         public int newMmr;
         public string titleId;
         public int shortcutSuccesses, aerialSuccesses, landingSuccesses;
+        // CPPS Placement progress (0..3); 3 means ranked. Filled from the settlement.
+        public int placementBefore = -1, placementAfter = -1;
 
         public override string ToString() =>
             $"P{finishPosition:00} | {displayName,-14} | Time: {FormatTime(totalTime)} | Best: {FormatTime(bestLapTime)} | MMR: {oldMmr} -> {newMmr} ({(mmrDelta >= 0 ? "+" : "")}{mmrDelta})";
@@ -40,6 +42,9 @@ namespace AnimeHillRacing.Racing3D
         public float totalRaceTime;
         public string trackId = "track_01";
         public string trackDisplayName = "GRAND CIRCUIT";
+        // Reserved ranked race identity; empty for unrated/test races.
+        public string rankedRaceId = "";
+        public byte settlementState;
 
         public RacerResultEntry GetPlayerEntry()
         {

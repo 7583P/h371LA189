@@ -39,7 +39,7 @@ namespace AnimeHillRacing.EditorTools
             var authored=Resources.Load<RacingProgressionConfiguration>("RacingProgressionConfiguration");
             report.Check(authored!=null && authored.league.historyLimit==20 && authored.titles.Length>=6,"Production progression ScriptableObject and titles are bound to their native scripts");
             var balance=Resources.Load<RacingItemBalanceConfiguration>("RacingItemBalanceConfiguration");
-            report.Check(balance!=null && balance.leader.Length==2 && balance.front.Length==3 && balance.middle.Length==4 && balance.rear.Length==13,"Updated P1 / P2-3 / P4-6 / P7-12 item pools include Golden Rock and rear-only Lancer");
+            report.Check(balance!=null && balance.leader.Length==2 && balance.front.Length==5 && balance.middle.Length==8 && balance.rear.Length==12,"Updated P1 / P2-3 / P4-8 / P9-12 item pools include Golden Rock and rear-only Lancer");
             var found=new HashSet<RaceItemType>();for(int place=1;place<=12;place++) {
                 var rng=new DeterministicRng(731+place);for(int i=0;i<3000;i++)found.Add(ItemDistributionTable.RollItem(new ItemRollContext {position=place,lap=3,totalLaps=3,gapLeaderSeconds=15},rng));
             }
@@ -51,12 +51,12 @@ namespace AnimeHillRacing.EditorTools
                 for(int i=0;i<1000;i++) {
                     var item=ItemDistributionTable.RollItem(place,rng);
                     bool leader=item==RaceItemType.Coin10||item==RaceItemType.ElectroSpike;
-                    bool front=item==RaceItemType.MagneticShield||item==RaceItemType.Coin10||item==RaceItemType.GoldenRock;
-                    bool middle=front||item==RaceItemType.MiniTurbo;
+                    bool front=item==RaceItemType.MagneticShield||item==RaceItemType.Coin10||item==RaceItemType.GoldenRock||item==RaceItemType.MiniTurbo||item==RaceItemType.ElectroSpike;
+                    bool middle=front||item==RaceItemType.KineticMissile||item==RaceItemType.TurboPulse||item==RaceItemType.TwinRock;
                     bool rear=item==RaceItemType.TurboPulse||item==RaceItemType.ElectroSpike||item==RaceItemType.KineticMissile||item==RaceItemType.MagneticShield
                         ||item==RaceItemType.AerialRecovery||item==RaceItemType.TripleTurbo||item==RaceItemType.TwinRock||item==RaceItemType.TrackingDart
                         ||item==RaceItemType.HyperCharge||item==RaceItemType.ShockwavePulse||item==RaceItemType.HomingRocket||item==RaceItemType.Lancer||item==RaceItemType.GoldenRock;
-                    legal &= place==1?leader:place<=3?front:place<=6?middle:rear;
+                    legal &= place==1?leader:place<=3?front:place<=ItemDistributionTable.MiddleLastPosition?middle:rear;
                 }
                 report.Check(legal,"Placement "+place+" cannot bypass its approved item power pool");
             }
@@ -81,7 +81,7 @@ namespace AnimeHillRacing.EditorTools
             store.Load();report.Check(store.Save(state) && new LocalLeagueStore(Path.Combine(output,"native-json-journal"),v=>JsonUtility.ToJson(v),JsonUtility.FromJson<LocalLeagueState>).Load().bots.Length==10000,"Unity metadata and binary journals reload every compact persistent bot");
             string json=JsonUtility.ToJson(state);var clone=JsonUtility.FromJson<LocalLeagueState>(json);
             report.Check(JsonUtility.ToJson(clone)==json,"Unity serializer preserves local season timestamps, skill fields, histories and title lists exactly");
-            report.Check(!json.Contains("\"bots\"") && !json.Contains("\"records\"") && LocalLeagueStore.BytesPerBot==108 && LocalLeagueStore.BytesPerSeasonBot==38,"Native metadata excludes population/history arrays and compact records have measured 108/38 byte layouts");
+            report.Check(!json.Contains("\"bots\"") && !json.Contains("\"records\"") && LocalLeagueStore.BytesPerBot==172 && LocalLeagueStore.BytesPerSeasonBot==38,"Native metadata excludes population/history arrays and compact CPPS records have measured 172/38 byte layouts");
             var sparse=LocalLeagueEngine.Create(state.installationTimestamp,902,1000);
             for(int i=0;i<sparse.bots.Length;i++)sparse.bots[i].currentMmr=i*13;
             sparse.human.currentMmr=20000;var sparseEngine=new LocalLeagueEngine(sparse);

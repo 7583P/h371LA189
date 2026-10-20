@@ -26,10 +26,10 @@ namespace AnimeHillRacing.EditorTools
                 report.Check((int)RaceItemType.Lancer == 15 && (int)RaceItemType.Coin10 == 13 && (int)RaceItemType.MiniTurbo == 14,
                     "Lancer appends ID 15 without renumbering persisted inventory IDs");
                 var config = Resources.Load<RacingItemBalanceConfiguration>("RacingItemBalanceConfiguration");
-                report.Check(config != null && config.leader.Length == 2 && Array.TrueForAll(config.leader,e=>e.Type==RaceItemType.Coin10||e.Type==RaceItemType.ElectroSpike)&&config.front.Length==3,
+                report.Check(config != null && config.leader.Length == 2 && Array.TrueForAll(config.leader,e=>e.Type==RaceItemType.Coin10||e.Type==RaceItemType.ElectroSpike)&&config.front.Length==5&&!Array.Exists(config.front,e=>e.Type==RaceItemType.Lancer||e.Type==RaceItemType.HyperCharge),
                     "Leader is restricted to Coin/ordinary Rock; Golden Rock remains available behind the leader");
-                report.Check(config != null && config.middle.Length == 4 && Array.Exists(config.middle,e=>e.Type==RaceItemType.MiniTurbo)&&Array.Exists(config.middle,e=>e.Type==RaceItemType.GoldenRock),
-                    "Middle table retains Mini Turbo and the new Golden Rock");
+                report.Check(config != null && config.middle.Length == 8 && !Array.Exists(config.middle,e=>e.Type==RaceItemType.Lancer) && Array.Exists(config.middle,e=>e.Type==RaceItemType.MiniTurbo)&&Array.Exists(config.middle,e=>e.Type==RaceItemType.GoldenRock),
+                    "Midfield P4-P8 mixes Mini Turbo, Golden Rock and tactical items without Lancer");
                 int sum = 0, lancerWeight = 0;
                 foreach (var entry in ItemDistributionTable.WeightsForPosition(12)) { sum += entry.Weight; if (entry.Type == RaceItemType.Lancer) lancerWeight += entry.Weight; }
                 report.Check(sum == 100 && lancerWeight == 8, "Rear table has 100 nominal weight units, including eight for Lancer");
@@ -39,9 +39,9 @@ namespace AnimeHillRacing.EditorTools
                     for (int i = 0; i < evidence.rollsPerPosition; i++)
                         if (ItemDistributionTable.RollItem(new ItemRollContext { position = place, lap = 1, totalLaps = 3 }, rng) == RaceItemType.Lancer) evidence.lancerCounts[place - 1]++;
                     float probability = evidence.probability[place - 1] = evidence.lancerCounts[place - 1] / (float)evidence.rollsPerPosition;
-                    report.Check(place <= 6 ? probability == 0 : probability > .01f,
-                        "P" + place + ": Lancer " + (place <= 6 ? "cannot roll" : "is attainable") + " over 24000 deterministic rolls");
-                    if (place >= 8) report.Check(probability > evidence.probability[place - 2], "Lancer probability increases at P" + place);
+                    report.Check(place <= ItemDistributionTable.MiddleLastPosition ? probability == 0 : probability > .01f,
+                        "P" + place + ": Lancer " + (place <= ItemDistributionTable.MiddleLastPosition ? "cannot roll" : "is attainable") + " over 24000 deterministic rolls");
+                    if (place >= 10) report.Check(probability > evidence.probability[place - 2], "Lancer probability increases at P" + place);
                 }
                 report.Check(evidence.probability[11] > evidence.probability[6] * 4 && evidence.probability[11] > .13f && evidence.probability[11] < .17f,
                     "Last-place Lancer chance is strongly biased toward the rear without a guaranteed reward");

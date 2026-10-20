@@ -36,7 +36,11 @@ namespace AnimeHillRacing.Racing3D
             public List<string> successes = new List<string>(), failures = new List<string>();
         }
         struct Sample { public float elapsed, humanKmh, botKmh;public bool humanActive, botActive; }
-        struct CircuitSample { public float elapsed, speedKmh, lateral, height, worldY;public bool road, active; }
+        struct CircuitSample
+        {
+            public float elapsed, speedKmh, lateral, height, worldY, targetSpeedKmh, steering, throttle, brake, slip;
+            public int node, wallContacts, racerContacts;public bool road, active, spunOut;
+        }
         Report report = new Report();readonly List<Sample> samples = new List<Sample>(400);
         readonly List<CircuitSample> circuitSamples = new List<CircuitSample>(400);
         readonly RaycastHit[] roadHits = new RaycastHit[24];
@@ -71,8 +75,8 @@ namespace AnimeHillRacing.Racing3D
             foreach (var s in samples) csv.AppendFormat(CultureInfo.InvariantCulture, "{0:F4},{1:F4},{2:F4},{3},{4}\n", s.elapsed, s.humanKmh, s.botKmh, s.humanActive ? 1 : 0, s.botActive ? 1 : 0);
             File.WriteAllText(Path.Combine(output, "lancer-speed.csv"), csv.ToString());
             if(circuit) {
-                var roadCsv = new StringBuilder("elapsed,speed_kmh,lateral,height_from_real_road,world_y,real_road_under,active\n");
-                foreach(var s in circuitSamples)roadCsv.AppendFormat(CultureInfo.InvariantCulture,"{0:F4},{1:F4},{2:F4},{3:F4},{4:F4},{5},{6}\n",s.elapsed,s.speedKmh,s.lateral,s.height,s.worldY,s.road?1:0,s.active?1:0);
+                var roadCsv = new StringBuilder("elapsed,speed_kmh,lateral,height_from_real_road,world_y,real_road_under,active,node,target_speed_kmh,steering,throttle,brake,slip,wall_contacts,racer_contacts,spun_out\n");
+                foreach(var s in circuitSamples)roadCsv.AppendFormat(CultureInfo.InvariantCulture,"{0:F4},{1:F4},{2:F4},{3:F4},{4:F4},{5},{6},{7},{8:F4},{9:F4},{10:F4},{11:F4},{12:F4},{13},{14},{15}\n",s.elapsed,s.speedKmh,s.lateral,s.height,s.worldY,s.road?1:0,s.active?1:0,s.node,s.targetSpeedKmh,s.steering,s.throttle,s.brake,s.slip,s.wallContacts,s.racerContacts,s.spunOut?1:0);
                 File.WriteAllText(Path.Combine(output,"lancer-real-circuit.csv"),roadCsv.ToString());
             }
             File.WriteAllText(Path.Combine(output, "lancer-native.json"), JsonUtility.ToJson(report, true));
@@ -120,7 +124,9 @@ namespace AnimeHillRacing.Racing3D
                 graph.ProjectPosition(player.transform.position,out _,out float along,out float lateral);
                 var road=graph.SampleDistance(along);float height=player.transform.position.y-road.Position.y;
                 bool onRoad=RealRoadUnder(player);
-                circuitSamples.Add(new CircuitSample{elapsed=Time.fixedTime-started,speedKmh=player.SpeedKmh,lateral=lateral,height=height,worldY=player.transform.position.y,road=onRoad,active=player.IsLancerActive});
+                circuitSamples.Add(new CircuitSample{elapsed=Time.fixedTime-started,speedKmh=player.SpeedKmh,lateral=lateral,height=height,worldY=player.transform.position.y,road=onRoad,active=player.IsLancerActive,
+                    node=ai.CurrentNodeIndex,targetSpeedKmh=ai.TargetSpeedKmh,steering=player.LastCommands.Steering,throttle=player.LastCommands.Throttle,brake=player.LastCommands.Brake,
+                    slip=player.SlipAngle,wallContacts=player.WallCollisions,racerContacts=player.RacerCollisions,spunOut=player.IsSpunOut});
                 if(onRoad)report.roadContactSamples++;
                 report.circuitPeakKmh=Mathf.Max(report.circuitPeakKmh,player.SpeedKmh);
                 report.circuitMaxLateral=Mathf.Max(report.circuitMaxLateral,Mathf.Abs(lateral));
@@ -284,6 +290,7 @@ namespace AnimeHillRacing.Racing3D
             yield return ItemDirectionPass(player,inventory);
             yield return GoldenRockPass(manager,player,bot);
             yield return CollisionSafetyPass(player,bot);
+            yield return LancerBrakePass(player);
             yield return new WaitForSeconds(.2f);inventory.AcquireItem(RaceItemType.Lancer, false);
             Check(inventory.UseItem(), "A later independent Lancer can activate normally");
             float remaining = player.LancerRemainingSeconds;Time.timeScale = 0f;
@@ -316,8 +323,23 @@ namespace AnimeHillRacing.Racing3D
         sealed class ProbeCommands : IVehicleCommandProvider
         {
             public bool fire,backward;
-            public float throttle;
-            public VehicleCommands GetCommands(){var c=new VehicleCommands{UseItem=fire,ItemBackward=backward,Throttle=throttle};fire=false;return c;}
+            public float throttle,brake;
+            public VehicleCommands GetCommands(){var c=new VehicleCommands{UseItem=fire,ItemBackward=backward,Throttle=throttle,Brake=brake};fire=false;return c;}
+        }
+        IEnumerator LancerBrakePass(RacingVehiclePhysics player)
+        {
+            player.ResetVelocities();player.SetRaceEnabled(true);
+            player.Body.position = new Vector3(-3,250.65f,-350);player.Body.rotation = Quaternion.identity;
+            var command = new ProbeCommands();player.SetCommandProvider(command);Physics.SyncTransforms();
+            yield return new WaitForSeconds(.3f);
+            player.Body.linearVelocity = Vector3.forward * 20f;
+            Check(player.TryActivateLancer(), "Brake fixture activates the ordinary shared Lancer motor");
+            yield return new WaitForSeconds(.25f);
+            Check(player.SpeedMps > 25f, "Lancer preserves its automatic propulsion when throttle is released");
+            float before = player.SpeedMps;command.brake = .8f;
+            yield return new WaitForSeconds(.2f);
+            Check(player.SpeedMps < before - 2f, "Explicit driver braking overrides Lancer propulsion using ordinary shared brakes");
+            player.ResetVelocities();command.brake = 0;
         }
         IEnumerator CollisionSafetyPass(RacingVehiclePhysics player,RacingVehiclePhysics bot)
         {

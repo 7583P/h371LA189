@@ -40,7 +40,9 @@ namespace AnimeHillRacing.Racing3D
             bool isHeavy = ItemType == RaceItemType.ElectroSpike || ItemType==RaceItemType.GoldenRock;
             float spinDuration = isHeavy ? 1.2f : 0.9f;
 
-            if (inventory == null || !inventory.AbsorbHit())
+            bool shielded = inventory != null && inventory.AbsorbHit();
+            if (ItemType == RaceItemType.GoldenRock) Pool?.RecordGoldenContact(shielded);
+            if (!shielded)
             {
                 target.Trigger360Spin(spinDuration, isHeavy);
             }

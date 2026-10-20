@@ -37,10 +37,12 @@ namespace AnimeHillRacing.Racing3D
         private void Update()
         {
             if(Time.unscaledTime<nextRatingRefresh)return;nextRatingRefresh=Time.unscaledTime+.5f;
-            int rating=RacingSaveManager.CurrentMmr;if(rating==displayedMmr)return;displayedMmr=rating;
-            if(mmrLabel!=null)mmrLabel.text=$"{rating:N0} MMR";
-            if(tierLabel!=null){tierLabel.text=MmrTierUtility.GetTierDisplayName(MmrTierUtility.GetTier(rating));tierLabel.color=RacingDesign.TierColor(rating);}
-            if(liveRankArtwork!=null)liveRankArtwork.Configure(rating);
+            // CPPS: an UNRANKED player sees Placement progress, never a 0-MMR rank.
+            var human=RacingProgressionService.State.human;bool official=SeasonQualification.IsOfficial(human,RacingProgressionService.State.currentSeasonNumber);int rating=human.currentMmr;int key=human.Ranked?rating+(official?0:1000000):-1-human.placementGames;
+            if(key==displayedMmr)return;displayedMmr=key;
+            if(mmrLabel!=null)mmrLabel.text=human.Ranked?$"{rating:N0} MMR":MmrTierUtility.UnrankedName;
+            if(tierLabel!=null){tierLabel.text=SeasonQualification.DisplayRank(human,RacingProgressionService.State.currentSeasonNumber);tierLabel.color=official?RacingDesign.TierColor(rating):RacingDesign.Accent;}
+            if(liveRankArtwork!=null){liveRankArtwork.Configure(rating);liveRankArtwork.gameObject.SetActive(official);}
         }
 
         public void Initialize()
@@ -212,6 +214,7 @@ namespace AnimeHillRacing.Racing3D
             mmrLabel=AddHeaderLabel(mmrBtn.transform, $"{currentMmr:N0} MMR", 0.33f, 0.46f, 0.64f, 0.48f, 21, Color.white, TextAnchor.MiddleLeft);
             string tierName = MmrTierUtility.GetTierDisplayName(MmrTierUtility.GetTier(currentMmr));
             tierLabel=AddHeaderLabel(mmrBtn.transform, tierName, 0.33f, 0.08f, 0.64f, 0.40f, 15, RacingDesign.TierColor(currentMmr), TextAnchor.MiddleLeft);
+            displayedMmr=int.MinValue;nextRatingRefresh=0;
 
             // 4. SETTINGS Gear (Interactive Button)
             CreateCoverButton(

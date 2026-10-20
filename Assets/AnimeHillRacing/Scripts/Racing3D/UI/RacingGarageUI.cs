@@ -18,8 +18,9 @@ namespace AnimeHillRacing.Racing3D
             RacingSaveManager.EnsureMigration();vehicleIndex=Mathf.Max(0,Array.IndexOf(VehicleIds,RacingStatsCalculator.NormalizeVehicleId(RacingSaveManager.SelectedVehicleId)));wheelIndex=Mathf.Max(0,Array.IndexOf(WheelIds,RacingSaveManager.SelectedWheelId));
             root=RacingDesign.Canvas("Racing garage");root.gameObject.AddComponent<RacingScreenMotion>();gameObject.AddComponent<RacingQualityScope>();RacingFeedback.Ensure();
             RacingDesign.Panel(root,"Backdrop",0,0,1,1,RacingDesign.Background,0);
-            RacingDesign.RankBadge(root,RacingSaveManager.CurrentMmr,.85f,.845f,.09f,.13f);
-            RacingDesign.Label(root,MmrTierUtility.GetDisplayName(RacingSaveManager.CurrentMmr),RacingType.Caption,.63f,.89f,.21f,.045f,RacingDesign.TierColor(RacingSaveManager.CurrentMmr),TextAnchor.MiddleRight);
+            var human=RacingProgressionService.State.human;
+            if(SeasonQualification.IsOfficial(human,RacingProgressionService.State.currentSeasonNumber))RacingDesign.RankBadge(root,human.currentMmr,.85f,.845f,.09f,.13f);
+            RacingDesign.Label(root,(human.Ranked?human.currentMmr.ToString("N0")+" MMR / ":"")+SeasonQualification.DisplayRank(human,RacingProgressionService.State.currentSeasonNumber),RacingType.Caption,.63f,.89f,.30f,.045f,RacingDesign.TierColor(human.currentMmr),TextAnchor.MiddleRight);
             RacingDesign.Label(root,"RACING / GARAGE",RacingType.Section,.05f,.87f,.55f,.07f,RacingDesign.Cyan);
             RacingDesign.Label(root,"MAKE IT YOURS.",RacingType.Title,.05f,.78f,.57f,.08f,RacingDesign.Ink,display:true);
             preview=RacingShowroom.Create(root,.045f,.225f,.54f,.535f,VehicleIds[vehicleIndex],WheelIds[wheelIndex]);

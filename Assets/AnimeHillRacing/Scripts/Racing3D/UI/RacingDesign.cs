@@ -88,13 +88,23 @@ namespace AnimeHillRacing.Racing3D
             return button;
         }
         public static void Focus(Button button) { if(button!=null && EventSystem.current!=null)EventSystem.current.SetSelectedGameObject(button.gameObject); }
+        // CPPS Placement progress: three segments, earned ones lit in Accent.
+        public static Image[] PlacementPips(Transform parent,int earned,float x,float y,float w,float h)
+        {
+            var area=Area(parent,"Placement progress",x,y,w,h);var pips=new Image[CompetitiveRating.PlacementRaces];
+            for(int i=0;i<pips.Length;i++){
+                var pip=Area(area,"Placement "+(i+1),i/(float)pips.Length+.01f,0,1f/pips.Length-.02f,1).gameObject.AddComponent<Image>();
+                pip.color=i<earned?Accent:Highlight;pip.raycastTarget=false;pips[i]=pip;
+            }
+            return pips;
+        }
         public static Color TierColor(int mmr) => RacingRankPalette.Primary((int)MmrTierUtility.GetTier(mmr));
         public static RacingRankBadge RankBadge(Transform parent,int mmr,float x,float y,float w,float h) {
             var badge=Area(parent,"Rank artwork "+MmrTierUtility.GetDisplayName(mmr),x,y,w,h).gameObject.AddComponent<RacingRankBadge>();badge.Configure(mmr);return badge;
         }
-        public static Text Title(Transform parent,string id,int achievedMmr,float x,float y,float w,float h) {
+        public static Text Title(Transform parent,string id,int achievedMmr,float x,float y,float w,float h,int officialPosition=0) {
             var text=Label(parent,"",RacingType.Caption,x,y,w,h);
-            text.gameObject.AddComponent<RacingTitleView>().Configure(text,id,RacingProgressionService.State.currentSeasonNumber,achievedMmr);return text;
+            text.gameObject.AddComponent<RacingTitleView>().Configure(text,id,RacingProgressionService.State.currentSeasonNumber,achievedMmr,officialPosition);return text;
         }
         public static string VehicleName(string id)
         {

@@ -48,7 +48,7 @@ namespace AnimeHillRacing.Racing3D
             }
 
             if (victim != null) { ApplyHit(victim); return; }
-            if (blocked) { Release(); return; }
+            if (blocked) { if(golden)Pool?.RecordGoldenWorldBlock(); Release(); return; }
 
             transform.position += transform.forward * distance;
         }

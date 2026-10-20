@@ -50,10 +50,26 @@ namespace AnimeHillRacing.Racing3D
             }
             else {
                 var racer = tracker != null ? tracker.FindRacer(vehicle) : null;
-                float gap = tracker != null && tracker.Leaderboard.Count > 0 && racer != null ?
-                    Mathf.Max(0, tracker.Leaderboard[0].TotalDistance - racer.TotalDistance) / Mathf.Max(20, vehicle.SpeedMps) : 0;
+                float leaderGap = 0, packGap = 0, spread = 0;
+                if (tracker != null && tracker.Leaderboard.Count > 0 && racer != null)
+                {
+                    var board = tracker.Leaderboard;
+                    leaderGap = Mathf.Max(0, board[0].TotalDistance - racer.TotalDistance);
+                    spread = Mathf.Max(0, board[0].TotalDistance - board[board.Count - 1].TotalDistance);
+                    float nearestAhead = float.MaxValue;
+                    for (int i = 0; i < board.Count; i++)
+                    {
+                        if (board[i] == racer) continue;
+                        float ahead = board[i].TotalDistance - racer.TotalDistance;
+                        if (ahead >= 0 && ahead < nearestAhead) nearestAhead = ahead;
+                    }
+                    if (nearestAhead < float.MaxValue) packGap = nearestAhead;
+                }
                 inventory.AcquireItem(ItemDistributionTable.RollItem(new ItemRollContext {
-                    position=position, gapLeaderSeconds=gap, lap=racer != null ? racer.CurrentLap : 1,
+                    position=position, gapLeaderSeconds=leaderGap / Mathf.Max(20, vehicle.SpeedMps),
+                    gapLeaderMeters=leaderGap, gapPackMeters=packGap, packSpreadMeters=spread,
+                    lapProgress=racer != null && tracker.TrackGraph.TotalLength > 0 ? racer.DistanceAlongTrack / tracker.TrackGraph.TotalLength : 0,
+                    lap=racer != null ? racer.CurrentLap : 1,
                     totalLaps=tracker != null ? tracker.TotalLaps : 3, held=inventory.HeldItem,
                     previous=inventory.PreviousItem, previousPrevious=inventory.PreviousPreviousItem
                 },inventory.ItemRng));availableAt=Time.time+respawnTime;

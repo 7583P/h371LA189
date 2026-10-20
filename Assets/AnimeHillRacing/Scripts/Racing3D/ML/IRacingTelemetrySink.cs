@@ -18,6 +18,9 @@ namespace AnimeHillRacing.Racing3D.ML
     {
         private readonly string primaryDirectory;
         private readonly string persistentDirectory;
+        // On-device human sessions await a future, consented export path. Keep a
+        // bounded local window instead of growing storage by ~5 MB every race.
+        public const int RetainedDeviceSessions = 5;
 
         public bool IsReady => true;
 
@@ -35,12 +38,15 @@ namespace AnimeHillRacing.Racing3D.ML
                     toolsDataDir = Path.GetFullPath(args[index + 1]);
                 }
             }
-            primaryDirectory = toolsDataDir ?? Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Tools", "ML", "Data"));
+            // The project Tools folder exists only beside the Editor/QA player. In a
+            // packaged release dataPath is the APK, so that write could only fail.
+            primaryDirectory = toolsDataDir ?? (Application.isEditor || Debug.isDebugBuild
+                ? Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Tools", "ML", "Data")) : null);
             persistentDirectory = toolsDataDir==null ? Path.Combine(Application.persistentDataPath, "Telemetry") : null;
 
             try
             {
-                if (!Directory.Exists(primaryDirectory)) Directory.CreateDirectory(primaryDirectory);
+                if (primaryDirectory != null && !Directory.Exists(primaryDirectory)) Directory.CreateDirectory(primaryDirectory);
                 if (persistentDirectory!=null && !Directory.Exists(persistentDirectory)) Directory.CreateDirectory(persistentDirectory);
             }
             catch (Exception ex)
@@ -60,6 +66,25 @@ namespace AnimeHillRacing.Racing3D.ML
             // EndSession owns integrity/quality. Never overwrite a legality rejection here.
 
             string fileName = $"race_{session.metadata.trackId}_{session.metadata.playerMmr}_{session.metadata.sessionId}.json";
+            if (primaryDirectory == null)
+            {
+                // Release device path: compact JSON serialized and written off the
+                // main thread at the results transition. The finished session is
+                // no longer mutated by the recorder (recording is false).
+                string directory = persistentDirectory;
+                if (directory == null) return;
+                System.Threading.ThreadPool.QueueUserWorkItem(_ =>
+                {
+                    try
+                    {
+                        Directory.CreateDirectory(directory);
+                        File.WriteAllText(Path.Combine(directory, fileName), JsonUtility.ToJson(session, false));
+                        PruneDeviceSessions(directory);
+                    }
+                    catch (Exception) { /* Telemetry is optional; never affect the race result flow. */ }
+                });
+                return;
+            }
             string json = JsonUtility.ToJson(session, true);
 
             // Write to local project Tools/ML/Data
@@ -82,11 +107,23 @@ namespace AnimeHillRacing.Racing3D.ML
                 {
                     string backupPath = Path.Combine(persistentDirectory, fileName);
                     File.WriteAllText(backupPath, json);
+                    PruneDeviceSessions(persistentDirectory);
                 }
             }
             catch (Exception ex)
             {
                 Debug.LogWarning($"[LocalTelemetrySink] Failed writing to persistent telemetry: {ex.Message}");
+            }
+        }
+
+        public static void PruneDeviceSessions(string directory)
+        {
+            var files = new DirectoryInfo(directory).GetFiles("race_*.json");
+            if (files.Length <= RetainedDeviceSessions) return;
+            Array.Sort(files, (a, b) => b.LastWriteTimeUtc.CompareTo(a.LastWriteTimeUtc));
+            for (int i = RetainedDeviceSessions; i < files.Length; i++)
+            {
+                try { files[i].Delete(); } catch (IOException) { } catch (UnauthorizedAccessException) { }
             }
         }
 

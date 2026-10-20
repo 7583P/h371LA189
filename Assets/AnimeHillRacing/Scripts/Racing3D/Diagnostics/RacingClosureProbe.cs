@@ -9,6 +9,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using Unity.Profiling;
 
 namespace AnimeHillRacing.Racing3D
 {
@@ -79,6 +80,9 @@ namespace AnimeHillRacing.Racing3D
             public readonly ClosureDriveSample[] before=new ClosureDriveSample[121];
         }
         static readonly bool bufferedDrivingTraces=Array.IndexOf(Environment.GetCommandLineArgs(),"--buffered-driving-traces")>=0;
+        static readonly ProfilerMarker TraceIoMarker=new ProfilerMarker("Racing.Diagnostics.TraceIO");
+        public int SynchronousTraceWrites { get; private set; }
+        public double SynchronousTraceWriteMs { get; private set; }
         BufferedTrace[] traceBuffer;
         int bufferedTraceCount, droppedTraces;
         string output, mode, raceOutput;
@@ -176,6 +180,62 @@ namespace AnimeHillRacing.Racing3D
                 yield break;
             }
 #endif
+            if (mode == "texture-smoke")
+            {
+                foreach (string scene in new[] { "MainMenu", "Garage", "Adventure2_5D", "PreStart" })
+                {
+                    if (scene == "PreStart") AnimeHillRacing.Core.GameSession.BeginAdventureTrackSelection();
+                    yield return SceneManager.LoadSceneAsync(scene);
+                    yield return new WaitForSecondsRealtime(scene == "Adventure2_5D" ? 8 : 4);
+                    CaptureTextureScene(scene);
+                    yield return new WaitForSecondsRealtime(1);
+                    if (scene == "Garage")
+                    {
+                        var garage = FindFirstObjectByType<AnimeHillRacing.UI.GarageUI>();
+                        if (garage != null)
+                        {
+                            garage.ShowStore();
+                            yield return new WaitForSecondsRealtime(3);
+                            foreach (float scrollPosition in new[] { 1f, .75f, .5f, .25f, 0f })
+                            {
+                                foreach (var scroll in FindObjectsByType<ScrollRect>(FindObjectsSortMode.None))
+                                    if (scroll.isActiveAndEnabled && scroll.vertical) scroll.verticalNormalizedPosition = scrollPosition;
+                                yield return new WaitForSecondsRealtime(2);
+                            }
+                            CaptureTextureScene("Store");
+                            garage.ShowTuning();
+                            yield return new WaitForSecondsRealtime(3);
+                            CaptureTextureScene("Tuning");
+                            garage.ShowUpgrade();
+                            yield return new WaitForSecondsRealtime(3);
+                            garage.ShowSkins();
+                            yield return new WaitForSecondsRealtime(3);
+                            garage.ShowSettings();
+                            yield return new WaitForSecondsRealtime(3);
+                        }
+                    }
+                    if (scene == "PreStart")
+                    {
+                        FindFirstObjectByType<AnimeHillRacing.UI.PreStartMenuUI>()?.Adventure();
+                        yield return new WaitForSecondsRealtime(3);
+                        foreach (float scrollPosition in new[] { 1f, .75f, .5f, .25f, 0f })
+                        {
+                            foreach (var scroll in FindObjectsByType<ScrollRect>(FindObjectsSortMode.None))
+                                if (scroll.isActiveAndEnabled && scroll.vertical) scroll.verticalNormalizedPosition = scrollPosition;
+                            yield return new WaitForSecondsRealtime(2);
+                        }
+                        CaptureTextureScene("AdventureTrackSelection");
+                    }
+                }
+                foreach (string scene in new[] { "RacingSelect", "RacingGarage", "Racing3D" })
+                {
+                    yield return SceneManager.LoadSceneAsync(scene);
+                    yield return new WaitForSecondsRealtime(4);
+                    CaptureTextureScene(scene);
+                }
+                Finish(suite.errors == 0);
+                yield break;
+            }
             // These are real Button callbacks. The human slot is driven by a test driver,
             // so this must never be reported as subjective human driving approval.
             int raceCount = seeds.Length * (mode == "benchmark" ? ratings.Length : 1);
@@ -259,8 +319,19 @@ namespace AnimeHillRacing.Racing3D
                 }
                 bufferedTraceCount=droppedTraces=0;
                 if(bufferedDrivingTraces && traceBuffer==null)
-                {traceBuffer=new BufferedTrace[128];for(int i=0;i<traceBuffer.Length;i++)traceBuffer[i]=new BufferedTrace();}
+                {
+                    // Open-edge runs also capture near misses. The former 128
+                    // slots dropped recovery histories after these filled it.
+                    // Allocate only for requested traces, before GO; export later.
+                    traceBuffer=new BufferedTrace[512];
+                    for(int i=0;i<traceBuffer.Length;i++)traceBuffer[i]=new BufferedTrace();
+                }
                 var metrics = FindFirstObjectByType<RacingRaceMetrics>();
+                if (RacingEliteForensics.Requested)
+                {
+                    gameObject.AddComponent<RacingEliteForensics>().Bind(manager);
+                    if (!RacingFrameForensics.Requested) gameObject.AddComponent<RacingShortcutTimingProbe>().Bind(manager);
+                }
                 if(RacingFrameForensics.Requested)gameObject.AddComponent<RacingShortcutTimingProbe>().Bind(manager);
                 if (metrics != null) metrics.ExportPath = Path.Combine(raceOutput, "metrics.json");
                 movedBeforeGo = 0;
@@ -306,6 +377,8 @@ namespace AnimeHillRacing.Racing3D
                     yield return null;
                 }
                 metrics?.StopMeasurement();
+                GetComponent<RacingEliteForensics>()?.Export(raceOutput);
+                if (GetComponent<RacingEliteForensics>() != null) Destroy(GetComponent<RacingEliteForensics>());
                 GetComponent<RacingFrameForensics>()?.Export(raceOutput);
                 GetComponent<RacingShortcutTimingProbe>()?.Export(raceOutput);
                 if(GetComponent<RacingShortcutTimingProbe>()!=null)Destroy(GetComponent<RacingShortcutTimingProbe>());
@@ -451,6 +524,11 @@ namespace AnimeHillRacing.Racing3D
         void WriteTrace(TrackedDriver tracked, string reason, bool recovery = true)
         {
             if (RacingFrameForensics.ReducedDiagnostics) return;
+            // Profile mode does not sample driving histories. Its recovery
+            // callback must not allocate/serialize/write a one-sample JSON in
+            // the measured frame. The explicit QA variant reproduces the old
+            // callback solely to measure its cost in a controlled A/B run.
+            if(mode=="profile"&&!bufferedDrivingTraces&&RacingFrameForensics.Variant!="trace-io")return;
             if(bufferedDrivingTraces)
             {
                 if(traceBuffer==null || bufferedTraceCount>=traceBuffer.Length){droppedTraces++;return;}
@@ -462,6 +540,10 @@ namespace AnimeHillRacing.Racing3D
                 buffered.before[tracked.count]=Sample(tracked);
                 return;
             }
+            bool measured=manager!=null&&manager.State==RaceState.Racing;
+            long started=System.Diagnostics.Stopwatch.GetTimestamp();
+            using(TraceIoMarker.Auto())
+            {
             var trace = new ClosureRecoveryTrace { seed = currentSeed, racerId = tracked.racer.Identity.racerId,
                 name = tracked.racer.Identity.displayName, mmr = tracked.racer.Identity.mmr, reason = reason,
                 recoveryNumber = tracked.racer.Recovery.RecoveryCount + (recovery ? 1 : 0) };
@@ -470,6 +552,8 @@ namespace AnimeHillRacing.Racing3D
             trace.before.Add(Sample(tracked));
             string prefix = recovery ? "recovery" : "edge";
             File.WriteAllText(Path.Combine(raceOutput, prefix + "-" + tracked.racer.Identity.gridPosition + "-" + (++tracked.traceNumber) + ".json"), JsonUtility.ToJson(trace, true));
+            }
+            if(measured){SynchronousTraceWrites++;SynchronousTraceWriteMs+=(System.Diagnostics.Stopwatch.GetTimestamp()-started)*1000d/System.Diagnostics.Stopwatch.Frequency;}
         }
         void ExportBufferedTraces()
         {
@@ -484,7 +568,7 @@ namespace AnimeHillRacing.Racing3D
                 File.WriteAllText(Path.Combine(raceOutput,data.prefix+"-"+tracked.racer.Identity.gridPosition+"-"+data.number+".json"),JsonUtility.ToJson(trace,true));
             }
             File.WriteAllText(Path.Combine(raceOutput,"driving-trace-buffer.json"),
-                "{\"bufferedDuringRace\":true,\"exportedAfterMeasurement\":true,\"count\":"+bufferedTraceCount+",\"dropped\":"+droppedTraces+"}");
+                "{\"bufferedDuringRace\":true,\"exportedAfterMeasurement\":true,\"capacity\":"+(traceBuffer?.Length??0)+",\"count\":"+bufferedTraceCount+",\"dropped\":"+droppedTraces+"}");
         }
         void Click(string name)
         {
@@ -495,6 +579,16 @@ namespace AnimeHillRacing.Racing3D
                 return;
             }
             Debug.LogError("Closure UI button not found: " + name);
+        }
+        void CaptureTextureScene(string name)
+        {
+            if (!capture) return;
+            string path = Path.Combine(output, name + "-size-smoke.png");
+#if UNITY_EDITOR
+            RacingEvidenceCapture.Capture(path);
+#else
+            UnityEngine.ScreenCapture.CaptureScreenshot(path);
+#endif
         }
         void Capture(string name)
         {

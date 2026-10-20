@@ -31,6 +31,9 @@ namespace AnimeHillRacing.Racing3D
         private CheckpointTrigger3D[] checkpoints;
         public RacerIdentity[] LobbyRacers => lobbyRacers;
         public bool PersistResults { get; set; } = true;
+        // CPPS RaceId of the atomically reserved ranked lobby (empty when unrated).
+        public string RankedRaceId { get; private set; } = "";
+        bool rankedResolved;
         public int EffectiveSeed { get; private set; }
         public int LobbyRevealCount { get; private set; }
         public void Configure(RaceRules configuration) { rules = configuration ?? RaceRules.CreateRanked(); }
@@ -123,6 +126,7 @@ namespace AnimeHillRacing.Racing3D
                 "PLAYER",
                 lobbySeed
             );
+            RankedRaceId = diagnosticLobby ? "" : MatchmakingService.LastRankedRaceId;
             if (rules.EqualBuildBenchmark)
                 foreach (var racer in lobbyRacers)
                 { racer.vehicleId = MetaProgressionConfig.MetaVehicleId; racer.wheelId = MetaProgressionConfig.MetaWheelId;if(rules.BenchmarkMmr>=0)racer.mmr=rules.BenchmarkMmr; }
@@ -191,7 +195,11 @@ namespace AnimeHillRacing.Racing3D
                     vehicle.Initialize(identity.vehicleId, identity.wheelId, aiController);
 
                     var mlAdapter = racerObj.GetComponent<RacingMlInferenceAdapter>() ?? racerObj.AddComponent<RacingMlInferenceAdapter>();
-                    mlAdapter.executionMode = MlExecutionMode.Shadow;
+                    // Shadow comparisons are only collected by QA/development players;
+                    // a release player has no sink for them, so it skips the inference
+                    // cost on phones. Never an authority change: Off and Shadow both
+                    // leave the heuristic driving.
+                    mlAdapter.executionMode = Debug.isDebugBuild ? MlExecutionMode.Shadow : MlExecutionMode.Off;
                     mlAdapter.mmr = identity.mmr;
                 }
 
@@ -226,6 +234,8 @@ namespace AnimeHillRacing.Racing3D
             // Unlock inputs
             if (playerInput != null) playerInput.SetInputEnabled(true);
             foreach (var vehicle in spawnedVehicles) vehicle.SetRaceEnabled(true);
+            // GO: from now on leaving is an abandonment for a rated race.
+            if (!string.IsNullOrEmpty(RankedRaceId) && PersistResults) RacingProgressionService.MarkRankedStarted(RankedRaceId);
             SetState(RaceState.Racing);
         }
 
@@ -279,11 +289,14 @@ namespace AnimeHillRacing.Racing3D
 
             // Persist human player MMR
             var playerEntry = finalResults.GetPlayerEntry();
+            finalResults.rankedRaceId = RankedRaceId;
             if (playerEntry != null && PersistResults)
             {
                 RacingProgressionService.RecordRankedResults(finalResults);
                 RacingSaveManager.RecordRecentFinish(playerEntry.finishPosition);
+                rankedResolved = true;
             }
+            else ResolveUnfinishedRankedRace();
 
             // End telemetry recording session
             var recorder = playerVehicle?.GetComponent<RacingTelemetryRecorder>();
@@ -373,6 +386,18 @@ namespace AnimeHillRacing.Racing3D
         {
             if (progressTracker != null) progressTracker.OnRacerFinished -= HandleRacerFinished;
             RacingProgressionService.SetRaceActive(false);
+            ResolveUnfinishedRankedRace();
+        }
+
+        // Any exit without settled results (menu, retry, scene change). A rated
+        // race after GO is an abandonment; before GO, or for unrated test races,
+        // the reserved bots are simply released.
+        void ResolveUnfinishedRankedRace()
+        {
+            if (rankedResolved || string.IsNullOrEmpty(RankedRaceId)) return;
+            rankedResolved = true;
+            if (PersistResults) RacingProgressionService.AbandonRankedRace(RankedRaceId);
+            else RacingProgressionService.CancelRankedRace(RankedRaceId);
         }
     }
 }

@@ -208,14 +208,26 @@ namespace AnimeHillRacing.Racing3D
         }
 
         // Production opponents are selected from saved careers, never invented for a race.
+        public static string LastRankedRaceId { get; private set; } = "";
         public static RacerIdentity[] GenerateRankedLobby(int playerMmr, string playerVehicleId, string playerWheelId, string playerDisplayName = "PLAYER", int seed = 0)
         {
             if (seed == 0) seed = unchecked((int)(DateTime.UtcNow.Ticks & int.MaxValue));
             var rng = new DeterministicRng(seed);
-            var selected = RacingProgressionService.Engine.SelectOpponents(playerMmr, seed, true);
+            // CPPS: eleven real, available persistent bots are reserved atomically
+            // (IN_MATCH for this RaceId) before the race exists. A failed
+            // reservation falls back to an unrated lobby, never invented rivals.
+            var pending = RacingProgressionService.ReserveRankedRace(seed);
+            LastRankedRaceId = pending != null ? pending.raceId : "";
+            LeagueCompetitor[] selected;
+            if (pending != null) {
+                selected = new LeagueCompetitor[pending.botIndices.Length];
+                for (int i = 0; i < selected.Length; i++) selected[i] = RacingProgressionService.Engine.View(pending.botIndices[i]);
+            }
+            else selected = RacingProgressionService.Engine.SelectOpponents(playerMmr, seed, true);
             var lobby = new RacerIdentity[12];
             var human = RacingProgressionService.State.human;
-            lobby[0] = new RacerIdentity(human.id, playerDisplayName, playerVehicleId, playerWheelId, playerMmr, true, rng.Next(1, 999999), 1) { titleId = human.selectedTitleId, characterId=human.characterPreference, accessoryId=human.accessoryPreference };
+            lobby[0] = new RacerIdentity(human.id, playerDisplayName, playerVehicleId, playerWheelId, playerMmr, true, rng.Next(1, 999999), 1) { titleId = human.selectedTitleId, characterId=human.characterPreference, accessoryId=human.accessoryPreference,
+                ranked = human.Ranked, placementGames = human.placementGames, visibleMmr = human.currentMmr };
             bool humanMeta = RacingStatsCalculator.NormalizeVehicleId(playerVehicleId) == MetaProgressionConfig.MetaVehicleId && RacingStatsCalculator.NormalizeWheelId(playerWheelId) == MetaProgressionConfig.MetaWheelId;
             lobby[0].buildCategory = humanMeta ? MetaBuildCategory.Meta : MetaBuildCategory.Specialist;
             lobby[0].buildName = humanMeta ? "DAPEX / WHITY" : "Custom Setup";
@@ -225,8 +237,13 @@ namespace AnimeHillRacing.Racing3D
                 string vehicle = bot.vehiclePreference;
                 string wheel = bot.wheelPreference;
                 bool meta = vehicle == MetaProgressionConfig.MetaVehicleId && wheel == MetaProgressionConfig.MetaWheelId;
-                lobby[i + 1] = new RacerIdentity(bot.id, bot.displayName, vehicle, wheel, bot.currentMmr, false, bot.personalitySeed, i + 2) {
+                // The saved capability controls driving in every career state.
+                // Rating resets/settlements only change visible competition;
+                // benchmark lobbies retain their separate configured difficulty.
+                int skillRating = bot.drivingRating;
+                lobby[i + 1] = new RacerIdentity(bot.id, bot.displayName, vehicle, wheel, skillRating, false, bot.personalitySeed, i + 2) {
                     titleId = bot.selectedTitleId, preferredStyle = bot.profile.preferredStyle, hasPersistentStyle = true, characterId=bot.characterPreference, accessoryId=bot.accessoryPreference,
+                    ranked = bot.Ranked, placementGames = bot.placementGames, visibleMmr = bot.currentMmr,
                     buildCategory = meta ? MetaBuildCategory.Meta : MetaBuildCategory.Standard,
                     metaProbabilityUsed = MetaProgressionConfig.EvaluateMetaProbability(bot.currentMmr),
                     paintColor = meta ? RacingVehicleFactory.MetaNavy : Color.HSVToRGB((bot.personalitySeed % 1000) / 1000f, .65f, .65f),

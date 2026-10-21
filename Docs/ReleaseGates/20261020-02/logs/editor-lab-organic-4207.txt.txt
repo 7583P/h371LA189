@@ -1,0 +1,2 @@
+organic-existing-10000-4s-4207 Q4: 2437355 races, mean=2474.5, supply=24744588, elapsed=71393ms
+organic-existing-10000-4s-4207: PASS; 2437355 actual scheduler settlements; production unchanged.

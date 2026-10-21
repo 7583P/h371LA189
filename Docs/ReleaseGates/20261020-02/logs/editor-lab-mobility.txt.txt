@@ -1,0 +1,2 @@
+mobility-existing-1200-4s-4209 Q4: 252346 races, mean=3023.3, supply=3627997, elapsed=18111ms
+mobility-existing-1200-4s-4209: PASS; 252346 actual scheduler settlements; production unchanged.

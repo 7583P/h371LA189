@@ -1,0 +1,76 @@
+PROMPT ULTRA MAESTRO — HILL ADVENTURER
+DESTINATARIO: GPT SOL 6.1 MAX (AGENTE DE CODIGO)
+FECHA DE REFERENCIA: 19 OCTUBRE 2026
+OBJETIVO: CERRAR DEFECTOS, FINALIZAR RAINBOW ROAD Y CONSEGUIR GATES REALES DE RELEASE SIN REGRESIONES
+
+ACTUA COMO PRINCIPAL UNITY ENGINEER, ARQUITECTO DE VIDEOJUEGOS, ESPECIALISTA EN FISICAS/IA COMPETITIVA, SRE DE BUILDS Y QA FORENSE. TRABAJA DIRECTAMENTE EN EL REPOSITORIO EXISTENTE. LEE EL INFORME ADJUNTO «Hill Adventurer — temporadas, comunidad, MMR y AFTER» (18–19 octubre 2026) Y SUS EVIDENCIAS LOCALES ANTES DE CAMBIAR NADA. NO SUPONGAS QUE LOS RESULTADOS DEL INFORME REPRESENTAN EL ESTADO ACTUAL: VERIFICALOS.
+
+REGLAS INNEGOCIABLES
+1. Trabajar EXCLUSIVAMENTE en la rama main. NO cambiar ni crear ramas. NO ejecutar git commit/push/pull/reset/clean ni operaciones destructivas sin autorización expresa del usuario. NO publicar ni firmar releases; NO subir AAB/APK. No borrar builds, logs, backups, saves, keystores, credenciales, assets ni evidencia previa. No sobrescribir sin snapshots de cambios.
+2. Inspeccionar git status, HEAD, diff, escenas, configuraciones, prefabs, scripts y logs. Proteger trabajo modificado/sin seguimiento, savegames y configuraciones de AdMob, IAP y Google Play Games. Crear evidencia nueva en carpeta versionada con fecha y hashes. Evitar compilar proyectos Unity ajenos o cerrar procesos de otras personas.
+3. Mantener sin cambios las reglas competitivas aprobadas: HA-PW2 de 12 corredores (humano+11 bots), sumatoria pairwise reconciliada a cero antes de límites, recibos idempotentes; habilidad oculta separada del MMR; placements iniciales 0/3; clasificación estacional independiente 0/1 al terminar una carrera; Season 1 global desde 2026-10-01 00:00 UTC, trimestres naturales; soft reset Hermite vigente; títulos Top y ASSASSINER existentes. NO importar las reglas MMR de Survival 100. No inventar rating, victorias, puestos, actividad online real ni replays. NO conceder MMR por actividad, horas conectado, atajos, trucos o espectadores.
+4. La propuesta AFTER >=3000 MMR, rombo +1/100 y el reset alternativo NO estan autorizados para producción por este encargo; pueden revisarse y documentarse, pero dejar fuera de Player hasta aprobación explícita. La población 100k permanece opt-in QA; no migrar perfiles reales ni modificar el default 10k sin validación y autorización separadas.
+5. ML: producción Off; el modelo ML01 queda intacto; ML02 solo Shadow QA. No entrenar, promover ni usar autoridad ML ni lanzar tareas costosas de entrenamiento. No alterar coches, controles, boosts, ruedas, suspensión, físicas, colisiones, reglas base ni rendimiento para fabricar métricas. Toda modificación funcional debe tener hipótesis, prueba A/B, regresión y rollback.
+
+ESTADO DE PARTIDA (VERIFICAR EN FUENTE)
+- main al inicio del informe: 3be766620f6c38e5287bbb73e3a925973806df96, con cambios preexistentes sin confirmar.
+- Matriz válida ML Off: 6 carreras (MMR 9700/10000, seeds 4207/4208/4209), 72/72 llegadas, 0 DNF, 7 recuperaciones; tiempos 1º–12º de 15.20 a 27.06 s. Criterio pretendido: 0 DNF, máximo 2 recuperaciones acumuladas y gaps de 3–8 s.
+- Comparación Off vs Shadow NO acreditada: ventana Off sin foco; no inferir ventaja de rendimiento.
+- AAB forense 151,231,753 bytes; entrega Android calculada 147,953,167 bytes (<150,000,000 con margen limitado). No sustituye análisis de Play por dispositivo.
+- 100k bots opt-in: mínimo online sintético ~56–57k; NO son jugadores humanos conectados. Los bancos estadísticos no acreditan comportamiento físico ni distribución aspiracional a largo plazo.
+- Rainbow Road: shader/material prismático parcial, sin rediseño geométrico acreditado; falta aprobación visual humana.
+- Android real, AdMob, GPGS, IAP y HumanGate pendientes.
+
+PLAN OPERATIVO OBLIGATORIO
+
+FASE 0. INVENTARIO FORENSE Y BASELINE
+- Reconstruir arquitectura del modo Racing 3D; dependencias de escenas, mapas, shaders, materiales, quality levels, render pipeline, IA, ranking, savegame y Android.
+- Ejecutar baseline reproducible en condiciones controladas, con QA en carpetas nuevas, sin pisar evidencia. Si no hay compilación limpia, corregir SOLO bloqueos comprobados, con pruebas.
+- Generar una matriz por subsistema con estado REAL: implementado, probado, aprobado, activo, bloqueado.
+
+FASE 1. RAINBOW ROAD: REDISEÑO REAL DE PISTA, NO SOLO MATERIAL
+- Construir una identidad visual claramente inspirada en la fantasía de una «senda arcoíris espacial» de carreras arcade: carretera multicolor luminosa de bandas legibles, horizonte cósmico, estrellas/nebulosas, contrastes de neón, variación cromática, iluminación bien calibrada, señalización y bordes de seguridad visuales, sentido inequívoco de curvas, rampas, peraltes y atajos. Desarrollar diseño ORIGINAL; NO copiar mallas, texturas, logos ni assets protegidos de Mario Kart/Nintendo.
+- Evaluar el circuito existente primero. Mejorar geometría y perfil de la pista solo donde la experiencia y las pruebas lo exijan, preservando continuidad y transitabilidad para 12 vehículos, shortcuts, checkpoints, respawns, cámaras, detección de off-track y física existente. Cualquier cambio de geometría requiere pruebas de IA, colisiones, caídas y tiempos; no romper récords ni persistencia.
+- El shader prismático debe verse de día/noche, en High y Android; evitar bloom excesivo y contrastes que oculten bordes. Revisar transparencias, pink shaders, z-fighting y batching.
+- El coche META Formula Apex amarillo intenso, ruedas íntegramente cyan y piloto traje/casco morado retro se conservan, sin alteraciones accidentales.
+- Ofrecer capturas comparativas antes/después en puntos idénticos y video/capturas QA de curva, salto, shortcut, recuperación y llegada. No declarar visual PASS sin revisión humana.
+
+FASE 2. IA ELITE, RECUPERACIONES Y GAPS
+- Instrumentar las carreras del mismo baseline, por corredor y sector: trayectoria planeada/real, committed route, entrada/fin de atajo, pérdidas de velocidad, impactos, uso de boost/drift, saltos/aterrizajes, contactos y recuperaciones, obstrucciones, stuck flags y decisiones de navegación.
+- Analizar con evidencia las 7 recuperaciones de 10000 MMR (4/2/1 por seed) y gaps de hasta 27.06 s. Distinguir pérdidas causales verificadas de simples correlaciones. Reproducir fallos antes de cambiar.
+- Mejorar comportamiento de conducción élite de forma orgánica: anticipación, elección de rutas, ejecución estable de shortcuts, gestión de tráfico, control de aterrizaje y recuperación, sin teleport arbitrario, rubberbanding oculto, velocidades falsas, boosts gratis, efectos distintos para coches equivalentes o resultados guionizados.
+- Prohibido garantizar artificialmente 3–8 s alterando cronómetros o forzando standings. No sacrificar justicia, variedad ni determinismo por cifras.
+- Ejecutar inicialmente seeds 4207/4208/4209 y MMR 9700/10000 (72 finishers), después seeds independientes y pruebas de estrés. GATE: 72/72 finishers, 0 DNF, <=2 recuperaciones totales y gaps 3–8 s en matriz oficial; si es físicamente inalcanzable sin manipulación, reportar BLOCKED con causas, métricas y mejor solución honesta.
+
+FASE 3. RENDIMIENTO ML OFF VS SHADOW
+- Repetir comparación con EL MISMO binario, hashes, seed, MMR, escena, resolución 1600x900, calidad High, escala 1, corriente y foco de ventana. Sin compilación concurrente ni otros Unity bajo carga; nunca matar procesos externos.
+- Registrar FPS medio, 1%/0.1% lows, p95/p99 frame time, CPU main/render, física, IA, inferencia, GC/frame, memoria, GPU si disponible, pausas y foco. Off=0 inferencias; Shadow con ML02 solo inferencia no autoritativa.
+- Descartar íntegra cualquier ventana sin foco/cambio de alimentación; no comparar muestras inválidas ni afirmar que ML mejora rendimiento sin evidencia. Mantener ML producción Off.
+
+FASE 4. COMPETITIVO / TEMPORADAS / 100K BOTs
+- Auditar HUD estimado frente al settlement definitivo: el MMR mostrado antes y después debe explicarse y coincidir con el recibo final, sin saltos silenciosos ni doble aplicación. Mostrar preview solo si es explícitamente estimación; resultado oficial siempre deriva del settlement. Testear DNF, abandono, retry, crash/relaunch, reset y season boundary.
+- Comprobar que los 11 bots realmente enfrentados figuren de forma buscable en leaderboard por ID/nombre, con criterios de existencia/persistencia, índice, filtros, estado Season Placement y aislamiento de saves; no fabricar perfiles nuevos para justificar ausencias. Validar búsquedas tras partidas y reinicios.
+- Ejecutar laboratorios estadísticos reproducibles de varias temporadas, con población y actividad reales del simulador, reportando percentiles, supply, movilidad, distribución de rangos y por qué existe escasez de élite. No tratar fixtures sintéticos como prueba orgánica. Evaluar alternativas únicamente en QA sin activar AFTER ni cambiar fórmula/reset.
+- Preservar Local Offline y ausencia de conexión requerida para bots. Presencia sintética no equivale a 50k usuarios reales. Mantener almacenamiento eficiente, journaling, identidad, historial y purga segura. Medir CPU, disco y memoria de 10k y 100k; estudiar degradación Android sin activar 100k.
+
+FASE 5. ANDROID Y RELEASE GATES
+- Medir entrega real por ABI/densidad con bundletool y analizar AAB/APK/splits. Meta: <=150000000 bytes de entrega en referencia acordada, con margen; preservar nitidez, fuentes, pivotes, sprites, texturas críticas. No equiparar tamaño de AAB con tamaño instalado/descargado.
+- Generar, si es seguro y hay ambiente, builds QA NO firmadas para producción. No tocar keystore. Android físico: controles, cámara, 12 corredores, reinicio, carrera completa, GPGS, compras de prueba, AdMob de prueba/producción únicamente en flujo autorizado, historial, export Android SAF, temperatura, FPS, ANR/crashes y variedad de densidades. Si no hay dispositivo, declarar BLOCKED, nunca PASS.
+- Validar app-ads.txt mediante identidad y dominio efectivamente configurados; no inventar sitios. Evitar publicidad real en QA y no realizar clics inválidos.
+- HumanGate Windows: ejecutar con ML Off; confirmar diseño de pista, HUD/placements/títulos, resultados, botones, historial, exportación, controles y cámara. La aprobación humana siempre requiere una confirmación expresa del usuario.
+- No cambiar versionCode 20/versionName 1.2, firma, configuración Play Console ni publicar sin instrucción explícita. Si Play Console exige otros valores, documentar recomendación sin modificar silenciosamente.
+
+PRUEBAS Y EVIDENCIA
+- Pruebas EditMode/PlayMode y contratos competitivos; 0 fallos en suites relevantes. Comprobar integridad de assets con hashes; diff controlado; Unity compile/build; smoke de carreras y render reales; pruebas de saves antiguos; rollback/restore.
+- No mezclar pruebas estadísticas, físicas y de Android como si fuesen equivalentes. Identificar en cada evidencia dispositivo/build/seed/versión/configuración/condiciones/foco.
+- Informes claros: baseline vs after, tablas de 6 carreras, lista de bugs cerrados con archivo y cambios, capturas, análisis de rendimiento válido, presupuesto MMR, riesgo y rollback.
+- Si falla un gate, NO etiquetar READY; detallar causa raíz, severidad, reproducción y siguiente cambio mínimo viable.
+
+ENTREGABLES
+A) REPORT.md con resumen ejecutivo, matriz de gates PASS/FAIL/BLOCKED y qué está activado realmente en producción.
+B) Evidencias en rutas nuevas con hashes, logs y CSV/JSON reproducibles.
+C) Build QA Windows/HumanGate sin datos ni compras reales alteradas, si el entorno lo permite.
+D) Listado de archivos cambiados y justificación, impacto, tests, backups y rollback.
+E) Lista de decisiones que necesitan autorización: AFTER >=3000 /100, eventual cambio del reset, activación 100k, aceptación del nuevo diseño, firma/subida/publicación y cualquier cambio riesgoso.
+
+ORDEN DE EJECUCION: FASE 0 -> 1 -> 2 -> 3 -> 4 -> 5. AUTONOMIA PARA IMPLEMENTAR Y CORREGIR EN EL AMBIENTE LOCAL, SIN PEDIR CONFIRMACIONES CONTINUAS PARA CAMBIOS NO DESTRUCTIVOS. Detener únicamente acciones que requieran autorización explícita, credenciales, dispositivo inexistente o riesgo real a datos. Ejecutar tanto como sea posible y entregar resultados medidos; no prometer resultados sin haberlos medido. No hacer commit/push/pull.

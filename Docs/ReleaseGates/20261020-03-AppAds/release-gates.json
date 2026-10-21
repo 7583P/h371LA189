@@ -1,0 +1,90 @@
+{
+  "releaseReady": false,
+  "status": "NOT_READY",
+  "gates": [
+    {
+      "gate": "Source, assets and production-data preservation",
+      "status": "PASS",
+      "evidence": "../20261020-02/integrity-final.json"
+    },
+    {
+      "gate": "Core competitive, seasons, lookup and serializer contracts",
+      "status": "PASS",
+      "evidence": "../20261020-02/fixed-release-json/release-json-contracts.json"
+    },
+    {
+      "gate": "Windows reviewed build and seven Editor suites",
+      "status": "PASS",
+      "evidence": "../20261020-02/windows-reviewed/rc-contracts.json"
+    },
+    {
+      "gate": "Rainbow Road human visual approval",
+      "status": "BLOCKED",
+      "evidence": "../20261020-02/rainbow-build/REVIEW.html"
+    },
+    {
+      "gate": "Authored-jump observation capture",
+      "status": "PASS",
+      "evidence": "../20261020-02/capture-contracts.json"
+    },
+    {
+      "gate": "Elite official six-race gate",
+      "status": "FAIL",
+      "evidence": "../20261020-02/official-matrix-analysis/matrix.json"
+    },
+    {
+      "gate": "New Off vs ML02 Shadow controlled pair",
+      "status": "BLOCKED",
+      "evidence": "../20261020-02/performance-gate.json"
+    },
+    {
+      "gate": "Results and numeric-name UI contracts",
+      "status": "PASS",
+      "evidence": "../20261020-02/ui-after-numeric-fix/competitive-display-contracts.json"
+    },
+    {
+      "gate": "Eleven actual opponents after native restart",
+      "status": "PASS",
+      "evidence": "../20261020-02/native-league-readback-fixed/native-league-readback.json"
+    },
+    {
+      "gate": "Simulator budget, multi-season reload and storage",
+      "status": "PASS",
+      "evidence": "../20261020-02/statistical-readback/statistical-summary.json"
+    },
+    {
+      "gate": "Android local build and calculated reference delivery",
+      "status": "PASS",
+      "evidence": "../20261020-02/android-delivery/delivery-summary.json"
+    },
+    {
+      "gate": "Physical Android, GPGS, IAP, AdMob and SAF",
+      "status": "BLOCKED",
+      "evidence": "../20261020-02/android-device.json"
+    },
+    {
+      "gate": "app-ads.txt public HTTP, content and discovery",
+      "status": "BLOCKED",
+      "evidence": "app-ads-gate.json",
+      "developerDomainConfirmedByUser": true
+    },
+    {
+      "gate": "Windows HumanGate express approval",
+      "status": "BLOCKED",
+      "evidence": "../20261020-02/MANUAL-QA.md"
+    }
+  ],
+  "productionSourcePolicy": {
+    "formula": "HA-PW2",
+    "population": 10000,
+    "ml": "Off",
+    "after3000Enabled": false,
+    "alternativeResetEnabled": false,
+    "versionName": "1.2",
+    "versionCode": 20
+  },
+  "publishedOrProductionSigned": false,
+  "previousSealedEvidence": "../20261020-02/SHA256SUMS.json",
+  "updatedAtUtc": "2026-10-21T03:55:05.860603+00:00",
+  "scopeOfNewChecks": "Local publisher identity and preservation; public web checks attempted but blocked."
+}

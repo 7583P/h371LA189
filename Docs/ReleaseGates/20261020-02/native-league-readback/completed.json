@@ -1,0 +1,38 @@
+﻿{
+    "classification":  "FRESH_NATIVE_UI_READBACK_FROM_COPY_OF_EXISTING_PHYSICAL_QA_SAVE",
+    "seed":  4302,
+    "source":  "C:\\Peru3124\\restoredclimb\\ClimbAnime\\Docs\\ReleaseGates\\20261020-02\\ranked-stress\\mmr-10000\\isolated-product-save",
+    "before":  [
+                   {
+                       "path":  "league-v4-0.journal",
+                       "sha256":  "A78A800AB4B90C2B1165DB63855A393C6D421205AFF5769CC01008A3514358DB"
+                   },
+                   {
+                       "path":  "league-v4-1.journal",
+                       "sha256":  "FA4A22437C89E5D802275409AAA44D6C1390E7AEF7623AAB042EB897CD6AA5F5"
+                   },
+                   {
+                       "path":  "ranked-session.bin",
+                       "sha256":  "9BC5C74B92C0C1892FD4741E29D7573D2BCA84B5C376F7CC2609F289241E0AAA"
+                   }
+               ],
+    "qaSnapshot":  "C:\\Peru3124\\restoredclimb\\ClimbAnime\\tmp\\ReleaseGates\\20261020-02\\native-readback-before-4d914ae7c4fe4a65ba25bb8d822b2d58",
+    "playerSha256":  "47B23BFAD0DBB1200A41DAAE299396C49924B87C0222E2E4258687A3505334A0",
+    "assemblySha256":  "1E40C8F7FCCB691A5667AC5738FC89744D4C01F2B0A1CEB0D91F11FDB292A4D4",
+    "exitCode":  1,
+    "after":  [
+                  {
+                      "path":  "league-v4-0.journal",
+                      "sha256":  "A78A800AB4B90C2B1165DB63855A393C6D421205AFF5769CC01008A3514358DB"
+                  },
+                  {
+                      "path":  "league-v4-1.journal",
+                      "sha256":  "FA4A22437C89E5D802275409AAA44D6C1390E7AEF7623AAB042EB897CD6AA5F5"
+                  },
+                  {
+                      "path":  "ranked-session.bin",
+                      "sha256":  "9BC5C74B92C0C1892FD4741E29D7573D2BCA84B5C376F7CC2609F289241E0AAA"
+                  }
+              ],
+    "sourceUnchanged":  true
+}

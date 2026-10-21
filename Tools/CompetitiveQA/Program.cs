@@ -22,6 +22,11 @@ namespace CompetitiveQA
                 case "contracts": return ContractSuite.Run(output);
                 case "seasons": return SeasonExpansionContracts.Run(output);
                 case "scale": return SeasonScaleBench.Run(output);
+                case "release-lookup": return ReleaseLookupContracts.Run(output);
+                case "release-json": return ReleaseJsonContracts.Run(output);
+                case "release-population": return ReleasePopulationBench.Run(output,args.Length>2?int.Parse(args[2]):10000);
+                case "physical-readback": return PhysicalLeagueReadback.Run(output,args[2],args[3]);
+                case "release-lab-readback": return ReleaseLabReadback.Run(output,args[2]);
                 case "mmr-lab": return MmrEconomyLab.Run(output,args);
                 case "mmr-contracts": return MmrExperimentContracts.Run(output);
                 case "sizes": Console.WriteLine($"bot {LocalLeagueStore.BytesPerBot} season {LocalLeagueStore.BytesPerSeasonBot}"); return 0;

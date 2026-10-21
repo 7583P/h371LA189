@@ -1,0 +1,6 @@
+result=Succeeded
+platform=StandaloneWindows64
+bytes=1040115946
+errors=0
+warnings=4
+seconds=27.0857297

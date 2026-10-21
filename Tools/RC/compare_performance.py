@@ -9,6 +9,9 @@ def read(path):
 
 
 def compare(root, run_label='policy', off_label=None, shadow_label=None):
+    destination = root / ('performance-comparison.json' if run_label == 'policy' else f'performance-comparison-{run_label}.json')
+    if destination.exists():
+        raise FileExistsError('Preserve prior comparison evidence; choose a new run directory')
     samples = {}
     manifests = {}
     sources = {}
@@ -59,8 +62,8 @@ def compare(root, run_label='policy', off_label=None, shadow_label=None):
                   shadow_minus_off={field: samples['shadow'][field] - samples['off'][field]
                                     for field in fields if samples['shadow'][field] is not None and samples['off'][field] is not None} if not reasons else None,
                   interpretation='An accepted single pair is an observed local comparison, not a statistical claim about ML cost. Partial 60-second race suite exits remain unchanged and do not replace the full-race gate. Unfocused/power-changing runs are retained but rejected. Overlapping scopes are not summed; stalls alone do not establish an ML cause.')
-    destination = root / ('performance-comparison.json' if run_label == 'policy' else f'performance-comparison-{run_label}.json')
-    destination.write_text(json.dumps(result, indent=2), encoding='utf-8')
+    with destination.open('x', encoding='utf-8') as stream:
+        json.dump(result, stream, indent=2)
     print(json.dumps(result, indent=2))
 
 

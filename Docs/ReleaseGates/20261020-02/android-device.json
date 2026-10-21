@@ -1,0 +1,8 @@
+﻿{
+    "utc":  "2026-10-21T03:33:27.4020864Z",
+    "adbExitCode":  0,
+    "authorizedDeviceCount":  0,
+    "physicalTestsPerformed":  false,
+    "status":  "BLOCKED_NO_AUTHORIZED_DEVICE",
+    "limits":  "Device enumeration is not a physical test, service validation or approval; no APK was installed"
+}

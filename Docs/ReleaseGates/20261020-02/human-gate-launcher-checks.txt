@@ -1,0 +1,3 @@
+﻿PowerShell parser PASS
+Evidence directory traversal/path guard PASS
+Manual launch not executed; human approval pending

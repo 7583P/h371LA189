@@ -1,0 +1,52 @@
+item	renderer	vertices	shader	supported	colliders
+1	Batched Racing palette RGBA(20, 240, 255, 61)0.86True	114	Standard	True	0
+1	Batched Racing palette RGBA(20, 240, 255, 255)0.50True	766	Standard	True	0
+1	Batched Racing palette RGBA(9, 13, 23, 255)0.75False	100	Standard	True	0
+1	Batched Racing palette RGBA(102, 125, 156, 255)0.82False	484	Standard	True	0
+2	Batched Racing palette RGBA(102, 125, 156, 255)0.82False	114	Standard	True	0
+2	Batched Racing palette RGBA(20, 240, 255, 255)0.50True	292	Standard	True	0
+2	Batched Racing palette RGBA(9, 13, 23, 255)0.75False	150	Standard	True	0
+3	Batched Racing palette RGBA(71, 61, 59, 255)0.22False	60	Standard	True	0
+3	Batched Racing palette RGBA(255, 166, 56, 255)0.50True	150	Standard	True	0
+4	Batched Racing palette RGBA(20, 240, 255, 61)0.86True	187	Standard	True	0
+4	Batched Racing palette RGBA(20, 240, 255, 255)0.50True	288	Standard	True	0
+5	Batched Racing palette RGBA(9, 13, 23, 255)0.75False	50	Standard	True	0
+5	Batched Racing palette RGBA(217, 71, 255, 255)0.50True	493	Standard	True	0
+5	Batched Racing palette RGBA(102, 125, 156, 255)0.82False	300	Standard	True	0
+6	Batched Racing palette RGBA(217, 71, 255, 61)0.86True	114	Standard	True	0
+6	Batched Racing palette RGBA(217, 71, 255, 255)0.50True	766	Standard	True	0
+6	Batched Racing palette RGBA(9, 13, 23, 255)0.75False	100	Standard	True	0
+6	Batched Racing palette RGBA(102, 125, 156, 255)0.82False	484	Standard	True	0
+7	Batched Racing palette RGBA(9, 13, 23, 255)0.75False	50	Standard	True	0
+7	Batched Racing palette RGBA(255, 46, 92, 255)0.50True	443	Standard	True	0
+7	Batched Racing palette RGBA(102, 125, 156, 255)0.82False	300	Standard	True	0
+8	Batched Racing palette RGBA(20, 240, 255, 61)0.86True	342	Standard	True	0
+8	Batched Racing palette RGBA(20, 240, 255, 255)0.50True	2298	Standard	True	0
+8	Batched Racing palette RGBA(9, 13, 23, 255)0.75False	300	Standard	True	0
+8	Batched Racing palette RGBA(102, 125, 156, 255)0.82False	1452	Standard	True	0
+9	Batched Racing palette RGBA(71, 61, 59, 255)0.22False	120	Standard	True	0
+9	Batched Racing palette RGBA(255, 166, 56, 255)0.50True	300	Standard	True	0
+10	Batched Racing palette RGBA(102, 125, 156, 255)0.82False	114	Standard	True	0
+10	Batched Racing palette RGBA(217, 71, 255, 255)0.50True	420	Standard	True	0
+10	Batched Racing palette RGBA(9, 13, 23, 255)0.75False	150	Standard	True	0
+11	Batched Racing palette RGBA(102, 125, 156, 255)0.82False	114	Standard	True	0
+11	Batched Racing palette RGBA(255, 46, 92, 255)0.50True	392	Standard	True	0
+11	Batched Racing palette RGBA(9, 13, 23, 255)0.75False	150	Standard	True	0
+12	Batched Racing palette RGBA(20, 240, 255, 255)0.50True	182	Standard	True	0
+12	Batched Racing palette RGBA(102, 125, 156, 255)0.82False	200	Standard	True	0
+13	Gold coin +10	424	HillAdventurer/Racing Coin	True	0
+14	Batched Racing palette RGBA(31, 255, 87, 61)0.86True	114	Standard	True	0
+14	Batched Racing palette RGBA(31, 255, 87, 255)0.50True	766	Standard	True	0
+14	Batched Racing palette RGBA(9, 13, 23, 255)0.75False	100	Standard	True	0
+14	Batched Racing palette RGBA(102, 125, 156, 255)0.82False	484	Standard	True	0
+15	Lancer meteor shell	114	Standard	True	0
+15	Molten meteor nose	50	Standard	True	0
+15	Swept silver stabilizer	50	Standard	True	0
+15	Molten flank seam	50	Standard	True	0
+15	Swept silver stabilizer	50	Standard	True	0
+15	Molten flank seam	50	Standard	True	0
+15	Rocket exhaust ring	192	Standard	True	0
+15	Amber meteor tail	82	Standard	True	0
+15	White hot exhaust	50	Standard	True	0
+16	Batched Racing palette RGBA(255, 189, 10, 255)0.78False	60	Standard	True	0
+16	Batched Racing palette RGBA(255, 189, 10, 255)0.50True	342	Standard	True	0

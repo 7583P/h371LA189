@@ -1,0 +1,8 @@
+{
+  "clientDate": "2026-10-20",
+  "vehicleAppearance": {
+    "status": "APPROVED_PRESERVE_EXISTING",
+    "userAnswer": "Conservar el coche actual (DAPEX azul/Whity)",
+    "scope": "Vehicle appearance only; no track visual, release, AFTER, reset or 100k approval"
+  }
+}

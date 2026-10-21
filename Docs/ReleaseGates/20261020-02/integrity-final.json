@@ -1,0 +1,347 @@
+{
+  "classification": "RECORDED_SOURCE_ARTIFACT_FILE_AND_REGISTRY_INTEGRITY_NOT_RELEASE_APPROVAL",
+  "branch": "main",
+  "head": "152279fb5a4cf443a90d31654ad7a90f51e5abb3",
+  "changedOriginalSources": [
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingCompetitiveDisplayContracts.cs",
+      "beforeSha256": "4282d26c7b56052e52ec49d98ebe84bf3fc791d7f1c9bc4cb0e7c9f75fa6cea0",
+      "currentSha256": "d727adbb641cf750c3138117edef2e78ae39f09e6aec6d0602e7267d06e516e0",
+      "lineEndingsOnly": false
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingClosureProbe.cs",
+      "beforeSha256": "ff2110519ddddffa0bc8d964e97188b288806228028a0a91f7cfd5965bbc2f44",
+      "currentSha256": "6e0eded11a335d1fc0b37c4e936ae36edf869338971fedbd724e2826ce3dc08d",
+      "lineEndingsOnly": false
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingLeaderboardUI.cs",
+      "beforeSha256": "32aea25e825aff30b0b548dd86319598ba80fb741615e0ef3dae7946a1b3f7f7",
+      "currentSha256": "b2eb3da03abdc9f96550f7a4eaa5571bbbb6d3e950dcc0fe68d2a4f4074af4d2",
+      "lineEndingsOnly": false
+    },
+    {
+      "path": "Tools/CompetitiveQA/Json.cs",
+      "beforeSha256": "c01a20172efa05dd75d4052f20b534b7eea181353e30ff9dae223f67a51cb6e0",
+      "currentSha256": "0ea975c72857a157fa839a0290ebb14fe91de7cb2070f8ddf6a2607026e63b0c",
+      "lineEndingsOnly": false
+    },
+    {
+      "path": "Tools/CompetitiveQA/Program.cs",
+      "beforeSha256": "0ca965fbced183889b1aca55b1880f6f71713c4d658e9237940fbc486449545a",
+      "currentSha256": "7108bf01c87705f19e96ba2ed246374333c7ba20aa61ed57392316786415069f",
+      "lineEndingsOnly": false
+    },
+    {
+      "path": "Tools/RC/Open-ReleaseHumanGate.ps1",
+      "beforeSha256": "6db990b75dd2280c780a4d9f65ffcfb67065da0de47a5676f3b21730fc60447a",
+      "currentSha256": "a5e30bfd1681f6c791e274dcd512ba24ac737e618087471dbad06727f9969776",
+      "lineEndingsOnly": false
+    },
+    {
+      "path": "Tools/RC/Run-ReleaseNativeReadback.ps1",
+      "beforeSha256": "6b03cb83f47eba5670b9a9e65c11ad1f674af5a9b12857ed3f58255008f7210a",
+      "currentSha256": "7d0a1e375e0bb72748db9ef1c814b1d9b16b405f6b5f20f838f88e743e06fd65",
+      "lineEndingsOnly": false
+    },
+    {
+      "path": "Tools/RC/analyze_performance.py",
+      "beforeSha256": "a4c0c889a94585797bd5d1d8e37b0ea40becb386ea345d0b3df361914125c15d",
+      "currentSha256": "2117434dbc7ae428e5545ba622e4b7736d5324e10c646ebe0ab1049de615e149",
+      "lineEndingsOnly": false
+    },
+    {
+      "path": "Tools/RC/compare_performance.py",
+      "beforeSha256": "87ecfe6d91ef6740a5db29c04230262d2edcb3449b03543d371c9012334bb831",
+      "currentSha256": "ad7a9454da9c0da2a3ab386381bc5f580e33ff46094b90c39780a4d0e7524684",
+      "lineEndingsOnly": false
+    },
+    {
+      "path": "Tools/RC/export_release_logs.py",
+      "beforeSha256": "ec670718ed6e11b15c2b666c86dd9c9f5fd5db7598f5b69f8970d7927899a75f",
+      "currentSha256": "8e2f4060825bd9326a28951c1f838b987a464285d215e8f3a1f594aca63b8f89",
+      "lineEndingsOnly": false
+    },
+    {
+      "path": "Tools/RC/verify_release_integrity.py",
+      "beforeSha256": "90b4e72f865cfc3f7b79347e8807a4d202b7efd01722861bf9557719c16dd4da",
+      "currentSha256": "c48c78286a159b156ba105d730034e7f684ed0514d4c755358664fd15133496d",
+      "lineEndingsOnly": false
+    }
+  ],
+  "unplannedSemanticChanges": [],
+  "scenesAndPrefabs": [
+    {
+      "path": "Assets/AnimeHillRacing/Experiments/Box2DJeep/Box2DJeepTest.unity",
+      "unchanged": true
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Experiments/Box2DJeep/Box2DStrongImpactPlayMode.unity",
+      "unchanged": true
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scenes/Adventure2_5D.unity",
+      "unchanged": true
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scenes/Adventure3D.unity",
+      "unchanged": true
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scenes/ClimbGameplay.unity",
+      "unchanged": true
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scenes/Garage.unity",
+      "unchanged": true
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scenes/MainMenu.unity",
+      "unchanged": true
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scenes/PreStart.unity",
+      "unchanged": true
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scenes/Prototype.unity",
+      "unchanged": true
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scenes/Racing3D.unity",
+      "unchanged": true
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scenes/RacingGarage.unity",
+      "unchanged": true
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scenes/RacingSelect.unity",
+      "unchanged": true
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scenes/RoadGameplay.unity",
+      "unchanged": true
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scenes/TimeTrial3D.unity",
+      "unchanged": true
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Experiments/Box2DJeep/Box2DJeepRig.prefab",
+      "unchanged": true
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Prefabs/Vehicles/AerialSatelite_2D.prefab",
+      "unchanged": true
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Prefabs/Vehicles/AerialSatelite_3D.prefab",
+      "unchanged": true
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Prefabs/Vehicles/Buggy_2D.prefab",
+      "unchanged": true
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Prefabs/Vehicles/Buggy_3D.prefab",
+      "unchanged": true
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Prefabs/Vehicles/Formula_2D.prefab",
+      "unchanged": true
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Prefabs/Vehicles/Formula_2D_PhysX_Legacy.prefab",
+      "unchanged": true
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Prefabs/Vehicles/Formula_3D.prefab",
+      "unchanged": true
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Prefabs/Vehicles/HillAdventurer_2D.prefab",
+      "unchanged": true
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Prefabs/Vehicles/HillAdventurer_3D.prefab",
+      "unchanged": true
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Prefabs/Vehicles/Jeep_2D.prefab",
+      "unchanged": true
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Prefabs/Vehicles/Jeep_2D_PhysX_Legacy.prefab",
+      "unchanged": true
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Prefabs/Vehicles/Jeep_3D.prefab",
+      "unchanged": true
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Prefabs/Vehicles/Rally_2D.prefab",
+      "unchanged": true
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Prefabs/Vehicles/Rally_2D_PhysX_Legacy.prefab",
+      "unchanged": true
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Prefabs/Vehicles/Rally_3D.prefab",
+      "unchanged": true
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Prefabs/Vehicles/SportBike_2D.prefab",
+      "unchanged": true
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Prefabs/Vehicles/SportBike_3D.prefab",
+      "unchanged": true
+    }
+  ],
+  "priorArtifactsAndModels": [
+    {
+      "path": "Builds/HumanGateMmrValidated/HillAdventurer-HumanGate.exe",
+      "unchanged": true
+    },
+    {
+      "path": "Builds/HumanGateMmrValidated/UnityPlayer.dll",
+      "unchanged": true
+    },
+    {
+      "path": "Builds/HumanGateMmrValidated/HillAdventurer-HumanGate_Data/Managed/Assembly-CSharp.dll",
+      "unchanged": true
+    },
+    {
+      "path": "Builds/HumanGateMmrValidated/Jugar-HumanGate.cmd",
+      "unchanged": true
+    },
+    {
+      "path": "Builds/HumanGateMmrValidated/Medir-Rendimiento.cmd",
+      "unchanged": true
+    },
+    {
+      "path": "Builds/AndroidSizeForensics-20261018/season-expansion-policy-current.aab",
+      "unchanged": true
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/RacingMlWeights.bytes",
+      "unchanged": true
+    },
+    {
+      "path": "Tools/ML/Models/Candidates/RC20261006/behavior_mlp.bytes",
+      "unchanged": true
+    }
+  ],
+  "productionSaveFiles": [
+    {
+      "path": "LocalRacingLeague\\league-v3-0.journal",
+      "unchanged": true
+    },
+    {
+      "path": "LocalRacingLeague\\league-v3-1.journal",
+      "unchanged": true
+    },
+    {
+      "path": "Player-prev.log",
+      "unchanged": true
+    },
+    {
+      "path": "Player.log",
+      "unchanged": true
+    },
+    {
+      "path": "Telemetry\\race_night_city_100000_f35bb004b0.json",
+      "unchanged": true
+    },
+    {
+      "path": "Telemetry\\race_NightCityGrandCircuit_85000_2092486ad9.json",
+      "unchanged": true
+    },
+    {
+      "path": "Telemetry\\race_NightCityGrandCircuit_85000_2b11c9ef52.json",
+      "unchanged": true
+    },
+    {
+      "path": "Telemetry\\race_NightCityGrandCircuit_85000_578d5a433f.json",
+      "unchanged": true
+    },
+    {
+      "path": "Telemetry\\race_NightCityGrandCircuit_85000_5d8a1b35c2.json",
+      "unchanged": true
+    },
+    {
+      "path": "Telemetry\\race_NightCityGrandCircuit_85000_678cd6a13d.json",
+      "unchanged": true
+    },
+    {
+      "path": "Telemetry\\race_NightCityGrandCircuit_85000_7c34f8c2ff.json",
+      "unchanged": true
+    },
+    {
+      "path": "Telemetry\\race_NightCityGrandCircuit_85000_85180b7e97.json",
+      "unchanged": true
+    },
+    {
+      "path": "Telemetry\\race_NightCityGrandCircuit_85000_87ce7531fe.json",
+      "unchanged": true
+    },
+    {
+      "path": "Telemetry\\race_NightCityGrandCircuit_85000_889b21eaf0.json",
+      "unchanged": true
+    },
+    {
+      "path": "Telemetry\\race_NightCityGrandCircuit_85000_d678526247.json",
+      "unchanged": true
+    },
+    {
+      "path": "Telemetry\\race_NightCityGrandCircuit_85000_da71e3adcb.json",
+      "unchanged": true
+    },
+    {
+      "path": "Telemetry\\race_NightCityGrandCircuit_85000_db68915b71.json",
+      "unchanged": true
+    },
+    {
+      "path": "Telemetry\\race_NightCityGrandCircuit_85000_f0a6fbab64.json",
+      "unchanged": true
+    },
+    {
+      "path": "Telemetry\\race_NightCityGrandCircuit_85000_f9cd40d79c.json",
+      "unchanged": true
+    },
+    {
+      "path": "Telemetry\\race_NightCityGrandCircuit_85000_fc2adce8f0.json",
+      "unchanged": true
+    }
+  ],
+  "allScenesUnchanged": true,
+  "allPriorArtifactsAndModelsUnchanged": true,
+  "allInventoriedProductionSavesUnchanged": true,
+  "productionSaveFileSetUnchanged": true,
+  "newProductionSaveFiles": [],
+  "keystores": [
+    {
+      "path": "C:\\Peru3124\\restoredclimb\\ClimbAnime\\hilladventurer.keystore",
+      "unchanged": true
+    },
+    {
+      "path": "C:\\Users\\diego\\.android\\debug.keystore",
+      "unchanged": true
+    }
+  ],
+  "allInventoriedKeystoresUnchanged": true,
+  "nativeRegistryBaselineAvailable": true,
+  "nativeProductionRegistry": {
+    "baselineAvailable": true,
+    "beforeSha256": "f4f6aa9a89407079a058cac6980b4d42c22870231d8f9113ef5d4299007365a7",
+    "afterSha256": "f4f6aa9a89407079a058cac6980b4d42c22870231d8f9113ef5d4299007365a7",
+    "baselineSnapshotIntact": true,
+    "afterPrivateSnapshot": "tmp/ReleaseGates/20261020-02/production-playerprefs-after-30264fc5d07d487388744eb56ee03bba.reg",
+    "unchanged": true
+  },
+  "limits": "Integrity establishes the recorded file and native registry snapshots only; it does not approve gameplay or services. Missing baseline evidence is reported, never inferred. Private registry/key contents are not exported.",
+  "preservationPassed": true
+}

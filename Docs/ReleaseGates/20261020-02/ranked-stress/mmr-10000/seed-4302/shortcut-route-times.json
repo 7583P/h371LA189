@@ -1,0 +1,445 @@
+{
+    "classification": "OBSERVED_REAL_ROUTE_PORTAL_TIMES_AI_SELECTED_LINK_NOT_RANDOMIZED_ROUTE_AB",
+    "spans": [
+        {
+            "racer": "PLAYER",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 15.880517959594727,
+            "averageKmh": 166.5624542236328
+        },
+        {
+            "racer": "Speedstar8223",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 18.46025848388672,
+            "averageKmh": 144.00820922851563
+        },
+        {
+            "racer": "icecrazystormtv108",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 25.000272750854493,
+            "averageKmh": 106.48858642578125
+        },
+        {
+            "racer": "silentrider970",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 25.45986557006836,
+            "averageKmh": 102.93856811523438
+        },
+        {
+            "racer": "maihu",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 27.039688110351564,
+            "averageKmh": 98.2343521118164
+        },
+        {
+            "racer": "driftdriveryt404",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 25.760101318359376,
+            "averageKmh": 102.11717224121094
+        },
+        {
+            "racer": "211",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 23.01885986328125,
+            "averageKmh": 114.99365997314453
+        },
+        {
+            "racer": "firebosshd4995",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 29.098751068115236,
+            "averageKmh": 91.23049926757813
+        },
+        {
+            "racer": "megaultraridergg38",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 30.939945220947267,
+            "averageKmh": 84.52658081054688
+        },
+        {
+            "racer": "PLAYER",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 8.119510650634766,
+            "averageKmh": 180.44775390625
+        },
+        {
+            "racer": "Bigbosshd1894",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 33.719482421875,
+            "averageKmh": 78.69275665283203
+        },
+        {
+            "racer": "mrlillegend8796",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 31.199979782104493,
+            "averageKmh": 84.6271743774414
+        },
+        {
+            "racer": "Speedstar8223",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 9.198970794677735,
+            "averageKmh": 159.66554260253907
+        },
+        {
+            "racer": "Zrye",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 1,
+            "seconds": 45.079612731933597,
+            "averageKmh": 60.94672775268555
+        },
+        {
+            "racer": "icecrazystormtv108",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 13.020500183105469,
+            "averageKmh": 112.96416473388672
+        },
+        {
+            "racer": "211",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 11.680034637451172,
+            "averageKmh": 125.77938842773438
+        },
+        {
+            "racer": "maihu",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 12.580047607421875,
+            "averageKmh": 115.89256286621094
+        },
+        {
+            "racer": "driftdriveryt404",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 14.220252990722657,
+            "averageKmh": 102.49742889404297
+        },
+        {
+            "racer": "silentrider970",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 15.419551849365235,
+            "averageKmh": 95.53357696533203
+        },
+        {
+            "racer": "firebosshd4995",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 15.63943099975586,
+            "averageKmh": 94.2081069946289
+        },
+        {
+            "racer": "megaultraridergg38",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 15.480098724365235,
+            "averageKmh": 94.42427825927735
+        },
+        {
+            "racer": "mrlillegend8796",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 15.71969985961914,
+            "averageKmh": 92.91799926757813
+        },
+        {
+            "racer": "Bigbosshd1894",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 17.299945831298829,
+            "averageKmh": 84.77363586425781
+        },
+        {
+            "racer": "PLAYER",
+            "route": "crest_cut",
+            "shortcut": true,
+            "recoveries": 0,
+            "seconds": 13.899955749511719,
+            "averageKmh": 87.51673889160156
+        },
+        {
+            "racer": "Zrye",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 17.443801879882814,
+            "averageKmh": 84.56109619140625
+        },
+        {
+            "racer": "Speedstar8223",
+            "route": "crest_cut",
+            "shortcut": true,
+            "recoveries": 0,
+            "seconds": 15.300262451171875,
+            "averageKmh": 78.71176147460938
+        },
+        {
+            "racer": "PLAYER",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 8.140357971191407,
+            "averageKmh": 180.4141387939453
+        },
+        {
+            "racer": "Speedstar8223",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 9.019721984863282,
+            "averageKmh": 162.3248291015625
+        },
+        {
+            "racer": "211",
+            "route": "crest_cut",
+            "shortcut": true,
+            "recoveries": 0,
+            "seconds": 15.559921264648438,
+            "averageKmh": 77.32335662841797
+        },
+        {
+            "racer": "icecrazystormtv108",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 22.840286254882814,
+            "averageKmh": 116.58600616455078
+        },
+        {
+            "racer": "maihu",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 23.560462951660158,
+            "averageKmh": 112.66959381103516
+        },
+        {
+            "racer": "211",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 10.340057373046875,
+            "averageKmh": 141.2025604248047
+        },
+        {
+            "racer": "driftdriveryt404",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 25.520401000976564,
+            "averageKmh": 103.50979614257813
+        },
+        {
+            "racer": "silentrider970",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 25.679367065429689,
+            "averageKmh": 101.7922592163086
+        },
+        {
+            "racer": "icecrazystormtv108",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 12.780685424804688,
+            "averageKmh": 115.1556167602539
+        },
+        {
+            "racer": "firebosshd4995",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 28.119857788085939,
+            "averageKmh": 94.5371322631836
+        },
+        {
+            "racer": "megaultraridergg38",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 28.43988037109375,
+            "averageKmh": 93.02208709716797
+        },
+        {
+            "racer": "PLAYER",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 16.680023193359376,
+            "averageKmh": 159.4759063720703
+        },
+        {
+            "racer": "maihu",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 13.319381713867188,
+            "averageKmh": 110.22156524658203
+        },
+        {
+            "racer": "mrlillegend8796",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 28.2598876953125,
+            "averageKmh": 93.44268798828125
+        },
+        {
+            "racer": "Speedstar8223",
+            "route": "crest_cut",
+            "shortcut": true,
+            "recoveries": 0,
+            "seconds": 15.358749389648438,
+            "averageKmh": 78.39550018310547
+        },
+        {
+            "racer": "Bigbosshd1894",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 31.86016845703125,
+            "averageKmh": 83.18594360351563
+        },
+        {
+            "racer": "driftdriveryt404",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 14.320816040039063,
+            "averageKmh": 101.96581268310547
+        },
+        {
+            "racer": "PLAYER",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 8.740676879882813,
+            "averageKmh": 168.62864685058595
+        },
+        {
+            "racer": "silentrider970",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 14.5008544921875,
+            "averageKmh": 101.3240737915039
+        },
+        {
+            "racer": "Zrye",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 31.140762329101564,
+            "averageKmh": 85.1979751586914
+        },
+        {
+            "racer": "firebosshd4995",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 15.9810791015625,
+            "averageKmh": 92.38919830322266
+        },
+        {
+            "racer": "megaultraridergg38",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 15.521270751953125,
+            "averageKmh": 94.42022705078125
+        },
+        {
+            "racer": "Speedstar8223",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 9.559722900390625,
+            "averageKmh": 155.1777801513672
+        },
+        {
+            "racer": "mrlillegend8796",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 15.640548706054688,
+            "averageKmh": 93.17904663085938
+        },
+        {
+            "racer": "211",
+            "route": "crest_cut",
+            "shortcut": true,
+            "recoveries": 0,
+            "seconds": 15.101608276367188,
+            "averageKmh": 79.85040283203125
+        },
+        {
+            "racer": "Bigbosshd1894",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 17.501129150390626,
+            "averageKmh": 84.02242279052735
+        },
+        {
+            "racer": "211",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 10.360504150390625,
+            "averageKmh": 141.20980834960938
+        },
+        {
+            "racer": "icecrazystormtv108",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 22.760910034179689,
+            "averageKmh": 116.86823272705078
+        },
+        {
+            "racer": "Zrye",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 18.020156860351564,
+            "averageKmh": 82.21754455566406
+        }
+    ]
+}

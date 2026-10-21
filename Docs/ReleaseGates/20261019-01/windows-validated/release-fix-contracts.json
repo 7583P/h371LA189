@@ -1,0 +1,13 @@
+{
+    "passed": 6,
+    "failed": 0,
+    "successes": [
+        "Device telemetry keeps only the five newest race sessions and nothing else is deleted",
+        "Release Android manifest uses the production AdMob app ID",
+        "Production Android ad-unit IDs are not Google sample units",
+        "Editor/development players request Google sample ad units, never live units",
+        "Explicit QA Off survives the vehicle spawner's later Shadow default",
+        "Production ignores QA overrides and unapproved authority stays Shadow"
+    ],
+    "failures": []
+}

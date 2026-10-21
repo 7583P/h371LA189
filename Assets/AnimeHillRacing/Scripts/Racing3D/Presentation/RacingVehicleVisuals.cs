@@ -54,7 +54,7 @@ namespace AnimeHillRacing.Racing3D
         public static Mesh Bevel(Vector3 size,float cut=.18f)
         {
             string key="bevel"+size+cut;
-            if(meshes.TryGetValue(key,out var cached))return cached;
+            if(meshes.TryGetValue(key,out var cached)&&cached!=null)return cached;
             float x=size.x*.5f,y=size.y*.5f,z=size.z*.5f,c=Mathf.Min(cut,Mathf.Min(x,z)*.5f);
             Vector2[] ring={new Vector2(-x+c,-z),new Vector2(x-c,-z),new Vector2(x,-z+c),new Vector2(x,z-c),new Vector2(x-c,z),new Vector2(-x+c,z),new Vector2(-x,z-c),new Vector2(-x,-z+c)};
             var vertices=new List<Vector3>();var indices=new List<int>();
@@ -74,7 +74,7 @@ namespace AnimeHillRacing.Racing3D
         }
         public static Mesh Ring(float outer,float inner,float depth,int segments=20)
         {
-            string key="ring"+outer+inner+depth+segments;if(meshes.TryGetValue(key,out var cached))return cached;
+            string key="ring"+outer+inner+depth+segments;if(meshes.TryGetValue(key,out var cached)&&cached!=null)return cached;
             var verts=new List<Vector3>();var tris=new List<int>();
             for(int i=0;i<segments;i++)
             {
@@ -100,7 +100,7 @@ namespace AnimeHillRacing.Racing3D
         // authored Adventure silhouettes clean highlights without primitive colliders.
         public static Mesh Hull(string key,params Vector4[] stations)
         {
-            key="hull_"+key;if(meshes.TryGetValue(key,out var cached))return cached;
+            key="hull_"+key;if(meshes.TryGetValue(key,out var cached)&&cached!=null)return cached;
             var vertices=new List<Vector3>();var triangles=new List<int>();
             for(int s=0;s<stations.Length-1;s++)for(int side=0;side<8;side++)
                 AddQuad(vertices,triangles,Point(s,side),Point(s,(side+1)%8),Point(s+1,(side+1)%8),Point(s+1,side));
@@ -121,7 +121,7 @@ namespace AnimeHillRacing.Racing3D
         }
         public static Mesh Ellipsoid(string key,Vector3 radii)
         {
-            key="ellipsoid_"+key;if(meshes.TryGetValue(key,out var cached))return cached;
+            key="ellipsoid_"+key;if(meshes.TryGetValue(key,out var cached)&&cached!=null)return cached;
             int slices=16,rings=10;var vertices=new List<Vector3>();var indices=new List<int>();
             for(int y=0;y<=rings;y++)for(int x=0;x<=slices;x++)
             {
@@ -136,7 +136,7 @@ namespace AnimeHillRacing.Racing3D
         // extra colliders or per-car material instances.
         public static Mesh AeroShell(string key,params Vector4[] stations)
         {
-            key="aeroshell_"+key;if(meshes.TryGetValue(key,out var cached))return cached;
+            key="aeroshell_"+key;if(meshes.TryGetValue(key,out var cached)&&cached!=null)return cached;
             const int sides=16;var vertices=new List<Vector3>();var indices=new List<int>();
             foreach(var p in stations)for(int i=0;i<sides;i++)
             {
@@ -161,7 +161,7 @@ namespace AnimeHillRacing.Racing3D
         }
         public static Mesh Airfoil(string key,float span,float chord)
         {
-            key="airfoil_"+key;if(meshes.TryGetValue(key,out var cached))return cached;
+            key="airfoil_"+key;if(meshes.TryGetValue(key,out var cached)&&cached!=null)return cached;
             Vector2[] section={new Vector2(-.5f,0),new Vector2(-.32f,.020f),new Vector2(.05f,.040f),new Vector2(.38f,.030f),new Vector2(.5f,.005f),new Vector2(.28f,-.012f),new Vector2(-.18f,-.012f),new Vector2(-.48f,-.006f)};
             var stations=new List<Vector3>();var indices=new List<int>();const int segments=8;
             for(int x=0;x<=segments;x++)foreach(var p in section)
@@ -177,7 +177,7 @@ namespace AnimeHillRacing.Racing3D
         }
         public static Mesh HelmetVisor(string key,float bottom,float top)
         {
-            key="visor_"+key;if(meshes.TryGetValue(key,out var cached))return cached;
+            key="visor_"+key;if(meshes.TryGetValue(key,out var cached)&&cached!=null)return cached;
             var vertices=new List<Vector3>();var indices=new List<int>();const int segments=12;
             for(int i=0;i<=segments;i++)
             {

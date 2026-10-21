@@ -1,0 +1,78 @@
+﻿{
+    "classification":  "BUNDLETOOL_ESTIMATED_COMPRESSED_DOWNLOAD_NOT_INSTALLED_SIZE_OR_PLAY_DEVICE_APPROVAL",
+    "utc":  "2026-10-20T04:09:57.4270799Z",
+    "bundletoolSha256":  "2D4AD908FAEA64047C1CC9CB747E6AA667C6AB192E09607BD16B67246A8CD6AE",
+    "apks":  "C:\\Peru3124\\restoredclimb\\ClimbAnime\\Builds\\AndroidSizeForensics-20261018\\season-expansion-policy-current.apks",
+    "bundle":  "",
+    "productionSigned":  false,
+    "deviceAttached":  false,
+    "reference":  "ARM64 / API35 / density420 / en",
+    "results":  [
+                    {
+                        "underTarget":  true,
+                        "sdk":  35,
+                        "minimumBytes":  147953167,
+                        "abi":  "arm64-v8a",
+                        "marginBytes":  2046833,
+                        "density":  160,
+                        "maximumBytes":  147953167
+                    },
+                    {
+                        "underTarget":  true,
+                        "sdk":  35,
+                        "minimumBytes":  147953167,
+                        "abi":  "arm64-v8a",
+                        "marginBytes":  2046833,
+                        "density":  240,
+                        "maximumBytes":  147953167
+                    },
+                    {
+                        "underTarget":  true,
+                        "sdk":  35,
+                        "minimumBytes":  147953167,
+                        "abi":  "arm64-v8a",
+                        "marginBytes":  2046833,
+                        "density":  320,
+                        "maximumBytes":  147953167
+                    },
+                    {
+                        "underTarget":  true,
+                        "sdk":  35,
+                        "minimumBytes":  147953167,
+                        "abi":  "arm64-v8a",
+                        "marginBytes":  2046833,
+                        "density":  420,
+                        "maximumBytes":  147953167
+                    },
+                    {
+                        "underTarget":  true,
+                        "sdk":  35,
+                        "minimumBytes":  147953167,
+                        "abi":  "arm64-v8a",
+                        "marginBytes":  2046833,
+                        "density":  480,
+                        "maximumBytes":  147953167
+                    },
+                    {
+                        "underTarget":  true,
+                        "sdk":  35,
+                        "minimumBytes":  147953167,
+                        "abi":  "arm64-v8a",
+                        "marginBytes":  2046833,
+                        "density":  560,
+                        "maximumBytes":  147953167
+                    },
+                    {
+                        "underTarget":  true,
+                        "sdk":  35,
+                        "minimumBytes":  147953167,
+                        "abi":  "arm64-v8a",
+                        "marginBytes":  2046833,
+                        "density":  640,
+                        "maximumBytes":  147953167
+                    }
+                ],
+    "apksSha256":  "B1801E844C93A79103705467C0698F4229FA50B18DC44C4C7775452BA56CBAE8",
+    "apksBytes":  163094839,
+    "unsupportedAbis":  "Only ARM64 is in the authored configuration; ARMv7/x86 are not delivery targets"
+}

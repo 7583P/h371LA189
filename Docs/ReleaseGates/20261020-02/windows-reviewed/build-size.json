@@ -1,0 +1,10 @@
+{
+    "platform": "StandaloneWindows64",
+    "result": "Succeeded",
+    "output": "C:/Peru3124/restoredclimb/ClimbAnime/Builds/ReleaseGates-20261020-02-Reviewed/HillAdventurer-HumanGate.exe",
+    "options": "ForceOptimizeScriptCompilation, Il2CPP, CompressTextures, StripDebugSymbols, ShaderLivelinkSupport, Development, DetailedBuildReport",
+    "measurementNote": "packedBytes are actual serialized BuildReport attribution before archive/ZIP compression. Per-asset ZIP compressed sizes are not exposed; do not estimate them. Scene references are AssetDatabase transitive dependencies; Resources/runtime references need separate audit.",
+    "buildSummaryBytes": 1040115970,
+    "outputBytes": 667648,
+    "assets": []
+}

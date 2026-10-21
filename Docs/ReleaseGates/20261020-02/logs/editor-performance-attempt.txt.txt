@@ -1,0 +1,13 @@
+powershell.exe : Another Unity/player is open; no valid measurement can start
+At line:2 char:155
++ ... mpt log' }; & powershell -NoProfile -ExecutionPolicy Bypass -File Too ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Another Unity/p...ement can start:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+At C:\Peru3124\restoredclimb\ClimbAnime\Tools\RC\Measure-ReleasePerformance.ps1:12 char:91
++ ... Continue) { throw 'Another Unity/player is open; no valid measurement ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (Another Unity/p...ement can start:String) [], RuntimeException
+    + FullyQualifiedErrorId : Another Unity/player is open; no valid measurement can start
+ 

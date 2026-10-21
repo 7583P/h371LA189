@@ -1,0 +1,58 @@
+dotnet.exe : System.Text.Json.JsonException: The JSON value could not be converted to System.Byte[]. Path: 
+$.ledger.recentSettlements[0].outcomes | LineNumber: 0 | BytePositionInLine: 3591.
+At line:2 char:77
++ ...  UTF8 -Raw; & dotnet Tools/CompetitiveQA/bin/Release/net10.0/Competit ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (System.Text.Jso...onInLine: 3591.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ ---> System.InvalidOperationException: Cannot get the value of a token type 'StartArray' as a string.
+   at System.Text.Json.ThrowHelper.ThrowInvalidOperationException_ExpectedString(JsonTokenType tokenType)
+   at System.Text.Json.Utf8JsonReader.TryGetBytesFromBase64(Byte[]& value)
+   at System.Text.Json.Utf8JsonReader.GetBytesFromBase64()
+   at System.Text.Json.Serialization.Metadata.JsonPropertyInfo`1.ReadJsonAndSetMember(Object obj, ReadStack& state, 
+Utf8JsonReader& reader)
+   at System.Text.Json.Serialization.Converters.ObjectDefaultConverter`1.OnTryRead(Utf8JsonReader& reader, Type 
+typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value)
+   at System.Text.Json.Serialization.JsonConverter`1.TryRead(Utf8JsonReader& reader, Type typeToConvert, 
+JsonSerializerOptions options, ReadStack& state, T& value, Boolean& isPopulatedValue)
+   at System.Text.Json.Serialization.JsonCollectionConverter`2.OnTryRead(Utf8JsonReader& reader, Type typeToConvert, 
+JsonSerializerOptions options, ReadStack& state, TCollection& value)
+   at System.Text.Json.Serialization.JsonConverter`1.TryRead(Utf8JsonReader& reader, Type typeToConvert, 
+JsonSerializerOptions options, ReadStack& state, T& value, Boolean& isPopulatedValue)
+   at System.Text.Json.Serialization.Metadata.JsonPropertyInfo`1.ReadJsonAndSetMember(Object obj, ReadStack& state, 
+Utf8JsonReader& reader)
+   at System.Text.Json.Serialization.Converters.ObjectDefaultConverter`1.OnTryRead(Utf8JsonReader& reader, Type 
+typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value)
+   at System.Text.Json.Serialization.JsonConverter`1.TryRead(Utf8JsonReader& reader, Type typeToConvert, 
+JsonSerializerOptions options, ReadStack& state, T& value, Boolean& isPopulatedValue)
+   at System.Text.Json.Serialization.Metadata.JsonPropertyInfo`1.ReadJsonAndSetMember(Object obj, ReadStack& state, 
+Utf8JsonReader& reader)
+   at System.Text.Json.Serialization.Converters.ObjectDefaultConverter`1.OnTryRead(Utf8JsonReader& reader, Type 
+typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value)
+   at System.Text.Json.Serialization.JsonConverter`1.TryRead(Utf8JsonReader& reader, Type typeToConvert, 
+JsonSerializerOptions options, ReadStack& state, T& value, Boolean& isPopulatedValue)
+   at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, T& value, JsonSerializerOptions 
+options, ReadStack& state)
+   --- End of inner exception stack trace ---
+   at System.Text.Json.ThrowHelper.ReThrowWithPath(ReadStack& state, Utf8JsonReader& reader, Exception ex)
+   at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, T& value, JsonSerializerOptions 
+options, ReadStack& state)
+   at System.Text.Json.Serialization.Metadata.JsonTypeInfo`1.Deserialize(Utf8JsonReader& reader, ReadStack& state)
+   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 utf8Json, JsonTypeInfo`1 jsonTypeInfo, 
+Nullable`1 actualByteCount)
+   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 json, JsonTypeInfo`1 jsonTypeInfo)
+   at System.Text.Json.JsonSerializer.Deserialize[TValue](String json, JsonSerializerOptions options)
+   at CompetitiveQA.Json.From[T](String json) in C:\Peru3124\restoredclimb\ClimbAnime\Tools\CompetitiveQA\Json.cs:line 
+29
+   at AnimeHillRacing.Racing3D.LocalLeagueStore.ReadJournal(String path, String magic, Int32 recordSize, Int64& 
+version, Boolean& macOk) in 
+C:\Peru3124\restoredclimb\ClimbAnime\Assets\AnimeHillRacing\Scripts\Racing3D\MMR\LocalLeagueStore.cs:line 93
+   at AnimeHillRacing.Racing3D.LocalLeagueStore.Load() in 
+C:\Peru3124\restoredclimb\ClimbAnime\Assets\AnimeHillRacing\Scripts\Racing3D\MMR\LocalLeagueStore.cs:line 58
+   at CompetitiveQA.PhysicalLeagueReadback.Run(String output, String saveDirectory, String metricsPath) in 
+C:\Peru3124\restoredclimb\ClimbAnime\Tools\CompetitiveQA\PhysicalLeagueReadback.cs:line 19
+   at CompetitiveQA.Program.Run(String[] args) in 
+C:\Peru3124\restoredclimb\ClimbAnime\Tools\CompetitiveQA\Program.cs:line 27
+   at CompetitiveQA.Program.Main(String[] args) in 
+C:\Peru3124\restoredclimb\ClimbAnime\Tools\CompetitiveQA\Program.cs:line 11

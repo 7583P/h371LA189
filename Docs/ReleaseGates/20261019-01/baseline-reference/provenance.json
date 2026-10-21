@@ -1,0 +1,77 @@
+﻿{
+    "classification":  "HISTORICAL_BASELINE_RECHECKED_FROM_HASH_IDENTICAL_ARCHIVED_BINARY_NOT_A_NEW_SIX_RACE_EXECUTION",
+    "sources":  [
+                    {
+                        "sha256":  "958A225BD7E611550CCAA6BC1060102E44226548ACA7D19C0689F5A9276DF18F",
+                        "source":  "C:\\Peru3124\\restoredclimb\\ClimbAnime\\Logs\\SeasonExpansion\\20261018\\elite-9700-off-complete\\seed-4207\\metrics.json"
+                    },
+                    {
+                        "sha256":  "6909C124632A1C687F6E0F30E784BFE36B644C88C16102045608AB2D5D8310BA",
+                        "source":  "C:\\Peru3124\\restoredclimb\\ClimbAnime\\Logs\\SeasonExpansion\\20261018\\elite-9700-off-complete\\seed-4207\\race.json"
+                    },
+                    {
+                        "sha256":  "4006F709385A0E76B0C6886E33AD2DB9BE0ACB56C1EEFEAEC7F1ED506B591477",
+                        "source":  "C:\\Peru3124\\restoredclimb\\ClimbAnime\\Logs\\SeasonExpansion\\20261018\\elite-9700-off-complete\\seed-4207\\elite-forensics.json"
+                    },
+                    {
+                        "sha256":  "6E52008AEE14432AC2A07982F92F35775999EEBC88CCC48404AA8FA8BBDAC770",
+                        "source":  "C:\\Peru3124\\restoredclimb\\ClimbAnime\\Logs\\SeasonExpansion\\20261018\\elite-9700-off-complete\\seed-4208\\metrics.json"
+                    },
+                    {
+                        "sha256":  "4DA8025C743C65FE1A8C9D814698D4A0E8F3963099401ED1E7C9BE541FF669B4",
+                        "source":  "C:\\Peru3124\\restoredclimb\\ClimbAnime\\Logs\\SeasonExpansion\\20261018\\elite-9700-off-complete\\seed-4208\\race.json"
+                    },
+                    {
+                        "sha256":  "F0C386CE41A221AC483B6B71B7F539318BEB6B1A1831BB74F1C1E1981854A58F",
+                        "source":  "C:\\Peru3124\\restoredclimb\\ClimbAnime\\Logs\\SeasonExpansion\\20261018\\elite-9700-off-complete\\seed-4208\\elite-forensics.json"
+                    },
+                    {
+                        "sha256":  "790F2415874E3713D6E17C7219075FD3B1EC93C7F75F9D74371EA92AC2CE9473",
+                        "source":  "C:\\Peru3124\\restoredclimb\\ClimbAnime\\Logs\\SeasonExpansion\\20261018\\elite-9700-off-complete\\seed-4209\\metrics.json"
+                    },
+                    {
+                        "sha256":  "F3B58426AE7A20F27B7A414DCB67C53B6B338F04DC53FA447B08843FA1846C2A",
+                        "source":  "C:\\Peru3124\\restoredclimb\\ClimbAnime\\Logs\\SeasonExpansion\\20261018\\elite-9700-off-complete\\seed-4209\\race.json"
+                    },
+                    {
+                        "sha256":  "C9320DB1DA67DBF9B3BD9153A25616B4ACC32FDC3FE62C9F328EA555AA47A9AF",
+                        "source":  "C:\\Peru3124\\restoredclimb\\ClimbAnime\\Logs\\SeasonExpansion\\20261018\\elite-9700-off-complete\\seed-4209\\elite-forensics.json"
+                    },
+                    {
+                        "sha256":  "F3EA7103EC54732D79685960EC022BE79C41AF276EB71CB4AA97CB835521EA23",
+                        "source":  "C:\\Peru3124\\restoredclimb\\ClimbAnime\\Logs\\SeasonExpansion\\20261018\\elite-10000-off-complete\\seed-4207\\metrics.json"
+                    },
+                    {
+                        "sha256":  "40439434930653E35D5D60D6F262CF28A8290CDA48041ADE49A36DB7E587619D",
+                        "source":  "C:\\Peru3124\\restoredclimb\\ClimbAnime\\Logs\\SeasonExpansion\\20261018\\elite-10000-off-complete\\seed-4207\\race.json"
+                    },
+                    {
+                        "sha256":  "AE2F184DFDF78A317670FA4D0460646BA8925BBA3FE1CFEEB164F7EC92AE296D",
+                        "source":  "C:\\Peru3124\\restoredclimb\\ClimbAnime\\Logs\\SeasonExpansion\\20261018\\elite-10000-off-complete\\seed-4207\\elite-forensics.json"
+                    },
+                    {
+                        "sha256":  "63E237E3C11C26180E8313FC490E88FA48A1284F62D6F30520613DB7E4980983",
+                        "source":  "C:\\Peru3124\\restoredclimb\\ClimbAnime\\Logs\\SeasonExpansion\\20261018\\elite-10000-off-complete\\seed-4208\\metrics.json"
+                    },
+                    {
+                        "sha256":  "D7831F5EF16B5B131278A1B4ADB3FA8E983B77B340FAF3541B399F784A9E1051",
+                        "source":  "C:\\Peru3124\\restoredclimb\\ClimbAnime\\Logs\\SeasonExpansion\\20261018\\elite-10000-off-complete\\seed-4208\\race.json"
+                    },
+                    {
+                        "sha256":  "5D0F649D066C823D3A3FED56CB13EA27F5A224B0B487F0357D7A1A12B750E1A5",
+                        "source":  "C:\\Peru3124\\restoredclimb\\ClimbAnime\\Logs\\SeasonExpansion\\20261018\\elite-10000-off-complete\\seed-4208\\elite-forensics.json"
+                    },
+                    {
+                        "sha256":  "70B4E615EEC8E037D444CC41F26C1E249ED543DB1D1223B183C6EBC946DF85A0",
+                        "source":  "C:\\Peru3124\\restoredclimb\\ClimbAnime\\Logs\\SeasonExpansion\\20261018\\elite-10000-off-complete\\seed-4209\\metrics.json"
+                    },
+                    {
+                        "sha256":  "8F7BFDEF9332700EB0C80466174AFE02B6BD0DFDD34C12E0F85E86D940F752C4",
+                        "source":  "C:\\Peru3124\\restoredclimb\\ClimbAnime\\Logs\\SeasonExpansion\\20261018\\elite-10000-off-complete\\seed-4209\\race.json"
+                    },
+                    {
+                        "sha256":  "707EC5FD1BDEDB61144C5E04EB25B24916D5CB37C754F511D8A122F3FB13EAB7",
+                        "source":  "C:\\Peru3124\\restoredclimb\\ClimbAnime\\Logs\\SeasonExpansion\\20261018\\elite-10000-off-complete\\seed-4209\\elite-forensics.json"
+                    }
+                ]
+}

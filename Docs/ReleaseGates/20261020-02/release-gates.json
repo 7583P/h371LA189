@@ -1,0 +1,86 @@
+{
+  "releaseReady": false,
+  "status": "NOT_READY",
+  "gates": [
+    {
+      "gate": "Source, assets and production-data preservation",
+      "status": "PASS",
+      "evidence": "integrity-final.json"
+    },
+    {
+      "gate": "Core competitive, seasons, lookup and serializer contracts",
+      "status": "PASS",
+      "evidence": "fixed-release-json/release-json-contracts.json"
+    },
+    {
+      "gate": "Windows reviewed build and seven Editor suites",
+      "status": "PASS",
+      "evidence": "windows-reviewed/rc-contracts.json"
+    },
+    {
+      "gate": "Rainbow Road human visual approval",
+      "status": "BLOCKED",
+      "evidence": "rainbow-build/REVIEW.html"
+    },
+    {
+      "gate": "Authored-jump observation capture",
+      "status": "PASS",
+      "evidence": "capture-contracts.json"
+    },
+    {
+      "gate": "Elite official six-race gate",
+      "status": "FAIL",
+      "evidence": "official-matrix-analysis/matrix.json"
+    },
+    {
+      "gate": "New Off vs ML02 Shadow controlled pair",
+      "status": "BLOCKED",
+      "evidence": "performance-gate.json"
+    },
+    {
+      "gate": "Results and numeric-name UI contracts",
+      "status": "PASS",
+      "evidence": "ui-after-numeric-fix/competitive-display-contracts.json"
+    },
+    {
+      "gate": "Eleven actual opponents after native restart",
+      "status": "PASS",
+      "evidence": "native-league-readback-fixed/native-league-readback.json"
+    },
+    {
+      "gate": "Simulator budget, multi-season reload and storage",
+      "status": "PASS",
+      "evidence": "statistical-readback/statistical-summary.json"
+    },
+    {
+      "gate": "Android local build and calculated reference delivery",
+      "status": "PASS",
+      "evidence": "android-delivery/delivery-summary.json"
+    },
+    {
+      "gate": "Physical Android, GPGS, IAP, AdMob and SAF",
+      "status": "BLOCKED",
+      "evidence": "android-device.json"
+    },
+    {
+      "gate": "app-ads.txt configured domain",
+      "status": "BLOCKED",
+      "evidence": "app-ads-gate.json"
+    },
+    {
+      "gate": "Windows HumanGate express approval",
+      "status": "BLOCKED",
+      "evidence": "MANUAL-QA.md"
+    }
+  ],
+  "productionSourcePolicy": {
+    "formula": "HA-PW2",
+    "population": 10000,
+    "ml": "Off",
+    "after3000Enabled": false,
+    "alternativeResetEnabled": false,
+    "versionName": "1.2",
+    "versionCode": 20
+  },
+  "publishedOrProductionSigned": false
+}

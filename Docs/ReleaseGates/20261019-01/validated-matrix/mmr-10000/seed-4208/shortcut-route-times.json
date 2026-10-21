@@ -1,0 +1,589 @@
+{
+    "classification": "OBSERVED_REAL_ROUTE_PORTAL_TIMES_AI_SELECTED_LINK_NOT_RANDOMIZED_ROUTE_AB",
+    "spans": [
+        {
+            "racer": "BlazeRider",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 15.84858512878418,
+            "averageKmh": 167.7401123046875
+        },
+        {
+            "racer": "AeroAce",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 16.238677978515626,
+            "averageKmh": 163.45248413085938
+        },
+        {
+            "racer": "StormSurge",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 16.24150848388672,
+            "averageKmh": 164.88502502441407
+        },
+        {
+            "racer": "VelocityX",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 17.091716766357423,
+            "averageKmh": 156.0925750732422
+        },
+        {
+            "racer": "IronClad",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 16.648210525512697,
+            "averageKmh": 160.0792694091797
+        },
+        {
+            "racer": "DriftKing99",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 16.961502075195314,
+            "averageKmh": 156.7994842529297
+        },
+        {
+            "racer": "Apex_Kite",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 18.06998062133789,
+            "averageKmh": 148.9851837158203
+        },
+        {
+            "racer": "PLAYER",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 18.073726654052736,
+            "averageKmh": 148.7508544921875
+        },
+        {
+            "racer": "SpeedDemon",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 20.52582550048828,
+            "averageKmh": 130.1250457763672
+        },
+        {
+            "racer": "ViperGT",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 20.49020004272461,
+            "averageKmh": 130.86488342285157
+        },
+        {
+            "racer": "NightRaven",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 1,
+            "seconds": 23.891572952270509,
+            "averageKmh": 114.8188705444336
+        },
+        {
+            "racer": "CircuitGhost",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 1,
+            "seconds": 23.733901977539064,
+            "averageKmh": 115.37959289550781
+        },
+        {
+            "racer": "Apex_Kite",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 1,
+            "seconds": 1.4510917663574219,
+            "averageKmh": 93.4945297241211
+        },
+        {
+            "racer": "BlazeRider",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 8.056970596313477,
+            "averageKmh": 181.02273559570313
+        },
+        {
+            "racer": "StormSurge",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 8.391494750976563,
+            "averageKmh": 174.63143920898438
+        },
+        {
+            "racer": "AeroAce",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 8.320632934570313,
+            "averageKmh": 176.13075256347657
+        },
+        {
+            "racer": "PLAYER",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 8.959014892578125,
+            "averageKmh": 164.0552215576172
+        },
+        {
+            "racer": "DriftKing99",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 9.713924407958985,
+            "averageKmh": 149.26622009277345
+        },
+        {
+            "racer": "IronClad",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 11.328189849853516,
+            "averageKmh": 130.9080810546875
+        },
+        {
+            "racer": "VelocityX",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 10.461982727050782,
+            "averageKmh": 141.29762268066407
+        },
+        {
+            "racer": "SpeedDemon",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 8.11849594116211,
+            "averageKmh": 179.08084106445313
+        },
+        {
+            "racer": "Apex_Kite",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 9.25634765625,
+            "averageKmh": 158.04287719726563
+        },
+        {
+            "racer": "ViperGT",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 9.47928237915039,
+            "averageKmh": 157.1553955078125
+        },
+        {
+            "racer": "NightRaven",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 8.103507995605469,
+            "averageKmh": 181.00802612304688
+        },
+        {
+            "racer": "CircuitGhost",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 8.466747283935547,
+            "averageKmh": 171.7196502685547
+        },
+        {
+            "racer": "BlazeRider",
+            "route": "crest_cut",
+            "shortcut": true,
+            "recoveries": 0,
+            "seconds": 13.950698852539063,
+            "averageKmh": 87.1341781616211
+        },
+        {
+            "racer": "StormSurge",
+            "route": "crest_cut",
+            "shortcut": true,
+            "recoveries": 0,
+            "seconds": 13.673881530761719,
+            "averageKmh": 89.10762023925781
+        },
+        {
+            "racer": "DriftKing99",
+            "route": "crest_cut",
+            "shortcut": true,
+            "recoveries": 0,
+            "seconds": 13.684402465820313,
+            "averageKmh": 88.76625061035156
+        },
+        {
+            "racer": "AeroAce",
+            "route": "crest_cut",
+            "shortcut": true,
+            "recoveries": 0,
+            "seconds": 14.313491821289063,
+            "averageKmh": 84.45296478271485
+        },
+        {
+            "racer": "IronClad",
+            "route": "crest_cut",
+            "shortcut": true,
+            "recoveries": 0,
+            "seconds": 14.276809692382813,
+            "averageKmh": 85.13858795166016
+        },
+        {
+            "racer": "PLAYER",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 16.546607971191408,
+            "averageKmh": 160.5377655029297
+        },
+        {
+            "racer": "VelocityX",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 16.253761291503908,
+            "averageKmh": 163.53346252441407
+        },
+        {
+            "racer": "SpeedDemon",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 16.73468780517578,
+            "averageKmh": 158.4501495361328
+        },
+        {
+            "racer": "Apex_Kite",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 15.066734313964844,
+            "averageKmh": 175.45753479003907
+        },
+        {
+            "racer": "ViperGT",
+            "route": "crest_cut",
+            "shortcut": true,
+            "recoveries": 0,
+            "seconds": 17.93555450439453,
+            "averageKmh": 66.62701416015625
+        },
+        {
+            "racer": "NightRaven",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 17.4365234375,
+            "averageKmh": 152.60638427734376
+        },
+        {
+            "racer": "CircuitGhost",
+            "route": "crest_cut",
+            "shortcut": true,
+            "recoveries": 0,
+            "seconds": 16.258338928222658,
+            "averageKmh": 73.3380355834961
+        },
+        {
+            "racer": "BlazeRider",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 8.047645568847657,
+            "averageKmh": 180.77944946289063
+        },
+        {
+            "racer": "StormSurge",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 11.230361938476563,
+            "averageKmh": 130.84471130371095
+        },
+        {
+            "racer": "DriftKing99",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 8.008674621582032,
+            "averageKmh": 181.34716796875
+        },
+        {
+            "racer": "AeroAce",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 8.055892944335938,
+            "averageKmh": 180.89773559570313
+        },
+        {
+            "racer": "IronClad",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 8.025840759277344,
+            "averageKmh": 180.84774780273438
+        },
+        {
+            "racer": "PLAYER",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 8.284049987792969,
+            "averageKmh": 174.46803283691407
+        },
+        {
+            "racer": "VelocityX",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 8.137321472167969,
+            "averageKmh": 179.16360473632813
+        },
+        {
+            "racer": "SpeedDemon",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 8.057136535644532,
+            "averageKmh": 180.44476318359376
+        },
+        {
+            "racer": "Apex_Kite",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 8.288642883300782,
+            "averageKmh": 173.9158477783203
+        },
+        {
+            "racer": "NightRaven",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 8.086196899414063,
+            "averageKmh": 180.88348388671876
+        },
+        {
+            "racer": "ViperGT",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 8.080673217773438,
+            "averageKmh": 180.4099578857422
+        },
+        {
+            "racer": "CircuitGhost",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 8.024566650390625,
+            "averageKmh": 180.62380981445313
+        },
+        {
+            "racer": "BlazeRider",
+            "route": "crest_cut",
+            "shortcut": true,
+            "recoveries": 0,
+            "seconds": 14.0377197265625,
+            "averageKmh": 87.3570556640625
+        },
+        {
+            "racer": "StormSurge",
+            "route": "crest_cut",
+            "shortcut": true,
+            "recoveries": 0,
+            "seconds": 13.768035888671875,
+            "averageKmh": 88.20040893554688
+        },
+        {
+            "racer": "DriftKing99",
+            "route": "crest_cut",
+            "shortcut": true,
+            "recoveries": 0,
+            "seconds": 13.899444580078125,
+            "averageKmh": 87.16983795166016
+        },
+        {
+            "racer": "AeroAce",
+            "route": "crest_cut",
+            "shortcut": true,
+            "recoveries": 0,
+            "seconds": 13.903778076171875,
+            "averageKmh": 87.49238586425781
+        },
+        {
+            "racer": "IronClad",
+            "route": "crest_cut",
+            "shortcut": true,
+            "recoveries": 0,
+            "seconds": 13.89654541015625,
+            "averageKmh": 87.22371673583985
+        },
+        {
+            "racer": "PLAYER",
+            "route": "crest_cut",
+            "shortcut": true,
+            "recoveries": 0,
+            "seconds": 14.054351806640625,
+            "averageKmh": 86.43248748779297
+        },
+        {
+            "racer": "VelocityX",
+            "route": "crest_cut",
+            "shortcut": true,
+            "recoveries": 0,
+            "seconds": 13.936309814453125,
+            "averageKmh": 87.86044311523438
+        },
+        {
+            "racer": "Apex_Kite",
+            "route": "crest_cut",
+            "shortcut": true,
+            "recoveries": 0,
+            "seconds": 14.86956787109375,
+            "averageKmh": 82.3248291015625
+        },
+        {
+            "racer": "NightRaven",
+            "route": "crest_cut",
+            "shortcut": true,
+            "recoveries": 0,
+            "seconds": 13.907012939453125,
+            "averageKmh": 87.28137969970703
+        },
+        {
+            "racer": "SpeedDemon",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 16.086456298828126,
+            "averageKmh": 165.16766357421876
+        },
+        {
+            "racer": "BlazeRider",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 8.054367065429688,
+            "averageKmh": 181.20957946777345
+        },
+        {
+            "racer": "CircuitGhost",
+            "route": "crest_cut",
+            "shortcut": true,
+            "recoveries": 0,
+            "seconds": 13.665634155273438,
+            "averageKmh": 89.46422576904297
+        },
+        {
+            "racer": "StormSurge",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 8.071701049804688,
+            "averageKmh": 181.1951141357422
+        },
+        {
+            "racer": "DriftKing99",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 8.074111938476563,
+            "averageKmh": 179.33096313476563
+        },
+        {
+            "racer": "AeroAce",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 8.055313110351563,
+            "averageKmh": 181.33746337890626
+        },
+        {
+            "racer": "ViperGT",
+            "route": "crest_cut",
+            "shortcut": true,
+            "recoveries": 0,
+            "seconds": 19.248016357421876,
+            "averageKmh": 140.3050994873047
+        },
+        {
+            "racer": "IronClad",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 8.036544799804688,
+            "averageKmh": 180.8249969482422
+        },
+        {
+            "racer": "PLAYER",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 8.09552001953125,
+            "averageKmh": 179.27774047851563
+        },
+        {
+            "racer": "Apex_Kite",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 8.5855712890625,
+            "averageKmh": 171.27783203125
+        },
+        {
+            "racer": "VelocityX",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 9.908660888671875,
+            "averageKmh": 145.66795349121095
+        },
+        {
+            "racer": "NightRaven",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 8.2884521484375,
+            "averageKmh": 179.5826873779297
+        },
+        {
+            "racer": "SpeedDemon",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 8.16180419921875,
+            "averageKmh": 178.18247985839845
+        },
+        {
+            "racer": "CircuitGhost",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 8.04254150390625,
+            "averageKmh": 180.96554565429688
+        },
+        {
+            "racer": "ViperGT",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 7.876800537109375,
+            "averageKmh": 186.633056640625
+        }
+    ]
+}

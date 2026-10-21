@@ -1,0 +1,22 @@
+﻿{
+    "classification":  "FRESH_NATIVE_UI_READBACK_FROM_COPY_OF_EXISTING_PHYSICAL_QA_SAVE",
+    "seed":  4302,
+    "source":  "C:\\Peru3124\\restoredclimb\\ClimbAnime\\Docs\\ReleaseGates\\20261020-02\\ranked-stress\\mmr-10000\\isolated-product-save",
+    "before":  [
+                   {
+                       "path":  "league-v4-0.journal",
+                       "sha256":  "A78A800AB4B90C2B1165DB63855A393C6D421205AFF5769CC01008A3514358DB"
+                   },
+                   {
+                       "path":  "league-v4-1.journal",
+                       "sha256":  "FA4A22437C89E5D802275409AAA44D6C1390E7AEF7623AAB042EB897CD6AA5F5"
+                   },
+                   {
+                       "path":  "ranked-session.bin",
+                       "sha256":  "9BC5C74B92C0C1892FD4741E29D7573D2BCA84B5C376F7CC2609F289241E0AAA"
+                   }
+               ],
+    "qaSnapshot":  "C:\\Peru3124\\restoredclimb\\ClimbAnime\\tmp\\ReleaseGates\\20261020-02\\native-readback-before-dd1f3a1d35604df2a2820aa559e7d2e4",
+    "playerSha256":  "47B23BFAD0DBB1200A41DAAE299396C49924B87C0222E2E4258687A3505334A0",
+    "assemblySha256":  "017FDC0C1748D4AD0D31F73EDA042C3537677154790E762D373FB7C87B8FA637"
+}

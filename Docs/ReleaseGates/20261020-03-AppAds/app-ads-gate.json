@@ -1,0 +1,23 @@
+{
+  "status": "BLOCKED_AUTHENTICATION_AND_CONNECTION",
+  "configuredDeveloperDomain": "7583p.github.io",
+  "developerWebsite": "https://7583p.github.io/",
+  "domainSource": "USER_CONFIRMED_PLAY_CONSOLE_SETTING",
+  "playPackage": "com.matias.hilladventurer",
+  "targetUrl": "https://7583p.github.io/app-ads.txt",
+  "expectedEntry": "google.com, pub-1413480107943515, DIRECT, f08c47fec0942fa0",
+  "publisherMatchesLocalConfiguration": true,
+  "targetHttpStatus": null,
+  "targetFinalUrl": null,
+  "targetContentReceived": false,
+  "exactEntryPresentInPublicFile": null,
+  "robotsAllowAdMobCrawler": null,
+  "admobDiscoveryEligibilityVerified": false,
+  "admobConsoleCrawlStatusVerified": false,
+  "fileMissingConfirmed": false,
+  "preparedReferenceFile": "prepared/app-ads.txt",
+  "published": false,
+  "productionConfigurationModified": false,
+  "attemptEvidence": "query-attempts.json",
+  "limitation": "Connector 401 is not a target HTTP response; neither HTTP 200 nor HTTP 404 can be asserted."
+}

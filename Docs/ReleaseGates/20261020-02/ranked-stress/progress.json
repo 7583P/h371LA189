@@ -1,0 +1,78 @@
+﻿{
+    "classification":  "REAL_RENDERED_UNITY_PHYSICS_SCRIPTED_HUMAN_NOT_MANUAL_APPROVAL",
+    "startedUtc":  "2026-10-21T03:05:36.9732596Z",
+    "head":  "152279fb5a4cf443a90d31654ad7a90f51e5abb3",
+    "artifactsBefore":  [
+                            {
+                                "sha256":  "47B23BFAD0DBB1200A41DAAE299396C49924B87C0222E2E4258687A3505334A0",
+                                "path":  "C:\\Peru3124\\restoredclimb\\ClimbAnime\\Builds\\ReleaseGates-20261020-02-Final\\HillAdventurer-HumanGate.exe"
+                            },
+                            {
+                                "sha256":  "841DA0185FF90B196E96E68EE7F32455C798C9544E2FEABD75C1FCC46F489701",
+                                "path":  "C:\\Peru3124\\restoredclimb\\ClimbAnime\\Builds\\ReleaseGates-20261020-02-Final\\UnityPlayer.dll"
+                            },
+                            {
+                                "sha256":  "1E40C8F7FCCB691A5667AC5738FC89744D4C01F2B0A1CEB0D91F11FDB292A4D4",
+                                "path":  "C:\\Peru3124\\restoredclimb\\ClimbAnime\\Builds\\ReleaseGates-20261020-02-Final\\HillAdventurer-HumanGate_Data\\Managed\\Assembly-CSharp.dll"
+                            }
+                        ],
+    "ratings":  [
+                    10000
+                ],
+    "seeds":  [
+                  4302
+              ],
+    "timeScale":  1,
+    "ml":  "Off",
+    "resolution":  "1600x900",
+    "quality":  "High",
+    "rainbowPreview":  true,
+    "mode":  "final-qa",
+    "focusRequiredForPerformance":  true,
+    "performanceClaim":  false,
+    "runs":  [
+                 {
+                     "arguments":  [
+                                       "-batchmode",
+                                       "-screen-width",
+                                       "1600",
+                                       "-screen-height",
+                                       "900",
+                                       "-screen-fullscreen",
+                                       "0",
+                                       "-force-d3d11",
+                                       "--closure-player",
+                                       "--closure-mode",
+                                       "final-qa",
+                                       "--closure-seeds",
+                                       "4302",
+                                       "--closure-mmr",
+                                       "10000",
+                                       "--closure-timescale",
+                                       "1",
+                                       "--racing-ml-mode",
+                                       "Off",
+                                       "--buffered-driving-traces",
+                                       "--elite-forensics",
+                                       "--closure-capture",
+                                       "--closure-output",
+                                       "C:\\Peru3124\\restoredclimb\\ClimbAnime\\Docs\\ReleaseGates\\20261020-02\\ranked-stress\\mmr-10000",
+                                       "-logFile",
+                                       "C:\\Peru3124\\restoredclimb\\ClimbAnime\\Docs\\ReleaseGates\\20261020-02\\ranked-stress\\mmr-10000.log",
+                                       "--rainbow-preview"
+                                   ],
+                     "exitCode":  0,
+                     "pid":  35544,
+                     "mmr":  10000
+                 }
+             ],
+    "isolation":  {
+                      "bakedCompany":  "HillAdventurer.BlacklineQA",
+                      "leaguePath":  "per-run --closure-output/isolated-product-save",
+                      "bakedProduct":  "Hill Adventurer",
+                      "productionCompany":  "DefaultCompany",
+                      "snapshot":  "C:\\Peru3124\\restoredclimb\\ClimbAnime\\tmp\\ReleaseGates\\ranked-stress-qa-before-3381976b4edc49939694219e9a4e5706",
+                      "qaPersistentDataPath":  "C:\\Users\\diego\\AppData\\LocalLow\\HillAdventurer.BlacklineQA\\Hill Adventurer",
+                      "productionDataAccess":  false
+                  }
+}

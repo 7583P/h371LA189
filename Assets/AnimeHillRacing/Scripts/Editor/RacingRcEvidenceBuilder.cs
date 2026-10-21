@@ -74,6 +74,7 @@ namespace AnimeHillRacing.EditorTools
         {
             Directory.CreateDirectory(Output);
             string path = Path.GetFullPath(RacingFrameForensics.Argument("--rc-build-path", "Builds/HumanGateLatest/HillAdventurer-HumanGate.exe"));
+            if(File.Exists(path))throw new InvalidOperationException("Refusing to overwrite an existing Windows QA build");
             Directory.CreateDirectory(Path.GetDirectoryName(path));
             bool timing = PlayerSettings.enableFrameTimingStats;
             string company = PlayerSettings.companyName;
@@ -99,9 +100,8 @@ namespace AnimeHillRacing.EditorTools
             bool custom = PlayerSettings.Android.useCustomKeystore;
             bool development = EditorUserBuildSettings.development, debugging = EditorUserBuildSettings.allowDebugging;
             bool profiler = EditorUserBuildSettings.connectProfiler, aab = EditorUserBuildSettings.buildAppBundle;
-            string store = Environment.GetEnvironmentVariable("HILL_ADVENTURER_KEYSTORE_PASSWORD");
-            string alias = Environment.GetEnvironmentVariable("HILL_ADVENTURER_KEYALIAS_PASSWORD");
-            bool productionSigned = !string.IsNullOrEmpty(store) && !string.IsNullOrEmpty(alias);
+            var backend=PlayerSettings.GetScriptingBackend(NamedBuildTarget.Android);
+            var architectures=PlayerSettings.Android.targetArchitectures;
             try
             {
                 EditorUserBuildSettings.buildAppBundle = true;
@@ -110,12 +110,15 @@ namespace AnimeHillRacing.EditorTools
                 EditorUserBuildSettings.connectProfiler = false;
                 PlayerSettings.SetScriptingBackend(NamedBuildTarget.Android, ScriptingImplementation.IL2CPP);
                 PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
-                if (productionSigned) { PlayerSettings.Android.keystorePass = store; PlayerSettings.Android.keyaliasPass = alias; }
-                else PlayerSettings.Android.useCustomKeystore = false;
+                // A size audit is never authorized to promote itself to production
+                // signing merely because credentials happen to exist in the shell.
+                // Use Unity's existing default debug identity; never read/set
+                // production credentials or touch the production keystore.
+                PlayerSettings.Android.useCustomKeystore = false;
                 var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions { scenes = Scenes, locationPathName = path,
                     target = BuildTarget.Android, options = BuildOptions.DetailedBuildReport });
                 Export(report, Output);
-                File.WriteAllText(Path.Combine(Output, "forensic-only.txt"), "SIZE AUDIT ONLY; NOT A RELEASE CANDIDATE; productionSigned=" + productionSigned + "\n");
+                File.WriteAllText(Path.Combine(Output, "forensic-only.txt"), "SIZE AUDIT ONLY; NOT FOR INSTALLATION OR RELEASE; productionSigned=False; defaultDebugIdentity=True; no production credentials read\n");
                 if (report.summary.result != BuildResult.Succeeded) throw new InvalidOperationException("Android size build failed");
             }
             finally
@@ -123,7 +126,8 @@ namespace AnimeHillRacing.EditorTools
                 PlayerSettings.Android.useCustomKeystore = custom;
                 EditorUserBuildSettings.development = development; EditorUserBuildSettings.allowDebugging = debugging;
                 EditorUserBuildSettings.connectProfiler = profiler; EditorUserBuildSettings.buildAppBundle = aab;
-                PlayerSettings.Android.keystorePass = ""; PlayerSettings.Android.keyaliasPass = "";
+                PlayerSettings.SetScriptingBackend(NamedBuildTarget.Android,backend);
+                PlayerSettings.Android.targetArchitectures=architectures;
             }
         }
         public static void Export(BuildReport report, string output)

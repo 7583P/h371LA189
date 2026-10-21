@@ -1,0 +1,127 @@
+{
+  "utc": "2026-10-21T02:32:15.112866+00:00",
+  "productionSaveRoot": "C:\\Users\\diego\\AppData\\LocalLow\\DefaultCompany\\Hill Adventurer",
+  "productionSaveFiles": [
+    {
+      "path": "LocalRacingLeague\\league-v3-0.journal",
+      "bytes": 1081865,
+      "sha256": "3413065d1e071765409c9881bb24987a6aeae1f14ee600160e35ad8b4b9a03fd"
+    },
+    {
+      "path": "LocalRacingLeague\\league-v3-1.journal",
+      "bytes": 1081865,
+      "sha256": "e4c1d9f9494fbe2378c363e8f5168498bdd627beebca6b0e4b85fb6368e3bc1d"
+    },
+    {
+      "path": "Player-prev.log",
+      "bytes": 10025,
+      "sha256": "6cf6a467aece226f7ed63ed09a3ffee0e240a314b20e6b2f1d42639a974efb93"
+    },
+    {
+      "path": "Player.log",
+      "bytes": 8626,
+      "sha256": "e7fb5dcb403e46f5c267d9979a24219e3345b71546a96076cb054f0b2c9e7c59"
+    },
+    {
+      "path": "Telemetry\\race_night_city_100000_f35bb004b0.json",
+      "bytes": 2997905,
+      "sha256": "b114802edf8b935e9ea2e606235d0b38b04ed5078259d6b5c63cfe9997c6c71f"
+    },
+    {
+      "path": "Telemetry\\race_NightCityGrandCircuit_85000_2092486ad9.json",
+      "bytes": 424804,
+      "sha256": "d7d9591ae5ea6a0034701f5907db824934b9f59d943dc6467949707570b5f1c8"
+    },
+    {
+      "path": "Telemetry\\race_NightCityGrandCircuit_85000_2b11c9ef52.json",
+      "bytes": 424804,
+      "sha256": "290645961ba3d41d55f046ea3e52366c5d60f02956b1ac148ff3eef8a85b65f0"
+    },
+    {
+      "path": "Telemetry\\race_NightCityGrandCircuit_85000_578d5a433f.json",
+      "bytes": 424097,
+      "sha256": "5b0c933b0ebb86cf3793b6c96d0cd10d21ae5558677a70068d818bcdad9c8d4d"
+    },
+    {
+      "path": "Telemetry\\race_NightCityGrandCircuit_85000_5d8a1b35c2.json",
+      "bytes": 424097,
+      "sha256": "a33a8d118c8a53e12c2d193879f9a3f743f3f3d851f10d8f04fca9712e9a9eca"
+    },
+    {
+      "path": "Telemetry\\race_NightCityGrandCircuit_85000_678cd6a13d.json",
+      "bytes": 424804,
+      "sha256": "c540d1557266088a02fd421ff1b06889d3d68b70444984888026a6373c340734"
+    },
+    {
+      "path": "Telemetry\\race_NightCityGrandCircuit_85000_7c34f8c2ff.json",
+      "bytes": 424804,
+      "sha256": "c7acb173b02aaa9201da1f8b89a2347433d9852331e53be24922c8ddf989b9eb"
+    },
+    {
+      "path": "Telemetry\\race_NightCityGrandCircuit_85000_85180b7e97.json",
+      "bytes": 424804,
+      "sha256": "8f3f52a79c0bdf7572188e9736da435ea0d83d1d6a443ff3bb7e6e50482ec150"
+    },
+    {
+      "path": "Telemetry\\race_NightCityGrandCircuit_85000_87ce7531fe.json",
+      "bytes": 430659,
+      "sha256": "04eb375b34fa696d987102e1d6f0847b4f98b4fee090db0cea5c9f7c00fddc39"
+    },
+    {
+      "path": "Telemetry\\race_NightCityGrandCircuit_85000_889b21eaf0.json",
+      "bytes": 424097,
+      "sha256": "88e4e8a73e559b3c3ee98a47bd735d23462cee2bd2eaefe6d14344017642c84e"
+    },
+    {
+      "path": "Telemetry\\race_NightCityGrandCircuit_85000_d678526247.json",
+      "bytes": 424097,
+      "sha256": "dc032bbdb8a60d8bf8049e2760631e48e79f5116d150d428d7749d60204ffbeb"
+    },
+    {
+      "path": "Telemetry\\race_NightCityGrandCircuit_85000_da71e3adcb.json",
+      "bytes": 424097,
+      "sha256": "cd35e72fdb346f3a5c2cfa5966e58c3087ee3a291a9c03abce8cd08111eae09a"
+    },
+    {
+      "path": "Telemetry\\race_NightCityGrandCircuit_85000_db68915b71.json",
+      "bytes": 424097,
+      "sha256": "2efb87a603d09e8634b0c70108286dfa3a94260d9f7cd45263fe824a1758bf88"
+    },
+    {
+      "path": "Telemetry\\race_NightCityGrandCircuit_85000_f0a6fbab64.json",
+      "bytes": 424097,
+      "sha256": "f51a49f474b253b3711cbdfac2a7f6fa015f76c88c0a6a43a6005c708328e0a5"
+    },
+    {
+      "path": "Telemetry\\race_NightCityGrandCircuit_85000_f9cd40d79c.json",
+      "bytes": 424097,
+      "sha256": "d7b80b18923f68f6b084b409a887b572c9f2b786c5f916809e9878589d52548e"
+    },
+    {
+      "path": "Telemetry\\race_NightCityGrandCircuit_85000_fc2adce8f0.json",
+      "bytes": 424804,
+      "sha256": "3246657f53cc3fdcee8f9075a9fa595ede015776799d6c23553e11c3c2d71cef"
+    }
+  ],
+  "keystores": [
+    {
+      "path": "C:\\Peru3124\\restoredclimb\\ClimbAnime\\hilladventurer.keystore",
+      "sha256": "d238c794be52c9a51220ef822a00cf2b9adde39f2c867da7fdf00aff1fb26a4c",
+      "bytes": 2568
+    },
+    {
+      "path": "C:\\Users\\diego\\.android\\debug.keystore",
+      "sha256": "3358317135ed988469646d168fcbe8251cd1680a227b8dd7b01f6d10f2173339",
+      "bytes": 2618
+    }
+  ],
+  "productionRegistry": {
+    "available": true,
+    "snapshot": "tmp\\ReleaseGates\\20261020-02\\production-playerprefs-before.reg",
+    "sha256": "f4f6aa9a89407079a058cac6980b4d42c22870231d8f9113ef5d4299007365a7"
+  },
+  "requestSha256": "679f4509a2736f1145d152889977ddadc0e306dabe6252556ee360e5358811c4",
+  "oldRequestIdentical": true,
+  "privateSnapshots": "tmp\\ReleaseGates\\20261020-02",
+  "scope": "LOCAL_REVALIDATION_NOT_NEW_RELEASE_APPROVAL"
+}

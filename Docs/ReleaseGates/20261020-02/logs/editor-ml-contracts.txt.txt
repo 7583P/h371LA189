@@ -1,0 +1,47 @@
+python.exe : test_absent_action_support_never_fake_perfect_f1 (test_release_pipeline.ReleasePipelineTests) ... ok
+At line:2 char:1
++ & Tools/ML/.venv/Scripts/python.exe -m unittest discover -s Tools/ML  ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (test_absent_act...neTests) ... ok:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+test_action_uses_intent_not_airborne_state (test_release_pipeline.ReleasePipelineTests) ... ok
+test_current_10k_conditioning_and_archived_v2_are_explicit (test_release_pipeline.ReleasePipelineTests) ... ok
+test_current_schema_requires_explicit_scale_and_correct_normalization (test_release_pipeline.ReleasePipelineTests) ... 
+ok
+test_duplicate_time_rejected (test_release_pipeline.ReleasePipelineTests) ... ok
+test_duplicate_trajectory_ignores_provenance_metadata (test_release_pipeline.ReleasePipelineTests) ... ok
+test_failed_legality_quality_low (test_release_pipeline.ReleasePipelineTests) ... ok
+test_false_lap_claim_rejected (test_release_pipeline.ReleasePipelineTests) ... ok
+test_features_mmr_only_changes_condition (test_release_pipeline.ReleasePipelineTests) ... ok
+test_human_provenance_rejected (test_release_pipeline.ReleasePipelineTests) ... ok
+test_human_source_requires_human_identity (test_release_pipeline.ReleasePipelineTests) ... ok
+test_insufficient_seed_groups_rejected (test_release_pipeline.ReleasePipelineTests) ... ok
+test_items_keep_installed_mechanical_encoding (test_release_pipeline.ReleasePipelineTests) ... ok
+test_laps_cannot_exceed_recorded_session_clock (test_release_pipeline.ReleasePipelineTests) ... ok
+test_missing_context_feature_rejected (test_release_pipeline.ReleasePipelineTests) ... ok
+test_native_context_export_has_exact_layout_and_hash (test_release_pipeline.ReleasePipelineTests) ... ok
+test_nonfinite_first_sample_rejected (test_release_pipeline.ReleasePipelineTests) ... ok
+test_one_lucky_tech_never_schedules_retraining (test_release_pipeline.ReleasePipelineTests) ... ok
+test_parity_probe_covers_all_ratings_and_rare_actions (test_release_pipeline.ReleasePipelineTests) ... ok
+test_quality_does_not_reward_mmr (test_release_pipeline.ReleasePipelineTests) ... ok
+test_quality_pace_reference_uses_training_only (test_release_pipeline.ReleasePipelineTests) ... ok
+test_repeated_commanded_landing_chain_is_measured (test_release_pipeline.ReleasePipelineTests) ... ok
+test_repeated_saving_above_resolution_can_schedule_local_candidate (test_release_pipeline.ReleasePipelineTests) ... ok
+test_road_bounce_is_not_a_commanded_jump (test_release_pipeline.ReleasePipelineTests) ... ok
+test_state_precedes_predicted_command (test_release_pipeline.ReleasePipelineTests) ... ok
+test_sub_sample_saving_cannot_schedule_retraining (test_release_pipeline.ReleasePipelineTests) ... ok
+test_tech_has_no_invented_time_saving (test_release_pipeline.ReleasePipelineTests) ... ok
+test_tech_ids_independent_of_session_and_mmr (test_release_pipeline.ReleasePipelineTests) ... ok
+test_teleport_requires_recovery (test_release_pipeline.ReleasePipelineTests) ... ok
+test_temporal_final_target_included (test_release_pipeline.ReleasePipelineTests) ... ok
+test_temporal_gap_excludes_crossing_windows (test_release_pipeline.ReleasePipelineTests) ... ok
+test_temporal_recovery_excludes_crossing_windows (test_release_pipeline.ReleasePipelineTests) ... ok
+test_unversioned_command_labels_rejected (test_release_pipeline.ReleasePipelineTests) ... ok
+test_valid_fixture (test_release_pipeline.ReleasePipelineTests) ... ok
+test_whole_race_seed_cannot_cross_splits (test_release_pipeline.ReleasePipelineTests) ... ok
+
+----------------------------------------------------------------------
+Ran 35 tests in 0.377s
+
+OK

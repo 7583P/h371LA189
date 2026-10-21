@@ -41,7 +41,9 @@ namespace AnimeHillRacing.Racing3D
             var mainRoad=RacingTrackGeometry.Ribbon(transform,"Grand Circuit asphalt",nodes,-10,10,road,RacingSurfaceKind.Road,true,true);
             // Only the main-road renderer changes; undisclosed shortcut decks
             // retain their materials, collision, topology and navigation.
-            var prismShader=Resources.Load<Shader>("RacingPrismaticRoad");
+            // Review proposal is explicit Editor/Development opt-in. Production
+            // keeps the existing presentation until the owner approves the design.
+            var prismShader=Resources.Load<Shader>(RacingRainbowScenery.Requested?"RacingRainbowRoad":"RacingPrismaticRoad");
             if(prismShader!=null){
                 var luminousRoad=new Material(prismShader){name="Original prismatic energy road",mainTexture=road.mainTexture};
                 GetComponent<RacingEnvironmentScope>().Own(luminousRoad);mainRoad.GetComponent<MeshRenderer>().sharedMaterial=luminousRoad;
@@ -52,7 +54,8 @@ namespace AnimeHillRacing.Racing3D
             RacingTrackGeometry.Ribbon(transform,"Right recovery shoulder",nodes,10.35f,12,shoulder,RacingSurfaceKind.Dirt,true,true,clearRoutes:routes);
 
             var scenery=new GameObject("Batched premium city scenery");scenery.transform.SetParent(transform,false);
-            RacingSkyTrack.Build(transform,nodes,routes);
+            if(RacingRainbowScenery.Requested)RacingRainbowScenery.Build(transform,nodes,routes);
+            else RacingSkyTrack.Build(transform,nodes,routes);
             BuildEdgeWarnings(nodes,scenery.transform,cyan,routes);
             BuildGate(nodes[0],scenery.transform,graphite,white,gold);
             BuildShortcuts(routes,scenery.transform,road,cyan,indigo,white);
@@ -544,7 +547,8 @@ namespace AnimeHillRacing.Racing3D
             moon.transform.rotation=Quaternion.LookRotation(new Vector3(.45f,-.65f,.25f),Vector3.up);
             moon.shadows=LightShadows.Hard;
             RenderSettings.sun=moon;
-            RenderSettings.skybox=RacingNightSky.Create(FindFirstObjectByType<RacingEnvironmentScope>());
+            var scope=FindFirstObjectByType<RacingEnvironmentScope>();
+            RenderSettings.skybox=RacingRainbowScenery.Requested?RacingRainbowScenery.CreateSky(scope):RacingNightSky.Create(scope);
         }
     }
 

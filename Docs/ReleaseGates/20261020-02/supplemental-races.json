@@ -1,0 +1,33 @@
+{
+  "officialMatrixUnchanged": true,
+  "cases": [
+    {
+      "case": "independent-race",
+      "seed": 4301,
+      "finishers": 12,
+      "dnf": 0,
+      "recoveries": 3,
+      "gapSeconds": 30.2388916015625,
+      "runtimeErrors": 0,
+      "mlModes": [
+        "Off"
+      ],
+      "mlTicks": 0,
+      "classification": "INDEPENDENT_SCRIPTED_PHYSICS"
+    },
+    {
+      "case": "ranked-stress",
+      "seed": 4302,
+      "finishers": 1,
+      "dnf": 11,
+      "recoveries": 3,
+      "gapSeconds": null,
+      "runtimeErrors": 0,
+      "mlModes": [
+        "Off"
+      ],
+      "mlTicks": 0,
+      "classification": "ACTUAL_RANKED_QA_RECEIPT_STRESS_NOT_EQUAL_SKILL_BENCHMARK"
+    }
+  ]
+}

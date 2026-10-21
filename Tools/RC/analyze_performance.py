@@ -21,7 +21,10 @@ def low_fps(values, fraction):
     return 1000 / statistics.mean(slowest)
 
 
-def analyze(folder):
+def analyze(folder, output=None):
+    destination = output if output is not None else folder / 'performance-analysis.json'
+    if destination.exists():
+        raise FileExistsError('Preserve prior performance evidence; choose a new --output')
     metrics = read(folder / 'metrics.json')
     proof = read(folder / 'frame-forensics.json')
     render = read(folder / 'render-proof.json')
@@ -92,7 +95,8 @@ def analyze(folder):
                   ml_models=sorted({r.get('modelVersion', r.get('mlModelVersion', '')) for r in racers}),
                   render_proof=render, sampling_cpu_ms=proof['samplingCpuMs'], worst_wall_frames=stalls,
                   definitions='FPS tails use inverse mean of slowest ceil(N*p) actual frame-times.csv durations. p95/p99 are duration quantiles. Scope times overlap; all-thread waits are not a summed frame budget. Process memory peaks include QA diagnostics.')
-    (folder / 'performance-analysis.json').write_text(json.dumps(result, indent=2), encoding='utf-8')
+    with destination.open('x', encoding='utf-8') as stream:
+        json.dump(result, stream, indent=2)
     print(json.dumps({k:v for k,v in result.items() if k not in ('worst_wall_frames','render_proof','definitions')}, indent=2))
     return result
 
@@ -100,4 +104,6 @@ def analyze(folder):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('folder', type=Path)
-    analyze(parser.parse_args().folder)
+    parser.add_argument('--output', type=Path, help='Write reanalysis to a fresh path without changing the original evidence')
+    args = parser.parse_args()
+    analyze(args.folder, args.output)

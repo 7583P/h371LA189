@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "season": 1,
+  "currentMmr": 2999,
+  "peakQualifiedMmr": 4000,
+  "profileId": "player_human",
+  "peakRaceId": "HR-hp-43c47fd54be9808a-3-boundary-fixture",
+  "qualified": true,
+  "ranked": true,
+  "closed": true,
+  "scale": {
+    "id": "after-3000-100-v1",
+    "label": "AFTER",
+    "threshold": 3000,
+    "step": 100,
+    "exclusiveThreshold": false
+  },
+  "observedRaceIds": [
+    "HR-hp-43c47fd54be9808a-1",
+    "HR-hp-43c47fd54be9808a-2",
+    "HR-hp-43c47fd54be9808a-3",
+    "HR-hp-43c47fd54be9808a-3-partial",
+    "HR-hp-43c47fd54be9808a-3-boundary-fixture",
+    "HR-hp-43c47fd54be9808a-3-boundary-fixture-loss"
+  ],
+  "titles": [
+    {
+      "profileId": "player_human",
+      "ruleId": "after-3000-100-v1",
+      "label": "AFTER",
+      "raceId": "HR-hp-43c47fd54be9808a-3-boundary-fixture",
+      "season": 1,
+      "peakQualifiedMmr": 4000,
+      "level": 10,
+      "threshold": 3000,
+      "step": 100,
+      "exclusiveThreshold": false
+    }
+  ]
+}

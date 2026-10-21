@@ -1,0 +1,77 @@
+{
+  "windowsBuilds": [
+    {
+      "role": "official_matrix",
+      "company": "HillAdventurer.BlacklineQA",
+      "product": "Hill Adventurer",
+      "files": [
+        {
+          "path": "Builds\\ReleaseGates-20261020-02\\HillAdventurer-HumanGate.exe",
+          "bytes": 667648,
+          "sha256": "47b23bfad0dbb1200a41daae299396c49924b87c0222e2e4258687a3505334a0"
+        },
+        {
+          "path": "Builds\\ReleaseGates-20261020-02\\UnityPlayer.dll",
+          "bytes": 83787176,
+          "sha256": "841da0185ff90b196e96e68ee7f32455c798c9544e2feabd75c1fcc46f489701"
+        },
+        {
+          "path": "Builds\\ReleaseGates-20261020-02\\HillAdventurer-HumanGate_Data\\Managed\\Assembly-CSharp.dll",
+          "bytes": 1797120,
+          "sha256": "a5e31f574168437c8375cf8e8531b8b5d0bc449b87f9c15bda8e5b5d0e826761"
+        }
+      ]
+    },
+    {
+      "role": "flight_capture",
+      "company": "HillAdventurer.BlacklineQA",
+      "product": "Hill Adventurer",
+      "files": [
+        {
+          "path": "Builds\\ReleaseGates-20261020-02-Final\\HillAdventurer-HumanGate.exe",
+          "bytes": 667648,
+          "sha256": "47b23bfad0dbb1200a41daae299396c49924b87c0222e2e4258687a3505334a0"
+        },
+        {
+          "path": "Builds\\ReleaseGates-20261020-02-Final\\UnityPlayer.dll",
+          "bytes": 83787176,
+          "sha256": "841da0185ff90b196e96e68ee7f32455c798c9544e2feabd75c1fcc46f489701"
+        },
+        {
+          "path": "Builds\\ReleaseGates-20261020-02-Final\\HillAdventurer-HumanGate_Data\\Managed\\Assembly-CSharp.dll",
+          "bytes": 1798656,
+          "sha256": "1e40c8f7fccb691a5667ac5738fc89744d4c01f2b0a1ceb0d91f11fdb292a4d4"
+        }
+      ]
+    },
+    {
+      "role": "numeric_search_fixed_human_gate",
+      "company": "HillAdventurer.BlacklineQA",
+      "product": "Hill Adventurer",
+      "files": [
+        {
+          "path": "Builds\\ReleaseGates-20261020-02-Reviewed\\HillAdventurer-HumanGate.exe",
+          "bytes": 667648,
+          "sha256": "47b23bfad0dbb1200a41daae299396c49924b87c0222e2e4258687a3505334a0"
+        },
+        {
+          "path": "Builds\\ReleaseGates-20261020-02-Reviewed\\UnityPlayer.dll",
+          "bytes": 83787176,
+          "sha256": "841da0185ff90b196e96e68ee7f32455c798c9544e2feabd75c1fcc46f489701"
+        },
+        {
+          "path": "Builds\\ReleaseGates-20261020-02-Reviewed\\HillAdventurer-HumanGate_Data\\Managed\\Assembly-CSharp.dll",
+          "bytes": 1798656,
+          "sha256": "017fdc0c1748d4ad0d31f73eda042c3537677154790e762d373fb7c87b8fa637"
+        }
+      ]
+    }
+  ],
+  "releasePlayerSourceChangesThisExecution": [
+    "RacingLeaderboardUI: numeric name search priority"
+  ],
+  "developmentOnlySourceChanges": [
+    "RacingClosureProbe: observation capture metadata"
+  ],
+  "limits": "Official matrix is not silently relabeled as a run of the later UI build; driving, physics, clocks and ratings were not changed"
+}

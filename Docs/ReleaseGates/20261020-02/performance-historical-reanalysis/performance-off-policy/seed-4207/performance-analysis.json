@@ -1,0 +1,863 @@
+{
+  "path": "C:\\Peru3124\\restoredclimb\\ClimbAnime\\Docs\\ReleaseGates\\20261019-01\\focused-performance-20261020-041114-1a968eaa\\performance-off-policy\\seed-4207",
+  "classification": "REAL_RENDERED_QA_MEASURED_FRAMES_NOT_ANDROID_DEVICE_PROFILE",
+  "seed": 4207,
+  "mmr": 10000,
+  "quality": "High",
+  "device": "Pulse GL66 11UGKV (Micro-Star International Co., Ltd.)",
+  "graphics": "NVIDIA GeForce RTX 3070 Laptop GPU",
+  "batch_mode": false,
+  "onscreen_validation": true,
+  "frames": 19952,
+  "forensic_frames": 19952,
+  "dropped_forensic_frames": 0,
+  "seconds": 60.00157310000002,
+  "average_fps": 332.5246150921333,
+  "median_fps": 356.25222657641604,
+  "one_percent_low_fps": 149.73370609040353,
+  "point_one_percent_low_fps": 100.40856244057068,
+  "p95_ms": 4.6517,
+  "p99_ms": 5.6386,
+  "max_frame_ms": 16.6369,
+  "max_wall_ms": 17.2692,
+  "frames_over_100ms": 0,
+  "frames_over_50ms": 0,
+  "main_thread_ms": 2.994624376296997,
+  "render_thread_ms": 2.1274121666499597,
+  "physics_ms": 0.09204298817161187,
+  "ai_ms": 0.04805751303127506,
+  "gpu_ms": null,
+  "gc_mean_bytes": 419.8384094238281,
+  "gc_max_bytes": 225144.0,
+  "gc_collection_frames": 0,
+  "max_gc_collect_ms": 0.0,
+  "observed_gc_collection_count": 1,
+  "peak_working_mib": 574.2734375,
+  "peak_private_mib": 1614.25390625,
+  "focus_frames": 19952,
+  "unfocused_frames": 0,
+  "ac_states": [
+    1
+  ],
+  "power_status_available": true,
+  "power_configurations": [
+    {
+      "ac": 1,
+      "energy_saver": 0,
+      "frame_rate_limit": -1,
+      "v_sync": 0,
+      "render_interval": 1
+    }
+  ],
+  "maximum_fixed_steps": 1,
+  "fixed_steps_at_least_10": 0,
+  "synchronous_trace_writes": 0,
+  "ml_ticks": 0,
+  "ml_comparison_ticks": 0,
+  "ml_inference_mean_us": 0,
+  "ml_full_tick_mean_us": 0,
+  "ml_scope_ms_per_frame": 0.0,
+  "ml_modes": [
+    "",
+    "Off"
+  ],
+  "ml_models": [
+    "",
+    "ML02/75DAE7B848FE"
+  ],
+  "render_proof": {
+    "classification": "FULL_NATIVE_WINDOW_CAMERA_AND_HUD",
+    "renderMode": "native",
+    "width": 1600,
+    "height": 900,
+    "antiAliasing": 4,
+    "renderedFrames": 22738,
+    "canvases": 2,
+    "targetCreated": false,
+    "renderWorkVerified": true
+  },
+  "sampling_cpu_ms": 759.6483999999936,
+  "worst_wall_frames": [
+    {
+      "frame": 13,
+      "wall_ms": 17.2692,
+      "unity_ms": 2.31099772,
+      "previous_wall_ms": 2.8426,
+      "next_wall_ms": 1.65,
+      "main_cpu_ms": 15.625,
+      "process_cpu_ms": 15.625,
+      "fixed_steps": 1,
+      "focused": true,
+      "gc_count_changed": false,
+      "largest_scopes": [
+        [
+          "all:Camera.Render",
+          3.1957
+        ],
+        [
+          "all:Main Thread",
+          2.2996
+        ],
+        [
+          "main:Main Thread",
+          2.2996
+        ],
+        [
+          "all:PlayerLoop",
+          2.2978
+        ],
+        [
+          "main:PlayerLoop",
+          2.2977
+        ],
+        [
+          "all:CPU Render Thread Frame Time",
+          2.1748
+        ],
+        [
+          "main:CPU Render Thread Frame Time",
+          2.1748
+        ],
+        [
+          "all:CPU Main Thread Frame Time",
+          1.8627
+        ],
+        [
+          "main:CPU Main Thread Frame Time",
+          1.8627
+        ],
+        [
+          "all:RenderLoop",
+          1.1458
+        ],
+        [
+          "main:Camera.Render",
+          0.58
+        ],
+        [
+          "all:TimeUpdate.WaitForLastPresentationAndUpdateTime",
+          0.5264
+        ],
+        [
+          "main:TimeUpdate.WaitForLastPresentationAndUpdateTime",
+          0.5262
+        ],
+        [
+          "main:BehaviourUpdate",
+          0.3603
+        ],
+        [
+          "all:BehaviourUpdate",
+          0.3602
+        ],
+        [
+          "all:LateBehaviourUpdate",
+          0.3274
+        ]
+      ]
+    },
+    {
+      "frame": 2,
+      "wall_ms": 15.0023,
+      "unity_ms": 6.597399,
+      "previous_wall_ms": 6.4877,
+      "next_wall_ms": 1.5242,
+      "main_cpu_ms": 15.625,
+      "process_cpu_ms": 62.5,
+      "fixed_steps": 1,
+      "focused": true,
+      "gc_count_changed": false,
+      "largest_scopes": [
+        [
+          "main:Main Thread",
+          6.5931
+        ],
+        [
+          "all:Main Thread",
+          6.593
+        ],
+        [
+          "all:PlayerLoop",
+          6.5923
+        ],
+        [
+          "main:PlayerLoop",
+          6.5923
+        ],
+        [
+          "all:RenderLoop",
+          3.7267
+        ],
+        [
+          "all:CPU Main Thread Frame Time",
+          2.9035
+        ],
+        [
+          "main:CPU Main Thread Frame Time",
+          2.9035
+        ],
+        [
+          "all:Camera.Render",
+          2.8232
+        ],
+        [
+          "all:Semaphore.WaitForSignal",
+          1.8961
+        ],
+        [
+          "all:CPU Render Thread Frame Time",
+          1.7756
+        ],
+        [
+          "main:CPU Render Thread Frame Time",
+          1.7756
+        ],
+        [
+          "main:Camera.Render",
+          0.5788
+        ],
+        [
+          "all:BehaviourUpdate",
+          0.3371
+        ],
+        [
+          "main:BehaviourUpdate",
+          0.3371
+        ],
+        [
+          "all:LateBehaviourUpdate",
+          0.2559
+        ],
+        [
+          "main:LateBehaviourUpdate",
+          0.2558
+        ]
+      ]
+    },
+    {
+      "frame": 2678,
+      "wall_ms": 14.7494,
+      "unity_ms": 3.044501,
+      "previous_wall_ms": 2.4001,
+      "next_wall_ms": 2.612,
+      "main_cpu_ms": 15.625,
+      "process_cpu_ms": 15.625,
+      "fixed_steps": 1,
+      "focused": true,
+      "gc_count_changed": false,
+      "largest_scopes": [
+        [
+          "all:Camera.Render",
+          3.2161
+        ],
+        [
+          "all:Main Thread",
+          3.0376
+        ],
+        [
+          "main:Main Thread",
+          3.0376
+        ],
+        [
+          "all:PlayerLoop",
+          3.0356
+        ],
+        [
+          "main:PlayerLoop",
+          3.0355
+        ],
+        [
+          "all:CPU Main Thread Frame Time",
+          2.6595
+        ],
+        [
+          "main:CPU Main Thread Frame Time",
+          2.6595
+        ],
+        [
+          "all:CPU Render Thread Frame Time",
+          2.3369
+        ],
+        [
+          "main:CPU Render Thread Frame Time",
+          2.3369
+        ],
+        [
+          "all:RenderLoop",
+          1.0379
+        ],
+        [
+          "main:Camera.Render",
+          0.8369
+        ],
+        [
+          "all:LateBehaviourUpdate",
+          0.5976
+        ],
+        [
+          "main:LateBehaviourUpdate",
+          0.5976
+        ],
+        [
+          "all:Semaphore.WaitForSignal",
+          0.5331
+        ],
+        [
+          "all:BehaviourUpdate",
+          0.412
+        ],
+        [
+          "main:BehaviourUpdate",
+          0.412
+        ]
+      ]
+    },
+    {
+      "frame": 3073,
+      "wall_ms": 13.8791,
+      "unity_ms": 3.58250427,
+      "previous_wall_ms": 1.9995,
+      "next_wall_ms": 4.6388,
+      "main_cpu_ms": 15.625,
+      "process_cpu_ms": 15.625,
+      "fixed_steps": 1,
+      "focused": true,
+      "gc_count_changed": false,
+      "largest_scopes": [
+        [
+          "main:Main Thread",
+          3.5745
+        ],
+        [
+          "all:Main Thread",
+          3.5744
+        ],
+        [
+          "all:PlayerLoop",
+          3.5727
+        ],
+        [
+          "main:PlayerLoop",
+          3.5727
+        ],
+        [
+          "all:CPU Main Thread Frame Time",
+          2.8822
+        ],
+        [
+          "main:CPU Main Thread Frame Time",
+          2.8822
+        ],
+        [
+          "all:CPU Render Thread Frame Time",
+          2.7547
+        ],
+        [
+          "main:CPU Render Thread Frame Time",
+          2.7547
+        ],
+        [
+          "all:Camera.Render",
+          2.5931
+        ],
+        [
+          "all:RenderLoop",
+          1.6083
+        ],
+        [
+          "all:TimeUpdate.WaitForLastPresentationAndUpdateTime",
+          1.0694
+        ],
+        [
+          "main:TimeUpdate.WaitForLastPresentationAndUpdateTime",
+          1.0692
+        ],
+        [
+          "all:Semaphore.WaitForSignal",
+          0.6816
+        ],
+        [
+          "main:Camera.Render",
+          0.5339
+        ],
+        [
+          "main:BehaviourUpdate",
+          0.4729
+        ],
+        [
+          "all:BehaviourUpdate",
+          0.4728
+        ]
+      ]
+    },
+    {
+      "frame": 3553,
+      "wall_ms": 13.4366,
+      "unity_ms": 2.156895,
+      "previous_wall_ms": 2.1934,
+      "next_wall_ms": 1.8087,
+      "main_cpu_ms": 15.625,
+      "process_cpu_ms": 15.625,
+      "fixed_steps": 1,
+      "focused": true,
+      "gc_count_changed": false,
+      "largest_scopes": [
+        [
+          "all:CPU Main Thread Frame Time",
+          2.19
+        ],
+        [
+          "main:CPU Main Thread Frame Time",
+          2.19
+        ],
+        [
+          "all:Camera.Render",
+          2.1852
+        ],
+        [
+          "all:Main Thread",
+          2.1455
+        ],
+        [
+          "main:Main Thread",
+          2.1455
+        ],
+        [
+          "main:PlayerLoop",
+          2.1441
+        ],
+        [
+          "all:PlayerLoop",
+          2.144
+        ],
+        [
+          "all:CPU Render Thread Frame Time",
+          1.4753
+        ],
+        [
+          "main:CPU Render Thread Frame Time",
+          1.4753
+        ],
+        [
+          "all:RenderLoop",
+          1.0304
+        ],
+        [
+          "main:Camera.Render",
+          0.5798
+        ],
+        [
+          "all:Semaphore.WaitForSignal",
+          0.5764
+        ],
+        [
+          "all:LateBehaviourUpdate",
+          0.3409
+        ],
+        [
+          "main:LateBehaviourUpdate",
+          0.3409
+        ],
+        [
+          "all:TimeUpdate.WaitForLastPresentationAndUpdateTime",
+          0.3353
+        ],
+        [
+          "main:TimeUpdate.WaitForLastPresentationAndUpdateTime",
+          0.3353
+        ]
+      ]
+    },
+    {
+      "frame": 8285,
+      "wall_ms": 12.7167,
+      "unity_ms": 3.033397,
+      "previous_wall_ms": 3.7338,
+      "next_wall_ms": 2.1805,
+      "main_cpu_ms": 0.0,
+      "process_cpu_ms": 15.625,
+      "fixed_steps": 1,
+      "focused": true,
+      "gc_count_changed": false,
+      "largest_scopes": [
+        [
+          "all:CPU Main Thread Frame Time",
+          5.0699
+        ],
+        [
+          "main:CPU Main Thread Frame Time",
+          5.0699
+        ],
+        [
+          "all:CPU Render Thread Frame Time",
+          3.9928
+        ],
+        [
+          "main:CPU Render Thread Frame Time",
+          3.9928
+        ],
+        [
+          "all:Camera.Render",
+          3.5441
+        ],
+        [
+          "main:Main Thread",
+          3.0117
+        ],
+        [
+          "all:Main Thread",
+          3.0116
+        ],
+        [
+          "all:PlayerLoop",
+          3.0099
+        ],
+        [
+          "main:PlayerLoop",
+          3.0098
+        ],
+        [
+          "all:Semaphore.WaitForSignal",
+          0.9552
+        ],
+        [
+          "main:Camera.Render",
+          0.8953
+        ],
+        [
+          "all:RenderLoop",
+          0.882
+        ],
+        [
+          "all:Gfx.WaitForPresentOnGfxThread",
+          0.5055
+        ],
+        [
+          "main:Gfx.WaitForPresentOnGfxThread",
+          0.5055
+        ],
+        [
+          "main:Semaphore.WaitForSignal",
+          0.5031
+        ],
+        [
+          "all:LateBehaviourUpdate",
+          0.4457
+        ]
+      ]
+    },
+    {
+      "frame": 9824,
+      "wall_ms": 12.2021,
+      "unity_ms": 2.21030331,
+      "previous_wall_ms": 2.5889,
+      "next_wall_ms": 1.5325,
+      "main_cpu_ms": 15.625,
+      "process_cpu_ms": 15.625,
+      "fixed_steps": 1,
+      "focused": true,
+      "gc_count_changed": false,
+      "largest_scopes": [
+        [
+          "all:CPU Main Thread Frame Time",
+          3.1543
+        ],
+        [
+          "main:CPU Main Thread Frame Time",
+          3.1543
+        ],
+        [
+          "all:Camera.Render",
+          2.7452
+        ],
+        [
+          "all:CPU Render Thread Frame Time",
+          2.4355
+        ],
+        [
+          "main:CPU Render Thread Frame Time",
+          2.4355
+        ],
+        [
+          "all:Main Thread",
+          2.2008
+        ],
+        [
+          "main:Main Thread",
+          2.2008
+        ],
+        [
+          "all:PlayerLoop",
+          2.1994
+        ],
+        [
+          "main:PlayerLoop",
+          2.1993
+        ],
+        [
+          "all:RenderLoop",
+          0.7767
+        ],
+        [
+          "main:Camera.Render",
+          0.6615
+        ],
+        [
+          "all:Semaphore.WaitForSignal",
+          0.4485
+        ],
+        [
+          "all:LateBehaviourUpdate",
+          0.39
+        ],
+        [
+          "main:LateBehaviourUpdate",
+          0.3899
+        ],
+        [
+          "all:BehaviourUpdate",
+          0.2903
+        ],
+        [
+          "main:BehaviourUpdate",
+          0.2902
+        ]
+      ]
+    },
+    {
+      "frame": 16350,
+      "wall_ms": 12.0389,
+      "unity_ms": 7.417198,
+      "previous_wall_ms": 5.7774,
+      "next_wall_ms": 3.1462,
+      "main_cpu_ms": 15.625,
+      "process_cpu_ms": 46.875,
+      "fixed_steps": 1,
+      "focused": true,
+      "gc_count_changed": false,
+      "largest_scopes": [
+        [
+          "all:Camera.Render",
+          7.6903
+        ],
+        [
+          "main:Main Thread",
+          7.3931
+        ],
+        [
+          "all:Main Thread",
+          7.393
+        ],
+        [
+          "all:PlayerLoop",
+          7.3904
+        ],
+        [
+          "main:PlayerLoop",
+          7.3903
+        ],
+        [
+          "all:CPU Render Thread Frame Time",
+          4.3522
+        ],
+        [
+          "main:CPU Render Thread Frame Time",
+          4.3522
+        ],
+        [
+          "all:CPU Main Thread Frame Time",
+          3.7598
+        ],
+        [
+          "main:CPU Main Thread Frame Time",
+          3.7598
+        ],
+        [
+          "main:Camera.Render",
+          2.8728
+        ],
+        [
+          "all:RenderLoop",
+          2.7127
+        ],
+        [
+          "all:Semaphore.WaitForSignal",
+          2.3844
+        ],
+        [
+          "all:Gfx.WaitForPresentOnGfxThread",
+          1.7058
+        ],
+        [
+          "main:Gfx.WaitForPresentOnGfxThread",
+          1.7058
+        ],
+        [
+          "main:Semaphore.WaitForSignal",
+          1.7042
+        ],
+        [
+          "all:BehaviourUpdate",
+          0.8867
+        ]
+      ]
+    },
+    {
+      "frame": 2714,
+      "wall_ms": 10.898,
+      "unity_ms": 3.6151998,
+      "previous_wall_ms": 2.5504,
+      "next_wall_ms": 2.1664,
+      "main_cpu_ms": 15.625,
+      "process_cpu_ms": 15.625,
+      "fixed_steps": 1,
+      "focused": true,
+      "gc_count_changed": false,
+      "largest_scopes": [
+        [
+          "all:CPU Main Thread Frame Time",
+          5.13
+        ],
+        [
+          "main:CPU Main Thread Frame Time",
+          5.13
+        ],
+        [
+          "main:Main Thread",
+          3.6113
+        ],
+        [
+          "all:Main Thread",
+          3.6112
+        ],
+        [
+          "all:PlayerLoop",
+          3.6096
+        ],
+        [
+          "main:PlayerLoop",
+          3.6096
+        ],
+        [
+          "all:Camera.Render",
+          3.499
+        ],
+        [
+          "all:CPU Render Thread Frame Time",
+          2.7459
+        ],
+        [
+          "main:CPU Render Thread Frame Time",
+          2.7459
+        ],
+        [
+          "all:Semaphore.WaitForSignal",
+          1.5706
+        ],
+        [
+          "main:Gfx.WaitForPresentOnGfxThread",
+          1.3204
+        ],
+        [
+          "all:Gfx.WaitForPresentOnGfxThread",
+          1.3203
+        ],
+        [
+          "main:Semaphore.WaitForSignal",
+          1.3188
+        ],
+        [
+          "all:RenderLoop",
+          0.6722
+        ],
+        [
+          "main:Camera.Render",
+          0.6442
+        ],
+        [
+          "all:LateBehaviourUpdate",
+          0.4987
+        ]
+      ]
+    },
+    {
+      "frame": 3075,
+      "wall_ms": 10.6682,
+      "unity_ms": 4.328097,
+      "previous_wall_ms": 4.6388,
+      "next_wall_ms": 3.1643,
+      "main_cpu_ms": 15.625,
+      "process_cpu_ms": 46.875,
+      "fixed_steps": 1,
+      "focused": true,
+      "gc_count_changed": false,
+      "largest_scopes": [
+        [
+          "all:Camera.Render",
+          5.688
+        ],
+        [
+          "main:Main Thread",
+          4.2996
+        ],
+        [
+          "all:Main Thread",
+          4.2995
+        ],
+        [
+          "all:PlayerLoop",
+          4.297
+        ],
+        [
+          "main:PlayerLoop",
+          4.2968
+        ],
+        [
+          "all:CPU Main Thread Frame Time",
+          2.9751
+        ],
+        [
+          "main:CPU Main Thread Frame Time",
+          2.9751
+        ],
+        [
+          "all:CPU Render Thread Frame Time",
+          2.4694
+        ],
+        [
+          "main:CPU Render Thread Frame Time",
+          2.4694
+        ],
+        [
+          "main:Camera.Render",
+          1.3699
+        ],
+        [
+          "all:RenderLoop",
+          1.3404
+        ],
+        [
+          "all:LateBehaviourUpdate",
+          0.8624
+        ],
+        [
+          "main:LateBehaviourUpdate",
+          0.8624
+        ],
+        [
+          "main:BehaviourUpdate",
+          0.8205
+        ],
+        [
+          "all:BehaviourUpdate",
+          0.8202
+        ],
+        [
+          "all:Semaphore.WaitForSignal",
+          0.5645
+        ]
+      ]
+    }
+  ],
+  "definitions": "FPS tails use inverse mean of slowest ceil(N*p) actual frame-times.csv durations. p95/p99 are duration quantiles. Scope times overlap; all-thread waits are not a summed frame budget. Process memory peaks include QA diagnostics."
+}

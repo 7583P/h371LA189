@@ -1,0 +1,75 @@
+Mono path[0] = 'C:/Peru3124/restoredclimb/ClimbAnime/Builds/ReleaseGates-20261020-02-Final/HillAdventurer-HumanGate_Data/Managed'
+Mono config path = 'C:/Peru3124/restoredclimb/ClimbAnime/Builds/ReleaseGates-20261020-02-Final/MonoBleedingEdge/etc'
+Found 3 interfaces on host : 0) 172.29.112.1 1) 172.24.224.1 2) 192.168.18.6
+Player connection [15796]  Target information:
+
+Player connection [15796]  * "[IP] 172.29.112.1 [Port] 55000 [Flags] 2 [Guid] 520975090 [EditorId] 1434007412 [Version] 1048832 [Id] WindowsPlayer(2,MSI) [Debug] 0 [PackageName] WindowsPlayer [ProjectName] Hill Adventurer" 
+
+Player connection [15796]  * "[IP] 172.24.224.1 [Port] 55000 [Flags] 2 [Guid] 520975090 [EditorId] 1434007412 [Version] 1048832 [Id] WindowsPlayer(2,MSI) [Debug] 0 [PackageName] WindowsPlayer [ProjectName] Hill Adventurer" 
+
+Player connection [15796]  * "[IP] 192.168.18.6 [Port] 55000 [Flags] 2 [Guid] 520975090 [EditorId] 1434007412 [Version] 1048832 [Id] WindowsPlayer(2,MSI) [Debug] 0 [PackageName] WindowsPlayer [ProjectName] Hill Adventurer" 
+
+Player connection [15796] Started UDP target info broadcast (1) on [225.0.0.222:54997].
+
+Input System module state changed to: Initialized.
+[Physics::Module] Initialized fallback backend.
+[Physics::Module] Id: 0xdecafbad
+Initialize engine version: 6000.3.13f1 (8c4f11e4fb20)
+[Subsystems] Discovering subsystems at path C:/Peru3124/restoredclimb/ClimbAnime/Builds/ReleaseGates-20261020-02-Final/HillAdventurer-HumanGate_Data/UnitySubsystems
+GfxDevice: creating device client; kGfxThreadingModeNonThreaded
+Direct3D:
+    Version:  Direct3D 11.0 [level 11.1]
+    Renderer: NVIDIA GeForce RTX 3070 Laptop GPU (ID=0x249d)
+    Vendor:   NVIDIA
+    VRAM:     8018 MB
+    Driver:   32.0.16.1078
+Begin MonoManager ReloadAssembly
+- Loaded All Assemblies, in  0.197 seconds
+- Finished resetting the current domain, in  0.003 seconds
+[Physics::Module] Selected backend.
+[Physics::Module] Name: PhysX
+[Physics::Module] Id: 0xf2b8ea05
+[Physics::Module] SDK Version: 4.1.2
+[Physics::Module] Integration Version: 1.0.0
+[Physics::Module] Threading Mode: Multi-Threaded
+UnloadTime: 0.773200 ms
+[AdMob] Ads are disabled on this platform
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace () (at C:/build/output/unity/unity/Runtime/Export/Scripting/StackTrace.cs:35)
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/build/output/unity/unity/Runtime/Export/Logging/DebugLogHandler.cs:9)
+UnityEngine.Logger:Log (UnityEngine.LogType,object) (at C:/build/output/unity/unity/Runtime/Export/Logging/Logger.cs:60)
+UnityEngine.Debug:Log (object) (at C:/build/output/unity/unity/Runtime/Export/Debug/Debug.bindings.cs:123)
+AnimeHillRacing.Ads.AdMobManager:Awake () (at C:/Peru3124/restoredclimb/ClimbAnime/Assets/AnimeHillRacing/Scripts/Ads/AdMobManager.cs:165)
+UnityEngine.GameObject:Internal_AddComponentWithType (System.Type)
+UnityEngine.GameObject:AddComponent (System.Type) (at C:/build/output/unity/unity/Runtime/Export/Scripting/GameObject.bindings.cs:246)
+UnityEngine.GameObject:AddComponent<AnimeHillRacing.Ads.AdMobManager> () (at C:/build/output/unity/unity/Runtime/Export/Scripting/GameObject.bindings.cs:251)
+AnimeHillRacing.Ads.AdMobManager:CreatePersistentManager () (at C:/Peru3124/restoredclimb/ClimbAnime/Assets/AnimeHillRacing/Scripts/Ads/AdMobManager.cs:122)
+
+(Filename: C:/build/output/unity/unity/Runtime/Export/Debug/Debug.bindings.cs Line: 123)
+
+Unloading 6 Unused Serialized files (Serialized files now loaded: 0)
+UnloadTime: 8.487100 ms
+Unloading 33 unused Assets / (166.6 KB). Loaded Objects now: 3315.
+Memory consumption went from 46.0 MB to 45.8 MB.
+Total: 1.281100 ms (FindLiveObjects: 0.131100 ms CreateObjectMapping: 0.062000 ms MarkObjects: 0.912000 ms  DeleteObjects: 0.175500 ms)
+
+Native physical league UI readback: bots=11 passed=False
+UnityEngine.Debug:ExtractStackTraceNoAlloc (byte*,int,string)
+UnityEngine.StackTraceUtility:ExtractStackTrace () (at C:/build/output/unity/unity/Runtime/Export/Scripting/StackTrace.cs:35)
+UnityEngine.DebugLogHandler:Internal_Log (UnityEngine.LogType,UnityEngine.LogOption,string,UnityEngine.Object)
+UnityEngine.DebugLogHandler:LogFormat (UnityEngine.LogType,UnityEngine.Object,string,object[]) (at C:/build/output/unity/unity/Runtime/Export/Logging/DebugLogHandler.cs:9)
+UnityEngine.Logger:Log (UnityEngine.LogType,object) (at C:/build/output/unity/unity/Runtime/Export/Logging/Logger.cs:60)
+UnityEngine.Debug:Log (object) (at C:/build/output/unity/unity/Runtime/Export/Debug/Debug.bindings.cs:123)
+AnimeHillRacing.Racing3D.RacingLeagueReadbackProbe:Finish (string,AnimeHillRacing.Racing3D.RacingLeagueReadbackProbe/Report) (at C:/Peru3124/restoredclimb/ClimbAnime/Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingLeagueReadbackProbe.cs:85)
+AnimeHillRacing.Racing3D.RacingLeagueReadbackProbe/<Run>d__4:MoveNext () (at C:/Peru3124/restoredclimb/ClimbAnime/Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingLeagueReadbackProbe.cs:80)
+UnityEngine.SetupCoroutine:InvokeMoveNext (System.Collections.IEnumerator,intptr) (at C:/build/output/unity/unity/Runtime/Export/Scripting/Coroutines.cs:17)
+
+(Filename: C:/build/output/unity/unity/Runtime/Export/Debug/Debug.bindings.cs Line: 123)
+
+[Physics::Module] Cleanup current backend.
+[Physics::Module] Id: 0xf2b8ea05
+Input System module state changed to: ShutdownInProgress.
+Input System polling thread exited.
+Input System module state changed to: Shutdown.
+PlayerConnection::Cleanup##utp:{"type":"MemoryLeaks","version":2,"phase":"Immediate","time":1792552365883,"processId":15624,"allocatedMemory":54469,"memoryLabels":[{"Default":136},{"NewDelete":104},{"Manager":8883},{"VertexData":576},{"GfxDevice":432},{"Audio":752},{"Serialization":520},{"JobScheduler":32768},{"String":490},{"DynamicArray":2240},{"HashMap":5120},{"PoolAlloc":96},{"CloudService":144},{"VR":1872},{"Video":144},{"Subsystems":96},{"Accessibility":80},{"CoreBusinessMetrics":120}]}

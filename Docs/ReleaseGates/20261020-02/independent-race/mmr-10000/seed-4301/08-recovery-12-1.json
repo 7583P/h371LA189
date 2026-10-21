@@ -1,0 +1,21 @@
+{
+    "classification": "OBSERVED_RECOVERY_AFTER_SHARED_RESPAWN_NOT_A_REPLAY",
+    "file": "08-recovery-12-1",
+    "racerId": "player_human",
+    "reason": "Vehicle stuck",
+    "seed": 4301,
+    "grid": 12,
+    "recoveryNumber": 1,
+    "triggerRaceTime": 163.26358032226563,
+    "captureRaceTime": 163.26910400390626,
+    "cameraPosition": {
+        "x": 4.1335248947143559,
+        "y": 10.091917037963868,
+        "z": 138.21412658691407
+    },
+    "cameraTarget": {
+        "x": 7.3314714431762699,
+        "y": 6.259406089782715,
+        "z": 152.86830139160157
+    }
+}

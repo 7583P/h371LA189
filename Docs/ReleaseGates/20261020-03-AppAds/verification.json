@@ -1,0 +1,27 @@
+{
+  "checkedAtUtc": "2026-10-21T03:55:08.428409+00:00",
+  "classification": "LOCAL_VERIFICATION_ONLY_PUBLIC_HTTP_CHECK_BLOCKED",
+  "checks": {
+    "oldSealedEvidenceIntact": true,
+    "registeredSourceFilesUnchanged": true,
+    "externalConfigurationsUnchanged": true,
+    "localPublishersMatch": true,
+    "preparedEntryExactWithNewline": true,
+    "branchStillMain": true,
+    "headUnchanged": true,
+    "indexEmpty": true
+  },
+  "localChecksPassed": true,
+  "previousManifestSha256": "a8aa2ddb4b5475286ee6d695d62081c081b9dfc542d57057d404f06331e5b89a",
+  "previousEvidenceFilesRehashed": 790,
+  "previousEvidenceMismatches": [],
+  "registeredSourceFilesCompared": 45,
+  "sourceMismatches": [],
+  "externalConfigurationsCompared": 6,
+  "externalConfigurationMismatches": [],
+  "branch": "main",
+  "head": "152279fb5a4cf443a90d31654ad7a90f51e5abb3",
+  "stagedFiles": [],
+  "publicHttpVerified": false,
+  "releaseReady": false
+}

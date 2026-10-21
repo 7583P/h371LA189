@@ -92,6 +92,8 @@ namespace AnimeHillRacing.Racing3D
             startingGrid.Initialize(trackGraph);
 
             // 2. Prepare 12-Racer Lobby
+            if(!RacingTestSession.Active&&!rules.EqualBuildBenchmark)
+                while(!RacingProgressionService.PrepareRankedRace())yield return null;
             SetState(RaceState.Preparing);
             BuildLobby();
             for (int i = 0; i < lobbyRacers.Length; i++)

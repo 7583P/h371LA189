@@ -1,0 +1,11 @@
+{
+    "classification": "OFFSCREEN_RENDER_REQUIRES_POST_RENDER_PROOF",
+    "renderMode": "manual",
+    "width": 1600,
+    "height": 900,
+    "antiAliasing": 4,
+    "renderedFrames": 30983,
+    "canvases": 2,
+    "targetCreated": true,
+    "renderWorkVerified": true
+}

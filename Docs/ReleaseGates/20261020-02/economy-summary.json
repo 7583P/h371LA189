@@ -1,0 +1,572 @@
+{
+  "classification": "SIMULATOR_ONLY_ORGANIC_AND_INTERVENED_FIXTURES_SEPARATE",
+  "cases": [
+    {
+      "scenario": "mobility",
+      "population": 1200,
+      "seed": 4209,
+      "races": 252346,
+      "preResetQ4": {
+        "count": 1200,
+        "min": 0,
+        "p5": 354.95,
+        "p25": 1849.75,
+        "median": 2980,
+        "mean": 3023.3308333333334,
+        "p75": 4185,
+        "p95": 5637.45,
+        "p99": 6442.0599999999995,
+        "max": 7156,
+        "sd": 1589.2886237924104,
+        "p10": 804.9,
+        "p50": 2980,
+        "p90": 5094.4000000000015
+      },
+      "preResetSupply": 3627997,
+      "finalSupply": 3330467,
+      "budget": {
+        "pairwiseNet": 0,
+        "floorInjection": 58320,
+        "ceilingRemoval": 0,
+        "placementIssuance": 0,
+        "softResetRemoval": 1480133,
+        "migrationRemoval": 0,
+        "physicalRaces": 0,
+        "simulatedRaces": 252346,
+        "settledParticipants": 3028152
+      },
+      "tracked": [
+        {
+          "quarter": 1,
+          "tracked": [
+            {
+              "node": 0,
+              "initialMmr": 500,
+              "preResetMmr": 610,
+              "carry": 602,
+              "mmrFromInitial": 110,
+              "originalSkill": 0.0800030529499054,
+              "currentSkill": 0.0800030529499054,
+              "races": 64,
+              "qualified": true
+            },
+            {
+              "node": 1,
+              "initialMmr": 9000,
+              "preResetMmr": 8967,
+              "carry": 8150,
+              "mmrFromInitial": -33,
+              "originalSkill": 0.9799954295158386,
+              "currentSkill": 0.9799954295158386,
+              "races": 215,
+              "qualified": true
+            },
+            {
+              "node": 2,
+              "initialMmr": 2516,
+              "preResetMmr": 2516,
+              "carry": 2364,
+              "mmrFromInitial": 0,
+              "originalSkill": 0.2372167557477951,
+              "currentSkill": 0.2372167557477951,
+              "races": 0,
+              "qualified": false
+            }
+          ]
+        },
+        {
+          "quarter": 2,
+          "tracked": [
+            {
+              "node": 0,
+              "initialMmr": 500,
+              "preResetMmr": 3982,
+              "carry": 3643,
+              "mmrFromInitial": 3482,
+              "originalSkill": 0.0800030529499054,
+              "currentSkill": 0.9900053143501282,
+              "races": 142,
+              "qualified": true
+            },
+            {
+              "node": 1,
+              "initialMmr": 9000,
+              "preResetMmr": 259,
+              "carry": 255,
+              "mmrFromInitial": -8741,
+              "originalSkill": 0.9799954295158386,
+              "currentSkill": 0.02999923750758171,
+              "races": 673,
+              "qualified": true
+            },
+            {
+              "node": 2,
+              "initialMmr": 2516,
+              "preResetMmr": 2364,
+              "carry": 2229,
+              "mmrFromInitial": -152,
+              "originalSkill": 0.2372167557477951,
+              "currentSkill": 0.2372167557477951,
+              "races": 0,
+              "qualified": false
+            }
+          ]
+        },
+        {
+          "quarter": 3,
+          "tracked": [
+            {
+              "node": 0,
+              "initialMmr": 500,
+              "preResetMmr": 5666,
+              "carry": 5023,
+              "mmrFromInitial": 5166,
+              "originalSkill": 0.0800030529499054,
+              "currentSkill": 0.9900053143501282,
+              "races": 225,
+              "qualified": true
+            },
+            {
+              "node": 1,
+              "initialMmr": 9000,
+              "preResetMmr": 0,
+              "carry": 0,
+              "mmrFromInitial": -9000,
+              "originalSkill": 0.9799954295158386,
+              "currentSkill": 0.02999923750758171,
+              "races": 1149,
+              "qualified": true
+            },
+            {
+              "node": 2,
+              "initialMmr": 2516,
+              "preResetMmr": 2229,
+              "carry": 2108,
+              "mmrFromInitial": -287,
+              "originalSkill": 0.2372167557477951,
+              "currentSkill": 0.2372167557477951,
+              "races": 0,
+              "qualified": false
+            }
+          ]
+        },
+        {
+          "quarter": 4,
+          "tracked": [
+            {
+              "node": 0,
+              "initialMmr": 500,
+              "preResetMmr": 6071,
+              "carry": 5327,
+              "mmrFromInitial": 5571,
+              "originalSkill": 0.0800030529499054,
+              "currentSkill": 0.9900053143501282,
+              "races": 321,
+              "qualified": true
+            },
+            {
+              "node": 1,
+              "initialMmr": 9000,
+              "preResetMmr": 0,
+              "carry": 0,
+              "mmrFromInitial": -9000,
+              "originalSkill": 0.9799954295158386,
+              "currentSkill": 0.02999923750758171,
+              "races": 1603,
+              "qualified": true
+            },
+            {
+              "node": 2,
+              "initialMmr": 2516,
+              "preResetMmr": 2108,
+              "carry": 2000,
+              "mmrFromInitial": -408,
+              "originalSkill": 0.2372167557477951,
+              "currentSkill": 0.2372167557477951,
+              "races": 0,
+              "qualified": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": "organic",
+      "population": 10000,
+      "seed": 4207,
+      "races": 2437355,
+      "preResetQ4": {
+        "count": 10000,
+        "min": 0,
+        "p5": 158.95000000000005,
+        "p25": 1438,
+        "median": 2409,
+        "mean": 2474.4588,
+        "p75": 3421.5,
+        "p95": 4905.049999999999,
+        "p99": 5985.420000000009,
+        "max": 7225,
+        "sd": 1410.6115482664104,
+        "p10": 641,
+        "p50": 2409,
+        "p90": 4378
+      },
+      "preResetSupply": 24744588,
+      "finalSupply": 22971381,
+      "budget": {
+        "pairwiseNet": 0,
+        "floorInjection": 5477331,
+        "ceilingRemoval": 0,
+        "placementIssuance": 24665073,
+        "softResetRemoval": 7171023,
+        "migrationRemoval": 0,
+        "physicalRaces": 0,
+        "simulatedRaces": 2437355,
+        "settledParticipants": 29248260
+      },
+      "tracked": [
+        {
+          "quarter": 1,
+          "tracked": [
+            {
+              "node": 0,
+              "initialMmr": 0,
+              "preResetMmr": 1195,
+              "carry": 1164,
+              "mmrFromInitial": 1195,
+              "originalSkill": 0.23024338483810425,
+              "currentSkill": 0.23568656187874473,
+              "races": 215,
+              "qualified": true
+            },
+            {
+              "node": 1,
+              "initialMmr": 0,
+              "preResetMmr": 5551,
+              "carry": 4936,
+              "mmrFromInitial": 5551,
+              "originalSkill": 0.7631646990776062,
+              "currentSkill": 0.7707503121219412,
+              "races": 2989,
+              "qualified": true
+            },
+            {
+              "node": 2,
+              "initialMmr": 0,
+              "preResetMmr": 3286,
+              "carry": 3042,
+              "mmrFromInitial": 3286,
+              "originalSkill": 0.5152056217193604,
+              "currentSkill": 0.5205078184966733,
+              "races": 173,
+              "qualified": true
+            }
+          ]
+        },
+        {
+          "quarter": 2,
+          "tracked": [
+            {
+              "node": 0,
+              "initialMmr": 0,
+              "preResetMmr": 1068,
+              "carry": 1044,
+              "mmrFromInitial": 1068,
+              "originalSkill": 0.23024338483810425,
+              "currentSkill": 0.24035253570806023,
+              "races": 436,
+              "qualified": true
+            },
+            {
+              "node": 1,
+              "initialMmr": 0,
+              "preResetMmr": 5481,
+              "carry": 4883,
+              "mmrFromInitial": 5481,
+              "originalSkill": 0.7631646990776062,
+              "currentSkill": 0.771380663368127,
+              "races": 6020,
+              "qualified": true
+            },
+            {
+              "node": 2,
+              "initialMmr": 0,
+              "preResetMmr": 3210,
+              "carry": 2975,
+              "mmrFromInitial": 3210,
+              "originalSkill": 0.5152056217193604,
+              "currentSkill": 0.5249497875747355,
+              "races": 340,
+              "qualified": true
+            }
+          ]
+        },
+        {
+          "quarter": 3,
+          "tracked": [
+            {
+              "node": 0,
+              "initialMmr": 0,
+              "preResetMmr": 1045,
+              "carry": 1023,
+              "mmrFromInitial": 1045,
+              "originalSkill": 0.23024338483810425,
+              "currentSkill": 0.2443612075400133,
+              "races": 665,
+              "qualified": true
+            },
+            {
+              "node": 1,
+              "initialMmr": 0,
+              "preResetMmr": 5534,
+              "carry": 4923,
+              "mmrFromInitial": 5534,
+              "originalSkill": 0.7631646990776062,
+              "currentSkill": 0.7714315428617932,
+              "races": 9183,
+              "qualified": true
+            },
+            {
+              "node": 2,
+              "initialMmr": 0,
+              "preResetMmr": 3065,
+              "carry": 2848,
+              "mmrFromInitial": 3065,
+              "originalSkill": 0.5152056217193604,
+              "currentSkill": 0.5286415330727534,
+              "races": 499,
+              "qualified": true
+            }
+          ]
+        },
+        {
+          "quarter": 4,
+          "tracked": [
+            {
+              "node": 0,
+              "initialMmr": 0,
+              "preResetMmr": 1055,
+              "carry": 1032,
+              "mmrFromInitial": 1055,
+              "originalSkill": 0.23024338483810425,
+              "currentSkill": 0.24759449038312553,
+              "races": 888,
+              "qualified": true
+            },
+            {
+              "node": 1,
+              "initialMmr": 0,
+              "preResetMmr": 5400,
+              "carry": 4820,
+              "mmrFromInitial": 5400,
+              "originalSkill": 0.7631646990776062,
+              "currentSkill": 0.7714351900172658,
+              "races": 12351,
+              "qualified": true
+            },
+            {
+              "node": 2,
+              "initialMmr": 0,
+              "preResetMmr": 3284,
+              "carry": 3040,
+              "mmrFromInitial": 3284,
+              "originalSkill": 0.5152056217193604,
+              "currentSkill": 0.5325865642773135,
+              "races": 696,
+              "qualified": true
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "scenario": "organic",
+      "population": 10000,
+      "seed": 4208,
+      "races": 2414603,
+      "preResetQ4": {
+        "count": 10000,
+        "min": 0,
+        "p5": 140.80000000000018,
+        "p25": 1402,
+        "median": 2393,
+        "mean": 2460.2598,
+        "p75": 3395,
+        "p95": 4970.0999999999985,
+        "p99": 6043.030000000001,
+        "max": 7281,
+        "sd": 1421.5705870986358,
+        "p10": 608,
+        "p50": 2393,
+        "p90": 4364.1
+      },
+      "preResetSupply": 24602598,
+      "finalSupply": 22838320,
+      "budget": {
+        "pairwiseNet": 0,
+        "floorInjection": 5575003,
+        "ceilingRemoval": 0,
+        "placementIssuance": 24373687,
+        "softResetRemoval": 7110370,
+        "migrationRemoval": 0,
+        "physicalRaces": 0,
+        "simulatedRaces": 2414603,
+        "settledParticipants": 28975236
+      },
+      "tracked": [
+        {
+          "quarter": 1,
+          "tracked": [
+            {
+              "node": 0,
+              "initialMmr": 0,
+              "preResetMmr": 614,
+              "carry": 606,
+              "mmrFromInitial": 614,
+              "originalSkill": 0.15516899526119232,
+              "currentSkill": 0.15676085850355923,
+              "races": 1539,
+              "qualified": true
+            },
+            {
+              "node": 1,
+              "initialMmr": 0,
+              "preResetMmr": 1118,
+              "carry": 1091,
+              "mmrFromInitial": 1118,
+              "originalSkill": 0.22790874540805817,
+              "currentSkill": 0.22964730579836212,
+              "races": 219,
+              "qualified": true
+            },
+            {
+              "node": 2,
+              "initialMmr": 0,
+              "preResetMmr": 3898,
+              "carry": 3571,
+              "mmrFromInitial": 3898,
+              "originalSkill": 0.6160677671432495,
+              "currentSkill": 0.6198338793725354,
+              "races": 190,
+              "qualified": true
+            }
+          ]
+        },
+        {
+          "quarter": 2,
+          "tracked": [
+            {
+              "node": 0,
+              "initialMmr": 0,
+              "preResetMmr": 596,
+              "carry": 589,
+              "mmrFromInitial": 596,
+              "originalSkill": 0.15516899526119232,
+              "currentSkill": 0.15720953621116723,
+              "races": 3130,
+              "qualified": true
+            },
+            {
+              "node": 1,
+              "initialMmr": 0,
+              "preResetMmr": 969,
+              "carry": 951,
+              "mmrFromInitial": 969,
+              "originalSkill": 0.22790874540805817,
+              "currentSkill": 0.2310474534017659,
+              "races": 430,
+              "qualified": true
+            },
+            {
+              "node": 2,
+              "initialMmr": 0,
+              "preResetMmr": 4045,
+              "carry": 3696,
+              "mmrFromInitial": 4045,
+              "originalSkill": 0.6160677671432495,
+              "currentSkill": 0.6232040026427531,
+              "races": 390,
+              "qualified": true
+            }
+          ]
+        },
+        {
+          "quarter": 3,
+          "tracked": [
+            {
+              "node": 0,
+              "initialMmr": 0,
+              "preResetMmr": 623,
+              "carry": 615,
+              "mmrFromInitial": 623,
+              "originalSkill": 0.15516899526119232,
+              "currentSkill": 0.1573274583588772,
+              "races": 4687,
+              "qualified": true
+            },
+            {
+              "node": 1,
+              "initialMmr": 0,
+              "preResetMmr": 1025,
+              "carry": 1004,
+              "mmrFromInitial": 1025,
+              "originalSkill": 0.22790874540805817,
+              "currentSkill": 0.23205151007616268,
+              "races": 608,
+              "qualified": true
+            },
+            {
+              "node": 2,
+              "initialMmr": 0,
+              "preResetMmr": 3924,
+              "carry": 3593,
+              "mmrFromInitial": 3924,
+              "originalSkill": 0.6160677671432495,
+              "currentSkill": 0.6260567504016209,
+              "races": 590,
+              "qualified": true
+            }
+          ]
+        },
+        {
+          "quarter": 4,
+          "tracked": [
+            {
+              "node": 0,
+              "initialMmr": 0,
+              "preResetMmr": 583,
+              "carry": 576,
+              "mmrFromInitial": 583,
+              "originalSkill": 0.15516899526119232,
+              "currentSkill": 0.15735939041527425,
+              "races": 6216,
+              "qualified": true
+            },
+            {
+              "node": 1,
+              "initialMmr": 0,
+              "preResetMmr": 1000,
+              "carry": 980,
+              "mmrFromInitial": 1000,
+              "originalSkill": 0.22790874540805817,
+              "currentSkill": 0.23298440074597804,
+              "races": 801,
+              "qualified": true
+            },
+            {
+              "node": 2,
+              "initialMmr": 0,
+              "preResetMmr": 4008,
+              "carry": 3665,
+              "mmrFromInitial": 4008,
+              "originalSkill": 0.6160677671432495,
+              "currentSkill": 0.6287460737894313,
+              "races": 815,
+              "qualified": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

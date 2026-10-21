@@ -1,0 +1,852 @@
+{
+  "classification": "ISOLATED_STATISTICAL_EXPERIMENT_NOT_PHYSICAL_RACE_OR_PRODUCTION_MIGRATION",
+  "activated": false,
+  "formula": "HA-PW2",
+  "seed": 4208,
+  "population": 10000,
+  "seasons": 4,
+  "scenario": "organic",
+  "resetPolicy": "existing",
+  "resetKnots": [
+    {
+      "endingMmr": 0,
+      "startingMmr": 0
+    },
+    {
+      "endingMmr": 1000,
+      "startingMmr": 980
+    },
+    {
+      "endingMmr": 2500,
+      "startingMmr": 2350
+    },
+    {
+      "endingMmr": 5000,
+      "startingMmr": 4500
+    },
+    {
+      "endingMmr": 7500,
+      "startingMmr": 6500
+    },
+    {
+      "endingMmr": 9000,
+      "startingMmr": 8200
+    },
+    {
+      "endingMmr": 9500,
+      "startingMmr": 9200
+    },
+    {
+      "endingMmr": 10000,
+      "startingMmr": 10000
+    }
+  ],
+  "initialSupply": 0,
+  "syntheticSeededRatingFixture": false,
+  "capabilityInterventionQuarter": 0,
+  "totalRaces": 2414603,
+  "invalidLobbies": 0,
+  "invalidConservation": 0,
+  "reloadIdentical": true,
+  "humanSimulatedRaces": 0,
+  "wallMilliseconds": 81812.3907,
+  "cpuMilliseconds": 80156.25,
+  "peakSampledManagedHeapBytes": 18673344,
+  "workingSetBytes": 62439424,
+  "checkpoints": [
+    {
+      "quarter": 1,
+      "globalSeason": 1,
+      "population": 10000,
+      "completedRaces": 610324,
+      "totalRaces": 610324,
+      "rating": {
+        "count": 10000,
+        "min": 0,
+        "p5": 239,
+        "p25": 1535,
+        "median": 2483,
+        "mean": 2512.0914,
+        "p75": 3399,
+        "p95": 4862.049999999999,
+        "p99": 5885.030000000001,
+        "max": 7181,
+        "sd": 1355.7640596527262,
+        "p10": 729.9000000000001,
+        "p50": 2483,
+        "p90": 4291
+      },
+      "totalSupply": 25120914,
+      "initialSupply": 0,
+      "supplyBeforeResetReconciled": true,
+      "supplyAfterReset": 23332054,
+      "resetRemoved": 1788860,
+      "supplyFlows": {
+        "floor": 747227,
+        "placement": 24373687,
+        "resetFromPrior": 0
+      },
+      "meanAbsoluteMmrDeltaPerRatedStart": 12.34298922604789,
+      "qualifiedUnifiedAfter": 3512,
+      "qualifiedHillBeyond": 0,
+      "skillRatingSpearman": 0.996840075918038,
+      "volumeRatingSpearman": 0.10474619390581022,
+      "promotions": 91037,
+      "demotions": 89319,
+      "positiveRatedStarts": 3606951,
+      "negativeRatedStarts": 3458957,
+      "skillBands": [
+        {
+          "minimum": 0,
+          "maximum": 0.22,
+          "mmr": {
+            "count": 1653,
+            "min": 0,
+            "p5": 0,
+            "p25": 110,
+            "median": 611,
+            "mean": 550.2946158499698,
+            "p75": 889,
+            "p95": 1133.3999999999999,
+            "p99": 1237.48,
+            "max": 1377,
+            "sd": 398.16592339650714,
+            "p10": 0,
+            "p50": 611,
+            "p90": 1062
+          }
+        },
+        {
+          "minimum": 0.22,
+          "maximum": 0.44,
+          "mmr": {
+            "count": 4020,
+            "min": 972,
+            "p5": 1254.95,
+            "p25": 1590,
+            "median": 1991,
+            "mean": 1977.6671641791045,
+            "p75": 2364,
+            "p95": 2649,
+            "p99": 2771.62,
+            "max": 2975,
+            "sd": 449.9512695189442,
+            "p10": 1356,
+            "p50": 1991,
+            "p90": 2569
+          }
+        },
+        {
+          "minimum": 0.44,
+          "maximum": 0.66,
+          "mmr": {
+            "count": 3404,
+            "min": 2416,
+            "p5": 2740,
+            "p25": 3014,
+            "median": 3347.5,
+            "mean": 3405.526439482961,
+            "p75": 3776,
+            "p95": 4231,
+            "p99": 4406.879999999999,
+            "max": 4755,
+            "sd": 474.7084152411019,
+            "p10": 2819,
+            "p50": 3347.5,
+            "p90": 4099.400000000001
+          }
+        },
+        {
+          "minimum": 0.66,
+          "maximum": 0.88,
+          "mmr": {
+            "count": 859,
+            "min": 3926,
+            "p5": 4327.6,
+            "p25": 4582,
+            "median": 4873,
+            "mean": 4955.926658905704,
+            "p75": 5283,
+            "p95": 5859,
+            "p99": 6125.959999999998,
+            "max": 6635,
+            "sd": 471.7240570571061,
+            "p10": 4410.8,
+            "p50": 4873,
+            "p90": 5613.2
+          }
+        },
+        {
+          "minimum": 0.88,
+          "maximum": 1.1,
+          "mmr": {
+            "count": 64,
+            "min": 5608,
+            "p5": 5915.85,
+            "p25": 6233.75,
+            "median": 6410,
+            "mean": 6429.71875,
+            "p75": 6646.75,
+            "p95": 7076.2,
+            "p99": 7160.84,
+            "max": 7181,
+            "sd": 334.9386356460501,
+            "p10": 6018.6,
+            "p50": 6410,
+            "p90": 7003.2
+          }
+        }
+      ],
+      "mostImproved": {
+        "node": 1515,
+        "id": "localbot-00001070-05eb",
+        "delta": 7181,
+        "start": 0,
+        "end": 7181
+      },
+      "largestFall": {
+        "node": 33,
+        "id": "localbot-00001070-0021",
+        "delta": 0,
+        "start": 0,
+        "end": 0
+      },
+      "tracked": [
+        {
+          "node": 0,
+          "initialMmr": 0,
+          "preResetMmr": 614,
+          "carry": 606,
+          "mmrFromInitial": 614,
+          "originalSkill": 0.15516899526119232,
+          "currentSkill": 0.15676085850355923,
+          "races": 1539,
+          "qualified": true
+        },
+        {
+          "node": 1,
+          "initialMmr": 0,
+          "preResetMmr": 1118,
+          "carry": 1091,
+          "mmrFromInitial": 1118,
+          "originalSkill": 0.22790874540805817,
+          "currentSkill": 0.22964730579836212,
+          "races": 219,
+          "qualified": true
+        },
+        {
+          "node": 2,
+          "initialMmr": 0,
+          "preResetMmr": 3898,
+          "carry": 3571,
+          "mmrFromInitial": 3898,
+          "originalSkill": 0.6160677671432495,
+          "currentSkill": 0.6198338793725354,
+          "races": 190,
+          "qualified": true
+        }
+      ],
+      "elapsedMilliseconds": 18617.0182,
+      "managedHeapBytes": 13653616
+    },
+    {
+      "quarter": 2,
+      "globalSeason": 2,
+      "population": 10000,
+      "completedRaces": 599165,
+      "totalRaces": 1209489,
+      "rating": {
+        "count": 10000,
+        "min": 0,
+        "p5": 150.85000000000014,
+        "p25": 1444.75,
+        "median": 2423.5,
+        "mean": 2482.1547,
+        "p75": 3414,
+        "p95": 4953.0999999999985,
+        "p99": 6046.01,
+        "max": 7362,
+        "sd": 1415.4696077867284,
+        "p10": 637.9000000000001,
+        "p50": 2423.5,
+        "p90": 4360
+      },
+      "totalSupply": 24821547,
+      "initialSupply": 0,
+      "supplyBeforeResetReconciled": true,
+      "supplyAfterReset": 23037316,
+      "resetRemoved": 1784231,
+      "supplyFlows": {
+        "floor": 1489493,
+        "placement": 0,
+        "resetFromPrior": 0
+      },
+      "meanAbsoluteMmrDeltaPerRatedStart": 12.044788858939802,
+      "qualifiedUnifiedAfter": 3463,
+      "qualifiedHillBeyond": 0,
+      "skillRatingSpearman": 0.9969012152006488,
+      "volumeRatingSpearman": 0.11299361510718059,
+      "promotions": 177317,
+      "demotions": 172519,
+      "positiveRatedStarts": 7160121,
+      "negativeRatedStarts": 6814437,
+      "skillBands": [
+        {
+          "minimum": 0,
+          "maximum": 0.22,
+          "mmr": {
+            "count": 1610,
+            "min": 0,
+            "p5": 0,
+            "p25": 43,
+            "median": 498.5,
+            "mean": 458.8801242236025,
+            "p75": 760.75,
+            "p95": 996.55,
+            "p99": 1086.8200000000002,
+            "max": 1200,
+            "sd": 357.43010076677336,
+            "p10": 0,
+            "p50": 498.5,
+            "p90": 932
+          }
+        },
+        {
+          "minimum": 0.22,
+          "maximum": 0.44,
+          "mmr": {
+            "count": 3979,
+            "min": 858,
+            "p5": 1117.9,
+            "p25": 1481,
+            "median": 1888,
+            "mean": 1873.7989444584066,
+            "p75": 2272,
+            "p95": 2582,
+            "p99": 2722.22,
+            "max": 2874,
+            "sd": 469.0816481704505,
+            "p10": 1222,
+            "p50": 1888,
+            "p90": 2491
+          }
+        },
+        {
+          "minimum": 0.44,
+          "maximum": 0.66,
+          "mmr": {
+            "count": 3462,
+            "min": 2334,
+            "p5": 2664.05,
+            "p25": 2965.25,
+            "median": 3335.5,
+            "mean": 3390.66580011554,
+            "p75": 3791.75,
+            "p95": 4264,
+            "p99": 4455.389999999999,
+            "max": 4758,
+            "sd": 507.3636115207878,
+            "p10": 2763.1,
+            "p50": 3335.5,
+            "p90": 4125.9
+          }
+        },
+        {
+          "minimum": 0.66,
+          "maximum": 0.88,
+          "mmr": {
+            "count": 882,
+            "min": 4068,
+            "p5": 4379.05,
+            "p25": 4644.25,
+            "median": 4941.5,
+            "mean": 5040.878684807256,
+            "p75": 5403.5,
+            "p95": 5975.9,
+            "p99": 6247.19,
+            "max": 6806,
+            "sd": 503.01314997403017,
+            "p10": 4476.3,
+            "p50": 4941.5,
+            "p90": 5776.8
+          }
+        },
+        {
+          "minimum": 0.88,
+          "maximum": 1.1,
+          "mmr": {
+            "count": 67,
+            "min": 5990,
+            "p5": 6158.8,
+            "p25": 6349,
+            "median": 6569,
+            "mean": 6602.44776119403,
+            "p75": 6800.5,
+            "p95": 7194.099999999999,
+            "p99": 7330.9800000000005,
+            "max": 7362,
+            "sd": 326.308538344433,
+            "p10": 6218.2,
+            "p50": 6569,
+            "p90": 7069.4
+          }
+        }
+      ],
+      "mostImproved": {
+        "node": 4436,
+        "id": "localbot-00001070-1154",
+        "delta": 1291,
+        "start": 6071,
+        "end": 7362
+      },
+      "largestFall": {
+        "node": 4093,
+        "id": "localbot-00001070-0ffd",
+        "delta": -434,
+        "start": 878,
+        "end": 444
+      },
+      "tracked": [
+        {
+          "node": 0,
+          "initialMmr": 0,
+          "preResetMmr": 596,
+          "carry": 589,
+          "mmrFromInitial": 596,
+          "originalSkill": 0.15516899526119232,
+          "currentSkill": 0.15720953621116723,
+          "races": 3130,
+          "qualified": true
+        },
+        {
+          "node": 1,
+          "initialMmr": 0,
+          "preResetMmr": 969,
+          "carry": 951,
+          "mmrFromInitial": 969,
+          "originalSkill": 0.22790874540805817,
+          "currentSkill": 0.2310474534017659,
+          "races": 430,
+          "qualified": true
+        },
+        {
+          "node": 2,
+          "initialMmr": 0,
+          "preResetMmr": 4045,
+          "carry": 3696,
+          "mmrFromInitial": 4045,
+          "originalSkill": 0.6160677671432495,
+          "currentSkill": 0.6232040026427531,
+          "races": 390,
+          "qualified": true
+        }
+      ],
+      "elapsedMilliseconds": 36589.6724,
+      "managedHeapBytes": 16177624
+    },
+    {
+      "quarter": 3,
+      "globalSeason": 3,
+      "population": 10000,
+      "completedRaces": 601531,
+      "totalRaces": 1811020,
+      "rating": {
+        "count": 10000,
+        "min": 0,
+        "p5": 138,
+        "p25": 1405.75,
+        "median": 2407,
+        "mean": 2468.6241,
+        "p75": 3405,
+        "p95": 4968.049999999999,
+        "p99": 6036.030000000001,
+        "max": 7240,
+        "sd": 1421.7977368104061,
+        "p10": 607.9000000000001,
+        "p50": 2407,
+        "p90": 4364.1
+      },
+      "totalSupply": 24686241,
+      "initialSupply": 0,
+      "supplyBeforeResetReconciled": true,
+      "supplyAfterReset": 22913240,
+      "resetRemoved": 1773001,
+      "supplyFlows": {
+        "floor": 1648925,
+        "placement": 0,
+        "resetFromPrior": 0
+      },
+      "meanAbsoluteMmrDeltaPerRatedStart": 12.040067344825122,
+      "qualifiedUnifiedAfter": 3422,
+      "qualifiedHillBeyond": 0,
+      "skillRatingSpearman": 0.9968911375064683,
+      "volumeRatingSpearman": 0.11236066901360486,
+      "promotions": 262285,
+      "demotions": 254197,
+      "positiveRatedStarts": 10725255,
+      "negativeRatedStarts": 10174979,
+      "skillBands": [
+        {
+          "minimum": 0,
+          "maximum": 0.22,
+          "mmr": {
+            "count": 1586,
+            "min": 0,
+            "p5": 0,
+            "p25": 34.25,
+            "median": 463,
+            "mean": 436.3020176544767,
+            "p75": 738.75,
+            "p95": 962.75,
+            "p99": 1069.15,
+            "max": 1233,
+            "sd": 345.64710437838124,
+            "p10": 0,
+            "p50": 463,
+            "p90": 894
+          }
+        },
+        {
+          "minimum": 0.22,
+          "maximum": 0.44,
+          "mmr": {
+            "count": 3960,
+            "min": 838,
+            "p5": 1090.95,
+            "p25": 1444,
+            "median": 1851,
+            "mean": 1838.930808080808,
+            "p75": 2243,
+            "p95": 2553,
+            "p99": 2676.6399999999994,
+            "max": 2855,
+            "sd": 469.49978567389326,
+            "p10": 1194,
+            "p50": 1851,
+            "p90": 2467.1
+          }
+        },
+        {
+          "minimum": 0.44,
+          "maximum": 0.66,
+          "mmr": {
+            "count": 3488,
+            "min": 2319,
+            "p5": 2642,
+            "p25": 2928.75,
+            "median": 3313,
+            "mean": 3366.3979357798166,
+            "p75": 3774,
+            "p95": 4247,
+            "p99": 4429.170000000001,
+            "max": 4776,
+            "sd": 512.0496907512892,
+            "p10": 2724,
+            "p50": 3313,
+            "p90": 4120
+          }
+        },
+        {
+          "minimum": 0.66,
+          "maximum": 0.88,
+          "mmr": {
+            "count": 895,
+            "min": 4110,
+            "p5": 4380.3,
+            "p25": 4619.5,
+            "median": 4944,
+            "mean": 5031.965363128492,
+            "p75": 5396,
+            "p95": 5978.9,
+            "p99": 6274.48,
+            "max": 6859,
+            "sd": 499.2715944826727,
+            "p10": 4468,
+            "p50": 4944,
+            "p90": 5761.8
+          }
+        },
+        {
+          "minimum": 0.88,
+          "maximum": 1.1,
+          "mmr": {
+            "count": 71,
+            "min": 5813,
+            "p5": 6070,
+            "p25": 6349,
+            "median": 6589,
+            "mean": 6570.352112676056,
+            "p75": 6767.5,
+            "p95": 7182.5,
+            "p99": 7208.5,
+            "max": 7240,
+            "sd": 325.79791967931226,
+            "p10": 6157,
+            "p50": 6589,
+            "p90": 7058
+          }
+        }
+      ],
+      "mostImproved": {
+        "node": 9897,
+        "id": "localbot-00001070-26a9",
+        "delta": 1055,
+        "start": 6185,
+        "end": 7240
+      },
+      "largestFall": {
+        "node": 2556,
+        "id": "localbot-00001070-09fc",
+        "delta": -363,
+        "start": 460,
+        "end": 97
+      },
+      "tracked": [
+        {
+          "node": 0,
+          "initialMmr": 0,
+          "preResetMmr": 623,
+          "carry": 615,
+          "mmrFromInitial": 623,
+          "originalSkill": 0.15516899526119232,
+          "currentSkill": 0.1573274583588772,
+          "races": 4687,
+          "qualified": true
+        },
+        {
+          "node": 1,
+          "initialMmr": 0,
+          "preResetMmr": 1025,
+          "carry": 1004,
+          "mmrFromInitial": 1025,
+          "originalSkill": 0.22790874540805817,
+          "currentSkill": 0.23205151007616268,
+          "races": 608,
+          "qualified": true
+        },
+        {
+          "node": 2,
+          "initialMmr": 0,
+          "preResetMmr": 3924,
+          "carry": 3593,
+          "mmrFromInitial": 3924,
+          "originalSkill": 0.6160677671432495,
+          "currentSkill": 0.6260567504016209,
+          "races": 590,
+          "qualified": true
+        }
+      ],
+      "elapsedMilliseconds": 56280.3493,
+      "managedHeapBytes": 16508200
+    },
+    {
+      "quarter": 4,
+      "globalSeason": 4,
+      "population": 10000,
+      "completedRaces": 603583,
+      "totalRaces": 2414603,
+      "rating": {
+        "count": 10000,
+        "min": 0,
+        "p5": 140.80000000000018,
+        "p25": 1402,
+        "median": 2393,
+        "mean": 2460.2598,
+        "p75": 3395,
+        "p95": 4970.0999999999985,
+        "p99": 6043.030000000001,
+        "max": 7281,
+        "sd": 1421.5705870986358,
+        "p10": 608,
+        "p50": 2393,
+        "p90": 4364.1
+      },
+      "totalSupply": 24602598,
+      "initialSupply": 0,
+      "supplyBeforeResetReconciled": true,
+      "supplyAfterReset": 22838320,
+      "resetRemoved": 1764278,
+      "supplyFlows": {
+        "floor": 1689358,
+        "placement": 0,
+        "resetFromPrior": 0
+      },
+      "meanAbsoluteMmrDeltaPerRatedStart": 12.03009500488472,
+      "qualifiedUnifiedAfter": 3419,
+      "qualifiedHillBeyond": 0,
+      "skillRatingSpearman": 0.996857824975898,
+      "volumeRatingSpearman": 0.11120953521002322,
+      "promotions": 347410,
+      "demotions": 335961,
+      "positiveRatedStarts": 14301642,
+      "negativeRatedStarts": 13545360,
+      "skillBands": [
+        {
+          "minimum": 0,
+          "maximum": 0.22,
+          "mmr": {
+            "count": 1563,
+            "min": 0,
+            "p5": 0,
+            "p25": 27.5,
+            "median": 439,
+            "mean": 421.8253358925144,
+            "p75": 713,
+            "p95": 943,
+            "p99": 1043.5199999999995,
+            "max": 1152,
+            "sd": 338.72544714791155,
+            "p10": 0,
+            "p50": 439,
+            "p90": 870.8
+          }
+        },
+        {
+          "minimum": 0.22,
+          "maximum": 0.44,
+          "mmr": {
+            "count": 3937,
+            "min": 789,
+            "p5": 1069.8,
+            "p25": 1422,
+            "median": 1828,
+            "mean": 1816.3505207010414,
+            "p75": 2215,
+            "p95": 2523.2,
+            "p99": 2654.2799999999997,
+            "max": 2826,
+            "sd": 466.97282694255983,
+            "p10": 1167,
+            "p50": 1828,
+            "p90": 2436
+          }
+        },
+        {
+          "minimum": 0.44,
+          "maximum": 0.66,
+          "mmr": {
+            "count": 3517,
+            "min": 2291,
+            "p5": 2614.8,
+            "p25": 2913,
+            "median": 3282,
+            "mean": 3342.326414557862,
+            "p75": 3737,
+            "p95": 4231,
+            "p99": 4434,
+            "max": 4645,
+            "sd": 513.7830697176449,
+            "p10": 2702,
+            "p50": 3282,
+            "p90": 4083.8
+          }
+        },
+        {
+          "minimum": 0.66,
+          "maximum": 0.88,
+          "mmr": {
+            "count": 910,
+            "min": 3988,
+            "p5": 4333.8,
+            "p25": 4591,
+            "median": 4921,
+            "mean": 5009.071428571428,
+            "p75": 5348.75,
+            "p95": 5969.55,
+            "p99": 6244.19,
+            "max": 6693,
+            "sd": 503.7751791838254,
+            "p10": 4425,
+            "p50": 4921,
+            "p90": 5739.5
+          }
+        },
+        {
+          "minimum": 0.88,
+          "maximum": 1.1,
+          "mmr": {
+            "count": 73,
+            "min": 5917,
+            "p5": 6112.8,
+            "p25": 6301,
+            "median": 6538,
+            "mean": 6562.958904109589,
+            "p75": 6740,
+            "p95": 7176.2,
+            "p99": 7248.6,
+            "max": 7281,
+            "sd": 322.75676571991033,
+            "p10": 6198,
+            "p50": 6538,
+            "p90": 7059.2
+          }
+        }
+      ],
+      "mostImproved": {
+        "node": 5384,
+        "id": "localbot-00001070-1508",
+        "delta": 1096,
+        "start": 6103,
+        "end": 7199
+      },
+      "largestFall": {
+        "node": 6088,
+        "id": "localbot-00001070-17c8",
+        "delta": -356,
+        "start": 974,
+        "end": 618
+      },
+      "tracked": [
+        {
+          "node": 0,
+          "initialMmr": 0,
+          "preResetMmr": 583,
+          "carry": 576,
+          "mmrFromInitial": 583,
+          "originalSkill": 0.15516899526119232,
+          "currentSkill": 0.15735939041527425,
+          "races": 6216,
+          "qualified": true
+        },
+        {
+          "node": 1,
+          "initialMmr": 0,
+          "preResetMmr": 1000,
+          "carry": 980,
+          "mmrFromInitial": 1000,
+          "originalSkill": 0.22790874540805817,
+          "currentSkill": 0.23298440074597804,
+          "races": 801,
+          "qualified": true
+        },
+        {
+          "node": 2,
+          "initialMmr": 0,
+          "preResetMmr": 4008,
+          "carry": 3665,
+          "mmrFromInitial": 4008,
+          "originalSkill": 0.6160677671432495,
+          "currentSkill": 0.6287460737894313,
+          "races": 815,
+          "qualified": true
+        }
+      ],
+      "elapsedMilliseconds": 81537.1777,
+      "managedHeapBytes": 18673344
+    }
+  ],
+  "finalBudget": {
+    "pairwiseNet": 0,
+    "floorInjection": 5575003,
+    "ceilingRemoval": 0,
+    "placementIssuance": 24373687,
+    "softResetRemoval": 7110370,
+    "migrationRemoval": 0,
+    "physicalRaces": 0,
+    "simulatedRaces": 2414603,
+    "settledParticipants": 28975236
+  },
+  "finalSupply": 22838320,
+  "budgetReconciled": true,
+  "failures": []
+}

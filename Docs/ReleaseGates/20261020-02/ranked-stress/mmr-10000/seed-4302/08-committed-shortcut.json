@@ -1,0 +1,11 @@
+{
+    "classification": "OBSERVED_COMMITTED_ROUTE_WITH_REAL_CAMERA_NOT_A_REPLAY",
+    "route": "crest_cut",
+    "seed": 4302,
+    "raceTime": 73.9149398803711,
+    "vehiclePosition": {
+        "x": 7.787001609802246,
+        "y": 6.06915283203125,
+        "z": 149.7124786376953
+    }
+}

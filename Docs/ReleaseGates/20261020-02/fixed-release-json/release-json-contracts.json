@@ -1,0 +1,22 @@
+{
+  "classification": "QA_SERIALIZER_INTEROPERABILITY_NOT_GAMEPLAY_OR_NEW_PROFILES",
+  "passed": 14,
+  "failed": 0,
+  "successes": [
+    "Native Unity numeric byte arrays preserve all byte values",
+    "Legacy CLI base64 journals remain readable",
+    "CLI writer remains byte-compatible with existing fixture format",
+    "Receipt metadata round trip preserves outcomes",
+    "Empty native byte array remains empty",
+    "Empty legacy base64 remains readable",
+    "Null retains normal serializer semantics",
+    "Reject invalid byte metadata: [-1]",
+    "Reject invalid byte metadata: [256]",
+    "Reject invalid byte metadata: [1.5]",
+    "Reject invalid byte metadata: [\u00221\u0022]",
+    "Reject invalid byte metadata: {}",
+    "Reject invalid byte metadata: true",
+    "Reject invalid byte metadata: [1,2"
+  ],
+  "failures": []
+}

@@ -1,0 +1,6 @@
+result=Succeeded
+platform=Android
+bytes=1083149875
+errors=0
+warnings=29
+seconds=255.2149533

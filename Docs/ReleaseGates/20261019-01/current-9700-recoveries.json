@@ -1,0 +1,180 @@
+{
+  "classification": "OBSERVATIONAL_TRACE_ANALYSIS_NOT_CAUSAL_AB",
+  "recoveries": [
+    {
+      "source": "Docs/ReleaseGates/20261019-01/official-matrix/mmr-9700/seed-4209/recovery-4-1.json",
+      "seed": 4209,
+      "name": "VelocityX",
+      "reason": "Outside the course",
+      "time": 144.0982666015625,
+      "lap": 3,
+      "nodes": [
+        0,
+        1,
+        2
+      ],
+      "minimumSpeedKmh": 74.41384887695312,
+      "maximumSpeedKmh": 87.52876281738281,
+      "maximumAbsLateralM": 42.66037368774414,
+      "outsideSamples": 15,
+      "samples": 21,
+      "airborneSamples": 21,
+      "miniHopSamples": 0,
+      "boostSamples": 16,
+      "shortcutSamples": 0,
+      "contactCounterIncrements": 0,
+      "wallCounterIncrements": 0,
+      "itemHitCounterIncrements": 0,
+      "intents": {
+        "CommittedPass": 4,
+        "RecoverLine": 17
+      },
+      "finalSample": {
+        "time": 144.0982666015625,
+        "speed": 75.2327651977539,
+        "steering": 1.0,
+        "throttle": 1.0,
+        "braking": 0.0,
+        "lookahead": 33.67076873779297,
+        "curvature": 0.0017558822873979807,
+        "targetSpeed": 190.9701690673828,
+        "lateralOffset": -42.66037368774414,
+        "lineOffset": 0.24319863319396973,
+        "distanceFromCenter": 42.66037368774414,
+        "trackWidth": 30.0,
+        "slip": -0.7303639650344849,
+        "upcomingTurn": 103.98062896728516,
+        "currentNode": 2,
+        "targetNode": 5,
+        "lap": 3,
+        "checkpoint": 0,
+        "routeSegment": 23,
+        "item": 0,
+        "routeIndex": -1,
+        "wallContacts": 0,
+        "racerContacts": 18,
+        "itemHits": 1,
+        "airborneSeconds": 1.2999989986419678,
+        "lastJumpAge": 8.03997802734375,
+        "routeAbort": "Launch deck crowded",
+        "intent": "RecoverLine",
+        "shortcut": false,
+        "grounded": false,
+        "offroad": false,
+        "drifting": false,
+        "spunOut": false,
+        "boosting": true,
+        "lancer": false,
+        "miniHop": false,
+        "position": {
+          "x": -44.447261810302734,
+          "y": -5.324635982513428,
+          "z": 33.8231086730957
+        },
+        "forward": {
+          "x": -0.835128128528595,
+          "y": 0.0436035618185997,
+          "z": 0.5483244061470032
+        },
+        "target": {
+          "x": -3.277008533477783,
+          "y": 4.7815327644348145,
+          "z": 69.17649841308594
+        },
+        "velocity": {
+          "x": -17.623430252075195,
+          "y": -14.20675277709961,
+          "z": 11.231241226196289
+        }
+      },
+      "interpretation": "Observed 2-second pre-recovery window; contact/item/hop associations do not establish a counterfactual or causal finish-time cost."
+    },
+    {
+      "source": "Docs/ReleaseGates/20261019-01/official-matrix/mmr-9700/seed-4209/recovery-9-1.json",
+      "seed": 4209,
+      "name": "IronClad",
+      "reason": "Outside the course",
+      "time": 143.7605438232422,
+      "lap": 3,
+      "nodes": [
+        0
+      ],
+      "minimumSpeedKmh": 57.059600830078125,
+      "maximumSpeedKmh": 103.8193130493164,
+      "maximumAbsLateralM": 41.310176849365234,
+      "outsideSamples": 15,
+      "samples": 21,
+      "airborneSamples": 20,
+      "miniHopSamples": 0,
+      "boostSamples": 15,
+      "shortcutSamples": 0,
+      "contactCounterIncrements": 1,
+      "wallCounterIncrements": 0,
+      "itemHitCounterIncrements": 0,
+      "intents": {
+        "DriftToExitBoost": 1,
+        "CommittedPass": 3,
+        "RecoverLine": 17
+      },
+      "finalSample": {
+        "time": 143.7605438232422,
+        "speed": 57.059600830078125,
+        "steering": 1.0,
+        "throttle": 1.0,
+        "braking": 0.0,
+        "lookahead": 29.27451515197754,
+        "curvature": 0.0007218671962618828,
+        "targetSpeed": 74.9800033569336,
+        "lateralOffset": -41.310176849365234,
+        "lineOffset": 0.3870309889316559,
+        "distanceFromCenter": 41.310176849365234,
+        "trackWidth": 30.0,
+        "slip": -15.860604286193848,
+        "upcomingTurn": 132.0580291748047,
+        "currentNode": 0,
+        "targetNode": 3,
+        "lap": 3,
+        "checkpoint": 0,
+        "routeSegment": 23,
+        "item": 0,
+        "routeIndex": -1,
+        "wallContacts": 0,
+        "racerContacts": 30,
+        "itemHits": 0,
+        "airborneSeconds": 1.3199989795684814,
+        "lastJumpAge": 8.77996826171875,
+        "routeAbort": "",
+        "intent": "RecoverLine",
+        "shortcut": false,
+        "grounded": false,
+        "offroad": false,
+        "drifting": false,
+        "spunOut": false,
+        "boosting": true,
+        "lancer": false,
+        "miniHop": false,
+        "position": {
+          "x": -41.53908920288086,
+          "y": -4.524148464202881,
+          "z": 8.211760520935059
+        },
+        "forward": {
+          "x": -0.9839316010475159,
+          "y": -0.002887616865336895,
+          "z": 0.17852263152599335
+        },
+        "target": {
+          "x": -2.004826307296753,
+          "y": 4.866344928741455,
+          "z": 38.53261947631836
+        },
+        "velocity": {
+          "x": -15.774269104003906,
+          "y": -13.51419734954834,
+          "z": -1.5464245080947876
+        }
+      },
+      "interpretation": "Observed 2-second pre-recovery window; contact/item/hop associations do not establish a counterfactual or causal finish-time cost."
+    }
+  ]
+}

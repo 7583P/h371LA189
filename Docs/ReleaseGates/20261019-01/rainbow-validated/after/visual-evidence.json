@@ -1,0 +1,176 @@
+{
+    "classification": "EDITOR_D3D_RENDER_NOT_ANDROID_OR_HUMAN_APPROVAL",
+    "unity": "6000.3.13f1",
+    "gpu": "NVIDIA GeForce RTX 3070 Laptop GPU",
+    "geometrySha256": "ebe301a28f360c54a3c1a222550aeb5f52284c1cd8bf10aefc884d07c3242266",
+    "navigationSha256": "3e48f9f323ec15290c763ebf8c56ca4d3c4cd937acf123ea5afadaf7b76240da",
+    "colliders": 31,
+    "renderers": 830,
+    "triangles": 55456,
+    "shaderErrors": 0,
+    "humanApproved": false,
+    "views": [
+        {
+            "file": "finish-night-high.png",
+            "position": {
+                "x": 0.7542921304702759,
+                "y": 10.21676254272461,
+                "z": -18.985013961791993
+            },
+            "target": {
+                "x": -1.3497858047485352,
+                "y": 6.370004653930664,
+                "z": 33.973182678222659
+            },
+            "fov": 64.0,
+            "lighting": "night",
+            "quality": "High",
+            "nonDarkPixels": 893855,
+            "pinkPixels": 0
+        },
+        {
+            "file": "curve-night-high.png",
+            "position": {
+                "x": 166.7459716796875,
+                "y": 24.727027893066408,
+                "z": 466.9397888183594
+            },
+            "target": {
+                "x": 202.5191192626953,
+                "y": 24.16413116455078,
+                "z": 427.96795654296877
+            },
+            "fov": 64.0,
+            "lighting": "night",
+            "quality": "High",
+            "nonDarkPixels": 629701,
+            "pinkPixels": 0
+        },
+        {
+            "file": "shortcut-night-high.png",
+            "position": {
+                "x": 218.92721557617188,
+                "y": 30.809009552001954,
+                "z": -22.17644500732422
+            },
+            "target": {
+                "x": 180.07760620117188,
+                "y": 22.520721435546876,
+                "z": -57.94741439819336
+            },
+            "fov": 64.0,
+            "lighting": "night",
+            "quality": "High",
+            "nonDarkPixels": 681387,
+            "pinkPixels": 0
+        },
+        {
+            "file": "sweep-night-high.png",
+            "position": {
+                "x": 183.57754516601563,
+                "y": 11.284687042236329,
+                "z": -387.62884521484377
+            },
+            "target": {
+                "x": 155.2921600341797,
+                "y": 8.120163917541504,
+                "z": -342.81219482421877
+            },
+            "fov": 64.0,
+            "lighting": "night",
+            "quality": "High",
+            "nonDarkPixels": 626907,
+            "pinkPixels": 0
+        },
+        {
+            "file": "jump-night-high.png",
+            "position": {
+                "x": -197.12942504882813,
+                "y": 12.75407600402832,
+                "z": -83.20217895507813
+            },
+            "target": {
+                "x": -149.3473358154297,
+                "y": 7.40849494934082,
+                "z": -60.32242202758789
+            },
+            "fov": 64.0,
+            "lighting": "night",
+            "quality": "High",
+            "nonDarkPixels": 770860,
+            "pinkPixels": 0
+        },
+        {
+            "file": "landing-night-high.png",
+            "position": {
+                "x": -13.897263526916504,
+                "y": 10.183111190795899,
+                "z": -82.95630645751953
+            },
+            "target": {
+                "x": 24.86878776550293,
+                "y": 6.430222511291504,
+                "z": -46.81503677368164
+            },
+            "fov": 64.0,
+            "lighting": "night",
+            "quality": "High",
+            "nonDarkPixels": 791691,
+            "pinkPixels": 0
+        },
+        {
+            "file": "overview-night-high.png",
+            "position": {
+                "x": 100.0,
+                "y": 590.0,
+                "z": -710.0
+            },
+            "target": {
+                "x": 90.0,
+                "y": 5.0,
+                "z": -15.0
+            },
+            "fov": 64.0,
+            "lighting": "night",
+            "quality": "High",
+            "nonDarkPixels": 87344,
+            "pinkPixels": 0
+        },
+        {
+            "file": "curve-day-high.png",
+            "position": {
+                "x": 166.7459716796875,
+                "y": 24.727027893066408,
+                "z": 466.9397888183594
+            },
+            "target": {
+                "x": 202.5191192626953,
+                "y": 24.16413116455078,
+                "z": 427.96795654296877
+            },
+            "fov": 64.0,
+            "lighting": "day lighting host simulation",
+            "quality": "High",
+            "nonDarkPixels": 630014,
+            "pinkPixels": 0
+        },
+        {
+            "file": "curve-day-low.png",
+            "position": {
+                "x": 166.7459716796875,
+                "y": 24.727027893066408,
+                "z": 466.9397888183594
+            },
+            "target": {
+                "x": 202.5191192626953,
+                "y": 24.16413116455078,
+                "z": 427.96795654296877
+            },
+            "fov": 64.0,
+            "lighting": "day lighting host simulation",
+            "quality": "Low host approximation; NOT Android",
+            "nonDarkPixels": 627711,
+            "pinkPixels": 0
+        }
+    ]
+}

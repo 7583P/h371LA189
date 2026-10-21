@@ -1,0 +1,17 @@
+{
+    "classification": "OBSERVED_FLIGHT_NEAR_AUTHORED_MAIN_JUMP_NOT_A_REPLAY",
+    "captureEvent": "flight",
+    "seed": 4301,
+    "currentNode": 172,
+    "authoredJumpNode": 172,
+    "recoveries": 0,
+    "raceTime": 67.2696304321289,
+    "jumpAge": 0.0844573974609375,
+    "airborneSeconds": 0.0599999763071537,
+    "grounded": false,
+    "vehiclePosition": {
+        "x": -133.31053161621095,
+        "y": 6.754585266113281,
+        "z": -68.102783203125
+    }
+}

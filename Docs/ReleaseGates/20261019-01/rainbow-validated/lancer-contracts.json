@@ -1,0 +1,31 @@
+{
+    "passed": 24,
+    "failed": 0,
+    "successes": [
+        "Lancer appends ID 15 without renumbering persisted inventory IDs",
+        "Leader is restricted to Coin/ordinary Rock; Golden Rock remains available behind the leader",
+        "Midfield P4-P8 mixes Mini Turbo, Golden Rock and tactical items without Lancer",
+        "Rear table has 100 nominal weight units, including eight for Lancer",
+        "P1: Lancer cannot roll over 24000 deterministic rolls",
+        "P2: Lancer cannot roll over 24000 deterministic rolls",
+        "P3: Lancer cannot roll over 24000 deterministic rolls",
+        "P4: Lancer cannot roll over 24000 deterministic rolls",
+        "P5: Lancer cannot roll over 24000 deterministic rolls",
+        "P6: Lancer cannot roll over 24000 deterministic rolls",
+        "P7: Lancer cannot roll over 24000 deterministic rolls",
+        "P8: Lancer cannot roll over 24000 deterministic rolls",
+        "P9: Lancer is attainable over 24000 deterministic rolls",
+        "P10: Lancer is attainable over 24000 deterministic rolls",
+        "Lancer probability increases at P10",
+        "P11: Lancer is attainable over 24000 deterministic rolls",
+        "Lancer probability increases at P11",
+        "P12: Lancer is attainable over 24000 deterministic rolls",
+        "Lancer probability increases at P12",
+        "Last-place Lancer chance is strongly biased toward the rear without a guaranteed reward",
+        "10000 warmed rear rolls including Lancer allocate zero managed bytes",
+        "Lancer cannot be reserved as shortcut fuel and preserves the installed model's boost family",
+        "Pickup and transformed vehicle reuse the same faceted rocket/meteor meshes",
+        "Lancer artwork uses supported visible materials and adds no physics geometry"
+    ],
+    "failures": []
+}

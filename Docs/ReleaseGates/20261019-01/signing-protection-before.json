@@ -1,0 +1,17 @@
+﻿{
+    "classification":  "HASH_ONLY_NO_KEY_CONTENT_OR_PRODUCTION_CREDENTIAL_ACCESS",
+    "keys":  [
+                 {
+                     "path":  "C:\\Peru3124\\restoredclimb\\ClimbAnime\\hilladventurer.keystore",
+                     "sha256":  "D238C794BE52C9A51220EF822A00CF2B9ADDE39F2C867DA7FDF00AFF1FB26A4C",
+                     "bytes":  2568,
+                     "modifiedUtc":  "2026-08-14T23:53:02.5839104Z"
+                 },
+                 {
+                     "path":  "C:\\Users\\diego\\.android\\debug.keystore",
+                     "sha256":  "3358317135ED988469646D168FCBE8251CD1680A227B8DD7B01F6D10F2173339",
+                     "bytes":  2618,
+                     "modifiedUtc":  "2026-07-24T03:49:29.0064102Z"
+                 }
+             ]
+}

@@ -1,0 +1,11 @@
+{
+    "classification": "ISOLATED_10K_LEAGUE_OLD_TRUE_TRANSITION_PATH_VS_IDEMPOTENT_TRUE_TRANSITIONS",
+    "oldSaveMs": 65.7336,
+    "new100TransitionsMs": 0.0037,
+    "oldAllocatedBytes": 0,
+    "newAllocatedBytes": 0,
+    "oldSnapshots": 1,
+    "oldSaveRequests": 1,
+    "newSnapshots": 0,
+    "newSaveRequests": 0
+}

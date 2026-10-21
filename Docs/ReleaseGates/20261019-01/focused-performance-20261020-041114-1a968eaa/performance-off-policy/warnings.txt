@@ -1,0 +1,13 @@
+[LocalTelemetrySink] Cannot record empty session (samples=0)
+[LocalTelemetrySink] Cannot record empty session (samples=0)
+[LocalTelemetrySink] Cannot record empty session (samples=0)
+[LocalTelemetrySink] Cannot record empty session (samples=0)
+[LocalTelemetrySink] Cannot record empty session (samples=0)
+[LocalTelemetrySink] Cannot record empty session (samples=0)
+[LocalTelemetrySink] Cannot record empty session (samples=0)
+[LocalTelemetrySink] Cannot record empty session (samples=0)
+[LocalTelemetrySink] Cannot record empty session (samples=0)
+[LocalTelemetrySink] Cannot record empty session (samples=0)
+[LocalTelemetrySink] Cannot record empty session (samples=0)
+[LocalTelemetrySink] Cannot record empty session (samples=0)
+CLOSURE_RACE_TIMEOUT seed=4207; failed race retained, QA scene cleanup only.

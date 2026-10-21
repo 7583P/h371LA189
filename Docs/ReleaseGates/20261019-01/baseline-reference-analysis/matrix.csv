@@ -1,0 +1,7 @@
+mmr,seed,finishers,dnf,racers,recoveries,gapSeconds,mlTicks,mlModes,quality,timeScale,runtimeErrors,samePhysics,seedPath,metricsSha256
+10000,4207,12,0,12,4,27.060836791992188,0,Off,High,1.0,0,True,Docs/ReleaseGates/20261019-01/baseline-reference/mmr-10000/seed-4207,f3ea7103ec54732d79685960ec022be79c41af276eb71cb4aa97cb835521ea23
+10000,4208,12,0,12,2,22.996322631835938,0,Off,High,1.0,0,True,Docs/ReleaseGates/20261019-01/baseline-reference/mmr-10000/seed-4208,63e237e3c11c26180e8313fc490e88fa48a1284f62d6f30520613db7e4980983
+10000,4209,12,0,12,1,18.202651977539062,0,Off,High,1.0,0,True,Docs/ReleaseGates/20261019-01/baseline-reference/mmr-10000/seed-4209,70b4e615eec8e037d444cc41f26c1e249ed543db1d1223b183c6ebc946df85a0
+9700,4207,12,0,12,0,15.20086669921875,0,Off,High,1.0,0,True,Docs/ReleaseGates/20261019-01/baseline-reference/mmr-9700/seed-4207,958a225bd7e611550ccaa6bc1060102e44226548aca7d19c0689f5a9276df18f
+9700,4208,12,0,12,0,19.655624389648438,0,Off,High,1.0,0,True,Docs/ReleaseGates/20261019-01/baseline-reference/mmr-9700/seed-4208,6e52008aee14432ac2a07982f92f35775999eebc88ccc48404aa8fa8bbdac770
+9700,4209,12,0,12,0,17.719329833984375,0,Off,High,1.0,0,True,Docs/ReleaseGates/20261019-01/baseline-reference/mmr-9700/seed-4209,790f2415874e3713d6e17c7219075fd3b1ec93c7f75f9d74371ea92ac2ce9473

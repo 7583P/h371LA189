@@ -1,0 +1,15 @@
+﻿{
+    "classification":  "CURRENT_OFF_SHADOW_PAIR_NOT_EXECUTED",
+    "status":  "BLOCKED",
+    "utc":  "2026-10-20T03:56:25.9051297Z",
+    "reason":  "Another Unity project remains open; no controlled foreground window is available",
+    "unityProcesses":  [
+
+                       ],
+    "productionMl":  "Off",
+    "modelMl01":  "unchanged",
+    "ml02":  "Shadow QA only",
+    "trainingStarted":  false,
+    "acceptedPair":  false,
+    "manualLauncher":  "Tools/RC/Measure-ReleasePerformance.ps1"
+}

@@ -1,0 +1,21 @@
+{
+    "classification": "OBSERVED_RECOVERY_AFTER_SHARED_RESPAWN_NOT_A_REPLAY",
+    "file": "08-recovery-10-1",
+    "racerId": "ai_racer_11",
+    "reason": "Outside the course",
+    "seed": 4208,
+    "grid": 10,
+    "recoveryNumber": 1,
+    "triggerRaceTime": 17.554088592529298,
+    "captureRaceTime": 17.576017379760743,
+    "cameraPosition": {
+        "x": 138.21646118164063,
+        "y": 21.764856338500978,
+        "z": 468.5309143066406
+    },
+    "cameraTarget": {
+        "x": 153.03961181640626,
+        "y": 19.1282958984375,
+        "z": 470.3789367675781
+    }
+}

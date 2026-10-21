@@ -1,0 +1,25 @@
+{
+    "passed": 18,
+    "failed": 0,
+    "successes": [
+        "Experimental UI mesh has a real CanvasRenderer",
+        "Real UI dynamic diamond at 2999",
+        "Real UI dynamic diamond at 3000",
+        "Real UI dynamic diamond at 3099",
+        "Real UI dynamic diamond at 3100",
+        "Real UI dynamic diamond at 3199",
+        "Real UI dynamic diamond at 3200",
+        "Real UI dynamic diamond at 3999",
+        "Real UI dynamic diamond at 4000",
+        "Real UI dynamic diamond at 5000",
+        "Real UI dynamic diamond at 10000",
+        "Real UI dynamic diamond at 100000",
+        "Season Placement never displays an experimental current diamond",
+        "Career Placement never displays an experimental current diamond",
+        "Rendered preview contains the current AFTER diamond and no diamond below the threshold",
+        "Unity JSON round-trip preserves the isolated scale without granting titles",
+        "Actual persistent view separates visible MMR from driving skill",
+        "Production Hill ranks remain compatible and AFTER stays editor-only"
+    ],
+    "failures": []
+}

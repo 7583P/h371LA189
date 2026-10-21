@@ -1,0 +1,28 @@
+{
+    "passed": 13,
+    "failed": 7,
+    "successes": [
+        "Actual leaderboard input locates an existing persistent ID",
+        "Missing UI search never adds a competitor",
+        "settled-ranked repeated display cannot apply a settlement",
+        "third-placement table does not silently mix old/new MMR",
+        "third-placement repeated display cannot apply a settlement",
+        "no-receipt table uses authoritative final MMR or preserved unrated MMR",
+        "no-receipt table does not silently mix old/new MMR",
+        "no-receipt repeated display cannot apply a settlement",
+        "unrated table uses authoritative final MMR or preserved unrated MMR",
+        "unrated table does not silently mix old/new MMR",
+        "unrated repeated display cannot apply a settlement",
+        "settled-dnf repeated display cannot apply a settlement",
+        "settled-dnf displays DNF without an invented finish time"
+    ],
+    "failures": [
+        "Actual leaderboard input locates that same persistent name",
+        "Persistent name input is case insensitive",
+        "settled-ranked table uses authoritative final MMR or preserved unrated MMR",
+        "settled-ranked table does not silently mix old/new MMR",
+        "third-placement table uses authoritative final MMR or preserved unrated MMR",
+        "settled-dnf table uses authoritative final MMR or preserved unrated MMR",
+        "settled-dnf table does not silently mix old/new MMR"
+    ]
+}

@@ -1,0 +1,93 @@
+{
+  "classification": "OBSERVATIONAL_TRACE_ANALYSIS_NOT_CAUSAL_AB",
+  "recoveries": [
+    {
+      "source": "Docs/ReleaseGates/20261020-02/official-matrix/mmr-9700/seed-4207/recovery-8-1.json",
+      "seed": 4207,
+      "name": "PulseDrive",
+      "reason": "Outside the course",
+      "time": 105.7035903930664,
+      "lap": 2,
+      "nodes": [
+        61,
+        62,
+        63
+      ],
+      "minimumSpeedKmh": 75.8232421875,
+      "maximumSpeedKmh": 100.39311981201172,
+      "maximumAbsLateralM": 41.75487518310547,
+      "outsideSamples": 15,
+      "samples": 21,
+      "airborneSamples": 20,
+      "miniHopSamples": 0,
+      "boostSamples": 20,
+      "shortcutSamples": 0,
+      "contactCounterIncrements": 0,
+      "wallCounterIncrements": 0,
+      "itemHitCounterIncrements": 0,
+      "intents": {
+        "DriftToExitBoost": 4,
+        "RecoverLine": 17
+      },
+      "finalSample": {
+        "time": 105.7035903930664,
+        "speed": 75.8232421875,
+        "steering": -1.0,
+        "throttle": 1.0,
+        "braking": 0.0,
+        "lookahead": 33.6712646484375,
+        "curvature": 0.020599503070116043,
+        "targetSpeed": 133.33409118652344,
+        "lateralOffset": 41.75487518310547,
+        "lineOffset": -1.9097330570220947,
+        "distanceFromCenter": 41.75487518310547,
+        "trackWidth": 30.0,
+        "slip": 24.02976417541504,
+        "upcomingTurn": 96.32721710205078,
+        "currentNode": 63,
+        "targetNode": 67,
+        "lap": 2,
+        "checkpoint": 2,
+        "routeSegment": 0,
+        "item": 0,
+        "routeIndex": -1,
+        "wallContacts": 0,
+        "racerContacts": 32,
+        "itemHits": 0,
+        "airborneSeconds": 1.2999989986419678,
+        "lastJumpAge": 13.360000610351562,
+        "routeAbort": "Launch deck crowded",
+        "intent": "RecoverLine",
+        "shortcut": false,
+        "grounded": false,
+        "offroad": false,
+        "drifting": false,
+        "spunOut": false,
+        "boosting": false,
+        "lancer": false,
+        "miniHop": false,
+        "position": {
+          "x": 117.739501953125,
+          "y": 5.5600481033325195,
+          "z": -105.18504333496094
+        },
+        "forward": {
+          "x": -0.49213796854019165,
+          "y": -0.13545818626880646,
+          "z": -0.8599135875701904
+        },
+        "target": {
+          "x": 177.56871032714844,
+          "y": 11.846436500549316,
+          "z": -130.41168212890625
+        },
+        "velocity": {
+          "x": -17.18551254272461,
+          "y": -13.514640808105469,
+          "z": -12.176474571228027
+        }
+      },
+      "interpretation": "Observed 2-second pre-recovery window; contact/item/hop associations do not establish a counterfactual or causal finish-time cost."
+    }
+  ]
+}

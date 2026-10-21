@@ -1,0 +1,47 @@
+{
+  "classification": "ISOLATED_CORE_SEARCH_AND_SETTLEMENT_FIXTURES_NOT_PHYSICAL_RACES_OR_ANDROID",
+  "passed": 145,
+  "failed": 0,
+  "failures": [],
+  "measurements": [
+    {
+      "population": 10000,
+      "indexBuildMs": 6.9374,
+      "indexManagedBytes": 323048,
+      "idLookupMs": {
+        "count": 33,
+        "min": 0.0004,
+        "p5": 0.0005,
+        "p25": 0.001,
+        "median": 0.0013,
+        "mean": 0.034227272727272724,
+        "p75": 0.0022,
+        "p95": 0.015419999999999998,
+        "p99": 0.7105759999999997,
+        "max": 1.0372,
+        "sd": 0.17734637957146865
+      },
+      "saveBytes": 1842465
+    },
+    {
+      "population": 100000,
+      "indexBuildMs": 11.3292,
+      "indexManagedBytes": 3118800,
+      "idLookupMs": {
+        "count": 33,
+        "min": 0.0008,
+        "p5": 0.00092,
+        "p25": 0.0015,
+        "median": 0.0023,
+        "mean": 0.0032757575757575755,
+        "p75": 0.0029,
+        "p95": 0.010899999999999988,
+        "p99": 0.017467999999999997,
+        "max": 0.0183,
+        "sd": 0.003806695083189879
+      },
+      "saveBytes": 18486378
+    }
+  ],
+  "isolatedData": "C:\\Peru3124\\restoredclimb\\ClimbAnime\\Docs\\ReleaseGates\\20261020-02\\fixed-release-lookup\\lookup-ccf098f102df4550b092d310041182e1"
+}

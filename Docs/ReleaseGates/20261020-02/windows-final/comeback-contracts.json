@@ -1,0 +1,18 @@
+{
+    "passed": 11,
+    "failed": 0,
+    "successes": [
+        "Real distance/spread increase rear mobility at the same position and lap",
+        "Separation from the nearby pack changes catch-up odds independently of leader distance",
+        "Late race progress strengthens bounded catch-up assistance",
+        "A severely detached tail racer has more burst catch-up opportunities than a nearby rear racer",
+        "Neither gradual nor burst catch-up guarantees Lancer or a race win",
+        "Recent item history suppresses repeated Lancer even far behind",
+        "Rear pool remains mixed rather than guaranteeing a winning item",
+        "Leader remains Coin +10 or ordinary Rock at every gap and race phase",
+        "Front three never acquire rear-only catch-up powers",
+        "Catch-up logic never replaces an occupied inventory slot",
+        "10000 warmed gap-aware rolls allocate zero managed bytes"
+    ],
+    "failures": []
+}

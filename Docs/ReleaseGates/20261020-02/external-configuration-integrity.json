@@ -1,0 +1,48 @@
+{
+  "classification": "TRACKED_CONFIGURATIONS_CLEAN_AT_START_COMPARED_WITH_UNCHANGED_HEAD",
+  "files": [
+    {
+      "path": "Assets/GooglePlayGames/Resources/PlayGamesSettings.asset",
+      "sha256": "f5cc0bb67491f6b06a3d2013732b94eb602358554ac8ac0ec43ae2dade02934b",
+      "headBlobSha256": "f5cc0bb67491f6b06a3d2013732b94eb602358554ac8ac0ec43ae2dade02934b",
+      "sameNormalizedContentAsHead": true,
+      "initiallyListedAsModified": false
+    },
+    {
+      "path": "Assets/GoogleMobileAds/Resources/GoogleMobileAdsSettings.asset",
+      "sha256": "4e6a1a451392c2b48b15aba0e1243b5a1cf083bbd9d83ca19988ad40a646cd6d",
+      "headBlobSha256": "4e6a1a451392c2b48b15aba0e1243b5a1cf083bbd9d83ca19988ad40a646cd6d",
+      "sameNormalizedContentAsHead": true,
+      "initiallyListedAsModified": false
+    },
+    {
+      "path": "Assets/Plugins/Android/HillSeasonHistory.androidlib/AndroidManifest.xml",
+      "sha256": "52b72873d7346a8f408760419d7f6640f369ba207b0486a0d18ece226dda62d2",
+      "headBlobSha256": "52b72873d7346a8f408760419d7f6640f369ba207b0486a0d18ece226dda62d2",
+      "sameNormalizedContentAsHead": true,
+      "initiallyListedAsModified": false
+    },
+    {
+      "path": "Assets/Plugins/Android/HillAdventurerPrivacy.androidlib/AndroidManifest.xml",
+      "sha256": "f916914b0f30986c5ea2a2b48f3ffb46d621cd11b127e7345abd91f429e8c7af",
+      "headBlobSha256": "c1a69b1c2a6c4484951d98fcc8621d1a343393cb72abbdb5bb0acfc1e243e8aa",
+      "sameNormalizedContentAsHead": true,
+      "initiallyListedAsModified": false
+    },
+    {
+      "path": "Assets/Plugins/Android/GooglePlayGamesManifest.androidlib/AndroidManifest.xml",
+      "sha256": "55423cc2c65ec72438592d4eeca849f6f87711b0c128285d18aea32ea89bf289",
+      "headBlobSha256": "55423cc2c65ec72438592d4eeca849f6f87711b0c128285d18aea32ea89bf289",
+      "sameNormalizedContentAsHead": true,
+      "initiallyListedAsModified": false
+    },
+    {
+      "path": "Assets/AnimeHillRacing/AndroidUiDelivery.spriteatlas",
+      "sha256": "a960be48d79541c751ab015d000e77977566ec689dc03695da699bae9800981b",
+      "headBlobSha256": "a960be48d79541c751ab015d000e77977566ec689dc03695da699bae9800981b",
+      "sameNormalizedContentAsHead": true,
+      "initiallyListedAsModified": false
+    }
+  ],
+  "preserved": true
+}

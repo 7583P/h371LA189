@@ -1,0 +1,1 @@
+SIZE AUDIT ONLY; NOT FOR INSTALLATION OR RELEASE; productionSigned=False; defaultDebugIdentity=True; no production credentials read

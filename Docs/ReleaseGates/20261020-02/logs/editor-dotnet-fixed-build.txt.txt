@@ -1,0 +1,10 @@
+C:\Peru3124\restoredclimb\ClimbAnime\Tools\CompetitiveQA\Json.cs(25,55): warning SYSLIB0050: 'FieldInfo.IsNotSerialized' is obsolete: 'Formatter-based serialization is obsolete and should not be used.' (https://aka.ms/dotnet-warnings/SYSLIB0050) [C:\Peru3124\restoredclimb\ClimbAnime\Tools\CompetitiveQA\CompetitiveQA.csproj]
+  CompetitiveQA -> C:\Peru3124\restoredclimb\ClimbAnime\tmp\ReleaseGates\20261020-02\competitive-qa-fixed\CompetitiveQA.dll
+
+Build succeeded.
+
+C:\Peru3124\restoredclimb\ClimbAnime\Tools\CompetitiveQA\Json.cs(25,55): warning SYSLIB0050: 'FieldInfo.IsNotSerialized' is obsolete: 'Formatter-based serialization is obsolete and should not be used.' (https://aka.ms/dotnet-warnings/SYSLIB0050) [C:\Peru3124\restoredclimb\ClimbAnime\Tools\CompetitiveQA\CompetitiveQA.csproj]
+    1 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:04.34

@@ -1,0 +1,8 @@
+{
+    "samples": 20000,
+    "referenceMs": 407.9305,
+    "indexedMs": 122.6012,
+    "indexedAllocatedBytes": 0,
+    "maxAlongError": 0.0,
+    "maxLateralError": 0.0
+}

@@ -1,0 +1,245 @@
+{
+    "cases": [
+        {
+            "curve": "installed",
+            "rankAfter": "APEX II",
+            "oldMmr": 9999,
+            "normalResult": 9998,
+            "finalMmr": 9998,
+            "beyondLevelBefore": 0
+        },
+        {
+            "curve": "installed",
+            "rankAfter": "APEX II",
+            "oldMmr": 10000,
+            "normalResult": 10000,
+            "finalMmr": 10000,
+            "beyondLevelBefore": 0
+        },
+        {
+            "curve": "installed",
+            "rankAfter": "APEX II",
+            "oldMmr": 10001,
+            "normalResult": 10000,
+            "finalMmr": 10000,
+            "beyondLevelBefore": 0
+        },
+        {
+            "curve": "installed",
+            "rankAfter": "APEX II",
+            "oldMmr": 10100,
+            "normalResult": 10000,
+            "finalMmr": 10000,
+            "beyondLevelBefore": 0
+        },
+        {
+            "curve": "installed",
+            "rankAfter": "APEX II",
+            "oldMmr": 10500,
+            "normalResult": 10000,
+            "finalMmr": 10000,
+            "beyondLevelBefore": 0
+        },
+        {
+            "curve": "installed",
+            "rankAfter": "APEX II",
+            "oldMmr": 11000,
+            "normalResult": 10000,
+            "finalMmr": 10000,
+            "beyondLevelBefore": 1
+        },
+        {
+            "curve": "installed",
+            "rankAfter": "APEX II",
+            "oldMmr": 12000,
+            "normalResult": 10000,
+            "finalMmr": 10000,
+            "beyondLevelBefore": 2
+        },
+        {
+            "curve": "installed",
+            "rankAfter": "APEX II",
+            "oldMmr": 15000,
+            "normalResult": 10000,
+            "finalMmr": 10000,
+            "beyondLevelBefore": 5
+        },
+        {
+            "curve": "installed",
+            "rankAfter": "APEX II",
+            "oldMmr": 20000,
+            "normalResult": 10000,
+            "finalMmr": 10000,
+            "beyondLevelBefore": 10
+        },
+        {
+            "curve": "installed",
+            "rankAfter": "APEX II",
+            "oldMmr": 999999,
+            "normalResult": 10000,
+            "finalMmr": 10000,
+            "beyondLevelBefore": 989
+        },
+        {
+            "curve": "below-ceiling fixture",
+            "rankAfter": "APEX I",
+            "oldMmr": 9999,
+            "normalResult": 9499,
+            "finalMmr": 9499,
+            "beyondLevelBefore": 0
+        },
+        {
+            "curve": "below-ceiling fixture",
+            "rankAfter": "APEX II",
+            "oldMmr": 10000,
+            "normalResult": 9500,
+            "finalMmr": 9500,
+            "beyondLevelBefore": 0
+        },
+        {
+            "curve": "below-ceiling fixture",
+            "rankAfter": "APEX II",
+            "oldMmr": 10001,
+            "normalResult": 9501,
+            "finalMmr": 9501,
+            "beyondLevelBefore": 0
+        },
+        {
+            "curve": "below-ceiling fixture",
+            "rankAfter": "APEX II",
+            "oldMmr": 10100,
+            "normalResult": 9595,
+            "finalMmr": 9595,
+            "beyondLevelBefore": 0
+        },
+        {
+            "curve": "below-ceiling fixture",
+            "rankAfter": "APEX II",
+            "oldMmr": 10500,
+            "normalResult": 9950,
+            "finalMmr": 9950,
+            "beyondLevelBefore": 0
+        },
+        {
+            "curve": "below-ceiling fixture",
+            "rankAfter": "APEX II",
+            "oldMmr": 11000,
+            "normalResult": 10263,
+            "finalMmr": 10000,
+            "beyondLevelBefore": 1
+        },
+        {
+            "curve": "below-ceiling fixture",
+            "rankAfter": "APEX II",
+            "oldMmr": 12000,
+            "normalResult": 10825,
+            "finalMmr": 10000,
+            "beyondLevelBefore": 2
+        },
+        {
+            "curve": "below-ceiling fixture",
+            "rankAfter": "APEX II",
+            "oldMmr": 15000,
+            "normalResult": 12145,
+            "finalMmr": 10000,
+            "beyondLevelBefore": 5
+        },
+        {
+            "curve": "below-ceiling fixture",
+            "rankAfter": "APEX II",
+            "oldMmr": 20000,
+            "normalResult": 14000,
+            "finalMmr": 10000,
+            "beyondLevelBefore": 10
+        },
+        {
+            "curve": "below-ceiling fixture",
+            "rankAfter": "APEX II",
+            "oldMmr": 999999,
+            "normalResult": 14000,
+            "finalMmr": 10000,
+            "beyondLevelBefore": 989
+        },
+        {
+            "curve": "above-ceiling fixture",
+            "rankAfter": "APEX II",
+            "oldMmr": 9999,
+            "normalResult": 9999,
+            "finalMmr": 9999,
+            "beyondLevelBefore": 0
+        },
+        {
+            "curve": "above-ceiling fixture",
+            "rankAfter": "APEX II",
+            "oldMmr": 10000,
+            "normalResult": 10000,
+            "finalMmr": 10000,
+            "beyondLevelBefore": 0
+        },
+        {
+            "curve": "above-ceiling fixture",
+            "rankAfter": "APEX II",
+            "oldMmr": 10001,
+            "normalResult": 10001,
+            "finalMmr": 10000,
+            "beyondLevelBefore": 0
+        },
+        {
+            "curve": "above-ceiling fixture",
+            "rankAfter": "APEX II",
+            "oldMmr": 10100,
+            "normalResult": 10047,
+            "finalMmr": 10000,
+            "beyondLevelBefore": 0
+        },
+        {
+            "curve": "above-ceiling fixture",
+            "rankAfter": "APEX II",
+            "oldMmr": 10500,
+            "normalResult": 10200,
+            "finalMmr": 10000,
+            "beyondLevelBefore": 0
+        },
+        {
+            "curve": "above-ceiling fixture",
+            "rankAfter": "APEX II",
+            "oldMmr": 11000,
+            "normalResult": 10381,
+            "finalMmr": 10000,
+            "beyondLevelBefore": 1
+        },
+        {
+            "curve": "above-ceiling fixture",
+            "rankAfter": "APEX II",
+            "oldMmr": 12000,
+            "normalResult": 10721,
+            "finalMmr": 10000,
+            "beyondLevelBefore": 2
+        },
+        {
+            "curve": "above-ceiling fixture",
+            "rankAfter": "APEX II",
+            "oldMmr": 15000,
+            "normalResult": 11889,
+            "finalMmr": 10000,
+            "beyondLevelBefore": 5
+        },
+        {
+            "curve": "above-ceiling fixture",
+            "rankAfter": "APEX II",
+            "oldMmr": 20000,
+            "normalResult": 14000,
+            "finalMmr": 10000,
+            "beyondLevelBefore": 10
+        },
+        {
+            "curve": "above-ceiling fixture",
+            "rankAfter": "APEX II",
+            "oldMmr": 999999,
+            "normalResult": 14000,
+            "finalMmr": 10000,
+            "beyondLevelBefore": 989
+        }
+    ],
+    "note": "Alternate curves are isolated test fixtures. The installed curve and save schema are unchanged."
+}

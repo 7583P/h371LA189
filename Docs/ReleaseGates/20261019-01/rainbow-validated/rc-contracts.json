@@ -1,0 +1,40 @@
+{
+    "suites": [
+        {
+            "name": "Comeback+Lancer+SkyHop",
+            "passed": true,
+            "error": ""
+        },
+        {
+            "name": "Balance",
+            "passed": true,
+            "error": ""
+        },
+        {
+            "name": "FinalSmoke",
+            "passed": true,
+            "error": ""
+        },
+        {
+            "name": "Lancer300",
+            "passed": true,
+            "error": ""
+        },
+        {
+            "name": "SeasonReset",
+            "passed": true,
+            "error": ""
+        },
+        {
+            "name": "ReleaseFixes",
+            "passed": true,
+            "error": ""
+        },
+        {
+            "name": "AndroidAudit",
+            "passed": true,
+            "error": ""
+        }
+    ],
+    "failed": 0
+}

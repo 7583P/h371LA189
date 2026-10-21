@@ -1,0 +1,3 @@
+route,main_length_m,shortcut_length_m,shortcut_penalty,main_at_150_s,shortcut_at_75_s
+crest_cut,728.2578,326.3596,0.50,17.47819,15.66526
+return_drop,400.6731,223.6039,0.50,9.616154,10.73298

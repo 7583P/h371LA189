@@ -1,0 +1,13 @@
+{
+  "migrationMilliseconds": 6121.8858,
+  "minimumOnline": 55805,
+  "maximumOnline": 74805,
+  "bytesPerBot": 172,
+  "journalBytes": [
+    18471937,
+    18501431
+  ],
+  "managedHeapBytes": 79202992,
+  "expectedRating": 152656725,
+  "actualRating": 152656725
+}

@@ -1,0 +1,100 @@
+{
+    "classification": "NATIVE_UI_RESTART_OF_COPIED_REAL_QA_RACE_JOURNAL_NOT_HUMAN_APPROVAL",
+    "raceId": "HR-hp-562255b28e1764f8-1",
+    "error": "",
+    "seed": 4302,
+    "bots": 11,
+    "population": 10000,
+    "ratingsUntouched": true,
+    "passed": true,
+    "opponents": [
+        {
+            "id": "localbot-27554c91-04ed",
+            "name": "Speedstar8223",
+            "existing": true,
+            "byId": true,
+            "byName": true,
+            "nameMatches": 1
+        },
+        {
+            "id": "localbot-27554c91-1b09",
+            "name": "211",
+            "existing": true,
+            "byId": true,
+            "byName": true,
+            "nameMatches": 1
+        },
+        {
+            "id": "localbot-27554c91-08d4",
+            "name": "icecrazystormtv108",
+            "existing": true,
+            "byId": true,
+            "byName": true,
+            "nameMatches": 1
+        },
+        {
+            "id": "localbot-27554c91-270d",
+            "name": "maihu",
+            "existing": true,
+            "byId": true,
+            "byName": true,
+            "nameMatches": 1
+        },
+        {
+            "id": "localbot-27554c91-016d",
+            "name": "driftdriveryt404",
+            "existing": true,
+            "byId": true,
+            "byName": true,
+            "nameMatches": 1
+        },
+        {
+            "id": "localbot-27554c91-1cf2",
+            "name": "silentrider970",
+            "existing": true,
+            "byId": true,
+            "byName": true,
+            "nameMatches": 1
+        },
+        {
+            "id": "localbot-27554c91-04e8",
+            "name": "firebosshd4995",
+            "existing": true,
+            "byId": true,
+            "byName": true,
+            "nameMatches": 1
+        },
+        {
+            "id": "localbot-27554c91-202c",
+            "name": "megaultraridergg38",
+            "existing": true,
+            "byId": true,
+            "byName": true,
+            "nameMatches": 1
+        },
+        {
+            "id": "localbot-27554c91-00bd",
+            "name": "mrlillegend8796",
+            "existing": true,
+            "byId": true,
+            "byName": true,
+            "nameMatches": 1
+        },
+        {
+            "id": "localbot-27554c91-1b74",
+            "name": "Bigbosshd1894",
+            "existing": true,
+            "byId": true,
+            "byName": true,
+            "nameMatches": 1
+        },
+        {
+            "id": "localbot-27554c91-265b",
+            "name": "Zrye",
+            "existing": true,
+            "byId": true,
+            "byName": true,
+            "nameMatches": 1
+        }
+    ]
+}

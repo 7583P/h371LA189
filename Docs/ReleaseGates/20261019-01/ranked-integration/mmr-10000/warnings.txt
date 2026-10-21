@@ -1,0 +1,1 @@
+[Local league] Ranked results without a reserved race were not rated.

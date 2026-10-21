@@ -1,0 +1,1262 @@
+{
+    "classification": "QA_FRAME_FORENSICS_NOT_ELITE_GATE",
+    "variant": "reduced",
+    "renderMode": "native",
+    "instrumentationVersion": "FRAME_FORENSICS_07_TRACE_IO_SEPARATED",
+    "focusAtGoRequested": true,
+    "focusAtGoSucceeded": true,
+    "focusCallMs": 4.286,
+    "seed": 4207,
+    "mmr": 10000,
+    "frames": 18393,
+    "droppedFrames": 0,
+    "mainThreadId": 41212,
+    "jobWorkers": 15,
+    "logicalProcessors": 16,
+    "nativeCpuTimesAvailable": true,
+    "bufferedDuringRace": true,
+    "profilerCaptureOverhead": false,
+    "synchronousDiagnosticTraceWrites": 0,
+    "synchronousDiagnosticTraceWriteMs": 0.0,
+    "seconds": 60.0012042,
+    "samplingCpuMs": 778.8429000000024,
+    "peakWorkingSetBytes": 586956800.0,
+    "privateBytes": 1679630336.0,
+    "raceStartQpc": 149104945,
+    "qpcFrequency": 10000000,
+    "powerStatusAvailable": true,
+    "power": [
+        {
+            "seconds": 0.0047548,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 0.0127499,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 1.0106198,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 2.0107285,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 3.0131408,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 4.0194079,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 5.0218427,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 6.022008,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 7.0244858,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 8.0251454,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 9.0256881,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 10.0278243,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 11.0292562,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 12.0320587,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 13.0324311,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 14.0339547,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 15.0391801,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 16.0401495,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 17.0409122,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 18.0429449,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 19.0433073,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 20.0434094,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 21.0467085,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 22.046801,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 23.04861,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 24.0506386,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 25.0535552,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 26.0540397,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 27.0587999,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 28.0617783,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 29.0643777,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 30.0649042,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 31.066171,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 32.0685577,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 33.0687155,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 34.0720809,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 35.0739766,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 36.0800333,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 37.0817902,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 38.0821108,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 39.0821867,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 40.0845724,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 41.0850458,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 42.0866401,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 43.0871932,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 44.0888932,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 45.0909701,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 46.0922672,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 47.0924943,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 48.0942809,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 49.099171,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 50.0995536,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 51.1001522,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 52.10307,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 53.1038056,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 54.1058312,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 55.1073395,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 56.1077514,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 57.1090546,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 58.1104479,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 59.11204,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        },
+        {
+            "seconds": 60.0029974,
+            "acLineStatus": 1,
+            "batteryPercent": 99,
+            "energySaver": 0,
+            "frameRateLimit": -1,
+            "vSyncCount": 0,
+            "renderInterval": 1
+        }
+    ],
+    "counters": [
+        {
+            "name": "Main Thread",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "Main Thread",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "CPU Main Thread Frame Time",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "CPU Main Thread Frame Time",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "CPU Render Thread Frame Time",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "CPU Render Thread Frame Time",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "Render Thread",
+            "unit": "",
+            "available": false,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "Render Thread",
+            "unit": "",
+            "available": false,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "PlayerLoop",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "PlayerLoop",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "Semaphore.WaitForSignal",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "Semaphore.WaitForSignal",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "Gfx.WaitForRenderThread",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "Gfx.WaitForRenderThread",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "Gfx.WaitForPresentOnGfxThread",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "Gfx.WaitForPresentOnGfxThread",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "Gfx.PresentFrame",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "Gfx.PresentFrame",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "GfxDeviceD3D11.WaitForQueuedPresentsToComplete",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "GfxDeviceD3D11.WaitForQueuedPresentsToComplete",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "GfxTask_WaitOnGpuFence",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "GfxTask_WaitOnGpuFence",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "GfxTask_SyncJobFence",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "GfxTask_SyncJobFence",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "WaitForRenderJobs",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "WaitForRenderJobs",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "WaitForJobGroupID",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "WaitForJobGroupID",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "WaitForCompleted",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "WaitForCompleted",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "CompleteAllJobs",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "CompleteAllJobs",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "WaitForTargetFPS",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "WaitForTargetFPS",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "TimeUpdate.WaitForLastPresentationAndUpdateTime",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "TimeUpdate.WaitForLastPresentationAndUpdateTime",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "Physics.Simulate",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "Physics.Simulate",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "Physics.Processing",
+            "unit": "",
+            "available": false,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "Physics.Processing",
+            "unit": "",
+            "available": false,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "FixedBehaviourUpdate",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "FixedBehaviourUpdate",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "BehaviourUpdate",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "BehaviourUpdate",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "LateBehaviourUpdate",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "LateBehaviourUpdate",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "Camera.Render",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "Camera.Render",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "Racing.RenderProbe.Camera",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "Racing.RenderProbe.Camera",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "RenderLoop",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "RenderLoop",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "Canvas.BuildBatch",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "Canvas.BuildBatch",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "Layout",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "Layout",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "ParticleSystem.Update",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "ParticleSystem.Update",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "ParticleSystem.EndUpdateAll",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "ParticleSystem.EndUpdateAll",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "Animation.Update",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "Animation.Update",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "Racing.AI.Decide",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "Racing.AI.Decide",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "Racing.AI.Tactical",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "Racing.AI.Tactical",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "Racing.AI.Strategic",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "Racing.AI.Strategic",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "Racing.Recovery.Guards",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "Racing.Recovery.Guards",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "Racing3D.ML.Tick",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "Racing3D.ML.Tick",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "Racing.Telemetry.Record",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "Racing.Telemetry.Record",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "Racing.UI.Minimap.Markers",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "Racing.UI.Minimap.Markers",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "Racing.League.Pump",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "Racing.League.Pump",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "Racing.Combo.Capture",
+            "unit": "",
+            "available": false,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "Racing.Combo.Capture",
+            "unit": "",
+            "available": false,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "GC.Collect",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "GC.Collect",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "GarbageCollectIncremental",
+            "unit": "",
+            "available": false,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "GarbageCollectIncremental",
+            "unit": "",
+            "available": false,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "GC Allocated In Frame",
+            "unit": "Bytes",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "GC Allocated In Frame",
+            "unit": "Bytes",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "PlayerLoop.PostLateUpdate.ProfilerSynchronizeStats",
+            "unit": "",
+            "available": false,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "PlayerLoop.PostLateUpdate.ProfilerSynchronizeStats",
+            "unit": "",
+            "available": false,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "PostLateUpdate.ProfilerSynchronizeStats",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "PostLateUpdate.ProfilerSynchronizeStats",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "Racing.Forensics.Sample",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "Racing.Forensics.Sample",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "PostLateUpdate.BatchModeUpdate",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "PostLateUpdate.BatchModeUpdate",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "PostLateUpdate.ProfilerEndFrame",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "PostLateUpdate.ProfilerEndFrame",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "Racing.Metrics.FrameTiming",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "Racing.Metrics.FrameTiming",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "Racing.Vehicle.Step",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "Racing.Vehicle.Step",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "Racing.Shortcut.Zone",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "Racing.Shortcut.Zone",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "Racing.Items.Tick",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "Racing.Items.Tick",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "Racing.Lancer.Visual",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "Racing.Lancer.Visual",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "Racing.Navigation.Project",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "Racing.Navigation.Project",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "Racing.League.Save",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "Racing.League.Save",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        },
+        {
+            "name": "Racing.Diagnostics.TraceIO",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": false
+        },
+        {
+            "name": "Racing.Diagnostics.TraceIO",
+            "unit": "TimeNanoseconds",
+            "available": true,
+            "mainThreadOnly": true
+        }
+    ]
+}

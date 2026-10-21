@@ -79,6 +79,25 @@ namespace AnimeHillRacing.Racing3D
             public int count, number, recoveryNumber;
             public readonly ClosureDriveSample[] before=new ClosureDriveSample[121];
         }
+        [Serializable] sealed class RecoveryScreenshot
+        {
+            public string classification="OBSERVED_RECOVERY_AFTER_SHARED_RESPAWN_NOT_A_REPLAY",file,racerId,reason;
+            public int seed,grid,recoveryNumber;public float triggerRaceTime,captureRaceTime;
+            public Vector3 cameraPosition,cameraTarget;
+            [NonSerialized] public RacingVehiclePhysics vehicle;
+        }
+        [Serializable] sealed class ShortcutScreenshot {
+            public string classification="OBSERVED_COMMITTED_ROUTE_WITH_REAL_CAMERA_NOT_A_REPLAY",route;
+            public int seed;public float raceTime;public Vector3 vehiclePosition;
+        }
+        [Serializable] sealed class MainJumpScreenshot {
+            public string classification="OBSERVED_FLIGHT_NEAR_AUTHORED_MAIN_JUMP_NOT_A_REPLAY",captureEvent;
+            public int seed,currentNode,authoredJumpNode,recoveries;
+            public float raceTime,jumpAge,airborneSeconds;
+            public bool grounded;
+            public Vector3 vehiclePosition;
+        }
+        readonly Queue<RecoveryScreenshot> recoveryScreenshots=new Queue<RecoveryScreenshot>();
         static readonly bool bufferedDrivingTraces=Array.IndexOf(Environment.GetCommandLineArgs(),"--buffered-driving-traces")>=0;
         static readonly ProfilerMarker TraceIoMarker=new ProfilerMarker("Racing.Diagnostics.TraceIO");
         public int SynchronousTraceWrites { get; private set; }
@@ -248,6 +267,7 @@ namespace AnimeHillRacing.Racing3D
                 Directory.CreateDirectory(raceOutput);
                 errorsAtStart = suite.errors;
                 drivers.Clear();
+                recoveryScreenshots.Clear();
                 manager = null;
                 Time.timeScale = 1;
                 if (SceneManager.GetActiveScene().name != "PreStart") SceneManager.LoadScene("PreStart");
@@ -315,7 +335,12 @@ namespace AnimeHillRacing.Racing3D
                 {
                     var tracked = new TrackedDriver { racer = racer, driver = racer.Vehicle.GetComponent<AiVehicleController>() };
                     drivers.Add(tracked);
-                    racer.Recovery.OnRecoveryRequested += reason => WriteTrace(tracked, reason);
+                    racer.Recovery.OnRecoveryRequested += reason => {
+                        WriteTrace(tracked, reason);
+                        if(capture&&!RacingFrameForensics.Requested)recoveryScreenshots.Enqueue(new RecoveryScreenshot {
+                            seed=currentSeed,grid=tracked.racer.Identity.gridPosition,racerId=tracked.racer.Identity.racerId,reason=reason,
+                            triggerRaceTime=manager.RaceElapsed,recoveryNumber=tracked.racer.Recovery.RecoveryCount+1,vehicle=tracked.racer.Vehicle});
+                    };
                 }
                 bufferedTraceCount=droppedTraces=0;
                 if(bufferedDrivingTraces && traceBuffer==null)
@@ -354,6 +379,9 @@ namespace AnimeHillRacing.Racing3D
                 }
                 float deadline = Time.realtimeSinceStartup + 600 / simulationScale + 60;
                 float nextCapture = 15;
+                float airborneSince=-1;
+                bool mainJumpAwaitingLanding=false;
+                int mainJumpRecoveries=0;
                 var captured = new HashSet<string>();
                 while (manager.State != RaceState.Results && Time.realtimeSinceStartup < deadline)
                 {
@@ -368,12 +396,41 @@ namespace AnimeHillRacing.Racing3D
                     {
                         var car = manager.PlayerVehicle;
                         manager.ProgressTracker.TrackGraph.ProjectPosition(car.transform.position, out int node, out _, out _);
-                        string feature = node >= 53 && node <= 62 ? "bridge-jump" :
-                            node >= 24 && node <= 36 ? "tunnel" : car.IsDrifting ? "drift" :
+                        string feature = node >= 53 && node <= 62 ? "sweeping-descent" :
+                            node >= 24 && node <= 36 ? "opening-curve" : car.IsDrifting ? "drift" :
                             car.IsBoosting ? "item-boost" : null;
                         if (feature != null && captured.Add(feature)) Capture("08-" + feature);
+                        int mainJumpNode=manager.ProgressTracker.TrackGraph.MainJumpNodeIndex;
+                        int recoveries=car.GetComponent<VehicleRecovery>()?.RecoveryCount??0;
+                        float jumpAge=Time.time-car.LastJumpTime;
+                        // A legacy node-range label did not prove a jump. Require
+                        // observed flight and a recent real jump near the authored
+                        // main kicker; a shared respawn is never a landing.
+                        if(mainJumpNode>=0&&Mathf.Abs(node-mainJumpNode)<=3&&car.ActiveShortcut==null&&
+                            !car.IsGrounded&&car.AirborneTime>.04f&&jumpAge>=0&&jumpAge<.75f&&captured.Add("main-jump")) {
+                            CaptureMainJump(car,"08-main-jump","flight",node,mainJumpNode,recoveries);
+                            mainJumpAwaitingLanding=true;mainJumpRecoveries=recoveries;
+                        }
+                        if(mainJumpAwaitingLanding) {
+                            if(recoveries!=mainJumpRecoveries||jumpAge>3f)mainJumpAwaitingLanding=false;
+                            else if(car.IsGrounded) {
+                                CaptureMainJump(car,"08-main-jump-landing","landing",node,mainJumpNode,recoveries);
+                                mainJumpAwaitingLanding=false;
+                            }
+                        }
+                        if(car.ActiveShortcut!=null&&playerDriver.ExecutingShortcut&&captured.Add("committed-shortcut")) {
+                            Capture("08-committed-shortcut");
+                            File.WriteAllText(Path.Combine(raceOutput,"08-committed-shortcut.json"),JsonUtility.ToJson(new ShortcutScreenshot {
+                                seed=currentSeed,route=car.ActiveShortcut.shortcutId,raceTime=manager.RaceElapsed,vehiclePosition=car.transform.position},true));
+                        }
+                        if(!car.IsGrounded) {if(airborneSince<0)airborneSince=manager.RaceElapsed;}
+                        else {
+                            if(airborneSince>=0&&manager.RaceElapsed-airborneSince>=.4f&&captured.Add("observed-landing"))Capture("08-observed-landing");
+                            airborneSince=-1;
+                        }
                         if (manager.State == RaceState.PlayerFinished && captured.Add("finish")) Capture("09-finish");
                     }
+                    if(recoveryScreenshots.Count>0)CaptureRecovery(recoveryScreenshots.Dequeue());
                     yield return null;
                 }
                 metrics?.StopMeasurement();
@@ -589,6 +646,40 @@ namespace AnimeHillRacing.Racing3D
 #else
             UnityEngine.ScreenCapture.CaptureScreenshot(path);
 #endif
+        }
+        void CaptureRecovery(RecoveryScreenshot observed)
+        {
+            // Offscreen profiling disables the real MainCamera component and
+            // renders it explicitly. Camera.main then returns null even though
+            // that tagged camera still exists and supplies the correct settings.
+            var source=Camera.main;
+            if(source==null)foreach(var candidate in FindObjectsByType<Camera>(FindObjectsSortMode.None))
+                if(candidate.CompareTag("MainCamera")){source=candidate;break;}
+            if(observed.vehicle==null||source==null)return;
+            // A separate diagnostic camera observes the actual car after its
+            // shared recovery. The player's camera and controls are untouched.
+            var root=new GameObject("Explicit QA recovery camera");var camera=root.AddComponent<Camera>();camera.CopyFrom(source);camera.enabled=false;
+            Vector3 car=observed.vehicle.transform.position,forward=observed.vehicle.transform.forward;
+            observed.cameraPosition=car-forward*12+Vector3.up*4;observed.cameraTarget=car+forward*3;
+            camera.transform.SetPositionAndRotation(observed.cameraPosition,Quaternion.LookRotation(observed.cameraTarget-observed.cameraPosition,Vector3.up));
+            observed.captureRaceTime=manager.RaceElapsed;observed.file="08-recovery-"+observed.grid+"-"+observed.recoveryNumber;
+            var target=new RenderTexture(1600,900,24){antiAliasing=Mathf.Max(1,QualitySettings.antiAliasing)};
+            var texture=new Texture2D(1600,900,TextureFormat.RGB24,false);var previous=RenderTexture.active;
+            try {
+                camera.targetTexture=target;camera.aspect=1600f/900;camera.Render();RenderTexture.active=target;
+                texture.ReadPixels(new Rect(0,0,1600,900),0,0);texture.Apply();
+                File.WriteAllBytes(Path.Combine(raceOutput,observed.file+".png"),texture.EncodeToPNG());
+                File.WriteAllText(Path.Combine(raceOutput,observed.file+".json"),JsonUtility.ToJson(observed,true));
+            }
+            finally {RenderTexture.active=previous;camera.targetTexture=null;Destroy(root);Destroy(target);Destroy(texture);}
+        }
+        void CaptureMainJump(RacingVehiclePhysics car,string file,string captureEvent,int node,int authoredNode,int recoveries)
+        {
+            Capture(file);
+            File.WriteAllText(Path.Combine(raceOutput,file+".json"),JsonUtility.ToJson(new MainJumpScreenshot {
+                seed=currentSeed,captureEvent=captureEvent,currentNode=node,authoredJumpNode=authoredNode,recoveries=recoveries,
+                raceTime=manager.RaceElapsed,jumpAge=Time.time-car.LastJumpTime,airborneSeconds=car.AirborneTime,
+                grounded=car.IsGrounded,vehiclePosition=car.transform.position},true));
         }
         void Capture(string name)
         {

@@ -1,0 +1,13 @@
+{
+  "currentBuildComparison": "BLOCKED",
+  "reason": "Measured-run launcher rejected another open Unity process before starting any samples",
+  "externalUnityPid": 2796,
+  "externalProjectObserved": "C:/Peru3124/31NuevoPeru3D/n2wrsy31fa",
+  "processClosedByThisSession": false,
+  "historicalReanalysisAccepted": true,
+  "historicalComparison": "performance-historical-reanalysis\\performance-comparison.json",
+  "historicalAndFinalBuildAreDifferent": true,
+  "gpuTimingAvailable": false,
+  "productionMl": "Off",
+  "trainingOrPromotion": false
+}

@@ -229,13 +229,28 @@ namespace AnimeHillRacing.Racing3D
         }
 
         // ---------------- ranked physical race lifecycle ----------------
+        // Scene loading pauses the normal host pump as external gameplay.
+        // Finish catch-up in the existing menu budget BEFORE Preparing/GO;
+        // history commits and season boundaries still use the normal pump.
+        public static bool PrepareRankedRace()
+        {
+            EnsureInitialized();
+            if(raceActive)return false;
+            bool previousExternal=externalGameplay;
+            try {externalGameplay=false;Pump();return coordinator.CaughtUp;}
+            finally {externalGameplay=previousExternal;}
+        }
+
         public static PendingRankedRace PendingRankedRace => State.pendingHumanRace != null && !string.IsNullOrEmpty(state.pendingHumanRace.raceId) ? state.pendingHumanRace : null;
 
         // Atomically reserves eleven real, available persistent bots. The
         // reservation is written to the small session journal immediately.
         public static PendingRankedRace ReserveRankedRace(int seed)
         {
-            EnsureInitialized(); Resume(DateTime.UtcNow.Ticks);
+            EnsureInitialized();
+            // Preparing freezes accepted league time. Advancing it here makes
+            // CaughtUp false after the scheduler has already been paused.
+            if(!IsRaceActive)Pump();
             var pending = coordinator.BeginRankedRace(seed, state.lastKnownUtcTimestamp);
             MarkChanged();
             return pending;

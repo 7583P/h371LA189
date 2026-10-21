@@ -1,0 +1,23 @@
+{
+  "classification": "AUTOMATED_CHECKS_DO_NOT_APPROVE_ELITE_PHYSICS_OR_HUMAN_DEVICE_GATES",
+  "checks": {
+    "fixed-contracts": true,
+    "fixed-seasons": true,
+    "fixed-mmr-contracts": true,
+    "fixed-release-lookup": true,
+    "fixed-release-json": true,
+    "ui": true,
+    "sevenEditorSuites": true,
+    "nativeEleven": true,
+    "sourceRaceSaveUnchanged": true,
+    "physicalReceipt": true,
+    "jumpCapture": true,
+    "androidDelivery": true,
+    "androidBuild": true,
+    "windowsBuild": true,
+    "preservation": true,
+    "externalConfigurations": true
+  },
+  "automatedChecksPassed": true,
+  "releaseReady": false
+}

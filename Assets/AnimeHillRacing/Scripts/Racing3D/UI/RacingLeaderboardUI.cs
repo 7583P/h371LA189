@@ -16,7 +16,9 @@ namespace AnimeHillRacing.Racing3D
         }
         RectTransform root, viewport, content;
         ScrollRect scroll;
-        Text status;
+        Text status,searchFeedback;
+        LeagueIdentityLookup identityLookup;
+        LocalLeagueEngine lookupEngine;
         readonly List<Row> pool = new List<Row>();
         int pageStart, pageCount;
         int lastFirst = -1, observedRevision = -1;
@@ -42,7 +44,8 @@ namespace AnimeHillRacing.Racing3D
             var search=RacingDesign.Panel(root,"Indexed racer lookup",.61f,.735f,.34f,.06f,RacingDesign.Surface,6);
             var input=search.gameObject.AddComponent<InputField>();input.targetGraphic=search;search.raycastTarget=true;
             input.textComponent=RacingDesign.Label(search.transform,"",RacingType.Body,.035f,.05f,.93f,.90f,RacingDesign.Ink);
-            var placeholder=RacingDesign.Label(search.transform,"Go to #position or racer ID",RacingType.Caption,.035f,.05f,.93f,.90f,RacingDesign.Muted);input.placeholder=placeholder;
+            var placeholder=RacingDesign.Label(search.transform,"#position / exact name / racer ID",RacingType.Caption,.035f,.05f,.93f,.90f,RacingDesign.Muted);input.placeholder=placeholder;
+            searchFeedback=RacingDesign.Label(root,"",RacingType.Caption,.61f,.700f,.34f,.03f,RacingDesign.Muted);
             input.onEndEdit.AddListener(Locate);
             string[] headers={"POS","RACER / TITLE","MMR / RANK","LOADOUT","PEAK","MOVE"};float[] xs={.05f,.175f,.445f,.645f,.835f,.91f},ws={.075f,.26f,.19f,.185f,.07f,.05f};
             for(int i=0;i<headers.Length;i++)RacingDesign.Label(root,headers[i],RacingType.Caption,xs[i],.66f,ws[i],.045f,RacingDesign.Muted);
@@ -111,14 +114,24 @@ namespace AnimeHillRacing.Racing3D
         }
         void Remember(Row row){if(row.competitor!=null&&SeasonQualification.IsOfficial(row.competitor,RacingProgressionService.State.currentSeasonNumber))RacingProgressionService.RememberLeaderboardPosition(row.competitor.id,row.positionNumber);}
         void GoTo(int rank) {
+            if(searchFeedback!=null)searchFeedback.text="";
             pageStart=Mathf.Clamp(rank,0,Mathf.Max(0,EntityCount-1));content.anchoredPosition=Vector2.zero;
             lastFirst=-1;RefreshStandings();scroll.verticalNormalizedPosition=1;
         }
         void Locate(string value) {
             value=(value??"").Trim();
-            if(int.TryParse(value.TrimStart('#'),out int position)){GoTo(position-1);return;}
+            // #position is explicit; a bare number may be an existing name.
+            if(value.StartsWith("#",StringComparison.Ordinal)&&int.TryParse(value.Substring(1),out int position)){GoTo(position-1);return;}
             if(value.Equals("PLAYER",StringComparison.OrdinalIgnoreCase)){NearHuman();return;}
-            int rank=RacingProgressionService.Engine.Rank(value);if(rank>=0)GoTo(Mathf.Max(0,rank-3));
+            var engine=RacingProgressionService.Engine;
+            int rank=engine.Rank(value.ToLowerInvariant()),matches=rank>=0?1:0;
+            if(rank<0) {
+                if(identityLookup==null||!ReferenceEquals(lookupEngine,engine)){lookupEngine=engine;identityLookup=new LeagueIdentityLookup(engine);}
+                identityLookup.TryLocate(value,out rank,out matches);
+            }
+            if(rank>=0){GoTo(Mathf.Max(0,rank-3));searchFeedback.text=matches>1?matches+" MATCHES / USE RACER ID TO DISAMBIGUATE":"";}
+            else if(int.TryParse(value,out position))GoTo(position-1);
+            else searchFeedback.text=value.Length==0?"":"NO EXACT NAME OR ID MATCH";
         }
         public void NearHuman()=>GoTo(Mathf.Max(0,RacingProgressionService.Engine.Rank("player_human")-3));
         void Update(){if(Time.unscaledTime<nextRefresh)return;nextRefresh=Time.unscaledTime+.5f;if(observedRevision!=RacingProgressionService.Revision)RefreshStandings();}

@@ -1,0 +1,11 @@
+{
+    "classification": "FULL_NATIVE_WINDOW_CAMERA_AND_HUD",
+    "renderMode": "native",
+    "width": 1600,
+    "height": 900,
+    "antiAliasing": 4,
+    "renderedFrames": 22738,
+    "canvases": 2,
+    "targetCreated": false,
+    "renderWorkVerified": true
+}

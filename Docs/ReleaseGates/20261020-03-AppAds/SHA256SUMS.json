@@ -1,0 +1,54 @@
+{
+  "algorithm": "SHA-256",
+  "createdAtUtc": "2026-10-21T03:55:30.988630+00:00",
+  "manifestExcludesItself": true,
+  "previousEvidencePreserved": "../20261020-02/SHA256SUMS.json",
+  "files": [
+    {
+      "path": "app-ads-gate.json",
+      "bytes": 999,
+      "sha256": "92a92198e83552e2c7dbf61ff8ea42a7c25777ff73b8fd6155120f38a3ac16fe"
+    },
+    {
+      "path": "local-configuration.json",
+      "bytes": 808,
+      "sha256": "2b9a116eb2a0cf51e654dd0da88267add7739e1e97a03c1315badef45eddfde4"
+    },
+    {
+      "path": "prepared/app-ads.txt",
+      "bytes": 59,
+      "sha256": "5b6d2293304f8ab2c72505ff8c6cd058075c522170070c499315ac77b10b0672"
+    },
+    {
+      "path": "query-attempts.json",
+      "bytes": 1903,
+      "sha256": "658b19880113d6ff5f92e7360cc1860ed42e7712707c046c77ba3b353b7ce6af"
+    },
+    {
+      "path": "RECHECK.md",
+      "bytes": 1492,
+      "sha256": "4f0b5a249775478272a1a6f9e59f7500efbb7bbc131d9aa1fbef0c303474aca5"
+    },
+    {
+      "path": "release-gates.json",
+      "bytes": 2909,
+      "sha256": "89352bc476437f21e333bcfb89dcf24a1aa5c1c0a7b4b5d7a6d4919825f53239"
+    },
+    {
+      "path": "REPORT.md",
+      "bytes": 3509,
+      "sha256": "9f38b79112b1d50f02c627e082ebbecf51f58bf24cc5acc53771dff42a853aba"
+    },
+    {
+      "path": "user-confirmation.json",
+      "bytes": 673,
+      "sha256": "34b55585bc9e3480b7daa3468d06eaa4b8a2802cbc41d8df83238995c79040c5"
+    },
+    {
+      "path": "verification.json",
+      "bytes": 928,
+      "sha256": "53cb08c6c944b33bc6a52f87a80bc7aa7fc5225fe3f9bdde1aae4f5076f8ac0f"
+    }
+  ],
+  "totalBytes": 13280
+}

@@ -1,0 +1,413 @@
+{
+    "classification": "OBSERVED_REAL_ROUTE_PORTAL_TIMES_AI_SELECTED_LINK_NOT_RANDOMIZED_ROUTE_AB",
+    "spans": [
+        {
+            "racer": "PLAYER",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 20.138174057006837,
+            "averageKmh": 131.47329711914063
+        },
+        {
+            "racer": "mrfastwheelyt",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 23.52050018310547,
+            "averageKmh": 112.02592468261719
+        },
+        {
+            "racer": "theshadowchampyt",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 24.15972328186035,
+            "averageKmh": 110.37178039550781
+        },
+        {
+            "racer": "Speedgamergg2951",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 24.779314041137697,
+            "averageKmh": 106.61705780029297
+        },
+        {
+            "racer": "silentkart1963",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 23.550636291503908,
+            "averageKmh": 112.25972747802735
+        },
+        {
+            "racer": "mrstorm2216",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 26.819862365722658,
+            "averageKmh": 100.25106048583985
+        },
+        {
+            "racer": "Nitrodriveryt",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 25.78015899658203,
+            "averageKmh": 102.14900207519531
+        },
+        {
+            "racer": "78",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 27.239627838134767,
+            "averageKmh": 97.84803771972656
+        },
+        {
+            "racer": "silentpilotyt20",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 26.394603729248048,
+            "averageKmh": 100.12079620361328
+        },
+        {
+            "racer": "nightghost501",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 26.238094329833986,
+            "averageKmh": 100.40939331054688
+        },
+        {
+            "racer": "megagameryt",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 28.83932113647461,
+            "averageKmh": 91.1520767211914
+        },
+        {
+            "racer": "PLAYER",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 8.161323547363282,
+            "averageKmh": 180.1504669189453
+        },
+        {
+            "racer": "coolcooltiger9805",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 32.38050842285156,
+            "averageKmh": 81.00763702392578
+        },
+        {
+            "racer": "theshadowchampyt",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 12.999229431152344,
+            "averageKmh": 111.80115509033203
+        },
+        {
+            "racer": "Speedgamergg2951",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 14.000518798828125,
+            "averageKmh": 104.47294616699219
+        },
+        {
+            "racer": "78",
+            "route": "return_drop",
+            "shortcut": true,
+            "recoveries": 0,
+            "seconds": 15.079219818115235,
+            "averageKmh": 55.411895751953128
+        },
+        {
+            "racer": "silentkart1963",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 16.16107940673828,
+            "averageKmh": 90.80333709716797
+        },
+        {
+            "racer": "silentpilotyt20",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 14.301475524902344,
+            "averageKmh": 102.43414306640625
+        },
+        {
+            "racer": "Nitrodriveryt",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 14.68161392211914,
+            "averageKmh": 102.9752197265625
+        },
+        {
+            "racer": "mrfastwheelyt",
+            "route": "return_drop",
+            "shortcut": true,
+            "recoveries": 0,
+            "seconds": 20.599193572998048,
+            "averageKmh": 41.23417282104492
+        },
+        {
+            "racer": "mrstorm2216",
+            "route": "return_drop",
+            "shortcut": true,
+            "recoveries": 0,
+            "seconds": 18.96013641357422,
+            "averageKmh": 45.31319808959961
+        },
+        {
+            "racer": "nightghost501",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 16.359848022460939,
+            "averageKmh": 89.26402282714844
+        },
+        {
+            "racer": "megagameryt",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 15.187477111816407,
+            "averageKmh": 96.53520965576172
+        },
+        {
+            "racer": "coolcooltiger9805",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 17.139636993408204,
+            "averageKmh": 85.6749038696289
+        },
+        {
+            "racer": "PLAYER",
+            "route": "crest_cut",
+            "shortcut": true,
+            "recoveries": 0,
+            "seconds": 13.854461669921875,
+            "averageKmh": 87.98945617675781
+        },
+        {
+            "racer": "PLAYER",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 8.160957336425782,
+            "averageKmh": 180.17689514160157
+        },
+        {
+            "racer": "theshadowchampyt",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 22.77928924560547,
+            "averageKmh": 116.72301483154297
+        },
+        {
+            "racer": "78",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 21.580612182617189,
+            "averageKmh": 122.94438171386719
+        },
+        {
+            "racer": "silentkart1963",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 22.938941955566408,
+            "averageKmh": 115.94140625
+        },
+        {
+            "racer": "Speedgamergg2951",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 24.860763549804689,
+            "averageKmh": 106.2120361328125
+        },
+        {
+            "racer": "silentpilotyt20",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 24.53937530517578,
+            "averageKmh": 109.30694580078125
+        },
+        {
+            "racer": "mrstorm2216",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 22.39946746826172,
+            "averageKmh": 119.07698059082031
+        },
+        {
+            "racer": "Nitrodriveryt",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 24.362823486328126,
+            "averageKmh": 109.72185516357422
+        },
+        {
+            "racer": "mrfastwheelyt",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 23.682395935058595,
+            "averageKmh": 112.79759979248047
+        },
+        {
+            "racer": "nightghost501",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 25.699737548828126,
+            "averageKmh": 103.08930969238281
+        },
+        {
+            "racer": "theshadowchampyt",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 12.8201904296875,
+            "averageKmh": 114.6929702758789
+        },
+        {
+            "racer": "megagameryt",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 27.621360778808595,
+            "averageKmh": 95.78399658203125
+        },
+        {
+            "racer": "PLAYER",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 18.140335083007814,
+            "averageKmh": 146.35693359375
+        },
+        {
+            "racer": "78",
+            "route": "return_drop",
+            "shortcut": true,
+            "recoveries": 0,
+            "seconds": 14.88037109375,
+            "averageKmh": 55.894752502441409
+        },
+        {
+            "racer": "silentkart1963",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 13.420074462890625,
+            "averageKmh": 109.3456802368164
+        },
+        {
+            "racer": "mrstorm2216",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 12.720550537109375,
+            "averageKmh": 114.52701568603516
+        },
+        {
+            "racer": "Speedgamergg2951",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 13.800247192382813,
+            "averageKmh": 105.4798812866211
+        },
+        {
+            "racer": "Nitrodriveryt",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 13.340072631835938,
+            "averageKmh": 111.0703353881836
+        },
+        {
+            "racer": "silentpilotyt20",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 13.901885986328125,
+            "averageKmh": 105.04424285888672
+        },
+        {
+            "racer": "mrfastwheelyt",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 12.679550170898438,
+            "averageKmh": 115.43656158447266
+        },
+        {
+            "racer": "coolcooltiger9805",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 31.280670166015626,
+            "averageKmh": 84.62844848632813
+        },
+        {
+            "racer": "nightghost501",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 14.421127319335938,
+            "averageKmh": 101.8404541015625
+        },
+        {
+            "racer": "PLAYER",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 8.860519409179688,
+            "averageKmh": 166.62452697753907
+        },
+        {
+            "racer": "megagameryt",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 15.140579223632813,
+            "averageKmh": 96.80369567871094
+        },
+        {
+            "racer": "coolcooltiger9805",
+            "route": "return_drop",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 17.980331420898439,
+            "averageKmh": 82.06999206542969
+        },
+        {
+            "racer": "theshadowchampyt",
+            "route": "crest_cut",
+            "shortcut": false,
+            "recoveries": 0,
+            "seconds": 22.740188598632814,
+            "averageKmh": 116.93403625488281
+        }
+    ]
+}

@@ -1,0 +1,22 @@
+{
+  "checkedAtUtc": "2026-10-21T03:55:05.860603+00:00",
+  "readOnly": true,
+  "expectedPublisher": "pub-1413480107943515",
+  "files": [
+    {
+      "path": "Assets/AnimeHillRacing/Resources/AdMobConfiguration.asset",
+      "sha256": "105d4c11db0ebb70b01472d4403aac9977f3b00844bd4a1acc46388a20878bda",
+      "androidAppId": "ca-app-pub-1413480107943515~1999622115",
+      "publisherId": "pub-1413480107943515",
+      "matchesRequestedPublisher": true
+    },
+    {
+      "path": "Assets/GoogleMobileAds/Resources/GoogleMobileAdsSettings.asset",
+      "sha256": "4e6a1a451392c2b48b15aba0e1243b5a1cf083bbd9d83ca19988ad40a646cd6d",
+      "androidAppId": "ca-app-pub-1413480107943515~1999622115",
+      "publisherId": "pub-1413480107943515",
+      "matchesRequestedPublisher": true
+    }
+  ],
+  "allMatch": true
+}

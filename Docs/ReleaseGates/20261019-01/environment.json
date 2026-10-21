@@ -1,0 +1,106 @@
+﻿{
+    "utc":  "2026-10-20T03:15:10.8931022Z",
+    "computer":  "MSI",
+    "processors":  "16",
+    "productionSaveRoot":  "C:\\Users\\diego\\AppData\\LocalLow\\DefaultCompany\\Hill Adventurer",
+    "productionSaveFiles":  [
+                                {
+                                    "path":  "LocalRacingLeague\\league-v3-0.journal",
+                                    "bytes":  1081865,
+                                    "sha256":  "3413065D1E071765409C9881BB24987A6AEAE1F14EE600160E35AD8B4B9A03FD"
+                                },
+                                {
+                                    "path":  "LocalRacingLeague\\league-v3-1.journal",
+                                    "bytes":  1081865,
+                                    "sha256":  "E4C1D9F9494FBE2378C363E8F5168498BDD627BEEBCA6B0E4B85FB6368E3BC1D"
+                                },
+                                {
+                                    "path":  "Telemetry\\race_NightCityGrandCircuit_85000_2092486ad9.json",
+                                    "bytes":  424804,
+                                    "sha256":  "D7D9591AE5EA6A0034701F5907DB824934B9F59D943DC6467949707570B5F1C8"
+                                },
+                                {
+                                    "path":  "Telemetry\\race_NightCityGrandCircuit_85000_2b11c9ef52.json",
+                                    "bytes":  424804,
+                                    "sha256":  "290645961BA3D41D55F046EA3E52366C5D60F02956B1AC148FF3EEF8A85B65F0"
+                                },
+                                {
+                                    "path":  "Telemetry\\race_NightCityGrandCircuit_85000_578d5a433f.json",
+                                    "bytes":  424097,
+                                    "sha256":  "5B0C933B0EBB86CF3793B6C96D0CD10D21AE5558677A70068D818BCDAD9C8D4D"
+                                },
+                                {
+                                    "path":  "Telemetry\\race_NightCityGrandCircuit_85000_5d8a1b35c2.json",
+                                    "bytes":  424097,
+                                    "sha256":  "A33A8D118C8A53E12C2D193879F9A3F743F3F3D851F10D8F04FCA9712E9A9ECA"
+                                },
+                                {
+                                    "path":  "Telemetry\\race_NightCityGrandCircuit_85000_678cd6a13d.json",
+                                    "bytes":  424804,
+                                    "sha256":  "C540D1557266088A02FD421FF1B06889D3D68B70444984888026A6373C340734"
+                                },
+                                {
+                                    "path":  "Telemetry\\race_NightCityGrandCircuit_85000_7c34f8c2ff.json",
+                                    "bytes":  424804,
+                                    "sha256":  "C7ACB173B02AAA9201DA1F8B89A2347433D9852331E53BE24922C8DDF989B9EB"
+                                },
+                                {
+                                    "path":  "Telemetry\\race_NightCityGrandCircuit_85000_85180b7e97.json",
+                                    "bytes":  424804,
+                                    "sha256":  "8F3F52A79C0BDF7572188E9736DA435EA0D83D1D6A443FF3BB7E6E50482EC150"
+                                },
+                                {
+                                    "path":  "Telemetry\\race_NightCityGrandCircuit_85000_87ce7531fe.json",
+                                    "bytes":  430659,
+                                    "sha256":  "04EB375B34FA696D987102E1D6F0847B4F98B4FEE090DB0CEA5C9F7C00FDDC39"
+                                },
+                                {
+                                    "path":  "Telemetry\\race_NightCityGrandCircuit_85000_889b21eaf0.json",
+                                    "bytes":  424097,
+                                    "sha256":  "88E4E8A73E559B3C3EE98A47BD735D23462CEE2BD2EAEFE6D14344017642C84E"
+                                },
+                                {
+                                    "path":  "Telemetry\\race_NightCityGrandCircuit_85000_d678526247.json",
+                                    "bytes":  424097,
+                                    "sha256":  "DC032BBDB8A60D8BF8049E2760631E48E79F5116D150D428D7749D60204FFBEB"
+                                },
+                                {
+                                    "path":  "Telemetry\\race_NightCityGrandCircuit_85000_da71e3adcb.json",
+                                    "bytes":  424097,
+                                    "sha256":  "CD35E72FDB346F3A5C2CFA5966E58C3087EE3A291A9C03ABCE8CD08111EAE09A"
+                                },
+                                {
+                                    "path":  "Telemetry\\race_NightCityGrandCircuit_85000_db68915b71.json",
+                                    "bytes":  424097,
+                                    "sha256":  "2EFB87A603D09E8634B0C70108286DFA3A94260D9F7CD45263FE824A1758BF88"
+                                },
+                                {
+                                    "path":  "Telemetry\\race_NightCityGrandCircuit_85000_f0a6fbab64.json",
+                                    "bytes":  424097,
+                                    "sha256":  "F51A49F474B253B3711CBDFAC2A7F6FA015F76C88C0A6A43A6005C708328E0A5"
+                                },
+                                {
+                                    "path":  "Telemetry\\race_NightCityGrandCircuit_85000_f9cd40d79c.json",
+                                    "bytes":  424097,
+                                    "sha256":  "D7B80B18923F68F6B084B409A887B572C9F2B786C5F916809E9878589D52548E"
+                                },
+                                {
+                                    "path":  "Telemetry\\race_NightCityGrandCircuit_85000_fc2adce8f0.json",
+                                    "bytes":  424804,
+                                    "sha256":  "3246657F53CC3FDCEE8F9075A9FA595EDE015776799D6C23553E11C3C2D71CEF"
+                                },
+                                {
+                                    "path":  "Telemetry\\race_night_city_100000_f35bb004b0.json",
+                                    "bytes":  2997905,
+                                    "sha256":  "B114802EDF8B935E9EA2E606235D0B38B04ED5078259D6B5C63CFE9997C6C71F"
+                                }
+                            ],
+    "adbDevices":  [
+                       "List of devices attached",
+                       ""
+                   ],
+    "otherUnityProjectObserved":  "C:/Peru3124/31NuevoPeru3D/n2wrsy31fa",
+    "performancePair":  "BLOCKED_OTHER_UNITY_PROJECT_OPEN",
+    "humanApproval":  "PENDING",
+    "androidPhysical":  "BLOCKED_NO_DEVICE"
+}

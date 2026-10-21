@@ -1,0 +1,201 @@
+{
+  "logs": [
+    {
+      "source": "Docs\\ReleaseGates\\20261020-02\\independent-race\\mmr-10000.log",
+      "sourceSha256": "d1fabc688fe67fdb175729fe926c1e496a2b4d6e1c25e11935de054e9753bbb7",
+      "export": "player-independent-race__mmr-10000.log.txt",
+      "exportSha256": "d1fabc688fe67fdb175729fe926c1e496a2b4d6e1c25e11935de054e9753bbb7",
+      "redactedLines": 0
+    },
+    {
+      "source": "Docs\\ReleaseGates\\20261020-02\\native-league-readback-fixed.log",
+      "sourceSha256": "40c1ee53696f54b98036b1bf08fada0803d00f34aef9a652021d975d6cb75177",
+      "export": "player-native-league-readback-fixed.log.txt",
+      "exportSha256": "40c1ee53696f54b98036b1bf08fada0803d00f34aef9a652021d975d6cb75177",
+      "redactedLines": 0
+    },
+    {
+      "source": "Docs\\ReleaseGates\\20261020-02\\native-league-readback.log",
+      "sourceSha256": "305da13236a2096c2580f8f511e77ad87f56a8ae39a0fff493075ce3679dfea3",
+      "export": "player-native-league-readback.log.txt",
+      "exportSha256": "305da13236a2096c2580f8f511e77ad87f56a8ae39a0fff493075ce3679dfea3",
+      "redactedLines": 0
+    },
+    {
+      "source": "Docs\\ReleaseGates\\20261020-02\\official-matrix\\mmr-10000.log",
+      "sourceSha256": "e2c2bf46d7cc15663127ffd9466647d41784d6cd6062ab1216bb7bda60cf6d9a",
+      "export": "player-official-matrix__mmr-10000.log.txt",
+      "exportSha256": "e2c2bf46d7cc15663127ffd9466647d41784d6cd6062ab1216bb7bda60cf6d9a",
+      "redactedLines": 0
+    },
+    {
+      "source": "Docs\\ReleaseGates\\20261020-02\\official-matrix\\mmr-9700.log",
+      "sourceSha256": "e78dedcc47f95e8458bec61779af8a3d9fc246b1a02ad06219e28d8459589d8d",
+      "export": "player-official-matrix__mmr-9700.log.txt",
+      "exportSha256": "e78dedcc47f95e8458bec61779af8a3d9fc246b1a02ad06219e28d8459589d8d",
+      "redactedLines": 0
+    },
+    {
+      "source": "Docs\\ReleaseGates\\20261020-02\\ranked-stress\\mmr-10000.log",
+      "sourceSha256": "8f52f8bd0f94c0e9259b56b8794c7b27de4c38d241f4f02133a3d642b96abbaf",
+      "export": "player-ranked-stress__mmr-10000.log.txt",
+      "exportSha256": "8f52f8bd0f94c0e9259b56b8794c7b27de4c38d241f4f02133a3d642b96abbaf",
+      "redactedLines": 0
+    },
+    {
+      "source": "tmp\\ReleaseGates\\20261020-02\\android-build.log",
+      "sourceSha256": "da46bdbc3b7c018a8e74b55d7658b33e55071e0947cc45fe5f2c33ac842cb3da",
+      "export": "editor-android-build.log.txt",
+      "exportSha256": "da46bdbc3b7c018a8e74b55d7658b33e55071e0947cc45fe5f2c33ac842cb3da",
+      "redactedLines": 0
+    },
+    {
+      "source": "tmp\\ReleaseGates\\20261020-02\\contracts.txt",
+      "sourceSha256": "6b5819bde020f9f415f4e6f44a1e2e5d3c3712551272fd129520a4d193221a8a",
+      "export": "editor-contracts.txt.txt",
+      "exportSha256": "7c2792c9e439ccadab8c1cdeaa598be5672ed961c483b98d1746e0dac9198bb8",
+      "redactedLines": 0
+    },
+    {
+      "source": "tmp\\ReleaseGates\\20261020-02\\dotnet-fixed-build.txt",
+      "sourceSha256": "c27add88a17c75dc88df124dc5e4196ec4c0f6913dbe532dedfe306e9299d766",
+      "export": "editor-dotnet-fixed-build.txt.txt",
+      "exportSha256": "20e04bc1ef9a5397fc0291c602e95c50557923d8c32a68d07e5c012ac68470b0",
+      "redactedLines": 0
+    },
+    {
+      "source": "tmp\\ReleaseGates\\20261020-02\\fixed-contracts.txt",
+      "sourceSha256": "6b5819bde020f9f415f4e6f44a1e2e5d3c3712551272fd129520a4d193221a8a",
+      "export": "editor-fixed-contracts.txt.txt",
+      "exportSha256": "7c2792c9e439ccadab8c1cdeaa598be5672ed961c483b98d1746e0dac9198bb8",
+      "redactedLines": 0
+    },
+    {
+      "source": "tmp\\ReleaseGates\\20261020-02\\fixed-mmr-contracts.txt",
+      "sourceSha256": "08a668f9ea515b7071af602e257e4a6438ad5992177dcd9a12a743617a4ea2b7",
+      "export": "editor-fixed-mmr-contracts.txt.txt",
+      "exportSha256": "7f7aa0ee0edd3243b0f6dc59a2003ca17d67a4ee7cc72c1ceb007b5f30a2fb83",
+      "redactedLines": 0
+    },
+    {
+      "source": "tmp\\ReleaseGates\\20261020-02\\fixed-release-json.txt",
+      "sourceSha256": "bb6ae3ca75d1036f3eff8d43151ef13de0b45a3dde79772c3c00a3194218a0f1",
+      "export": "editor-fixed-release-json.txt.txt",
+      "exportSha256": "11589bf6d8cadbdbc57b2b326c3346c50e1f312983154827fcc1ff405a8e7a3a",
+      "redactedLines": 0
+    },
+    {
+      "source": "tmp\\ReleaseGates\\20261020-02\\fixed-release-lookup.txt",
+      "sourceSha256": "ae3a7151be0f3dec14bda788b438ba86436dc82dc43b263a288f286a59cd562e",
+      "export": "editor-fixed-release-lookup.txt.txt",
+      "exportSha256": "f1209ba74851668e63ab028e00bc0094b9f4a28c339f56f8d5344fca8241097f",
+      "redactedLines": 0
+    },
+    {
+      "source": "tmp\\ReleaseGates\\20261020-02\\fixed-seasons.txt",
+      "sourceSha256": "3ded41b70590f5091e09eb7e4fc6abd4aa71083530d0b4ad7551dc710593b096",
+      "export": "editor-fixed-seasons.txt.txt",
+      "exportSha256": "259f323833b80a5e2483e9f7cad011d05b2480b9ac49248069d2874a956082fb",
+      "redactedLines": 0
+    },
+    {
+      "source": "tmp\\ReleaseGates\\20261020-02\\lab-mobility.txt",
+      "sourceSha256": "0cdbd46fba4df20abc2b5f853c378a5f0adbcd07c5900fa5a4ee296361e04716",
+      "export": "editor-lab-mobility.txt.txt",
+      "exportSha256": "9029c4b8abba877f23220f66085d6f92c64ddebe7a07f2c4f91642bd0eb0e33d",
+      "redactedLines": 0
+    },
+    {
+      "source": "tmp\\ReleaseGates\\20261020-02\\lab-organic-4207.txt",
+      "sourceSha256": "731e844a8e36d4d085d6c111a5ef339fad9e23c93bde70971a86303076467222",
+      "export": "editor-lab-organic-4207.txt.txt",
+      "exportSha256": "e493dbfb4b0511f8050e9da46e4faf7f38ad5605f7a36c7d472b475629fef5a0",
+      "redactedLines": 0
+    },
+    {
+      "source": "tmp\\ReleaseGates\\20261020-02\\lab-organic-4208.txt",
+      "sourceSha256": "1060462d23829f05b7b72a5ef125d103e1ad5f6a309707a972e3bd574e6d8ffb",
+      "export": "editor-lab-organic-4208.txt.txt",
+      "exportSha256": "64bf46b37dd7c0b08ed63c459e0a3df8becba46375d65adc7416505349ef65ec",
+      "redactedLines": 0
+    },
+    {
+      "source": "tmp\\ReleaseGates\\20261020-02\\ml-contracts.txt",
+      "sourceSha256": "95b219a68dd4a39dd11633b45194259dffac01e50892461615a5c0330fae0ad2",
+      "export": "editor-ml-contracts.txt.txt",
+      "exportSha256": "00569d7f4e6a2469634d16b4c12bc9d5449a3c15801c1bc62f56c8cb1976b466",
+      "redactedLines": 0
+    },
+    {
+      "source": "tmp\\ReleaseGates\\20261020-02\\mmr-contracts.txt",
+      "sourceSha256": "08a668f9ea515b7071af602e257e4a6438ad5992177dcd9a12a743617a4ea2b7",
+      "export": "editor-mmr-contracts.txt.txt",
+      "exportSha256": "7f7aa0ee0edd3243b0f6dc59a2003ca17d67a4ee7cc72c1ceb007b5f30a2fb83",
+      "redactedLines": 0
+    },
+    {
+      "source": "tmp\\ReleaseGates\\20261020-02\\performance-attempt.txt",
+      "sourceSha256": "78088c183499e8d3cd8b5a309fe842cf4952b1aa1b824eec677aec67e084562c",
+      "export": "editor-performance-attempt.txt.txt",
+      "exportSha256": "4aa6c9832ad582e79b3a58baacbc7f8fb8a679813fcb95b6a009bed1a771e3de",
+      "redactedLines": 0
+    },
+    {
+      "source": "tmp\\ReleaseGates\\20261020-02\\physical-readback-before.txt",
+      "sourceSha256": "b9539c31b3ca24061a002c7dc4934ee84a9609add4bdc2b56247c5263418704e",
+      "export": "editor-physical-readback-before.txt.txt",
+      "exportSha256": "cce5863f3435d9fb4cd706fca5ee3c1f474169a6217119a7308995f77f8fd865",
+      "redactedLines": 0
+    },
+    {
+      "source": "tmp\\ReleaseGates\\20261020-02\\release-lookup.txt",
+      "sourceSha256": "ae3a7151be0f3dec14bda788b438ba86436dc82dc43b263a288f286a59cd562e",
+      "export": "editor-release-lookup.txt.txt",
+      "exportSha256": "f1209ba74851668e63ab028e00bc0094b9f4a28c339f56f8d5344fca8241097f",
+      "redactedLines": 0
+    },
+    {
+      "source": "tmp\\ReleaseGates\\20261020-02\\seasons.txt",
+      "sourceSha256": "077030c0f13b1a796d5a063f05a778c463d44409c2ba4d0ffeb272e381d7e74a",
+      "export": "editor-seasons.txt.txt",
+      "exportSha256": "c4172461128c59df964354c98d3317e06e0d5cf3027ff5b318574323b66f65b5",
+      "redactedLines": 0
+    },
+    {
+      "source": "tmp\\ReleaseGates\\20261020-02\\ui-after-numeric-fix.log",
+      "sourceSha256": "becf6a301fb3d76f07b5449fe4cd50c6b3b63fa758dc3282dfe11d492af20051",
+      "export": "editor-ui-after-numeric-fix.log.txt",
+      "exportSha256": "becf6a301fb3d76f07b5449fe4cd50c6b3b63fa758dc3282dfe11d492af20051",
+      "redactedLines": 0
+    },
+    {
+      "source": "tmp\\ReleaseGates\\20261020-02\\ui-before-numeric-fix.log",
+      "sourceSha256": "489cd5c70aaa5740f1b17a719e9f0a52cfa2787229423e33b80080c7da263415",
+      "export": "editor-ui-before-numeric-fix.log.txt",
+      "exportSha256": "489cd5c70aaa5740f1b17a719e9f0a52cfa2787229423e33b80080c7da263415",
+      "redactedLines": 0
+    },
+    {
+      "source": "tmp\\ReleaseGates\\20261020-02\\unity-final-build.log",
+      "sourceSha256": "20849a678474c8da4740546e2c306ed1024db07a45cc0bb2e40cbfc97567b6db",
+      "export": "editor-unity-final-build.log.txt",
+      "exportSha256": "20849a678474c8da4740546e2c306ed1024db07a45cc0bb2e40cbfc97567b6db",
+      "redactedLines": 0
+    },
+    {
+      "source": "tmp\\ReleaseGates\\20261020-02\\unity-review-build.log",
+      "sourceSha256": "9f2737fcb3f2d5e38819125412ef21edef62fc7144201c421ebf11b2b8bfa4bd",
+      "export": "editor-unity-review-build.log.txt",
+      "exportSha256": "9f2737fcb3f2d5e38819125412ef21edef62fc7144201c421ebf11b2b8bfa4bd",
+      "redactedLines": 0
+    },
+    {
+      "source": "tmp\\ReleaseGates\\20261020-02\\unity-reviewed-build.log",
+      "sourceSha256": "33cef2328e0b577f65efdf7b5cbcd61e149dcf0f77daedd891fa07c7ecc97f84",
+      "export": "editor-unity-reviewed-build.log.txt",
+      "exportSha256": "33cef2328e0b577f65efdf7b5cbcd61e149dcf0f77daedd891fa07c7ecc97f84",
+      "redactedLines": 0
+    }
+  ],
+  "registryAndKeysExported": false
+}

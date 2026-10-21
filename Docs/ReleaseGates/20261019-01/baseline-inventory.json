@@ -1,0 +1,4757 @@
+{
+  "auditedUtc": "2026-10-20T03:12:15.721249+00:00",
+  "head": "152279fb5a4cf443a90d31654ad7a90f51e5abb3",
+  "branch": "main",
+  "initialStatus": "?? Docs/ReleaseGates/20261019-01/authorized-request.txt\n?? Docs/ReleaseGates/20261019-01/prior-report.md\n?? Tools/RC/release_gate_inventory.py",
+  "initialDiff": "",
+  "initialStagedDiff": "",
+  "snapshotRoot": "tmp/ReleaseGates/20261019-01/before",
+  "sources": [
+    {
+      "path": "Assets/AnimeHillRacing/Resources/AccessoryRainbow.shader",
+      "bytes": 5952,
+      "sha256": "38f88c4f84dfdbbea2f04dcf725134b54c7650e3c0ff497431be1b85501d095f"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/AccessoryRainbow.shader.meta",
+      "bytes": 230,
+      "sha256": "42a375c62399429b05127aeceaa2fcdf05af5793a15022fabdbadb5a6e50cca5"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/AdEntitlementConfiguration.asset",
+      "bytes": 469,
+      "sha256": "6327a83f38e2b4efa8f44d368466188aa607c675181f0a9350be190be9fac018"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/AdEntitlementConfiguration.asset.meta",
+      "bytes": 197,
+      "sha256": "350132aa9701510d32099dc3eaad95c1ea6aa7eae926e2de8789aa9b407c334e"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/AdMobConfiguration.asset",
+      "bytes": 765,
+      "sha256": "105d4c11db0ebb70b01472d4403aac9977f3b00844bd4a1acc46388a20878bda"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/AdMobConfiguration.asset.meta",
+      "bytes": 189,
+      "sha256": "64344bd55bc8451e5a3ca8618c1c406ae9fb8a52e81f1c8a3c3cd0b3dce6b1f5"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/FormulaElectricOverlay.shader",
+      "bytes": 3967,
+      "sha256": "35aa5edf8f340d2347e8abc3c4b335cf62bdb0e993fc720f2233ae740828e54c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/FormulaElectricOverlay.shader.meta",
+      "bytes": 204,
+      "sha256": "7030eb0a6d89c02e5ca1ac325db0a21d32216e9020bb07b41be6195e762ab6a5"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/GlitchCrystalTide.shader",
+      "bytes": 9893,
+      "sha256": "bcbe18f691089a52f187182ec46900cf5732df486c704692b67950bbcac97005"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/GlitchCrystalTide.shader.meta",
+      "bytes": 204,
+      "sha256": "56207ce73978ecc58377af740697b39842d27b011cf4440aaa30adcce6cdac92"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/GlitchPhaseBuildRegistry.asset",
+      "bytes": 3670,
+      "sha256": "1067cdf0df82fa14540526624ef6263e65c52a6d98fef7ae1624226d8e5082ab"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/GlitchPhaseBuildRegistry.asset.meta",
+      "bytes": 189,
+      "sha256": "672b7bb02d89aaf16de8c60066339197201a4a7299cc260ccc28b9f0ce21c588"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/HillAdventurerUiAssets.asset",
+      "bytes": 1972,
+      "sha256": "3dd5691ec7275ca21a2203348093236e9f9120ac2009fdfae2574be993ea7c72"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/HillAdventurerUiAssets.asset.meta",
+      "bytes": 189,
+      "sha256": "1fb5c4b86c7a27ffd2e654f8a943b52786f994caeb34f155c33e8400e2a5e211"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/RacingArt.meta",
+      "bytes": 172,
+      "sha256": "1b28f1647a27e304ec22ca2c1b318f143f967ed7879c623aa64d3895f2d2c50f"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/RacingArt/BlacklineMenu.png.meta",
+      "bytes": 3009,
+      "sha256": "3bc78ed183822c8a8e6647db808ccbbd5d3d2096368d8551b6b17afd2f4c5a96"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/RacingArt/DAPEXMenu.png.meta",
+      "bytes": 3009,
+      "sha256": "fc35c87b4d4ce7005b7f84597deb5b5ef46e8f17a049eea6efb04e8933ea92cf"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/RacingArt/MainMenuCover.png.meta",
+      "bytes": 3008,
+      "sha256": "96170cd6cbe3a34b3d503d6d292fdfacc2cd8605d49d7782551f676b955fda21"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/RacingArt/NeonDepthCity.png.meta",
+      "bytes": 3009,
+      "sha256": "25b9c76d452b131c847f6cf7f2f60e873c9d8cc78b84784fb56d1713eea1b63c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/RacingCityPanorama.shader",
+      "bytes": 954,
+      "sha256": "1ad33404be48261858927a7b6967c53c8bcd732b2088627c25a818bf63857687"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/RacingCityPanorama.shader.meta",
+      "bytes": 204,
+      "sha256": "59d4dcc4bc2b28e8e6d7e20bed02336b2daab984d96dec980dce81c339e12672"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/RacingCoin.shader",
+      "bytes": 1423,
+      "sha256": "35e77656f88968c9c1428d0a4b7a76605d243f986c671acca570025a53c29b13"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/RacingCoin.shader.meta",
+      "bytes": 204,
+      "sha256": "54ee83e3d670f7b735629fb721c65c07fc1401c6f25a14ba485cc7b16ed86c82"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/RacingCoin10.asset",
+      "bytes": 39649,
+      "sha256": "510908f67f02b8b62349a8d8f3ebf2ed3ee4492aec784378b52e88bb0d63a92e"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/RacingCoin10.asset.meta",
+      "bytes": 188,
+      "sha256": "3d0cb0f830cd42c5299005c0b85299c701ac24999fa8856ae404fb20fa635009"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/RacingCoinGold.mat.meta",
+      "bytes": 188,
+      "sha256": "7cbb5db87f561b94c87add5be65218e7972b1f7ed1eab30b3b18393fd1812a00"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/RacingItemBalanceConfiguration.asset",
+      "bytes": 1183,
+      "sha256": "3a88bebf1099135312a5bd242a9531a0cdb1e9ff79ba44f4c30ff5420571da4e"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/RacingItemBalanceConfiguration.asset.meta",
+      "bytes": 197,
+      "sha256": "c473b01ce747a998ee431c75a68747654fa38288951a0dc01915da24486d5a0b"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/RacingMlWeights.bytes.meta",
+      "bytes": 158,
+      "sha256": "30fd8bd3d3f53b8b46a0f231de3162cdbd353cd9e1f5e4bbd588620ab93843cf"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/RacingNightSky.shader",
+      "bytes": 1790,
+      "sha256": "a2cfd3274bcdba187717634d5ff2f658eea889ad327a77de2aba8a430289fdff"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/RacingNightSky.shader.meta",
+      "bytes": 204,
+      "sha256": "da94719746fd2ba93113ee9ca7d03484f3fa4e9a80a3a5935f36b09bb580fbae"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/RacingPrismaticRoad.shader",
+      "bytes": 1841,
+      "sha256": "0d6a8fd04836ca8128bf4d79c6133fba94828f639674e95407f2dd0c9e23f324"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/RacingPrismaticRoad.shader.meta",
+      "bytes": 204,
+      "sha256": "61b9152e3ef78eb076519360c366dfa19511f950c8f9e56019bc50662c0c1644"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/RacingProgressionConfiguration.asset",
+      "bytes": 2689,
+      "sha256": "2f854782a274ad8a8eaaa21b99d96497ced6015d580db686ab26355c735b7acb"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/RacingProgressionConfiguration.asset.meta",
+      "bytes": 197,
+      "sha256": "b8a4b119c673796fd8911791d448f881c5310fe94b5b82696c90edc644d2fd40"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/RacingSkyTrackSky.shader",
+      "bytes": 808,
+      "sha256": "e263a1f755605d27798fbf5a885244bb1792a914823248d690fbc9b389fc3c3e"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/RacingSkyTrackSky.shader.meta",
+      "bytes": 62,
+      "sha256": "ab3d906b7c2dc21f9f016840facddaec56b361efd23ca72eee52054f87e20a37"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/RacingSkylineCards.shader",
+      "bytes": 815,
+      "sha256": "87d77a4c188bb9625f689e7c3bc3ca29864992ab69cc03a7b9276226f7b2b4a4"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/RacingSkylineCards.shader.meta",
+      "bytes": 62,
+      "sha256": "41c8d30d9a5e1b87e449e4b108d29e84abd6c20cb5fab00e0e5cb9ee0ed8c49a"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/RacingVehicleBadge.shader",
+      "bytes": 1045,
+      "sha256": "57cedffdbba5491cc58695ddce7ae1154336aca1dffeffe05e459d6ad556a1bc"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/RacingVehicleBadge.shader.meta",
+      "bytes": 62,
+      "sha256": "3cfc475d1a070fcd421f1779811a4abfa8383df8fd5f3781e52f78d4af86df3c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/RacingWetCityRoad.shader",
+      "bytes": 1488,
+      "sha256": "eeefc79eefa75ffe4f0fd417e10757289ac8fed86ef0de26853f0376971c0cec"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/RacingWetCityRoad.shader.meta",
+      "bytes": 213,
+      "sha256": "b916c2afc1d8a7700428d1ce9a7d8f706c09afc861f208b60fa2b2911bd57a40"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/SportBikeNeonFlow.shader",
+      "bytes": 4913,
+      "sha256": "fa6d5b14efa928e88ffbdcc12a449fe4101e4c168bea9c4711bc8fc52a03a60e"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/SportBikeNeonFlow.shader.meta",
+      "bytes": 204,
+      "sha256": "128c4b4ddada670f267eb52306cb6be158c09a0348f84223a72f5ad33286b846"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/StarterPackConfiguration.asset",
+      "bytes": 872,
+      "sha256": "bb770b7077481eb2bad4ad4410f3aa751c965a51693261dc378ac00392dc7d9d"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/StarterPackConfiguration.asset.meta",
+      "bytes": 189,
+      "sha256": "846a5df31e209ebee3c83008d72ee498dbcd3aa39d19875790580573c05c3b65"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/UI.meta",
+      "bytes": 172,
+      "sha256": "2937c08b5b9c6c34deab2cf393bd19aa9de337b2d671a0fed48988c3609ddbcb"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/UI/CoinPacks.meta",
+      "bytes": 169,
+      "sha256": "c5059dd8248d7f6a52c084c6cb702fbb7086a7a2a7ac7e8bdc8051f559d802ac"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/UI/CoinPacks/Coins_10000.png.meta",
+      "bytes": 3040,
+      "sha256": "56b9f1eb811b626c8d5f40dc55dcdb884cd65412d8b6a32c4e7012318dc8517c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/UI/CoinPacks/Coins_100000.png.meta",
+      "bytes": 3040,
+      "sha256": "7e066caa7e0c7b878f5a65cc5d5029f638d144d41823a394ded376299dfc0b4d"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/UI/CoinPacks/Coins_1000000.png.meta",
+      "bytes": 3040,
+      "sha256": "3f032ff7b7a5bd004a83d6b90fe215a78451799b6e1008831cff8d9dcf65e748"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/UI/CoinPacks/Coins_2000000.png.meta",
+      "bytes": 3040,
+      "sha256": "12f1db7a2b2c7f0e368ea9cd4960c950f18323f385d190916396861f0d601d2f"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/UI/CoinPacks/Coins_250000.png.meta",
+      "bytes": 3040,
+      "sha256": "faac593c2102b07b98457e4e29694e623f0120ce59a31c9e07fca11b2865ccd7"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/UI/CoinPacks/Coins_50000.png.meta",
+      "bytes": 3040,
+      "sha256": "ed4a70009c93eb74537c95acc8f76e790b458c86a0f3721d8360cdf12853f2e3"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/UI/CoinPacks/Coins_500000.png.meta",
+      "bytes": 3040,
+      "sha256": "8c319d2a8cde28dcaf0b0d6bfd3cd948a389311d32084d080717453ccdbf33a5"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/UI/DistanceBonusBag.png.meta",
+      "bytes": 3041,
+      "sha256": "00337f2a44609766a7b436987e7333f8e8b4c38d2392088674038872deb7bd7d"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/UI/GemPackAtlasLarge.png.meta",
+      "bytes": 3041,
+      "sha256": "e4a3590689089df7eec53f42ec685d175d38aaf1af6c04b843e818f4081d2083"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/UI/GemPackAtlasSmall.png.meta",
+      "bytes": 3041,
+      "sha256": "282b638250c08b024f2ecd64849edde119aa2ea73905e0849227ce57e075f014"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/UI/GooglePlayConnectButton.png.meta",
+      "bytes": 3037,
+      "sha256": "dc210a7b839d55d5d951c9b63d7587f8d070694fe0cdea3bd6115f16cf54f497"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/UI/HeaderCoinIcon.png.meta",
+      "bytes": 3009,
+      "sha256": "53ebf3404fd569fa705318316dbd12354042597f2b8f09e19041eb7b16b1acab"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/UI/HeaderGemIcon.png.meta",
+      "bytes": 3009,
+      "sha256": "61f07bf6bbbd72ab3cd7996d6ff1ceeab96b9ecc1cc06d209ad017dff0ed6d7a"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/UI/HeaderMmrIcon.png.meta",
+      "bytes": 3009,
+      "sha256": "8daa8794b8c72b38358797afebb9a8248d8729071a4ea5ef69cff8d52bc729be"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/UI/HeaderSettingsIcon.png.meta",
+      "bytes": 3009,
+      "sha256": "84a4e77c43b781c281c98c9255d001c8604091837209bd7182ee77149099cd63"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/UI/LockIcon.png.meta",
+      "bytes": 3037,
+      "sha256": "ad2211736b7836f0a9e136ea8230565c899e2b0705a64f3cacb893d328dc7630"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/UI/PauseIcon.png.meta",
+      "bytes": 2261,
+      "sha256": "5ef00e51cedf4e10eaa609eb4fbd62610e10e7b5bdfad68f8833a28b8645c5aa"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/UI/StylizedBitmapFont.shader",
+      "bytes": 3658,
+      "sha256": "548f6378120425a107efe62ce2883a23bf045a7ca81a82152c6ca806086ff564"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/UI/StylizedBitmapFont.shader.meta",
+      "bytes": 204,
+      "sha256": "e86bb8a6ba013e8a1aa37080ab74de9ebeded8350327ccc936a68ef9e8de4f28"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/UI/StylizedGlyphAtlas.png.meta",
+      "bytes": 2231,
+      "sha256": "84e6607affeb84a582c07edb628a08c6dce5ec82db6e7e660879e4b958c9aa76"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/UI/WhiteBackdropSpriteCutout.shader",
+      "bytes": 2169,
+      "sha256": "023f439019cfff11320213aac82ab6fd13dcf1054a0a228058905283e74fc286"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/UI/WhiteBackdropSpriteCutout.shader.meta",
+      "bytes": 204,
+      "sha256": "628e44314200bda1b85dac11a4fcd67fb4b889f1682d8817227ccb91c6e91afd"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Ads.meta",
+      "bytes": 172,
+      "sha256": "6946988c28e892d64424f95ecb6888d4ab37f9363edf5a44e8e5363a9549a158"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Ads/AdBannerCanvasInset.cs",
+      "bytes": 1874,
+      "sha256": "f6c69251397fa88abfcf1efd5e1755151d68e1481588b2e59abd4c74150e545c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Ads/AdBannerCanvasInset.cs.meta",
+      "bytes": 254,
+      "sha256": "2180ec230dca33f0d2e674f4dc7c617b23c7cf411929da6ed170072f9df8bc96"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Ads/AdEntitlementConfiguration.cs",
+      "bytes": 419,
+      "sha256": "6a17e1e112b3c89161ce2f5f775150d373de43be8c04361e733cc6efb616bd09"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Ads/AdEntitlementConfiguration.cs.meta",
+      "bytes": 254,
+      "sha256": "4404559f0aac6aa1ab56f37618f6aa05c3fbc5ae003b8e59a85cd5df11afe578"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Ads/AdEntitlementLedger.cs",
+      "bytes": 2146,
+      "sha256": "0b77ba5fda6fd0c58637a17a14a25290b46a77fae0e499703ff8a36618aa3ebd"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Ads/AdEntitlementLedger.cs.meta",
+      "bytes": 254,
+      "sha256": "6e6ae8adad81c674793f7105e16e87836822455f7501d1d7a73b0db2d868f5c3"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Ads/AdEntitlementService.cs",
+      "bytes": 2588,
+      "sha256": "473b43569704b8ff1c46868db2e5e6caf65856d4bcd28eea8918e7c2e24391e9"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Ads/AdEntitlementService.cs.meta",
+      "bytes": 254,
+      "sha256": "46fc46911fec392bf651003f842ec4de0c7ca0934a0f55b3e29a49ec86739a68"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Ads/AdMobConfiguration.cs",
+      "bytes": 4139,
+      "sha256": "ed20df08e4b6c151b70b7105ebe7a452ababc1ef9ca9974251b9826f761c27d7"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Ads/AdMobConfiguration.cs.meta",
+      "bytes": 243,
+      "sha256": "c5eb4d726897372170066e31d78b8277eb175b13e34a1ef19a4ad630be7820a8"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Ads/AdMobManager.cs",
+      "bytes": 36887,
+      "sha256": "3570e6baa6ea2033db0c2ef089621dd89c91a822984ca1d080290470ac521d7a"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Ads/AdMobManager.cs.meta",
+      "bytes": 247,
+      "sha256": "5e2be4f6a16f6ae28f924a45314bc7ef51bd1127b1ecbc395acc20dc08c100c5"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Camera.meta",
+      "bytes": 180,
+      "sha256": "cb04f69b83b046d4f78b5b99f9d71001544f2f1a7942efcd9e3253a41b35520d"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Camera/EnvironmentDefinition.cs",
+      "bytes": 6046,
+      "sha256": "a65e133b42936b86e7f6c4006e07a606d72db7586ecb6e012e8fbf6977370fa5"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Camera/EnvironmentDefinition.cs.meta",
+      "bytes": 60,
+      "sha256": "8387b85572b6e59244a02cc6503f74c0ef7a18a14515a9d3f79d94b55607a72a"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Camera/MountainBackground.cs",
+      "bytes": 52006,
+      "sha256": "44a0c8d32d8a87470c3f8aa316810d343a00708b0a23a3eebafc62d79781feb4"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Camera/MountainBackground.cs.meta",
+      "bytes": 60,
+      "sha256": "3a63818694159f1ffa05aca94b248533119fc3cadb0882ec8141c9ab8e4be486"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Camera/RainstormController.cs",
+      "bytes": 10670,
+      "sha256": "98b5a48d4cf9f363734de90d4f538d717b63fbc3e9b12bf4f7e6656acfa2b3f4"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Camera/RainstormController.cs.meta",
+      "bytes": 60,
+      "sha256": "0bfa9923f8013810afdc15892ed3db9bdad36aadeb48e3d96c295316dd9b14cc"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Camera/VehicleCamera.cs",
+      "bytes": 4983,
+      "sha256": "4b24944d122c86b532e79a6421efb470ad251c0f2f9467b1cb44e21ee2e799aa"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Camera/VehicleCamera.cs.meta",
+      "bytes": 60,
+      "sha256": "38626d50e0e61fb41d65f3ed8381cee29b95a3fefb736e49b186b5f3c3f30d94"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Chests.meta",
+      "bytes": 172,
+      "sha256": "0853a00936a8da15cf75cbb54c3af73e0120259e1e83df91fe6bc8996d4a47ae"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Chests/ChestCatalog.cs",
+      "bytes": 2994,
+      "sha256": "3996f38feaa279f0a94f5a6fa5f0cffacd82f2ac65f2aff3adca5c3a43d216cb"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Chests/ChestCatalog.cs.meta",
+      "bytes": 59,
+      "sha256": "255d8936a2da095c80af1a16abaea5ca5886d66f49cacc7ee0e74f37ba2f5c74"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Chests/ChestGameplayNotification.cs",
+      "bytes": 4594,
+      "sha256": "c2edd0cab0a3bc8fc960297c2cdccc0f16acf03fabb9d151435cab6a4f172573"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Chests/ChestGameplayNotification.cs.meta",
+      "bytes": 59,
+      "sha256": "12eb0dcbdeee8c7dd0e8199061dfde036f9585e2cef839ab8cd5239ab895695c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Chests/ChestModels.cs",
+      "bytes": 5165,
+      "sha256": "a23a1274404e75cadf613ee3cc5c9fc1f99ea984c82c9904df5e61ce3370854e"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Chests/ChestModels.cs.meta",
+      "bytes": 59,
+      "sha256": "8432e0bd901c51b584263bb540c7af7028d48c31fb1e24392e52d498e503c0e6"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Chests/ChestSystem.cs",
+      "bytes": 23475,
+      "sha256": "e93a1530437a9025ec8cabfc0d572c463783d86a1bd851e335202a6683f97434"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Chests/ChestSystem.cs.meta",
+      "bytes": 59,
+      "sha256": "c3a530f3c167b0aca9fbcf70c8e768cdce99f3ce46e42760273706e221cb6c56"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Chests/RewardedAdService.cs",
+      "bytes": 2313,
+      "sha256": "8f430823188860148dda5843425cda52e00b548568ec3fdd0efdbd28105abe8d"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Chests/RewardedAdService.cs.meta",
+      "bytes": 240,
+      "sha256": "216fd8f0b10f4df28361429c970b325771672007a109c7fb94caf87e2440ad9f"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core.meta",
+      "bytes": 180,
+      "sha256": "ed2ed5582abba8df1b4f5468b8cab8269d1d7bff2aba2d2aa1eea3dc9ccfc45d"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/BundleDefinition.cs",
+      "bytes": 7431,
+      "sha256": "fbc36a8a0da3acba72e3bf60fefce666ca165f9648d0bea73b36872b85e5267d"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/BundleDefinition.cs.meta",
+      "bytes": 59,
+      "sha256": "c1814b48f15d490c61df95fa9f9193a8c19f1f3c74c5c001b2f0c46c07a7f96f"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/CoinPackCatalog.cs",
+      "bytes": 1405,
+      "sha256": "82b1e818b64332ec6a12addd353f04221181d3057143703cf88b6019abfbf436"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/CoinPackCatalog.cs.meta",
+      "bytes": 60,
+      "sha256": "995088fab7495ee3529805c7f455dc6e5b56905bdc132f1e66939c99d9632e84"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/DistanceBonusTracker.cs",
+      "bytes": 2481,
+      "sha256": "edf66475555fe898134d894300bc7fbe4b134209c3c7fa39c6f33eaea5a19c39"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/DistanceBonusTracker.cs.meta",
+      "bytes": 60,
+      "sha256": "e155b24f245fc9f825df6279cc44d3354dc653a0d3889715882cb60ff4e8e937"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/ExternalServiceProviders.cs",
+      "bytes": 7649,
+      "sha256": "282111f6dfe89a02a5d4fc6801e9c4487a995fb3124304a858d242f909df1a25"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/ExternalServiceProviders.cs.meta",
+      "bytes": 243,
+      "sha256": "b474f4ff15867397ade59947260e2f6651d7a8adfcd1989e7ee24ae20181b6e3"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/ExternalServicesBootstrap.cs",
+      "bytes": 2332,
+      "sha256": "dba305183e2da108c3c862585b3b5a7105e2ef7bbe885944c3db815f53e27b8d"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/ExternalServicesBootstrap.cs.meta",
+      "bytes": 243,
+      "sha256": "3de3d32a023f77ad054453553484aefeef308fba21b931b50f97451f082174a9"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/FrameRateBootstrap.cs",
+      "bytes": 832,
+      "sha256": "a5e16f7f010877822983be51058caf35d4784e3edb610f09a8e3d17cccea6730"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/FrameRateBootstrap.cs.meta",
+      "bytes": 60,
+      "sha256": "a9e352e044c330c63d4998b18354943a6690f69f598c4c3aae69464b76b04870"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/GameCatalog.cs",
+      "bytes": 5293,
+      "sha256": "6d6ff05a0d30288890180edd7453a93fbbdae53f511373e639ecb196c2476bbc"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/GameCatalog.cs.meta",
+      "bytes": 60,
+      "sha256": "fda1af1e0675d2ec97869303fd98d7d02de5c2fb278663b9d9ae1c963b7c9a3b"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/GameManager.cs",
+      "bytes": 21884,
+      "sha256": "df60cc8ba91c17f80df99a7d335932ebd9cf113cde7f1aa730c9b55505050fe6"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/GameManager.cs.meta",
+      "bytes": 60,
+      "sha256": "84f1a51db2b889f4eb7a184949ee5e37a3a05d992bb318e17d6d3c43d703a99c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/GameModeType.cs",
+      "bytes": 522,
+      "sha256": "993288cdbc8685af0752f33923a8205bc2dd0dcec234e5011673a310e2543136"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/GameModeType.cs.meta",
+      "bytes": 60,
+      "sha256": "447e53f28029e19bd0a1d1380e31513a256c2e1cc8211141773ad427d3850c76"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/GameSession.cs",
+      "bytes": 5572,
+      "sha256": "63f03801043a3f477ba6b134457aaac411877eaf2f44a2187b1f40ce9162b54d"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/GameSession.cs.meta",
+      "bytes": 60,
+      "sha256": "b0f6b4b845e23f0cff35dbc9d6daadeb59f43ef367d3a80c2c7fd367c6312f14"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/GameplayBootstrap.cs",
+      "bytes": 1377,
+      "sha256": "0374a7d5c251abce1dde60a8a7ea77d976bc6e3d656f08bc15eb344a7d4515c4"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/GameplayBootstrap.cs.meta",
+      "bytes": 60,
+      "sha256": "fc0411bf0bc2a651eced4913d212b3ed7cb523a77db0c38ac6ea97f3643a84dc"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/GemPackCatalog.cs",
+      "bytes": 2727,
+      "sha256": "31eef7194c91efab60637a0ac9d50a847af7cfec8c793248a901772b990ff80f"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/GemPackCatalog.cs.meta",
+      "bytes": 60,
+      "sha256": "0093fd7f8ee7b9c7a2fa94725493011ea7666f52740a8eff5ab03c3783b43c3d"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/GlitchPhaseBuildRegistry.cs",
+      "bytes": 682,
+      "sha256": "f1b8068bc9011df9f3617f04a0624e22483c3117e20d670bf44598cfef00df2d"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/GlitchPhaseBuildRegistry.cs.meta",
+      "bytes": 60,
+      "sha256": "c53bd330dab7c6ef4bb3e185e643273ca541205ea1538fa15792d58ef00f1e1b"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/GooglePlayCloudSaveService.cs",
+      "bytes": 61959,
+      "sha256": "0fc1437fa1cad3af319c0ded83387accaf186492cc95db2f9e3f5e9aff4ea9f7"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/GooglePlayCloudSaveService.cs.meta",
+      "bytes": 243,
+      "sha256": "c12358cf91425961dfb41e75b977860d86ec4831c0b233e3723b3b07d09e4d10"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/GooglePlayGamesProvider.cs",
+      "bytes": 6046,
+      "sha256": "5b90a1ac59d14a09a35c87f5cdc9699f92586f090e830504d7a774cfa2f04170"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/GooglePlayGamesProvider.cs.meta",
+      "bytes": 243,
+      "sha256": "23e0bc0d5fba9fc11e8091b01873cab5d9e2e68f059936f9b6eacee15c175df8"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/ItemRarity.cs",
+      "bytes": 1402,
+      "sha256": "b3fbb6f12677f503d4ccd14c847d75a570fa79a865df2a995316d30b45e24910"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/ItemRarity.cs.meta",
+      "bytes": 243,
+      "sha256": "59273d1c65a2194fd2edcd649b29592c646bf75f3d9b37eca39c4de3cc3710cf"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/LeaderboardSyncService.cs",
+      "bytes": 6639,
+      "sha256": "a141eedc2de7770993ca400cec5050c983376a4f64c0c8d3b4bbe0d52f828c63"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/LeaderboardSyncService.cs.meta",
+      "bytes": 243,
+      "sha256": "6a32a005f152f039646d7123dd3ca9906b4c9e051f8b5f7608705351ca26e953"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/RealMoneyEntitlementService.cs",
+      "bytes": 7995,
+      "sha256": "e74ebf9a2120392ec40b0754e3b841b1179df114dbe5e426ba90659c40d2bab8"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/RealMoneyEntitlementService.cs.meta",
+      "bytes": 243,
+      "sha256": "8258c608866829838f6f6152889ecbac7448c8767a407bafeede79e2be45a81a"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/ResultCaptureService.cs",
+      "bytes": 5797,
+      "sha256": "152af69399dd740cd8826420f6279399ae2d1d82723b25ae137f1b790cdab41f"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/ResultCaptureService.cs.meta",
+      "bytes": 60,
+      "sha256": "c921de280f3016a9dd710042f3658072846e7aed61ef3e8e1eb021a6a4a66e0f"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/RunState.cs",
+      "bytes": 401,
+      "sha256": "790e8b528f1269d1adce305f7fd8641a52976f7ff4c552094fed5f6a1027760a"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/RunState.cs.meta",
+      "bytes": 60,
+      "sha256": "c51d7a16970ddf0fe8eaec0f8c77b744a701c2a882e9d57d2c4fcc1cd32c2b90"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/SaveManager.cs",
+      "bytes": 69853,
+      "sha256": "e3be9970a28ff925948bf76ed55d27c2e88db3898402e66fa5621bf2104d5a72"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/SaveManager.cs.meta",
+      "bytes": 60,
+      "sha256": "bdbbdb4ca8896624bf5b87b076a5048ee226eb9777bf651affc35c2e41e9010b"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/StarterPackConfiguration.cs",
+      "bytes": 2545,
+      "sha256": "57e4b098c03fcdc62adefefaa165c721d9af7795c75649706e6f354f0c70bbc2"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/StarterPackConfiguration.cs.meta",
+      "bytes": 243,
+      "sha256": "593de547ea279528296ed94cfaf494812a87507839e15c59ab561c84b2810059"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/StuntRotationTracker.cs",
+      "bytes": 2633,
+      "sha256": "94386f0df5ee7c4e5653b318c821707baa8d09d878d325d281f7d4ad8fec3d60"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/StuntRotationTracker.cs.meta",
+      "bytes": 60,
+      "sha256": "b07a0c3cd10295692888e139d750d827feda4b75850c50272b497abe70317826"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/UnityIapPurchaseProvider.cs",
+      "bytes": 17371,
+      "sha256": "9017b62d7451b439539e5e718729705f57bd93c02b2d5b292ddef966056d7dc1"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Core/UnityIapPurchaseProvider.cs.meta",
+      "bytes": 243,
+      "sha256": "9b642e904ebf18f96914f130b16f52dc97eedf415b875c5d8b8de4065dbbbef1"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor.meta",
+      "bytes": 180,
+      "sha256": "62c60ab48f954e5b737e81c6d95e3913337b78656f3a1b3f8497321a83d550e8"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/AdMobIntegrationValidator.cs",
+      "bytes": 3309,
+      "sha256": "81ae521b03c3096295240b7db94b6b3df5d12003f00f168021ce926ce57d0941"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/AdMobIntegrationValidator.cs.meta",
+      "bytes": 243,
+      "sha256": "5b4a7eeefef2451d6cabf629c780cc37e01798092f0970df378b698d3b856516"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/AdMobSettingsSynchronizer.cs",
+      "bytes": 9881,
+      "sha256": "13dda1b09301cfad11f252952d1138f56836f8bbbfb3a0b549a4c506b8e78641"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/AdMobSettingsSynchronizer.cs.meta",
+      "bytes": 243,
+      "sha256": "97603cfe32d368a32fc3033f6f50476e79f7172a25aecf186727737e32e8d7f5"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/AdventureBox2DGoldenInstaller.cs",
+      "bytes": 15188,
+      "sha256": "57759873befedd28f1b7e368ba2fc5ae2ebe9b950a8d81fc1f63bb7aad54c53b"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/AdventureBox2DGoldenInstaller.cs.meta",
+      "bytes": 60,
+      "sha256": "2994272373743639eff0e64be0a00011ce443bb1621aa3089d26db5aa4c7d032"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/AdventurePhysics2DAudit.cs",
+      "bytes": 2603,
+      "sha256": "05cdab66fce810e9e9032cfe36cb1da1659c28dda4a5cd9c62a0ee699031a990"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/AdventurePhysics2DAudit.cs.meta",
+      "bytes": 59,
+      "sha256": "f58ec7ff443b0cb55f361ad4cba69e40fbfb68eea1363a1d36e902d215e1615c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/AdventurePhysics2DPlayModeRunner.cs",
+      "bytes": 22394,
+      "sha256": "e0670665fddb431d6e5a5fb19d4d130ade1ee7d07d9b04bb4bc41c59ba881867"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/AdventurePhysics2DPlayModeRunner.cs.meta",
+      "bytes": 59,
+      "sha256": "54f8d5e646453c7984fa65077440a24fa155cab8aa565a73c3d54db4396e20ba"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/AdventurePlayModeStartScene.cs",
+      "bytes": 1654,
+      "sha256": "437b702629551135afef2c5ea32f7dd6e4be97dd21be6009e0dace59a73b360c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/AdventurePlayModeStartScene.cs.meta",
+      "bytes": 60,
+      "sha256": "fffe0dfbc8f2d6823563b53c6634759b029d486a49c0d32d035d5f65b48f02da"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/AdventureVehiclePhysicsAudit.cs",
+      "bytes": 93485,
+      "sha256": "64d0ed54daf3d7bf0d406630ce6754b29b56d51cdc95bf593e2fcbb054821544"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/AdventureVehiclePhysicsAudit.cs.meta",
+      "bytes": 243,
+      "sha256": "a2cfab36166290acd3c010192e7e255a52eaebc5d5270ce67cc83baf1f08b478"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/AerialSateliteInstaller.cs",
+      "bytes": 28198,
+      "sha256": "83fb0ac2938d50a08ec31bd6ccf24fb698690aeddea820b12aac19c6833f9c0c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/AerialSateliteInstaller.cs.meta",
+      "bytes": 59,
+      "sha256": "3b8b3c9f81229c32c80d90a0647991e3416ed524bb4c1ddbd344c8657a30e582"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/AerialSateliteVerifier.cs",
+      "bytes": 9500,
+      "sha256": "6db7f3e5f4aa92ab3cfddec3be23f4ec6260705021f26e816b1f65310824da84"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/AerialSateliteVerifier.cs.meta",
+      "bytes": 59,
+      "sha256": "7dfe87fb96a1b236bf0d9e6fab0ae0a5bcef761b77d938d156daa77f0fbe4305"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/BuggyMountainsInstaller.cs",
+      "bytes": 51672,
+      "sha256": "d9ff851e5e99d716a93e82157ca9e6aa10d400b447056ca09ec0e5958f25fc5a"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/BuggyMountainsInstaller.cs.meta",
+      "bytes": 60,
+      "sha256": "43ce605dde0e67fcc36dc3b80023faabac501dcb03833fda3d6cf8b18ae5c11d"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/ChestDebugTools.cs",
+      "bytes": 17915,
+      "sha256": "88e271471f5edd70b95e4af3509c445b31fc0f7092aebf149566ef141d0ebe85"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/ChestDebugTools.cs.meta",
+      "bytes": 59,
+      "sha256": "1e8bef12bcd505354e7672f452ab2e2d6ce00d35ccdb35c4a6ee07961a8f74ac"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/CityMapContentInstaller.cs",
+      "bytes": 26888,
+      "sha256": "f9c5d16f7a949b41b078b60d4ef23f99d0e0e28b2df506685e1424a4a3d271a9"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/CityMapContentInstaller.cs.meta",
+      "bytes": 254,
+      "sha256": "a6e21e5671ead544a730e8ad436fbed86fa16596773ef48d2520c60da3a505db"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/CountrysideBackgroundInstaller.cs",
+      "bytes": 4626,
+      "sha256": "4789e2d6eb12d380a9a198245e55adc29e65ae78adc65844ad69977837eca91c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/CountrysideBackgroundInstaller.cs.meta",
+      "bytes": 59,
+      "sha256": "aea8c3509db768288f09eb7f30306284efa747dd9d6c51c27b4e7394d2f376f1"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/DriverCanonicalModelEditor.cs",
+      "bytes": 3483,
+      "sha256": "53d817e2d03755ebd452b9ab1e4e6980b1b5847ce5b1f882decaa3ba1eb38e19"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/DriverCanonicalModelEditor.cs.meta",
+      "bytes": 60,
+      "sha256": "0da852d263fef4ccf2f8694d2bb82b3898fe1c97956d60dcdecb86d5bd5639cd"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/DriverPoseEditorWindow.cs",
+      "bytes": 51716,
+      "sha256": "54070a9a50dca5d136086e62319f31fe0492d35c2d0050044f996e7e4a3881e4"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/DriverPoseEditorWindow.cs.meta",
+      "bytes": 60,
+      "sha256": "b60b8c5e00893cb665d3921e168df3d3d967ad8a752d0b0cd2ddd91b397293ae"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/EditorMaximumProgressionGrant.cs",
+      "bytes": 2230,
+      "sha256": "e14cce341ab2c6c80a55d85e6145d26f48b6ddebc42be6a8bed033c37bd59193"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/EditorMaximumProgressionGrant.cs.meta",
+      "bytes": 243,
+      "sha256": "2d5c85b1606f2c29e3ca7509efef23ebc226453013f11f20e6a557c9feebc458"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/Experiments.meta",
+      "bytes": 172,
+      "sha256": "93ab05ebd65faf957fc43534274d3ea08c3828239e6dd7b597d226cfbfe02220"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/Experiments/RacingMmrExperimentContracts.cs",
+      "bytes": 6771,
+      "sha256": "8f78e9c3f685c4b9ae82136e5dcfb1b04e8ee407f8edf0e18b98145c98522254"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/Experiments/RacingMmrExperimentContracts.cs.meta",
+      "bytes": 59,
+      "sha256": "9c42e065ea31477a47e96c8e46311ff57dbc3c1139045c10ecbf05eb0ffc09b6"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/Experiments/RacingMmrExperimentWindow.cs",
+      "bytes": 2062,
+      "sha256": "8612f249642022f1add7b7e1cf23a1681eca0b0b857206a4f20f8a0bcef0d2fb"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/Experiments/RacingMmrExperimentWindow.cs.meta",
+      "bytes": 59,
+      "sha256": "62b1ac4aa764e6a45dae1fe4bdfc10b60038988b696a261a82cd840afc0fa687"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/GlitchPhaseBuildInclusion.cs",
+      "bytes": 11851,
+      "sha256": "58f712f548df78beeabd5678491d7d346e9d92482e7b25aa788ef3a3d48db6d2"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/GlitchPhaseBuildInclusion.cs.meta",
+      "bytes": 60,
+      "sha256": "25ea4c786833b5b4c4b3cacd7ff4d02ad65f6a7a4f9f3aaa2a9b898f594d8ea3"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/GlitchPhaseCosmeticsValidation.cs",
+      "bytes": 13438,
+      "sha256": "22ef79892f2d1c6f2235113a828bcb58213ddc73f88678f5028387a05ab32dcb"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/GlitchPhaseCosmeticsValidation.cs.meta",
+      "bytes": 60,
+      "sha256": "9acb6e0d696cd1ece8ec36225a3f881fffa4964ba046560547a5ecd4dd31ceb8"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/GlitchSkinVisualAdjusterWindow.cs",
+      "bytes": 51076,
+      "sha256": "2d241f24e9f852b53fc1192010505991d13493b46e9d14d92cda5bec0e0497ed"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/GlitchSkinVisualAdjusterWindow.cs.meta",
+      "bytes": 60,
+      "sha256": "801aa1fc0d55d6de3a0a244d0de257510cdbe8320b744a95de0843631e8649b6"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/GooglePlayReleaseIntegration.cs",
+      "bytes": 9944,
+      "sha256": "43500d1cdefcb588950c7c0d09cf1dfcd27c0f7dff4bd79a70383394e70fe6ed"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/GooglePlayReleaseIntegration.cs.meta",
+      "bytes": 59,
+      "sha256": "e7ae8df845fcc1839fd757d4231f369d384874cdad32b3ab0413c6c3c788ab65"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/HillAdventurerAndroidDependencyPostprocessor.cs",
+      "bytes": 1724,
+      "sha256": "2465f0c8d24657539bda493e523987a5a55f1b2a3356531914b31122d24a88b0"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/HillAdventurerAndroidDependencyPostprocessor.cs.meta",
+      "bytes": 243,
+      "sha256": "b520fd0782c49e675cf70bd05bdb8a2fe05394d926d3902ee26bd6241229f106"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/HillAdventurerGooglePlayDependencies.xml.meta",
+      "bytes": 158,
+      "sha256": "9a9d251a9bbe5fe856df177becfd4c33e36c20dde8ca9fe74619a828f2786413"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/HillAdventurerIconGuard.cs",
+      "bytes": 4427,
+      "sha256": "64a791f2450f9f96b079aa04d17f61068aadf941d971887b77b1d223875935e6"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/HillAdventurerIconGuard.cs.meta",
+      "bytes": 60,
+      "sha256": "61f46fd5cf8b8a8fdb107ffee390ad33910fa895ed43c11498ccb4943fd88e85"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/HillAdventurerInstaller.cs",
+      "bytes": 34116,
+      "sha256": "db8994c87fcf37bc9b616fdb33dec28c1fe4007296614c64eb2779f3577de774"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/HillAdventurerInstaller.cs.meta",
+      "bytes": 59,
+      "sha256": "f01beda46c8ec002a09b9de4004814c6344d12929d48429aa0006fbffcfa413a"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/HillAdventurerMenuVerifier.cs",
+      "bytes": 73408,
+      "sha256": "0b349a9eb16a01271e7f2a4741a5be94cdaf08b2027aad6d8e67366c51c4cf7e"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/HillAdventurerMenuVerifier.cs.meta",
+      "bytes": 60,
+      "sha256": "289613986baa5e6abf30f151b21c6a2724c5745f8a826cb7e223b795fe7b5ac8"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/HillAdventurerUiAssetImporter.cs",
+      "bytes": 20813,
+      "sha256": "ce907d6478d40d4f529f2ef755f690684c0126b78605c60cd060e80a4b4503b4"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/HillAdventurerUiAssetImporter.cs.meta",
+      "bytes": 59,
+      "sha256": "403bb8dd117a9f954809062c87b957b670ad96e3296d64a9dfeb071f051fb020"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/LastHorizonValidation.cs",
+      "bytes": 27009,
+      "sha256": "b6e61e52ea76e1bd45769237914d2c57499df310f6ad4720a656159de1e8347a"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/LastHorizonValidation.cs.meta",
+      "bytes": 60,
+      "sha256": "d0e35578e98510c03c029914f4b25e41d66767622b80f84d2645cf2a71d7dcd7"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/PrototypeSceneBuilder.HillAdventurerUI.cs",
+      "bytes": 71369,
+      "sha256": "85abdab82f1bfa97127274d8f1df30473dcf2ed8d8e990f09cb7cc148f701957"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/PrototypeSceneBuilder.HillAdventurerUI.cs.meta",
+      "bytes": 59,
+      "sha256": "899c57bbae6a6c8b21047cc82dc16515f8b492dc03868d9bcefbba24042a9343"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/PrototypeSceneBuilder.cs",
+      "bytes": 582593,
+      "sha256": "b37d6f07c9afc0a173fa1b2bf178d66c14ff9e86e52451b66c46c9c08837beec"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/PrototypeSceneBuilder.cs.meta",
+      "bytes": 60,
+      "sha256": "edf1a233bdb7e8c3af3a4d22ff492ea9c71b8196f43b2d4bfcee5b122dedc24c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/PurchasableContentAudit.cs",
+      "bytes": 12649,
+      "sha256": "e688b1d9ab57c9f772307bc54c616cf650a4550c52868d5e9fd612708d6119aa"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/PurchasableContentAudit.cs.meta",
+      "bytes": 243,
+      "sha256": "c40766d952a60c9a7c0d8f608487644ebf638223e04f664f34432edb1ca58eef"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingAndroidReleaseAudit.cs",
+      "bytes": 3888,
+      "sha256": "5d608979c64822d672560221d5882e1b5932ba6f3d26b41d37a99cc02203e013"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingAndroidReleaseAudit.cs.meta",
+      "bytes": 59,
+      "sha256": "306a58e225da71eab6d7b2a9ebbf1cee29636cc4002754454861b561a9a5fc81"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingAndroidTextureOptimization.cs",
+      "bytes": 12743,
+      "sha256": "fb9f37586e529e73266fb9413563a34d8b963bc6622a95e724e521fbd0d73d97"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingAndroidTextureOptimization.cs.meta",
+      "bytes": 59,
+      "sha256": "046590727eae7991b007660113ca6aa619518ee8280e08d14df810b96827d012"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingArtImporter.cs",
+      "bytes": 1016,
+      "sha256": "3ddebedabafc0a7e2f3a0ca70c985ca4bf732bcb33595216fab84204c3eb8ead"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingArtImporter.cs.meta",
+      "bytes": 59,
+      "sha256": "18c09c9db05dc67ff2c23849189c21a10ad9050f0bef74cb24f57b8c19973e97"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingBalanceContracts.cs",
+      "bytes": 13516,
+      "sha256": "955a64a20fec9ddf24c27d34996c56d8577f1cbcf0c6f75f514ad25dd85ee044"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingBalanceContracts.cs.meta",
+      "bytes": 59,
+      "sha256": "139dba548ef67f18cfdd3e6f8a119bdeec9429dd282b482c0085567f611564c8"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingClosureTests.cs",
+      "bytes": 7247,
+      "sha256": "d6a189d4d09e7c21d4f8d805c817ec51c5ec39a018ab2c915b6077f674662111"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingClosureTests.cs.meta",
+      "bytes": 59,
+      "sha256": "2372bd280f5bb32cbd44d649a920854a76dedeac3af0d5e78be67405f7923563"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingClosureValidation.cs",
+      "bytes": 7760,
+      "sha256": "c82b9398ba860d3c2c2f4f1a85fd2f0b6d115a584f49ae4127a08d6438e32458"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingClosureValidation.cs.meta",
+      "bytes": 59,
+      "sha256": "429ac121002c67b24164d9c71686f26f1c732d8e2ec3c09b27b65d75f8e06d0b"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingComebackContracts.cs",
+      "bytes": 5946,
+      "sha256": "7f3cf2ea618a8bb0a63ceb2a106d4884add419777f322861f85f47432808fca5"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingComebackContracts.cs.meta",
+      "bytes": 60,
+      "sha256": "0125a71ec74c1f3fe6028c0d55b70de06a5ac33cdd55a375b7168b0c622c7d80"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingFinalSmokeContracts.cs",
+      "bytes": 12943,
+      "sha256": "7d599a3a2d64b69522f1d53b8d95a9b426a858124c07557821cb7a4b78dc5e46"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingFinalSmokeContracts.cs.meta",
+      "bytes": 59,
+      "sha256": "73f1ec86bf1c28f386ed1020ad4ad70781de02d927f8f05ed21050ffda3d4464"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingFrameTimelineExport.cs",
+      "bytes": 4236,
+      "sha256": "ce6a3c84f1ba372d4ea61e8545ee4e77a1486bde9ddc7e12ab16e57f90e0d3a7"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingFrameTimelineExport.cs.meta",
+      "bytes": 59,
+      "sha256": "f21fd5d5f5ca774f6f9b7a1e8bb073f58fbc0a3ba231a6c134d0adb78f635163"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingLancer300Contracts.cs",
+      "bytes": 14611,
+      "sha256": "8eb18fd7abdd3dd21b4624ee774c95a911e6345b486478c2a10716cde8d69f2c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingLancer300Contracts.cs.meta",
+      "bytes": 59,
+      "sha256": "f543138fe990e2e94773a27a03b141ad25c2dfdddbec9b31f14b135ffc5298ed"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingLancerContracts.cs",
+      "bytes": 7016,
+      "sha256": "9c5700a42d742ca04804e43ae27c3f65e41e56d536f56b965240e5669c92c5fb"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingLancerContracts.cs.meta",
+      "bytes": 254,
+      "sha256": "9fc4afa93fd4bfd401b233ceb2dd0feba678abd28d89d17075015e946e83ba07"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingPerformanceBenchmarkRunner.cs",
+      "bytes": 2030,
+      "sha256": "ddb3fdbefc2892eb9d24751cc1da2b53701c0ce90e4d1ff84934a71f594a41d1"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingPerformanceBenchmarkRunner.cs.meta",
+      "bytes": 59,
+      "sha256": "cf06edc0cec5db6c9e2b8f14560e9b4b8734abecc479254a5e6962afe98873c6"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingProductContracts.cs",
+      "bytes": 13941,
+      "sha256": "fe31a5405e0dbe618bde8243ceb4c12e19613182f2cb378c1bfd801ec6921258"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingProductContracts.cs.meta",
+      "bytes": 254,
+      "sha256": "8bed385719058dd55d728d4d47661bfeedb7f3a51f1f1a8c28ac7edfc2b74191"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingProductValidation.cs",
+      "bytes": 2704,
+      "sha256": "1d3ad5d8f653b2d7cae57fd3cadf89f348f14b4828f1cbe546153e0049215eac"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingProductValidation.cs.meta",
+      "bytes": 59,
+      "sha256": "173e3d7eaf35541083afab57dece0acf1b8de4439a643aa3acab6b71f2ac6c8b"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingRcEvidenceBuilder.cs",
+      "bytes": 12675,
+      "sha256": "c3100cb93e355512ff5336669a72a7aa71f809e0c4a2eb076656c71cd1b55968"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingRcEvidenceBuilder.cs.meta",
+      "bytes": 59,
+      "sha256": "bf8efde0d2a13a0fcde1a7597fbd014ea478b8ba9dd87c54bec06355c3d2decb"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingRcPassContracts.cs",
+      "bytes": 5029,
+      "sha256": "ccb19051fed80b855805f3ab9652d338287eccb4802678510b23fccf7789bc4b"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingRcPassContracts.cs.meta",
+      "bytes": 59,
+      "sha256": "52dbd48c2984e99ce72f3734e8bab05765a7d8b24de042449b69c6b76af67f32"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingReleaseAssetGuard.cs",
+      "bytes": 1755,
+      "sha256": "f55e1efea7a872d38d079a8b45da3316f2688aa333d052f8a2b63abdef870e32"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingReleaseAssetGuard.cs.meta",
+      "bytes": 59,
+      "sha256": "a87d50e587063983568cbc5f74fc0e9f9818cb5d4b2d509f6ab709cdac078d6e"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingReleaseContracts.cs",
+      "bytes": 27967,
+      "sha256": "c3c7a10e880a3482bc4f2eb4289f44090e9618c8de87c1d58663b92161e539ed"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingReleaseContracts.cs.meta",
+      "bytes": 59,
+      "sha256": "158952c9697b5d5f2332099ba5f1dea2e27c1261acf26f1adbcdd9ec23548ff3"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingReleaseSceneAudit.cs",
+      "bytes": 4377,
+      "sha256": "a06b78addd0027edd4ec3793680868aa446727a763872ba09e0c61a9b950c6d1"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingReleaseSceneAudit.cs.meta",
+      "bytes": 59,
+      "sha256": "7351242aa62222f56e5fa310dedddcdd23257bf6a8124a1e793ea81a142b236f"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingSceneShortcuts.cs",
+      "bytes": 2173,
+      "sha256": "3f00a2c728fb1b50f30c5e23fe7dd995ae30d2781440e66ef710c208081ece5d"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingSceneShortcuts.cs.meta",
+      "bytes": 59,
+      "sha256": "079d7be2942da0efc35606cd3d5fb422f1b3c01dfd9d2bfa7e0342e4c886978a"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingSeasonExpansionBatch.cs",
+      "bytes": 6697,
+      "sha256": "a5357722326589c98966dfbed5f27cae3e462ee24aaf00c6ddb1c12b3ed7c990"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingSeasonExpansionBatch.cs.meta",
+      "bytes": 59,
+      "sha256": "dd23c638a8ddf0f17e2f8259b8eeb1cc63451096f95fd3214a853e13aba1c284"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingSeasonResetContracts.cs",
+      "bytes": 20571,
+      "sha256": "70a4f32060ef1101d27031ccfaf2dadcefc0245c9df28cc7c5e42d9d54b0206d"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingSeasonResetContracts.cs.meta",
+      "bytes": 60,
+      "sha256": "b0aeb7b57dc4956522595ac37de9d38823ddaa50e3309e5b40e3c504fa085b0e"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingShortcutIntegrityContracts.cs",
+      "bytes": 6670,
+      "sha256": "b12a5a005d4e50a1f376569d526fac11779b68caa7d1a32806a52d66cbc0ef43"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingShortcutIntegrityContracts.cs.meta",
+      "bytes": 59,
+      "sha256": "10fffcb349b55bc123b8ae4ad3cb3d65bda15c8b8e307156fae68e5d713bfad3"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingSkyHopContracts.cs",
+      "bytes": 12521,
+      "sha256": "6e5794da0877a1b7de394cbd3031088eb77d0c1e15ee272338bad55fa00a17a4"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingSkyHopContracts.cs.meta",
+      "bytes": 62,
+      "sha256": "07e29586928bee808e6fde8af84a2029f7d662f03b5f18d22b30b0c0518a6138"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingStandaloneBuilder.cs",
+      "bytes": 2534,
+      "sha256": "49848321d8ef59a2c3192c60a780efcc4872f0356ef07f924b84f0ff9b4c3369"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingStandaloneBuilder.cs.meta",
+      "bytes": 59,
+      "sha256": "2c964332e24756612721cee57a8b8a34591da0c89e101ce330a750af4ddb0271"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingSystemAuditor.cs",
+      "bytes": 50761,
+      "sha256": "c81d12566a9f4b38d1c25c39ce8b92b5b8fd7a4535b328eda2d249a88e063f12"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingSystemAuditor.cs.meta",
+      "bytes": 59,
+      "sha256": "b1a55269a1094921ca0ff3dae91c80f1259fa7bdc60263215eaa6df05c79da77"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RainyerMapContentInstaller.cs",
+      "bytes": 14334,
+      "sha256": "6b4c88a57cd7ae7a71dbf844e06a78b3f929f0d74ab73c8e26cb06a08e0c7c11"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RainyerMapContentInstaller.cs.meta",
+      "bytes": 60,
+      "sha256": "4445ddf1bef5fe234819e900f54d71bd258b778af29e0d367476e74f49da91e1"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RouteDiscoveryReportRunner.cs",
+      "bytes": 1612,
+      "sha256": "6968ff210d4a9d955d52fe4a7537e6d9099825004a55b6ab8ed718d3e0152745"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RouteDiscoveryReportRunner.cs.meta",
+      "bytes": 59,
+      "sha256": "5814c87a39254f3233294bc7563f646bf7eec511d4597f004fd7550aedf0f53f"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RuntimeSafetyVerifier.cs",
+      "bytes": 7235,
+      "sha256": "989809b8867600db040bc51f5acb91bbdb3decb15bfcd613307fdb07a85224f3"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RuntimeSafetyVerifier.cs.meta",
+      "bytes": 60,
+      "sha256": "9a67ceba1e81910c10948d500e43ef047fa81f6d3b2b2bdea37dd59541269108"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/SpaceGalaxyInstaller.cs",
+      "bytes": 13057,
+      "sha256": "fc8d773e469d34590d81b56f7eab155c0443f2505a9452a92894944fc5961866"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/SpaceGalaxyInstaller.cs.meta",
+      "bytes": 60,
+      "sha256": "802d038286d29de8b0242f6835d02879a8fba893b0a46e764cbdb55cc5689827"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/VehicleDefinitionEditor.cs",
+      "bytes": 12548,
+      "sha256": "ef2a83432a4b4b5e0c70033958a54bb0e925ffc6fb44da81f5efd44cf3a9b491"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/VehicleDefinitionEditor.cs.meta",
+      "bytes": 60,
+      "sha256": "cacdfa24990d01494cf7ec71f23e412ec1d4c2bc59c7d381975e0acb09ddf492"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/VehicleVisualNormalizationEditor.cs",
+      "bytes": 7658,
+      "sha256": "76d19465419314d85cdd53ca41ff8ef7fa45606d60e01b972072b66c14d4bf9d"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/VehicleVisualNormalizationEditor.cs.meta",
+      "bytes": 60,
+      "sha256": "3ff6108c72d52cd84227c606c8e6204096fcd16435db3eda8a121911edbd62dd"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Pickups.meta",
+      "bytes": 180,
+      "sha256": "158649b07a1bdf2224a8f2b19f11e0dcfffe5221fa042cb6f4e9ba86b447921f"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Pickups/CoinPickup.cs",
+      "bytes": 816,
+      "sha256": "0297a19b4602713329b9803d6679f239cbb42d9f58a9a16ee56cda73583de940"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Pickups/CoinPickup.cs.meta",
+      "bytes": 60,
+      "sha256": "e33e2994fb8352d68a82676fd3655d68ee56e3383d3ca796b50a25158159cd49"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Pickups/CoinRouteDefinition.cs",
+      "bytes": 7909,
+      "sha256": "f356b20d69b0e5c3f9b3ff0820e8e7dd346841e67a9248cc9f72f9770641c0dd"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Pickups/CoinRouteDefinition.cs.meta",
+      "bytes": 60,
+      "sha256": "0bbe4ab333550be4a990b706b85b32f78e6cff0cbb1d88df6d6a6b4b7c25a9ae"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Pickups/DistanceBonusMarker.cs",
+      "bytes": 4837,
+      "sha256": "b86d845ed4428bb19ff59ace62db78e42ca75c5dacab86cff45fa41629225ed9"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Pickups/DistanceBonusMarker.cs.meta",
+      "bytes": 60,
+      "sha256": "8b02d875efac26bb59079ced93028e41bf8f2d4fa0e628b0a908b68548ac8ac2"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Pickups/FuelPickup.cs",
+      "bytes": 351,
+      "sha256": "5022265c9521723b49721711ed8b2a7e4ed463143d07540ead06460009782b27"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Pickups/FuelPickup.cs.meta",
+      "bytes": 60,
+      "sha256": "04f6a84f6cd2cce94ced82c22b31d0bfd14c8f432d01814c080ed491aa0d7c8d"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Pickups/GemPickup.cs",
+      "bytes": 668,
+      "sha256": "e11ee3a25afd5f4225d0c2d6db214075ce9cb2bc69102695c533d9f58b3119eb"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Pickups/GemPickup.cs.meta",
+      "bytes": 243,
+      "sha256": "6db04ebbe8968e7afdc3d2b19b02d610fef555af509248aaf31d6f8313ac2785"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Pickups/LastHorizonFuelSequence.cs",
+      "bytes": 9752,
+      "sha256": "2526904b4178f3a6cc946560c38d691dfe240b530185bfe8fea38dbc13111ca3"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Pickups/LastHorizonFuelSequence.cs.meta",
+      "bytes": 60,
+      "sha256": "fbea7de41f11b608fb4944d7e171f182af2caccdc708a37d7329b49ebaecfbaa"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Pickups/PickupBase.cs",
+      "bytes": 11010,
+      "sha256": "c6c2a5498136e67f43ac710f3bcc4050af8afc2139ac22b474b639c4e1ec3163"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Pickups/PickupBase.cs.meta",
+      "bytes": 60,
+      "sha256": "7b6536fbe25e079db3361c388c8a92f3a3d98914127dc5e76487dabf04bf90f6"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Pickups/PickupPool.cs",
+      "bytes": 15927,
+      "sha256": "befd3c056c00141b4adef399471a3fbd26c4818840d73a5b06d07ca76f565edf"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Pickups/PickupPool.cs.meta",
+      "bytes": 60,
+      "sha256": "625a9181ad451222cafdbf06c4746410862dd6972be5ea0707a60d65de4f352a"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Pickups/PickupTrigger2DRelay.cs",
+      "bytes": 470,
+      "sha256": "b5d0cec38916f252ba717ce2eb0d99d20fd835cc6d8ca6babcf87c12afb3c43c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Pickups/PickupTrigger2DRelay.cs.meta",
+      "bytes": 243,
+      "sha256": "8624b1caae5ec14205e092daf6a7cf63b27590f6675e907e17bee0424c6a77d3"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Pickups/RandomGemRouteSequence.cs",
+      "bytes": 3367,
+      "sha256": "2590b6e094dbcc30f94143103de134460e6af3683ac2f1bd9f7b0614091902ba"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Pickups/RandomGemRouteSequence.cs.meta",
+      "bytes": 243,
+      "sha256": "8c9c865ff3d894a6314af21b297806408735d9195e6a282684efd062e61ea067"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D.meta",
+      "bytes": 172,
+      "sha256": "618913ab324aef9652d0339fd2e0e581c7851c902f867c08131b190b1a1e782a"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/AI.meta",
+      "bytes": 172,
+      "sha256": "03065b4ad91f08fe885dc5d2b4d3a756def506da8606aa35ef2673e6bfd674d1"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/AI/AiDecisionLogger.cs",
+      "bytes": 1895,
+      "sha256": "4c77e2716341fa43070e4350c0593eabc183233d69aa62541c6ec27cf58727df"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/AI/AiDecisionLogger.cs.meta",
+      "bytes": 59,
+      "sha256": "b04a9866c59b58f9f3e9fb403750ae091fd84ae5b051e6ce5d3234dcbc2ebf72"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/AI/AiItemAgent.cs",
+      "bytes": 8883,
+      "sha256": "fe8ff55cf7edde979a0c96fdc7315a3a98db677d2b10215849776326b5004d26"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/AI/AiItemAgent.cs.meta",
+      "bytes": 59,
+      "sha256": "cff57e7fc21c00606244d830e506e51db2eac3f1493c03fa255d835e2114c619"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/AI/AiRacerProfile.cs",
+      "bytes": 1892,
+      "sha256": "8a3ca6fdcbf89d90e6d6dab3939e11d8e933e3ccd7cc590afc786807b27efce5"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/AI/AiRacerProfile.cs.meta",
+      "bytes": 59,
+      "sha256": "7fbf80357acd4d547b0c9e8011a190c2b2688dbc594aaaa6312186b25df2d756"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/AI/AiSkillModel.cs",
+      "bytes": 2572,
+      "sha256": "684529b3c13bb9bc8fb0a1b50466fe1b121e456e6943c7f03b3fc3d5f115cb54"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/AI/AiSkillModel.cs.meta",
+      "bytes": 59,
+      "sha256": "f3829c5e3fc37ece3bab7c025a742636775a00aacb45df2fde2ad4828cd35069"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/AI/AiVehicleController.cs",
+      "bytes": 70820,
+      "sha256": "1ede3a9952edc3090d7da5bb266521680b41fc4e5fc6a63709ec382b7432dd91"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/AI/AiVehicleController.cs.meta",
+      "bytes": 59,
+      "sha256": "d543c4482a9a86610070f5d1dd7fb3a65a25ac4c9b4ab283439bf79f00b22d96"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/AI/RacingRouteDiscoveryLab.cs",
+      "bytes": 20021,
+      "sha256": "ab4ae0a1af23a7d4945f3d43afcccff936bba723d96460ccd87fdd040ff90bf8"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/AI/RacingRouteDiscoveryLab.cs.meta",
+      "bytes": 59,
+      "sha256": "9de4f52fd3587824e4c5d93b95ea5a318c56ebe4bffafa20f3ce4c562f4ca84b"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/AI/ShortcutKnowledgeBase.cs",
+      "bytes": 20562,
+      "sha256": "2e9df436b7d63f23cebd5ae3f59fc64d92b6a6070c233f0144bf21b35415bcd9"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/AI/ShortcutKnowledgeBase.cs.meta",
+      "bytes": 59,
+      "sha256": "35e5fec784b2fe647eccaf95927449d93654242de157eb8d02aa8973e3c76712"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Audio.meta",
+      "bytes": 172,
+      "sha256": "145c2428d9aed65d8c18b0b79d6a02dd662d1a6d5859e5e5b9e284dc03ce8126"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Audio/RacingAudioBank.cs",
+      "bytes": 404,
+      "sha256": "73449c26c0a63aa658d291c49577bd26e8e10a2b5587a86442abe6ba4944c792"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Audio/RacingAudioBank.cs.meta",
+      "bytes": 59,
+      "sha256": "980ac839c061b469a4ff5123aae875d3d68a291efd2b46686d7d04ac13b39f29"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Audio/RacingAudioSynth.cs",
+      "bytes": 16217,
+      "sha256": "359e61f802a36ba8ba01781a03c8b017c06f68cf19f66af518e5ece96aa61506"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Audio/RacingAudioSynth.cs.meta",
+      "bytes": 59,
+      "sha256": "44e232c07d8284955be1ee21ef41ffa5f8367c5cc5ad56f75c1f9020dc4115ee"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Audio/RacingFeedback.cs",
+      "bytes": 6034,
+      "sha256": "94c54349bcbf67769e098aa9ee5d93991927b8a7cbaf4d8abf3f361ea7f8f593"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Audio/RacingFeedback.cs.meta",
+      "bytes": 59,
+      "sha256": "a5a843e2978427c0c58fa6d0d5adb38225e2ad1e33ab94bb5556f2097cb42545"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Audio/RacingVehicleAudio.cs",
+      "bytes": 6218,
+      "sha256": "29c2ab5ab2c320d6ef70c481345c714b74d00741d6897f93157af01f8494a151"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Audio/RacingVehicleAudio.cs.meta",
+      "bytes": 59,
+      "sha256": "c8756d2d0949b049e5473d6d0087cb725daaed1e7f31056945930e9b37b66e3e"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Camera.meta",
+      "bytes": 172,
+      "sha256": "827744fa0c792942c8cad9f1a6ba6a1d2a0eeaa3550121c39366e50f4bd5cfff"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Camera/RacingCamera3D.cs",
+      "bytes": 7466,
+      "sha256": "a9d18ba675faa2471145708c2bf2eff262e5eedbffbabc42dc4c3faf9929abcc"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Camera/RacingCamera3D.cs.meta",
+      "bytes": 59,
+      "sha256": "6b2a0a69214c917daaccfd2383350fc52a8b7804dd560f2eeda16cf1b555d2b2"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Competitive.meta",
+      "bytes": 172,
+      "sha256": "efce37e6520fcd7fb1a8324996d9b083df97c368c041268f3fa4f97c97eb1ae8"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Competitive/BotNameGenerator.cs",
+      "bytes": 9972,
+      "sha256": "b00416115ad66f393c36ae9daeeefdbe5db36598a88e7cdbeffb8f15afe8187d"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Competitive/BotNameGenerator.cs.meta",
+      "bytes": 59,
+      "sha256": "a6f3c864af4f0020b19d97477aaf3a1c3aadf002f30ab2570ac58b5520af69e4"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Competitive/CompetitiveClock.cs",
+      "bytes": 3850,
+      "sha256": "e0e7ecfe31b30bd8ef6886e96ccc07307cdbad0e82af0882406323a681b0482f"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Competitive/CompetitiveClock.cs.meta",
+      "bytes": 59,
+      "sha256": "275c26bd4bc4c6afb5be89994f6d79642356c934a04f00f11d77b21d79ed8eef"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Competitive/CompetitiveCoordinator.cs",
+      "bytes": 25011,
+      "sha256": "8b0b662366a4111c6aafc64dd9c4f3e3db3bdfc6c1c819cde1d8ed144d06b7c2"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Competitive/CompetitiveCoordinator.cs.meta",
+      "bytes": 59,
+      "sha256": "f92c2c3b4cecf1a9ce24a3c6ad9209c59a94be1de21cb0696b0b4ab43177fca9"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Competitive/CompetitiveLedger.cs",
+      "bytes": 8908,
+      "sha256": "0a48702d4b4eb48d5d1cf37253a841001adbea18ee600abd1f94da56eacf6fca"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Competitive/CompetitiveLedger.cs.meta",
+      "bytes": 59,
+      "sha256": "132828e54cac2e6295d7d936cc9c2364ebd80f158f3387626c53a45c3d8d30a0"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Competitive/CompetitiveRating.cs",
+      "bytes": 8543,
+      "sha256": "59a347f6784d999d9ff0f7eaa09c61a1478697dcf7291f1f6ca16c69b3291abb"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Competitive/CompetitiveRating.cs.meta",
+      "bytes": 59,
+      "sha256": "3b697244960069d262b6babf7594339d8ee82a49b8db8f104e5a81e6a0f3aa06"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Competitive/CppsMigration.cs",
+      "bytes": 8814,
+      "sha256": "e367548bd0267c5d8143416bb61d15fd45fad62a23cca83a8eb15a81c69bffae"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Competitive/CppsMigration.cs.meta",
+      "bytes": 59,
+      "sha256": "b2819995b691e16ffece69634cba924040f3095f56955fe49e7c47904506b9e0"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Competitive/ExpandedCommunitySchedule.cs",
+      "bytes": 1707,
+      "sha256": "7e934f17ea63282d9c6b20064975c55bbf574881b071f745128e82096f48b16c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Competitive/ExpandedCommunitySchedule.cs.meta",
+      "bytes": 59,
+      "sha256": "dc6adb86aef0f726ea687412958979e68dcfee0552544192d9efd335019621e9"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Competitive/GlobalSeasonCalendar.cs",
+      "bytes": 2600,
+      "sha256": "19116d9d64a5ceb5f48743ce7d55d993e63f5621908efcc944338133720e4300"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Competitive/GlobalSeasonCalendar.cs.meta",
+      "bytes": 59,
+      "sha256": "343dacf16f8fe6685563bd99f97b1c17e570885ee72822c353c0cb80f4c2f179"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Competitive/LeagueActivityModel.cs",
+      "bytes": 8137,
+      "sha256": "310da1c03f458cd4adf2bae8a7d7a15cb23c918f3f6ed3c2e4808843ac43a94c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Competitive/LeagueActivityModel.cs.meta",
+      "bytes": 59,
+      "sha256": "6d15fa34dfa44c6d3ddb7784c5dc76a3937733125edbc148e14aa9f4c01c0a97"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Competitive/LeaguePopulationMigration.cs",
+      "bytes": 4319,
+      "sha256": "51fce0f54534797da450d8e084616471a887f38452614c303eaf5a9b911717dc"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Competitive/LeaguePopulationMigration.cs.meta",
+      "bytes": 59,
+      "sha256": "c4562cf1a4bad6472f324dc84d61416c9ac11fda294c9ca24e1f8e413a7a9f80"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Competitive/LeagueSimulator.cs",
+      "bytes": 33824,
+      "sha256": "c42bb66f9fb57679e05c11b017cbcf30a1a3bf8c9c61a5e1269f2ecd4e4b7851"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Competitive/LeagueSimulator.cs.meta",
+      "bytes": 59,
+      "sha256": "620ca41ee393c39e6091a4b25da5bbe6e2e8950b0b38f937f58469ed9107bf85"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Competitive/LeagueTransfer.cs",
+      "bytes": 8933,
+      "sha256": "d12457edb0bcd63b122bdc5018a39a789469a0989818c32114937cafe8feed61"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Competitive/LeagueTransfer.cs.meta",
+      "bytes": 59,
+      "sha256": "6f97575416bf0157bdc4c312b747355a6e21ebd3864fe6758f7edee7a2ad5ae1"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Competitive/SeasonHistoryStore.cs",
+      "bytes": 26762,
+      "sha256": "0d9a4ea1e9496ebafcc6bfd820f5058d11c87b4de63041cff2dbfc44e94b5b8e"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Competitive/SeasonHistoryStore.cs.meta",
+      "bytes": 59,
+      "sha256": "699e099dd7213aa18c96f0ca5e49aad06082b1f115bd72cc2d719d8e7e357cf4"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Competitive/SeasonHistoryTrash.cs",
+      "bytes": 12349,
+      "sha256": "6901c84da83dce2e9711cf634846630d41809df4ea545b3f34b168828a4f6944"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Competitive/SeasonHistoryTrash.cs.meta",
+      "bytes": 59,
+      "sha256": "db436a6b16b17798c73aa9fa2da1cf997bda07831b7da61abfbc8dbb14b19556"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Competitive/SeasonQualification.cs",
+      "bytes": 3228,
+      "sha256": "2fc2336de58e5bc143f369454e89b95eb63e7ef1a7ddf91aea1f1405068e1c98"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Competitive/SeasonQualification.cs.meta",
+      "bytes": 59,
+      "sha256": "da103426ce9dba99bab6e4e7e0b21f1817cc3fcd8dc16cfe44ba7d23c5f37f90"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Competitive/SeasonalTitleRules.cs",
+      "bytes": 609,
+      "sha256": "ebe7e834eb838d8d620922f2b4fdd68bf209042d3d9889f1b4c46a8147f1e659"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Competitive/SeasonalTitleRules.cs.meta",
+      "bytes": 59,
+      "sha256": "e3dc5b6439ee41c3eff48201833bb28f9d39512c3d0c1b882a98472f0ac81947"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Core.meta",
+      "bytes": 172,
+      "sha256": "bab3a80c894f3c2d4cb29b8058926b8bfbe81e39fc0e2cf4922407670d4316d1"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Core/DeterministicRng.cs",
+      "bytes": 2554,
+      "sha256": "5ca86baf0ffd57636a1374f0464f0acdd36fc7d7b0db0ff56bdda52a391656cb"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Core/DeterministicRng.cs.meta",
+      "bytes": 59,
+      "sha256": "9349d4321dd4dfd6e99d770bcfb301f39736f4aa329692ffd5473d05c7613fdd"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Core/RaceManager.cs",
+      "bytes": 18785,
+      "sha256": "7e0a2ebb630479e3b251319b16d235780235e1377cac219a4b18a2c08fa19fef"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Core/RaceManager.cs.meta",
+      "bytes": 59,
+      "sha256": "9cdd99f0fa2e32b5181b031d48ea47ae141ac09ed36e4ea6a81b3151895b5db5"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Core/RaceResults.cs",
+      "bytes": 2401,
+      "sha256": "74abbc678853d73a0e0948acf3e5cedaef28f889397bb15cfeea19eafe4d4989"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Core/RaceResults.cs.meta",
+      "bytes": 59,
+      "sha256": "bb4322b51248779785aeb6e2b7cac2caeb23488a89544ae99b2fea3bff7d0af1"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Core/RaceRules.cs",
+      "bytes": 1462,
+      "sha256": "c27f13be2143fff4eee08ddfd8369d474607b6bb145990b56cc877fc280d4b38"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Core/RaceRules.cs.meta",
+      "bytes": 59,
+      "sha256": "072ffb4297ec66d3fd8cc5b9ff4bfd2d3dd44f28219b0d0f2d7fe0ca12d18c1b"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Core/RacerIdentity.cs",
+      "bytes": 1752,
+      "sha256": "a5ab2351ec1612739c5d5da0ba3664eaefbdc421589045ce5fa2583e04e15060"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Core/RacerIdentity.cs.meta",
+      "bytes": 59,
+      "sha256": "e8401d83e1c1372fbf355648a102b2471dd9a202bbd116632bf5cea0900c3ae9"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Core/RacingSceneBootstrap.cs",
+      "bytes": 6645,
+      "sha256": "98c604a2ef0d85fc62449751f3e56d7038aab6a9c513fcc6ce413775981241f3"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Core/RacingSceneBootstrap.cs.meta",
+      "bytes": 59,
+      "sha256": "eefd71eed5ca15cd0f98c5665db3eda49fd2108f0bf5a535ee9b990e746b828e"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Core/RacingTechniqueObserver.cs",
+      "bytes": 2672,
+      "sha256": "17818b4edd01bed2d47b119856f95f1c526d1e832276790fd9618797c1dd18f8"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Core/RacingTechniqueObserver.cs.meta",
+      "bytes": 254,
+      "sha256": "db531d93381d312bbc2db454d9c20591c1c8068ee6e2de94c20fb2ca9a93ae3f"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics.meta",
+      "bytes": 172,
+      "sha256": "e4c9a7690584f4f928bc31883a4889c6ef2f107d0dd9d678fe5faa30248ea56b"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/BlacklineContracts.cs",
+      "bytes": 6762,
+      "sha256": "cdb82128bf0ff05faf11be38768334dbd192d11dc301b7aab2be0799f94c3276"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/BlacklineContracts.cs.meta",
+      "bytes": 59,
+      "sha256": "bbac90b3bd770f6ccfc83e26443aaeaf97a7501bad562e8186630b40177ac459"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/BlacklinePresentationProbe.cs",
+      "bytes": 12794,
+      "sha256": "9bf1ac031a59ae926c2b965e043f432ca811f47c1a080d6d7508a5ffc6288e19"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/BlacklinePresentationProbe.cs.meta",
+      "bytes": 59,
+      "sha256": "93895e321ea2287f0fbcaa3e423ee5c248ed87431e250539bb8e1cef5f155d18"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/BlacklineShortcutProbe.cs",
+      "bytes": 12482,
+      "sha256": "12904a7bed2d7e71b0c7d031343e457b5933f7ab4731525cd56fd4a2329284bc"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/BlacklineShortcutProbe.cs.meta",
+      "bytes": 60,
+      "sha256": "cae581fe26f44ed373cc182a006d3d8c006cb59d7a97cab9ba9abca773c390e0"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/BlacklineValidationProbe.cs",
+      "bytes": 9099,
+      "sha256": "8d13df923f88e19daa482a7c1e913c258743248e5012ac7c494d88103c3dd8a7"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/BlacklineValidationProbe.cs.meta",
+      "bytes": 59,
+      "sha256": "6294faedf86b2b605f9d6dedaabb301f7991649f21ca3fc628a9814184d2b397"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/Experiments.meta",
+      "bytes": 172,
+      "sha256": "db219e4756d2b8425adcd1e40e8258c33789b858a6e0e27dfaead591eeff99b9"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/Experiments/AfterPreviewBadge.cs",
+      "bytes": 2418,
+      "sha256": "77b0b8795819b6f7626535b1da15bba40482db353a0e486c6b26e3f1bb1201cd"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/Experiments/AfterPreviewBadge.cs.meta",
+      "bytes": 59,
+      "sha256": "67e3446ec99314e4fd7b1f17f871b48cc5917eb499613095dcad32d053727709"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/Experiments/ExperimentalAfterRules.cs",
+      "bytes": 7358,
+      "sha256": "cf6c949b3f38bd14f17c46c82e00137a0272733ccd82058c883989b549b1582f"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/Experiments/ExperimentalAfterRules.cs.meta",
+      "bytes": 59,
+      "sha256": "89cbe56e082374690655e7135e1a630a4a3ace502d2416455fd13b36446bdda2"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/NightCityEvidenceProbe.cs",
+      "bytes": 12738,
+      "sha256": "3eb28cac28173207195c5bba4bb42db552e0287dc4e820bcb3ba746cce18f489"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/NightCityEvidenceProbe.cs.meta",
+      "bytes": 60,
+      "sha256": "9d5084a102b3916d126171bef8d9a025cdc4d05d8bd8b9bb06840c5a874c422d"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/NightCityRedesignContracts.cs",
+      "bytes": 5233,
+      "sha256": "ec3ed5291d31039936ed5b04c875c78b3a55080eaeac40b8271cc534642e06a5"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/NightCityRedesignContracts.cs.meta",
+      "bytes": 60,
+      "sha256": "c1f0017a740151900227737ae44310fe7302d5a96d9abdd6bcb19072141f38c9"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingBalanceProbe.cs",
+      "bytes": 10760,
+      "sha256": "ddb86cdd624ff89b895d9ed24bbe857e8597e3efcee388fe5af868185cb3d8e8"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingBalanceProbe.cs.meta",
+      "bytes": 59,
+      "sha256": "19cc4628a99e25d52912db4055ef1b4632a1d2fc955ba5827b70ce3aedc54aff"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingClosureContracts.cs",
+      "bytes": 30350,
+      "sha256": "bcd8387497c2198d7ec11faa6249bdf99d7850a138f70b0e7a0b1509cafcad44"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingClosureContracts.cs.meta",
+      "bytes": 59,
+      "sha256": "f2bd3484e4a2219f3fb0f352affe6e58d480fdf65dbaf3fb295ae9d3023a5717"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingClosureProbe.cs",
+      "bytes": 39069,
+      "sha256": "cf68e7090ce682da08d6f3f42585f99c7daa43c6a4b651d536f0156b7ecb69d3"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingClosureProbe.cs.meta",
+      "bytes": 59,
+      "sha256": "f0f85d3d05cfc212fea404b85b9a0daccc68d29425c462d703a94642a8b8e80e"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingEliteForensics.cs",
+      "bytes": 12122,
+      "sha256": "01db1b986ef98ef9f4fff2d57577c171dbd9d8bf5075b20cc0b0e8739964de88"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingEliteForensics.cs.meta",
+      "bytes": 59,
+      "sha256": "73d8327cb01d0da0c4fe6e902b903d544715252dc36fdbe808074cb8faa1a027"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingFinalQa.cs",
+      "bytes": 20122,
+      "sha256": "aa78ee4fd95c19e2142da80f474f784ffb0d47b26adacbe73dedb8f3192ae3c9"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingFinalQa.cs.meta",
+      "bytes": 59,
+      "sha256": "7c95d1fd067140a597c8b7836c318c62d0703b06b7117f01077ec512a89232f6"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingFrameForensics.cs",
+      "bytes": 16592,
+      "sha256": "22681d045609138d5f5399868f4a514e538cd19709a6553d8308a74ec0296c76"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingFrameForensics.cs.meta",
+      "bytes": 59,
+      "sha256": "19cf9b63636606020d4adf15bba728a1e64893321d0ef867e4ef70cf219657ff"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingImprovementContracts.cs",
+      "bytes": 13003,
+      "sha256": "c3292f623b7c92e16db8e67f33eb80f4f0336eb1c2dc6dd5c9ba16b0b18bb874"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingImprovementContracts.cs.meta",
+      "bytes": 59,
+      "sha256": "63b47cb5eae91290c0e6d847a5542472bc0d60663f8a5667aeda60dbff07749b"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingLancerProbe.cs",
+      "bytes": 50686,
+      "sha256": "60fc65247201beeb9933b565383cfe67465f975cede24854ceafc5f8cfbcb44f"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingLancerProbe.cs.meta",
+      "bytes": 254,
+      "sha256": "0d8bed628e26613a7540385117a621d714749b33cd4b3bf553b49afeffe112df"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingPlayModeProbe.cs",
+      "bytes": 9414,
+      "sha256": "690a692efb497e520469bf4e0110cfbd6db543b0ce4fafb01bccf845ac07b198"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingPlayModeProbe.cs.meta",
+      "bytes": 59,
+      "sha256": "f0a2e654318b4d1c4ed82e13a00d3adf21118d28b9440cbd4fe6d3d8ed087f38"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingPositionAuditTests.cs",
+      "bytes": 5747,
+      "sha256": "b825111aad7a87b8d9ccefc634a1ffd3cb068a21e5eca78c5c3e96c1494e4d1c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingPositionAuditTests.cs.meta",
+      "bytes": 59,
+      "sha256": "8d9367522b1ae80a29300d94e2d56d1188d49c204311f730e0a4bc14756e983e"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingProductProbe.cs",
+      "bytes": 18708,
+      "sha256": "ddb3cc2293ac70870a35e905da9e23ae4e6cbb3f8c88efafbb792804f9325d4c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingProductProbe.cs.meta",
+      "bytes": 254,
+      "sha256": "a92eb0e7fc8820daa784ade2d92473e42da00a8d2477f4ac9fbefd60dd6dcb23"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingRaceMetrics.cs",
+      "bytes": 33942,
+      "sha256": "8cd25a516989046d2765ffd1b5fab1b1da2ced2a127c285cef65eb6ef3a75540"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingRaceMetrics.cs.meta",
+      "bytes": 59,
+      "sha256": "e3bf99c56252605e3d0f4554bb07cd5265a2ca96850e8ebe9dd241967216e413"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingRenderedPlayerProbe.cs",
+      "bytes": 5731,
+      "sha256": "20d937bafe262ed73fe86545b73ab2fe9cf4649a09f71db9397cdc20e3d9ae28"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingRenderedPlayerProbe.cs.meta",
+      "bytes": 59,
+      "sha256": "a3fa35c5d50c7e4f666c5dff5542161f740ae98e5a53545fcafd5bd39fe288c1"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingShortcutTimingProbe.cs",
+      "bytes": 3300,
+      "sha256": "bc09616f32ec078bf8009817521c1ed251d40c1fbce851d3e9af4dc6f3bca22b"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingShortcutTimingProbe.cs.meta",
+      "bytes": 59,
+      "sha256": "fa0c57e8e761977dd27e2e83a6958009444d93de6e8f95f34d17ec2fd2fca498"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingSkyHopProbe.cs",
+      "bytes": 13865,
+      "sha256": "5c6aed958d31253a7a9b4b859f67992680ceb95d562521ae8a978fc5d463dd26"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingSkyHopProbe.cs.meta",
+      "bytes": 62,
+      "sha256": "37b249c28f828d2c37672cd94ac88248f179e013393576b35fc923272053818c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingTextureUsageProbe.cs",
+      "bytes": 4277,
+      "sha256": "814147f962d2c451f872f039717d5d113f62ec907900432d4c6d26edf2967791"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingTextureUsageProbe.cs.meta",
+      "bytes": 59,
+      "sha256": "801b6883e095efe6c8f7f07f969f65715286bddc79571919fa744d5352d93014"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingVipShopProbe.cs",
+      "bytes": 5209,
+      "sha256": "b89c9d4758f4b024efe7e05a7d89c22b864dacdc812c3357bd1fbe179a5172d5"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingVipShopProbe.cs.meta",
+      "bytes": 59,
+      "sha256": "d044f0367d2d7a66bf0d44905089afd737922afc0f8f894b12b7682e254bb0e4"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment.meta",
+      "bytes": 172,
+      "sha256": "98408baa82d6d42e46009eab6cccfb138b5ec4d266419fa43c3be345878f8b57"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/CanyonRushBuilder.cs",
+      "bytes": 35029,
+      "sha256": "c38d8d028dcad29bd27ab2d0efd05de4c245d56882f6fac1046c4cc4078607f0"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/CanyonRushBuilder.cs.meta",
+      "bytes": 59,
+      "sha256": "7e776fad0fa3ed6627ddcb83431f5870ed4a8f3f5aefffd7d1a5010f66609873"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/NightCityCircuit.cs",
+      "bytes": 5059,
+      "sha256": "99f0ed2f7936c37ccc860062dc5977e8a2ea82fb5292d6a24ef9ca992002d5d5"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/NightCityCircuit.cs.meta",
+      "bytes": 60,
+      "sha256": "90f4b00de52ba0338f059ecae3f61dc02c4a57479209093a09a42c915e196564"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/RacingBillboardPulse.cs",
+      "bytes": 720,
+      "sha256": "009d82c4a0ee739363a287cb140a66ef18ad387e461519cdc3f83f7bdad9fe56"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/RacingBillboardPulse.cs.meta",
+      "bytes": 59,
+      "sha256": "06749d22e3e0b46514ce916060ca08f64243af8fdf983e9e6f11a851996c0f51"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/RacingCityBackdrop.cs",
+      "bytes": 5385,
+      "sha256": "4536b7a7958654f3d9ab95940ccc5355bc2ac38acdea974bc7445bfdec173bc6"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/RacingCityBackdrop.cs.meta",
+      "bytes": 59,
+      "sha256": "e14b76827991918d396fc51b86325702675ce85588da63df3e414d3a365bdeae"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/RacingCityPolish.cs",
+      "bytes": 3052,
+      "sha256": "00590c9cb98905bbb25fafef5d964cbe271c848271d89cd5de52b31ad10219e3"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/RacingCityPolish.cs.meta",
+      "bytes": 254,
+      "sha256": "8497ca64fe68c4b65666a2645c5a2c18e128d758686bea5181e4e9c227ed9e29"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/RacingEnvironmentMotion.cs",
+      "bytes": 697,
+      "sha256": "e2749f728a777607795d91fc711895c945cfd75d86bd6c30bc1fdbb1c65b8ed2"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/RacingEnvironmentMotion.cs.meta",
+      "bytes": 59,
+      "sha256": "2844ef1b2e8ae60f408e7ac49d09b37228fc13e082f9195c9d2c62f87db57531"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/RacingEnvironmentScope.cs",
+      "bytes": 2545,
+      "sha256": "ff08d43b4d4f03b20ed65fd4b43f64da959057f49c8bed6a968815ce502607c2"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/RacingEnvironmentScope.cs.meta",
+      "bytes": 62,
+      "sha256": "827e714d499201eaa47eda4599b23b8069db81633fd4b9da8cf0fab9d261cf62"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/RacingGeneratedMaterial.cs",
+      "bytes": 307,
+      "sha256": "c73e2572c8e39c06f2c66bcb31bf137c044497425457937490a106222bf92539"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/RacingGeneratedMaterial.cs.meta",
+      "bytes": 59,
+      "sha256": "414cef6950bdc385b483ee0d43d72167b6b52fc0ef24f2807ced8417a09ec810"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/RacingGeneratedMesh.cs",
+      "bytes": 237,
+      "sha256": "5d8d4eeea7f2a8daa3a81c02053609ebe1626ba119818fe54d979ad4efe254fc"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/RacingGeneratedMesh.cs.meta",
+      "bytes": 59,
+      "sha256": "f40831a1d0f433b6befc9f056356e445b4b36d1bb0698071951ec2068c71fa33"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/RacingJumpPad.cs",
+      "bytes": 2093,
+      "sha256": "469cb387e6373fd7cd97270eed76c9ea8f08f2424ddc1278a670d9ae74f208bb"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/RacingJumpPad.cs.meta",
+      "bytes": 59,
+      "sha256": "a927e01b290f27b5fb0d0d945ff8ac71c534b8883f8cfc04e211e913d774d0b0"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/RacingNightSky.cs",
+      "bytes": 3704,
+      "sha256": "8502116a56164041ab415d26aab6c6014b54f9289d6dc8fe7f177168dea3c7e4"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/RacingNightSky.cs.meta",
+      "bytes": 60,
+      "sha256": "7f28f201a277a3b35a6aa4f9ee4134e4ef3be323a5bfaa9094576b8fef4fd14c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/RacingSkyTrack.cs",
+      "bytes": 12000,
+      "sha256": "213150a929a5647737a21692b56c34fb0c3f40327b41ab7a6c4374651c9422e4"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/RacingSkyTrack.cs.meta",
+      "bytes": 62,
+      "sha256": "035f1671262452fcaa6d2db4e6331da792af19d3f3b497d845be46ee43f3f311"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/RacingSunsetSky.cs",
+      "bytes": 3907,
+      "sha256": "c83a47a1db4ef6e48e399bff1f8755b16e7e43754aa8b8f0413c347b7a923a16"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/RacingSunsetSky.cs.meta",
+      "bytes": 59,
+      "sha256": "5c61ef5d1c387fd31b398c7a940e88128cbc04e65f1451cb859bcec1a9ebf5d4"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/RacingSurface.cs",
+      "bytes": 367,
+      "sha256": "e6b52444d2d2959ff609925050164fd633df9d46c07a75b2da1b0bc468729181"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/RacingSurface.cs.meta",
+      "bytes": 59,
+      "sha256": "b008005ecccc9e0ab096f9afe51cbeb4b1d4c9beac1d72fa8384c0e4de35c483"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/RacingTrackGeometry.cs",
+      "bytes": 11128,
+      "sha256": "58e10df95255bb65bf80c80315d7e3be5c86acb4fb7924f956e8b062d8c889d4"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/RacingTrackGeometry.cs.meta",
+      "bytes": 59,
+      "sha256": "42c0db828096e8c3f08ad4b7ef28e9d8712bdd514d7ea424ba2a7e3e5b891abc"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/RacingTrafficFlow.cs",
+      "bytes": 685,
+      "sha256": "d22e402ecf6c02e962c4e0d62a0fb6f28752fe3c3ac67d4874ae907c90eaebb0"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/RacingTrafficFlow.cs.meta",
+      "bytes": 59,
+      "sha256": "364db6ab661c14a298f4b0c501bbbaaa1d0c325f2ffe7f3a7ba32a68584f3005"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/TestCircuit3DBuilder.cs",
+      "bytes": 10777,
+      "sha256": "8cd18935665373e7bacc5e88429cf4c39bb88fc1623786450dfdb227e8f39edf"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/TestCircuit3DBuilder.cs.meta",
+      "bytes": 59,
+      "sha256": "e70e288f5a94f789a4219ee72d7e35fb3ba8cd1fff0f2d9df13fbc67f4b012bb"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/VerdantCircuit.cs",
+      "bytes": 4401,
+      "sha256": "a99f107662da773a5056ebd34de94065a3b2887c5878cfa6d4d7251435caf081"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/VerdantCircuit.cs.meta",
+      "bytes": 62,
+      "sha256": "4d222dbefea1819cb4fae5d0d1b02ab88ec421512c6d1d357d1b4ffa6a957318"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/VerdantCircuitBuilder.cs",
+      "bytes": 10448,
+      "sha256": "04cb542150af5d7d81fb16cebb0bf193e1d2478bafc02b7109761dfd0649b45f"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/VerdantCircuitBuilder.cs.meta",
+      "bytes": 62,
+      "sha256": "7228627cc9413cd1cc71fcce21df651e6b5d9554515f50fb0a7462748a520dbd"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Items.meta",
+      "bytes": 172,
+      "sha256": "779c2edcc64454906177089672295e56190f228b7d198d18ed5d4838efe380e3"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Items/ItemBox.cs",
+      "bytes": 6499,
+      "sha256": "80ac8bdb6f12952c7b6c4d70b2a52dce36676247310b8660ffc316e9c787c1b4"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Items/ItemBox.cs.meta",
+      "bytes": 59,
+      "sha256": "4f2d262646165ffc8d52be3cbefbc524874e5a21a375be1d7000922c032daf59"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Items/ItemDistributionTable.cs",
+      "bytes": 10270,
+      "sha256": "041b45988c694e5367a5c42d400b721f9b0af0d2ed7a553c5b36687c5f48f837"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Items/ItemDistributionTable.cs.meta",
+      "bytes": 59,
+      "sha256": "114219693050a71724e09c9d27fd69d480c7955a0f034062d07efaa289976fb0"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Items/ItemEntityBase.cs",
+      "bytes": 2138,
+      "sha256": "783911c84d0f164ffef2d3a9cc926e020fbd647eab4a56de244b50a07a38022d"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Items/ItemEntityBase.cs.meta",
+      "bytes": 59,
+      "sha256": "8d7e6692a1f7a95139f2193ee28836cc6e786a92d3a04042a7519f2566d7ea13"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Items/ItemInventory.cs",
+      "bytes": 20429,
+      "sha256": "c1b30314cb10ed829483bfa8b3967d95444787f4c28e3a86c5c4969081708e91"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Items/ItemInventory.cs.meta",
+      "bytes": 59,
+      "sha256": "17abee43649480d4e0af542957fd9cdcef5803f2824379e8ab0120ad5074f573"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Items/ProjectileItemEntity.cs",
+      "bytes": 2719,
+      "sha256": "b75970fd5cf618e6594cb848800e7c2fe54ed7329d7e61f8175dbc931194923f"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Items/ProjectileItemEntity.cs.meta",
+      "bytes": 254,
+      "sha256": "316d7df54ac996eaeb457c3df7b0562901178995c67cc0dd9e552b443b363450"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Items/RaceItemType.cs",
+      "bytes": 1516,
+      "sha256": "b0cf96ab594737957836a0cacf9d3998c66a8ce7350c7f8260e6d31def3e2f92"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Items/RaceItemType.cs.meta",
+      "bytes": 59,
+      "sha256": "6e0614c17548f0517d3b781405e2aa66438ce81e33667839d66787df7c3d5885"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Items/RacingItemBalanceConfiguration.cs",
+      "bytes": 2789,
+      "sha256": "55ae1e0e47c05cb9afceefb9eadccf1ccad6831322b72e66e65b9242ab45efd5"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Items/RacingItemBalanceConfiguration.cs.meta",
+      "bytes": 254,
+      "sha256": "62beb9a084b20a0ea9f0546fec9452e0a679851817bef0e0d2f49f2532708b52"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Items/RacingItemPool.cs",
+      "bytes": 6598,
+      "sha256": "ba73f2fc6b01beb81b9b1e060cd4acc2d24586f61e78b503b01ece17b6260287"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Items/RacingItemPool.cs.meta",
+      "bytes": 59,
+      "sha256": "ef74561c7add5995b89dfc96af2d1b0b1902236f1d4b9e4287f3955ad220fa51"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Items/TrapItemEntity.cs",
+      "bytes": 4026,
+      "sha256": "3a21ce44a6a275086ecaaf0f612e93ce06c251039f5360f90ce10419ce314d60"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Items/TrapItemEntity.cs.meta",
+      "bytes": 254,
+      "sha256": "7ff467606d4bbe734d32c3b2799d3d49fe306adb46536a9e3011d1d0c24620cb"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/ML.meta",
+      "bytes": 172,
+      "sha256": "0c3ea29ed95db645780a4e4e1ecb8df456ec525d2b96885e5437d2906615d32a"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/ML/CandidateMetaRoute.cs",
+      "bytes": 1904,
+      "sha256": "1e1688e7fe6d753403c05d6b6475567859d0dee5215199368cbedb686b739da6"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/ML/CandidateMetaRoute.cs.meta",
+      "bytes": 59,
+      "sha256": "79c429419b861c1df1aea9a56101a010757bb37d39de5cac94e012b44ba9f21b"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/ML/DeterministicLegalityFilter.cs",
+      "bytes": 6518,
+      "sha256": "49a603d8af5a1e07951ab5bbdc392faf7458c9b77fa4d43c4f25b11e7bc97dfc"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/ML/DeterministicLegalityFilter.cs.meta",
+      "bytes": 59,
+      "sha256": "6cc66291684b2d82670a3f8927b7cabc5d2856ce6c5e6f0f22e0b05d8efa7995"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/ML/IRacingTelemetrySink.cs",
+      "bytes": 6892,
+      "sha256": "dcac162951fb195749db1a8245767087f02b1f9c8cecb17e9ff898fcba71efbc"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/ML/IRacingTelemetrySink.cs.meta",
+      "bytes": 59,
+      "sha256": "a61695310e91b00daa92ea9a03aa7a271a2184d583051160fc9468cf8dfaa227"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/ML/MovementTechDetector.cs",
+      "bytes": 6369,
+      "sha256": "71292d0c851a363c342b5ea5fe8c805acad64a488c1a5587601890f65a48b7ca"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/ML/MovementTechDetector.cs.meta",
+      "bytes": 59,
+      "sha256": "2b34b8a7debf151658f31e571ba4bd097730d43d71f5fad86db28bcd07280b1a"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/ML/RacingInferenceSchedule.cs",
+      "bytes": 1716,
+      "sha256": "c75a185cd29eb7f57caee1ec3a8c73626207ad1420063f403fe93ac6d7a6b149"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/ML/RacingInferenceSchedule.cs.meta",
+      "bytes": 60,
+      "sha256": "5831a23487ac6ea42531d2a3a26ac6387b05e44ae6b56f1f2c8c5333a7509430"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/ML/RacingMlExecutionPolicy.cs",
+      "bytes": 1044,
+      "sha256": "68460c6d1bf07513d3a5ffa0dac1ce5140c8eca5ad999a306cbfd7c4c9dddeac"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/ML/RacingMlExecutionPolicy.cs.meta",
+      "bytes": 59,
+      "sha256": "122a12e3145b8a3c5740e346f2f0d36ad62dde191cd280af2e7f7e03d46f9c7c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/ML/RacingMlInferenceAdapter.cs",
+      "bytes": 19298,
+      "sha256": "bcc28f991b8ca3a98caacda1f64e94a553faa8462d22cfc0fbe043623e8bb11b"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/ML/RacingMlInferenceAdapter.cs.meta",
+      "bytes": 59,
+      "sha256": "b457aacd5639074928e171a2a776d856a3ea0281ca6721f96b5777decf47dabc"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/ML/RacingTelemetryFeatures.cs",
+      "bytes": 6026,
+      "sha256": "964ef6b5da785e25226bd93f47f9344cbdcd59f77c037d656d0ef3daadb8e5b8"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/ML/RacingTelemetryFeatures.cs.meta",
+      "bytes": 59,
+      "sha256": "e1eef08b1051d64cf4bacbc66e2e1726a1e5229f8e734382480d0428e9624dab"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/ML/RacingTelemetryRecorder.cs",
+      "bytes": 7879,
+      "sha256": "017aca21fccb8e3b966ba93b94aaaa2d133b9470d5c34dbb10ee32e0e5268343"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/ML/RacingTelemetryRecorder.cs.meta",
+      "bytes": 59,
+      "sha256": "1263e1467354299b3bd469ad82da47c805ddc8ad027e1075b29d2e642274b99f"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/ML/RacingTelemetrySchema.cs",
+      "bytes": 5382,
+      "sha256": "b3bc7b792d742321833d4fb7a18fe5c48e85ae77839e98feb333247fa8808765"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/ML/RacingTelemetrySchema.cs.meta",
+      "bytes": 59,
+      "sha256": "f2ce5fd7619944da2b4e1d400da3ce3d0e7a36df262f952454ef165f27c3717e"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/MMR.meta",
+      "bytes": 172,
+      "sha256": "be84ef7e2d3ad75a9a29215f267d9afd4921a55009f9f4b31692f0726a0bd13d"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/MMR/CompactLeagueBot.cs",
+      "bytes": 11993,
+      "sha256": "d82065041bbb5dcd3d229d1e98f30a65d122eba07f27fa40aa3dccb44815b82a"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/MMR/CompactLeagueBot.cs.meta",
+      "bytes": 254,
+      "sha256": "cc9d275dfabf3127fe60914dad3533216deb0622db50d328befa5498166fe501"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/MMR/LeagueRankIndex.cs",
+      "bytes": 4824,
+      "sha256": "2fa18dd224673af4ef760ff3a7fb0b9b00f6de20ae899c6270a61ea0f83ebc7d"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/MMR/LeagueRankIndex.cs.meta",
+      "bytes": 254,
+      "sha256": "96bf594ea0078d35cf4b20f7f970bf1c817510c6b1c456b6313ff72a90374f2f"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/MMR/LegacyLeagueMigration.cs",
+      "bytes": 6941,
+      "sha256": "0d50cb905c625323f18d76baa8895f1b1b2058f92c8f687399530d0e9df0698e"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/MMR/LegacyLeagueMigration.cs.meta",
+      "bytes": 254,
+      "sha256": "197c2b941df568afec1ab972940187e4dd4f0d0134c298632128de7514e790b8"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/MMR/LocalLeagueEngine.cs",
+      "bytes": 17231,
+      "sha256": "5de4ea91fc0bdf55aecc96d7c12b7b3ab02657dcadd3ffa2ad390f7797eff0f1"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/MMR/LocalLeagueEngine.cs.meta",
+      "bytes": 254,
+      "sha256": "67a30391c77be480b2f517ba50013db365d2a10289009604b9c5ceb57933e418"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/MMR/LocalLeagueState.cs",
+      "bytes": 10702,
+      "sha256": "aa3b15293cb1d12a41c2771f43fe7b2b8c1f27f1dd733660d40d847f1db3086d"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/MMR/LocalLeagueState.cs.meta",
+      "bytes": 254,
+      "sha256": "d110b9a6129fcd2d2d7516e6feab54d41eccb3e89c3a5e1c7708c3421b55e99a"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/MMR/LocalLeagueStore.cs",
+      "bytes": 26169,
+      "sha256": "a38a32faf8129b29f7862c975625ce1425f9011a4b90cb1db821dd712e747a09"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/MMR/LocalLeagueStore.cs.meta",
+      "bytes": 254,
+      "sha256": "0f0f076bc4c3f8e9599fb7aa60a360b238d1a308715501c79e9838f40dc8151f"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/MMR/LocalSeasonEngine.cs",
+      "bytes": 7500,
+      "sha256": "3048e42653b4d9c5ca6febb06054bccbb5a0bc6a28613cb2db7a5772a688380d"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/MMR/LocalSeasonEngine.cs.meta",
+      "bytes": 254,
+      "sha256": "23acefae2ada5ddda8ef48fbbb47d09facb0d1011c330de26917689130212c10"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/MMR/MatchmakingService.cs",
+      "bytes": 16069,
+      "sha256": "e1e1f1f06da5aedc545d8b5f86966597d95f67752f68ba13f27ca7fec8bdcf1c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/MMR/MatchmakingService.cs.meta",
+      "bytes": 59,
+      "sha256": "3273baa1da1217b2bde7d1f4d492fd7f8f66b911d16d22ff0479ab63aa39fec5"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/MMR/MetaProgressionConfig.cs",
+      "bytes": 6458,
+      "sha256": "dc16b4038362400dbe54b7d504ba22f5e185e08dac50ce37606d814c070ea1ed"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/MMR/MetaProgressionConfig.cs.meta",
+      "bytes": 59,
+      "sha256": "992f6d3ff2754da456095a8df063ae563a92dce78df277ac7aa98fb13a4d5a28"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/MMR/MmrSystem.cs",
+      "bytes": 3789,
+      "sha256": "da1b3be19dca0eccfe3ca9f1f5c086c5bf5fe5e12df2b0168806c12a7007778f"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/MMR/MmrSystem.cs.meta",
+      "bytes": 59,
+      "sha256": "e36efdde2f96bafbe4a98f5db0966a728bf617c8fec5d69f1005254ebf224d70"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/MMR/MmrTier.cs",
+      "bytes": 2337,
+      "sha256": "802ff1e74b9220ddc277fb9ee2d1ef9975a9ce0288191b2e8c8a8f80cc200f7e"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/MMR/MmrTier.cs.meta",
+      "bytes": 59,
+      "sha256": "883993fcde354f9abb77e9ebc67e5026aa019c96ac6ccaf152903da2a3c6a895"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/MMR/RacingProgressionConfiguration.cs",
+      "bytes": 363,
+      "sha256": "ebbd116953f156ae6217159d8a98bfd3d6cd53f57ab88c05d7b907024e441738"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/MMR/RacingProgressionConfiguration.cs.meta",
+      "bytes": 254,
+      "sha256": "e89dd88ee57a5fdf33b0d9c3eef2f85431cfbd847540b0c8e8dc5acc3a6ff1ec"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/MMR/RacingProgressionHost.cs",
+      "bytes": 2672,
+      "sha256": "3b6b0c0151d49c463ad174d8cf3e879a6f105e318149874689dcd72bac0dbb23"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/MMR/RacingProgressionHost.cs.meta",
+      "bytes": 254,
+      "sha256": "f4c63ac114bb5e2aef06a5e7979607283c06b4a3c4607e06aa148d5326f5a2b5"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/MMR/RacingProgressionService.cs",
+      "bytes": 27956,
+      "sha256": "6e58ceddc68c9f305aac13f2cfd332e29118f63c71726c79b5af2773f14f0189"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/MMR/RacingProgressionService.cs.meta",
+      "bytes": 254,
+      "sha256": "682d40d1d19663f9b63c477168f1e0a2c481c63eb09ccfd92ae3d3037d9dec81"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/MMR/RacingTitleCatalog.cs",
+      "bytes": 10076,
+      "sha256": "cca4745b6821e96cbce5f32287c90765479ca36b0c11ff22021e6d4b2a9daddc"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/MMR/RacingTitleCatalog.cs.meta",
+      "bytes": 254,
+      "sha256": "14556257d4a9e24e64914be4c4132bc12ec6224e502ec1b5a147417a9b6c6125"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Presentation.meta",
+      "bytes": 172,
+      "sha256": "a1aa1f1ca823a75888dd09a0c03cf6b3488d5374ab41dc50fb4998ea2b26adc7"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Presentation/RacingAnimatedPart.cs",
+      "bytes": 190,
+      "sha256": "df98ca942c08e3e3ac9a71a27e114ee853a0e221e068a75341924872b9f241ba"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Presentation/RacingAnimatedPart.cs.meta",
+      "bytes": 59,
+      "sha256": "bf1820a459dfe9f2c52f798fbbf1462be47124206505041122282e55fbc01d5b"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Presentation/RacingCoinArt.cs",
+      "bytes": 4105,
+      "sha256": "dd1eaa8594c27f54287334b0e67d73b15e372954f2e506764a0cf7311b4c5a7b"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Presentation/RacingCoinArt.cs.meta",
+      "bytes": 59,
+      "sha256": "53d761e15bb7ab53d71a4b1e18b7a2c53323951ee22742df7a5ccaaf95993b57"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Presentation/RacingDriftFeedback.cs",
+      "bytes": 1336,
+      "sha256": "76cacf7a0164deedcb6dbb5984c1b428588e6375fb40d34a2a9dd5a51875e095"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Presentation/RacingDriftFeedback.cs.meta",
+      "bytes": 59,
+      "sha256": "5e62fe367b325c8fecf8e29c73964b21d20f89ba9771b83cea51669ec67b79d6"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Presentation/RacingItemArt.cs",
+      "bytes": 9920,
+      "sha256": "83d312514fe196e96a58f901d0465c85e2e12392e814571da98949ca4b2751f9"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Presentation/RacingItemArt.cs.meta",
+      "bytes": 59,
+      "sha256": "48ec6951dd67ff543658c5ca8edd67c61e290128f47d26517e7adb1b487d1424"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Presentation/RacingItemVisualSet.cs",
+      "bytes": 2482,
+      "sha256": "6580e0bc849d9fbf35b13a3f56dc3e15ff70fdd1666344154d2193881514b870"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Presentation/RacingItemVisualSet.cs.meta",
+      "bytes": 254,
+      "sha256": "e0ae09b3d7699577e95ba90c8498c108cb94def52d48447bacb4c50b911514e1"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Presentation/RacingLancerArt.cs",
+      "bytes": 2916,
+      "sha256": "f13e7f862028fc88b2161ec1574a7fe8f77e027e151e5bf198e908682d65ac00"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Presentation/RacingLancerArt.cs.meta",
+      "bytes": 254,
+      "sha256": "c6426ba3163cfd63b21e6d519770b0f0c74d27e7aed66bbe9b6ba99b9008ab0d"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Presentation/RacingLancerVisuals.cs",
+      "bytes": 3282,
+      "sha256": "d1a97dcaba6e231041c4bd65e75a776ef0652dbfebb89bddb064bfe3552ce7c7"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Presentation/RacingLancerVisuals.cs.meta",
+      "bytes": 254,
+      "sha256": "278be4f00deb1026148747041aba423d75c0f723f58f55777b7b054e84544d73"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Presentation/RacingLoadoutVisuals.cs",
+      "bytes": 2299,
+      "sha256": "2f79bbabbf03969406b4473a5bb7fec64d515e3fb8c57d64e845e3693c57bf79"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Presentation/RacingLoadoutVisuals.cs.meta",
+      "bytes": 254,
+      "sha256": "2ddd846b0ea255d46c9bc5cffefb3bd5ef22e0ff8d385473102095c4c7f2cb45"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Presentation/RacingMetaVisuals.cs",
+      "bytes": 16933,
+      "sha256": "ebcc8e49d338ef07abae4eb94b096a2ce28d44054eacc988b3df7793735c5633"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Presentation/RacingMetaVisuals.cs.meta",
+      "bytes": 60,
+      "sha256": "49905d23a39f6ee7228e04cdc834a5e64cdff87f72cf54148bec8c36b5144262"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Presentation/RacingQualityScope.cs",
+      "bytes": 2830,
+      "sha256": "89f4b394e084887c5b608e785e4f7ec05cfc03b6a26b09a693e194f667ac05d1"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Presentation/RacingQualityScope.cs.meta",
+      "bytes": 59,
+      "sha256": "7750b7df13ab5946ed467acf4365270af7d2cd8a25541856acb38da92270d17e"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Presentation/RacingVehicleFactory.cs",
+      "bytes": 3842,
+      "sha256": "060a38c851112c03865b8adc45cd3d395366b7acbf67690983f1b49db0c66b5a"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Presentation/RacingVehicleFactory.cs.meta",
+      "bytes": 59,
+      "sha256": "357f39d38ff17198804226f241b8209b50cfa99a9eca644ee4c3206d84954428"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Presentation/RacingVehicleVfx.cs",
+      "bytes": 5385,
+      "sha256": "7f2342995c90c5014e4783de6c4356921ead921a62d17442b509c3de204f9cae"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Presentation/RacingVehicleVfx.cs.meta",
+      "bytes": 59,
+      "sha256": "4b6261926052e3f8181ca580d51a2806305dd64fbfd6c2aa2452f4f83e4fc3cd"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Presentation/RacingVehicleVisuals.cs",
+      "bytes": 36432,
+      "sha256": "ace493a6d430bcb2b0f651388520f164a58fc8cb17a0d2484a78c1183b88762f"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Presentation/RacingVehicleVisuals.cs.meta",
+      "bytes": 59,
+      "sha256": "47e18f6fba531e874ee0087edae1887a548febed6acc1c8404082e245f654081"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Presentation/RacingVfxPool.cs",
+      "bytes": 2748,
+      "sha256": "cc56318896338000d2844aef55c5f06381b88cb9f3da79f620629e6d038bf3a0"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Presentation/RacingVfxPool.cs.meta",
+      "bytes": 59,
+      "sha256": "719eb856300aa1f624a258d7b7f2c052466b06b299b84507157e53e5066d7177"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Save.meta",
+      "bytes": 172,
+      "sha256": "50c45a070087ba326c932a0fce1866f827fdeb5f2264ff45b8ec4f8d95330b79"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Save/RacingSaveData.cs",
+      "bytes": 6397,
+      "sha256": "5474126bc234722163c734ae5128ff32ecc77050933eb5477af180c1fd377226"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Save/RacingSaveData.cs.meta",
+      "bytes": 59,
+      "sha256": "4597f825910649e6cedf7e214cf8783b8dd415ba68ff65b4408dd34011f67acf"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Track.meta",
+      "bytes": 172,
+      "sha256": "5c56f4a143fcf3c453da7c9fe4ebdc785f228f057733a2887c6700405b4537b5"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Track/CheckpointTrigger3D.cs",
+      "bytes": 2351,
+      "sha256": "717a8c213a23ac8e089db93dfc51e32eda89fd9a595b134bfc8805560c38a43f"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Track/CheckpointTrigger3D.cs.meta",
+      "bytes": 59,
+      "sha256": "46064334f90836a68124943d0132b38d00df4b9e1c2965138aba9c90ed8f0594"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Track/RacingTrackInfo.cs",
+      "bytes": 690,
+      "sha256": "eea05ce80a5a9940b5700478aa0e413b776bf95aeb8b29c6f4590796f97dbb86"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Track/RacingTrackInfo.cs.meta",
+      "bytes": 59,
+      "sha256": "4af4fc34f4fe059c938c0f05661a3d1798e58e3395c6e33a3bdcf60072481696"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Track/StartingGrid.cs",
+      "bytes": 2410,
+      "sha256": "4bc6f3efb23847a3d6c5a2887d85b70d929bbbcb3cef546f55d47649d619291b"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Track/StartingGrid.cs.meta",
+      "bytes": 59,
+      "sha256": "99016c03646304bcb1cc3942c431899beb7d61241c8f80aa5c766d1275666da2"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Track/TrackNode.cs",
+      "bytes": 1759,
+      "sha256": "0a64a97e4c01073a398abd68eddc7d6699c95909ef9135f967aab7bc2fe277a3"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Track/TrackNode.cs.meta",
+      "bytes": 59,
+      "sha256": "319bbaf5da53d086a53d578d7ed22d93009871396fe43f277135c89444c26fe7"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Track/TrackProgressTracker.cs",
+      "bytes": 18188,
+      "sha256": "729d058f8ddd34d5b8a8944391aa6364f83fb059d7755d39fd439d3ecb1247fc"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Track/TrackProgressTracker.cs.meta",
+      "bytes": 59,
+      "sha256": "deeca1c89c0525c24e5274a7cbd87ac45e1a3a9fed3c170be5877b99c76493ab"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Track/TrackShortcutZone.cs",
+      "bytes": 1818,
+      "sha256": "47284e2a7c5eb359928786f28765dc6f0d893ef22d0b09bc3bc9d195572d1ada"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Track/TrackShortcutZone.cs.meta",
+      "bytes": 59,
+      "sha256": "36d4ff85d187b51648fea3e968f9454ca50ea8000b6dd1e59b3e1e81c8448957"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Track/TrackSplineGraph.cs",
+      "bytes": 9816,
+      "sha256": "319ee7e4d8177edf0c7ae8ca3ed8cbed84f759fafccf3324f8b48896053423e5"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Track/TrackSplineGraph.cs.meta",
+      "bytes": 59,
+      "sha256": "45d4537b5e7b3ef87dc3b1916b5f0a70bc7531c1be656f86e255ab93875b06fb"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Track/TrackSplineProjection.cs",
+      "bytes": 4444,
+      "sha256": "c9dc0784726fedff1a541a1519934fcfcc1c621615f85ad1cf12344c6cd76592"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Track/TrackSplineProjection.cs.meta",
+      "bytes": 59,
+      "sha256": "26284438f0d8a4ee88a0501b13097de0e7b13a630aaa6506cbd3efdcbaeb9a6a"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI.meta",
+      "bytes": 172,
+      "sha256": "9dfc292a79973d784a4935dfe54c6fdd8e302313028f346733e47d617e85e5a8"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingButtonMotion.cs",
+      "bytes": 1861,
+      "sha256": "e1603899dfe9159f1670f69b127b0a328e94f1dcaab267ed92df04396cc08969"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingButtonMotion.cs.meta",
+      "bytes": 59,
+      "sha256": "862be0b70bc31d07e40d0be87a48f5d512aa59f1d0fa25fbb67828c5826f539c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingCircuitTrimGraphic.cs",
+      "bytes": 819,
+      "sha256": "e54f8b472414b229cdf449769903e289e3083f074a359bda72e31ed249dd50a9"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingCircuitTrimGraphic.cs.meta",
+      "bytes": 59,
+      "sha256": "2f27d07712fdf028654f2d54147231e8a8ad7d69e7a6a8427a4fc1a736eb0989"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingComboThumbnail.cs",
+      "bytes": 2932,
+      "sha256": "80a1224e656271562307a07c26d97f4cf6692b14d8d0fd7d91060efb64ee7b0c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingComboThumbnail.cs.meta",
+      "bytes": 59,
+      "sha256": "c925e1f6a4512e8a0017cb6b150b968131f2e747fa3d4c9c4ae96e6bfd0e7ad1"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingComboThumbnailCache.cs",
+      "bytes": 11228,
+      "sha256": "5656601b1b17f0b0c18a8fa4c9349a51766feed94eaaa8ae351f18129c60b4fb"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingComboThumbnailCache.cs.meta",
+      "bytes": 59,
+      "sha256": "fe8d4984d4fac9d7177385e2ace6256add7f67b1f631214501cf6e3818e0ec1e"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingCoverInteractionMotion.cs",
+      "bytes": 2887,
+      "sha256": "f2f764f1cac8ed52bc93c6e3838e654bcc529826562659e15d1fd10e17f1329e"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingCoverInteractionMotion.cs.meta",
+      "bytes": 59,
+      "sha256": "e5be1c6765c5092d51c95099437a746a44fb611171bda67be674f4ce448d5714"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingDebugOverlay.cs",
+      "bytes": 5756,
+      "sha256": "ffa73750447f585786cc09db60f9e78d1141627c5f6609a7bd52f19645d74c9c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingDebugOverlay.cs.meta",
+      "bytes": 59,
+      "sha256": "b3ca519ef7af6d4a3b64491c6c9538a177f76f8ce90780db9e31acac3931821c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingDesign.cs",
+      "bytes": 9250,
+      "sha256": "457555a3b3ac2b55a2f8d21a6d4d63471c9e9ffc8fcec41d727b50e260a59c64"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingDesign.cs.meta",
+      "bytes": 59,
+      "sha256": "9f69cf954fa0a71a67ea90475cf6b673f8897cf068463763269e506b64e415bb"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingDisplayGraphic.cs",
+      "bytes": 2508,
+      "sha256": "5ec3e5ad19473a93e4515b53e23975064935695c12f85553fdc3d2e5d92522fd"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingDisplayGraphic.cs.meta",
+      "bytes": 59,
+      "sha256": "1baaf8ddc7de642fd7e7b6d0127481c01a1136a0f62b4975c02139baa4022ca2"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingEmblem.cs",
+      "bytes": 6994,
+      "sha256": "0ed22ea7ce714ed821e68bbfcd1672470f0aa8b0c3fa287646e06acb969fc627"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingEmblem.cs.meta",
+      "bytes": 59,
+      "sha256": "4b37f9c86bcedc91eea9934db775954d60962bd7b82071db8c786de620af0cfb"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingGarageUI.cs",
+      "bytes": 10317,
+      "sha256": "29b85f33f14fe57f93554a60d0b843bcc73c76a8ee5de760944401f8473052e5"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingGarageUI.cs.meta",
+      "bytes": 59,
+      "sha256": "b2f208e3fe5eedfae521296a33c861f06bd2b0d283302df2cea8327ca3ed6e3a"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingHUD.cs",
+      "bytes": 18974,
+      "sha256": "4ce24ddf88269d2b18d32e1b2e29f5bb6eb2269f83283d72943c42b24d96a140"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingHUD.cs.meta",
+      "bytes": 59,
+      "sha256": "42fa2a933f35680c5bae9b82729210d7facd4ff1e7929267d851f6e7240bf725"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingHistoryUI.cs",
+      "bytes": 13284,
+      "sha256": "1f70b75bc2b816115f0ca9c8bf7107b5a4fb5e8fe1eb55d01c818b2f6c7708e1"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingHistoryUI.cs.meta",
+      "bytes": 59,
+      "sha256": "85d52bd89d5c7873969791a8ce26082c280ad0839d124bc2d2686ac67f767ccc"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingHoldControl.cs",
+      "bytes": 762,
+      "sha256": "503ff78a63a097b41e482848c2e69e49ddd26bfa482ca89d54c87daf866e574a"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingHoldControl.cs.meta",
+      "bytes": 59,
+      "sha256": "4a412e003efad4f36541b2a3192ebfa67afb0d243f4616a32cad21bb9efd1168"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingLeaderboardUI.cs",
+      "bytes": 10196,
+      "sha256": "a53b5ae07d954ad3de27a5170e56939c3eea62575949f5275344ef1f19e0ff8b"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingLeaderboardUI.cs.meta",
+      "bytes": 254,
+      "sha256": "f007ec6b8a88871fcf38748667d76559d973f563160fe838f1eac7799382745a"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingLeagueDiagnostics.cs",
+      "bytes": 4126,
+      "sha256": "3c9684335a4c5c212cdc7d9d623d70cffa77fde888b4a74f760e5f2a0cea42fc"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingLeagueDiagnostics.cs.meta",
+      "bytes": 254,
+      "sha256": "d5a50e702c8abcb13fe06dd664f5e14cc7bc693791e87f876a61b1d818ce16d2"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingLoadingCarGraphic.cs",
+      "bytes": 2964,
+      "sha256": "baa521d32e7027d08a73d76e053c6c5e9309bbece2e04579ca561089a904727f"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingLoadingCarGraphic.cs.meta",
+      "bytes": 59,
+      "sha256": "d1b638a399a65da9862ce4583123543d2bf823bd2a2155ad8e53c1fb5bec8d10"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingLoadingScreen.cs",
+      "bytes": 4655,
+      "sha256": "561642cadff72f38dcd62bca626e4a4e5d2bb4f54f405f54427ecb5806723da6"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingLoadingScreen.cs.meta",
+      "bytes": 59,
+      "sha256": "aacd6a9acea720bea9d0963dd54f4ca44815058191f9d79662016dd3aa3f3542"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingLoadoutIcon.cs",
+      "bytes": 4053,
+      "sha256": "105092d31a0c7b41680db75f771d5a720298b7156a6b56eb3e4506a32d08e75b"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingLoadoutIcon.cs.meta",
+      "bytes": 254,
+      "sha256": "5916ab27d1f44893415cdb956b11d2f134ffad6f2217da05771beeff0877b4ee"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingMainMenuUI.cs",
+      "bytes": 14797,
+      "sha256": "854417f535a157d479058c44df28409214ac617829e6cb934361183d1be27e94"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingMainMenuUI.cs.meta",
+      "bytes": 59,
+      "sha256": "b5eb37f92a280e7e8c259465b9c6c8852f4c309585b2642b62a16ef3d4164195"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingMenuOverlay.cs",
+      "bytes": 635,
+      "sha256": "7c64c2fb754287067ae002a5487ceb8da26d6c27916bce25457e0c1d1c290057"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingMenuOverlay.cs.meta",
+      "bytes": 59,
+      "sha256": "bd03e1b9ce4bbea0d82b26ed15063fffd74fbef0275d2a3247f1542d6c2586b4"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingMobileControls.cs",
+      "bytes": 3690,
+      "sha256": "cf6c13323bc985350d1101a5c4de1f96cc31f9b1678c3608d727ab187c7d0a5d"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingMobileControls.cs.meta",
+      "bytes": 59,
+      "sha256": "52a149e2ba966605197ec29e60c45bf5db3ca009c114db1845b8bd1c7160732a"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingMobileTouchButton.cs",
+      "bytes": 2599,
+      "sha256": "79d17748c07c439182a68f6c03268a9c157f2331ec7570197d7c4acb2d96b195"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingMobileTouchButton.cs.meta",
+      "bytes": 59,
+      "sha256": "bfb1ef9b67112fd91eba10d545a66805275a3336c5812be9eaf3cf217ac3729c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingModeSelectUI.cs",
+      "bytes": 11304,
+      "sha256": "a989a19003e4702e9aa585058d2b16a5d18149380c8c0aa0c25a5fbe3b1c923f"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingModeSelectUI.cs.meta",
+      "bytes": 59,
+      "sha256": "2f1e82b40fd5eedce9413a7a9d8ce2e5c0f5f8f52f46b9b1ba7b9880092ca403"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingPanelGraphic.cs",
+      "bytes": 1054,
+      "sha256": "abeb1f6b472079369ca88a5dad44e9d646a1f73f61a3d07c11b027db5706fa6e"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingPanelGraphic.cs.meta",
+      "bytes": 59,
+      "sha256": "f99047062c5ba50829383292b52b1e637d71658e361630b9bc1e087e5799c5b4"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingProfileUI.cs",
+      "bytes": 6303,
+      "sha256": "0002c6aaafaa7bd3a8159b4cf360f90d48afa21240966aff1a13dc323484a04f"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingProfileUI.cs.meta",
+      "bytes": 254,
+      "sha256": "be81b46e5014a35753d78de5769408430a6a51f949937b2b5b26371206670905"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingRaceMap.cs",
+      "bytes": 3098,
+      "sha256": "675d7d58b0a2db103925d9bb8a5de8d077781f810e8f97c9c34d9f7db79eb341"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingRaceMap.cs.meta",
+      "bytes": 59,
+      "sha256": "c5638a1e85c9d316c307fbbc05eb029bea5daa1b35b5d258f05d682310e9badb"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingRaceMapMarkers.cs",
+      "bytes": 2200,
+      "sha256": "bc8187c39e4b85fd98b11f2a790b2ec072d124d60cae086f47a85561cd9e61d4"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingRaceMapMarkers.cs.meta",
+      "bytes": 59,
+      "sha256": "7c08892962633303502a3767e1ca077f328ab7d97b217f9076dc247fa1831a66"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingRankBadge.cs",
+      "bytes": 8584,
+      "sha256": "630c2d44057bd9a253efe8040eb0c80839cc6b237d568cdc3daf309b96e4c8fe"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingRankBadge.cs.meta",
+      "bytes": 254,
+      "sha256": "d4e11927e873145958aaf7e8131c1f6a107200a3027d9052845cdf9079b9f611"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingResultsUI.cs",
+      "bytes": 10510,
+      "sha256": "791069601f4b3f7b48e7a2e92842ebcff94b83d6abdea57edf6efcf274ddcf95"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingResultsUI.cs.meta",
+      "bytes": 59,
+      "sha256": "76faf367da5a4189eb7e2422b13d8cfd960f2a97d139d9d23a8d9230192fde0c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingSafeArea.cs",
+      "bytes": 935,
+      "sha256": "fe85f95df0f0c578e01d8a318b3263eaa84a38ce812e4b15b904d633b5af791d"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingSafeArea.cs.meta",
+      "bytes": 59,
+      "sha256": "6202041d8c5fb6fb096b465da18bf38eb4845d83ad082b6e1ae8425068ad0559"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingScreenMotion.cs",
+      "bytes": 749,
+      "sha256": "8b1f6177bcc4f41e58b85ad6ba96f4c2730710ba9283228bf6d28bc5eeb717a6"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingScreenMotion.cs.meta",
+      "bytes": 59,
+      "sha256": "c4be17d786c46a1bbf7ffee6b1879c924c0df9110d829878c27e5bfd899796dc"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingSeasonUI.cs",
+      "bytes": 6589,
+      "sha256": "7168b1198962551b6db9fdb4b4983e907d61548e62ffa5dce3cf77cea591a0df"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingSeasonUI.cs.meta",
+      "bytes": 254,
+      "sha256": "5cb74d266a91049798b3277d294688b0b1556a4256f643aa00dac465afb44587"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingShowroom.cs",
+      "bytes": 5730,
+      "sha256": "c18f343e9ed95b320ede64861933c91ff3beb50683b7f454def8be9a8269b5ff"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingShowroom.cs.meta",
+      "bytes": 59,
+      "sha256": "afa59bb898be8eac8a064bc670e63d2103b551d3544f9ab6ee332171a5a245ef"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingTitleView.cs",
+      "bytes": 1470,
+      "sha256": "bd903de33f6e36e0570623b037e3918ab21b826aca09d1627ec950aa29f56b6a"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingTitleView.cs.meta",
+      "bytes": 254,
+      "sha256": "a016abc09d3147b58ffd1cc9dce2975e0d574610e4d6843f8d9b12fc43cd8c3e"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingVirtualJoystick.cs",
+      "bytes": 5534,
+      "sha256": "4f7d0cc8f30e92b1d4b93c07888956164683ce2de70f32c2c99704f37485f21d"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingVirtualJoystick.cs.meta",
+      "bytes": 59,
+      "sha256": "f1c72de1355264de2323026981c78dafbb5d8b64c22399b5f36d5cf08ff9a55b"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/SeasonHistoryDocumentSave.cs",
+      "bytes": 4710,
+      "sha256": "0b296554e40b35b6280f049817bcbe2549a260c327c95a49e41a4ee57a3859d9"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/SeasonHistoryDocumentSave.cs.meta",
+      "bytes": 59,
+      "sha256": "9653614e407922c9030d551d8bd2546d9715f9a1929aae9338aeaac513211cdf"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Vehicles.meta",
+      "bytes": 172,
+      "sha256": "c2579fff2f190c2c81ed15dd95565b42c13e10db2e6cb12bb899211caeddfcea"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Vehicles/PlayerRacingInput.cs",
+      "bytes": 10467,
+      "sha256": "256f895ab92e0e0afac4d830779d0e49b3b32664b770c4fccb49403a208a5619"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Vehicles/PlayerRacingInput.cs.meta",
+      "bytes": 59,
+      "sha256": "230b34fd1245e340b481054f73e71c778534e97edef71e2d7ec8354d7ee5c327"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Vehicles/RacingMiniHop.cs",
+      "bytes": 2531,
+      "sha256": "5769184bb0e2ac6213af0d4f89252bf6d2716522875651c827884b03207e6f00"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Vehicles/RacingMiniHop.cs.meta",
+      "bytes": 62,
+      "sha256": "3fc3a92e8d2f7fd84899e3e4148a6f2bf7a0fb5d81537c4568533f31ce483592"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Vehicles/RacingStatsCalculator.cs",
+      "bytes": 11016,
+      "sha256": "de36f3a93750a3e6823c4f1219fc7c6ae1bc8a21ba3d08baa8b8209c65ef0ee2"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Vehicles/RacingStatsCalculator.cs.meta",
+      "bytes": 59,
+      "sha256": "ea2f7b256eb6530d1627d96ae96494539ff8fdb2be1fd44f234d31030cb3b9d0"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Vehicles/RacingVehiclePhysics.cs",
+      "bytes": 32252,
+      "sha256": "2d4fdaba07b6de6704afc23d7288c7387890cb58fa5a8ed880ce3feda540160d"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Vehicles/RacingVehiclePhysics.cs.meta",
+      "bytes": 59,
+      "sha256": "a10a9557e5c31c5b3c3a65ab740eb83e388bc5583192371b8575b5eca80fa3d1"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Vehicles/RacingVehicleStats.cs",
+      "bytes": 3199,
+      "sha256": "f74e407319d725f84277e57b3e5155e89027b09fc36b26462eaef13fd1efbaa1"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Vehicles/RacingVehicleStats.cs.meta",
+      "bytes": 59,
+      "sha256": "7024f62a17d33a4c80d4464ed9c10a5402b6e705b5bdd7cc80faa183fc144870"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Vehicles/VehicleCommands.cs",
+      "bytes": 1680,
+      "sha256": "2d1407d271faa588075ac575b017ec09f966ea2ffccb7498a2384d639744e50f"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Vehicles/VehicleCommands.cs.meta",
+      "bytes": 59,
+      "sha256": "76cbabc07c7672065d5a86cedbe4cc1f3519b8236201b6e34ff063a4e80a84e5"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Vehicles/VehicleRecovery.cs",
+      "bytes": 8391,
+      "sha256": "0f0466a488bdb92cd95503553c0967657f04e6f960f262a50245285403a8da6c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Vehicles/VehicleRecovery.cs.meta",
+      "bytes": 59,
+      "sha256": "917371b8076efd3c9b970d7ec56bd789008fb2012d159e184de8964b184a682a"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Vehicles/WheelDefinition.cs",
+      "bytes": 570,
+      "sha256": "157d25f62ce620a49b50793d46082cf840bc607848d0d572033aa01314537e3b"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Vehicles/WheelDefinition.cs.meta",
+      "bytes": 59,
+      "sha256": "74441162ee72d58c5bebeec857229a42ea1a640bb253607ad65ac75675b52255"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Road.meta",
+      "bytes": 180,
+      "sha256": "4404c893f7b3e639f26bac3b1922af4f157d39d665c5535aa25c650aa0e01303"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Road/RoadChaseCamera.cs",
+      "bytes": 3784,
+      "sha256": "f4412ffd47aac770a84c4badbb372d20daa019994af978c6cde31a8968779c8d"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Road/RoadChaseCamera.cs.meta",
+      "bytes": 60,
+      "sha256": "c5e62859467f78bc11120e7bcfd5150bdf886601e80eb6c9fc4d07c053b8c9a2"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Road/RoadCurvatureProfile.cs",
+      "bytes": 781,
+      "sha256": "0fbb761282ea687fdd298c62f9eb2a4337cb68d1f25aafdcf43dc49ed1916fd9"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Road/RoadCurvatureProfile.cs.meta",
+      "bytes": 60,
+      "sha256": "95bc5fbe803b57deac8af57c342ed89f47feec1d16a3880004e8cecee7a73074"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Road/RoadMapProfile.cs",
+      "bytes": 1695,
+      "sha256": "752ef0e3683428ac1fd80a4a8d6746913c948c8c2105eebd259a73ae28fa078c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Road/RoadMapProfile.cs.meta",
+      "bytes": 60,
+      "sha256": "706f51c8fe4376640bed1743c465dec368d309a374ab46c30bce450531ccfee0"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Road/RoadTrackChunk.cs",
+      "bytes": 5692,
+      "sha256": "f84f719ecb3559203c96f29854018075df62a5b87d643e39dbc558f0a746bb07"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Road/RoadTrackChunk.cs.meta",
+      "bytes": 60,
+      "sha256": "6a96472d7c3ee102ed78da945c61f48f1e1f2421b4b061d1a4cd7d755d9305d4"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Road/RoadTrackGenerator.cs",
+      "bytes": 7495,
+      "sha256": "887d5230140f8a3ebd6c29fc97e365c17ce8f7fc99fcdd42322a5f804c24a2e2"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Road/RoadTrackGenerator.cs.meta",
+      "bytes": 60,
+      "sha256": "a8834383b798cfa64042f6f514c1111200a4c578112767f775e3ce5e40424853"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Road/RoadVehicleController.cs",
+      "bytes": 24638,
+      "sha256": "53784b03d8ebd9e2c654cec306063e59ed3af98cb62c2c6dec7b7eb72b0a1090"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Road/RoadVehicleController.cs.meta",
+      "bytes": 60,
+      "sha256": "bc9518aba196ffa8c61f0f275a3d11cf6a34fd8e9018ea47a36e1f2fc0b25691"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Road/VehicleVisual3D.cs",
+      "bytes": 8574,
+      "sha256": "bf00f65e6dbc613b310c3e7a68ab56b32f0f75415b4f2fc86090f4568e3a4a41"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Road/VehicleVisual3D.cs.meta",
+      "bytes": 60,
+      "sha256": "244d8b657df7001f9a84daa8a9968cd35db962d2e8fa68ef528498503847c3a5"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Terrain.meta",
+      "bytes": 180,
+      "sha256": "6b4c02fb4a47e20a277b7b710b263216fdf4664d567cdce55095b2f298dcefac"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Terrain/ArenaSegmentEvent.cs",
+      "bytes": 20909,
+      "sha256": "a30b3c96d6d93d28a1245792f0df71a7192ffa0b88788a67ca17c948d9d0f9ed"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Terrain/ArenaSegmentEvent.cs.meta",
+      "bytes": 240,
+      "sha256": "e0a0bb0a6f78e569c89df18adf98d708d033b6f3052c2fc435156a9d100eebf0"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Terrain/CityBoatPlatform.cs",
+      "bytes": 6563,
+      "sha256": "c04d4560ac2e1b385cba263e3fde8fdf0367643affa43cf70ec7608be01a54ef"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Terrain/CityBoatPlatform.cs.meta",
+      "bytes": 240,
+      "sha256": "d4680987c6fbbb68342e65397928b9058b237421bce1fb241d5232604c30fa48"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Terrain/CityBridgeZone.cs",
+      "bytes": 35960,
+      "sha256": "9580cf4e54652a118b6ae8bb75b9ec5d5e6a5580f8145a236f666b43afc8c232"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Terrain/CityBridgeZone.cs.meta",
+      "bytes": 60,
+      "sha256": "5d6d879b6f2665d761dc0d139e07ceaa9bd725debabcad925e98853c32999dff"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Terrain/LastHorizonObstacleEvent.cs",
+      "bytes": 12772,
+      "sha256": "f69832ff8014082bb126eb26b53733725a34eb23b1bff885f1468f93072beb8c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Terrain/LastHorizonObstacleEvent.cs.meta",
+      "bytes": 60,
+      "sha256": "f0b72733f618bd845b809efdde5feb5a36397a59eff16a414c094bf5a77e7fc1"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Terrain/LastHorizonSpecialPhaseEvent.cs",
+      "bytes": 32730,
+      "sha256": "9b63ba7d8dccddcd18afafb4f68d11371669fe7b43e8793af87668c67449cd04"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Terrain/LastHorizonSpecialPhaseEvent.cs.meta",
+      "bytes": 243,
+      "sha256": "e0b4515390ed38b6f3ef5e096722b9691e0cd73201aa3cfabc64c40684563e1f"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Terrain/LethalObstacleContact.cs",
+      "bytes": 2837,
+      "sha256": "1dd5030f3ffca9ac0d71422ac935a109a405efa19414ea5f9c410355c3427202"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Terrain/LethalObstacleContact.cs.meta",
+      "bytes": 243,
+      "sha256": "1611c023106add4336e3bc6c5b41d9a0b670a892d51f7bbcce13221d981a91be"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Terrain/MapDefinition.cs",
+      "bytes": 2427,
+      "sha256": "56e1ebf04b75c81fdd5b74adf43749909e85dabed0dec5402698a1ec61f8acae"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Terrain/MapDefinition.cs.meta",
+      "bytes": 60,
+      "sha256": "e6d7abcb90d19c9ea10ec5b8b308b18ab557db1fe6722d70e59508d851faf02b"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Terrain/MapProfile.cs",
+      "bytes": 51899,
+      "sha256": "33401080b247107253ac36db9ead0d7c3fa0c29eafad079a2fdd2019a7f1daf0"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Terrain/MapProfile.cs.meta",
+      "bytes": 60,
+      "sha256": "78edd56c67bed0e89748d48cda0d375ee7acc5d83ad2429a00049dab0a9ceb32"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Terrain/NeonLiquidHazard.cs",
+      "bytes": 18518,
+      "sha256": "30acaf2117df50bfde8dad995b47895dcc1d9a2486f4018b2ae1f34479730fca"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Terrain/NeonLiquidHazard.cs.meta",
+      "bytes": 240,
+      "sha256": "80167ceee49615136b406caf5783013602fa5fcb7b84f8d47f69762b09b4c38e"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Terrain/SpaceGapEvent.cs",
+      "bytes": 19265,
+      "sha256": "59742ef40dd037451d6a00316d839efe2f9011c7493da9425864ef445a2db956"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Terrain/SpaceGapEvent.cs.meta",
+      "bytes": 240,
+      "sha256": "f1e80715ea389641c9affac15cbedde3f2fcf054957864ec09e3711c65bcb9e6"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Terrain/SpacePlanetSpriteFactory.cs",
+      "bytes": 7720,
+      "sha256": "582084e766b1661e76353e23a6fc400acebe47382a4bb3236591e8607ed60b28"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Terrain/SpacePlanetSpriteFactory.cs.meta",
+      "bytes": 60,
+      "sha256": "f6736a3ccba8a717a2826f0d4665f29a9472824966772105a07b245c23e0d036"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Terrain/TerrainChunk.cs",
+      "bytes": 15387,
+      "sha256": "4fdf9cd46d8abff946981d00a2e17276290434a8529657bc377502fb8bcffe0a"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Terrain/TerrainChunk.cs.meta",
+      "bytes": 60,
+      "sha256": "173d8d156f9b51aff97e408ed6637483656cb33891d6bfbd7904d5719970856c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Terrain/TerrainElevationProfile.cs",
+      "bytes": 618,
+      "sha256": "cbfd51479be590094b9f7fc9fcfe4e014850af478f3e779f7fb99071af01db88"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Terrain/TerrainElevationProfile.cs.meta",
+      "bytes": 60,
+      "sha256": "0632569e50b85e5cb75e943a0ad6a71253b446c2d5aa5f656ab0e829c9b01554"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Terrain/TerrainGenerator.cs",
+      "bytes": 209628,
+      "sha256": "733eedfa13fa0a0351b4a51444f1c364d9ccd5dd209781056fc0a7042f69c989"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Terrain/TerrainGenerator.cs.meta",
+      "bytes": 60,
+      "sha256": "e0d9f82b5f21909e5c4d5dc85b799738d39640493e2019991e1361eac9ce9d13"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Terrain/TerrainManager.cs",
+      "bytes": 63555,
+      "sha256": "0816fd3690f7ede05dc8dbf03525f4b796e032da45287f38e88886c9a7f3d799"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Terrain/TerrainManager.cs.meta",
+      "bytes": 60,
+      "sha256": "23b68a8ea892007de28d7d8e6deb138e64084276a698ea7cb157dc0af27c6289"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/TimeTrial.meta",
+      "bytes": 180,
+      "sha256": "e396d3872b5c467e0a3472728bedd85af6cb9dc88b51c0004b1e351191c113b5"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/TimeTrial/CheckpointGraph.cs",
+      "bytes": 666,
+      "sha256": "0b6125dc9b0e3056d63ba100eb5ff81fa0bdce4f6076fce04253221121c83afc"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/TimeTrial/CheckpointGraph.cs.meta",
+      "bytes": 60,
+      "sha256": "48fcf1d0fb4a959a9d8670cda93631663597e88292e188bccb5a28325fb4605c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/TimeTrial/CheckpointTrigger.cs",
+      "bytes": 647,
+      "sha256": "e91751c278160ad43298bd738e07bd72434521409a33e03a1c671a43d0d32400"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/TimeTrial/CheckpointTrigger.cs.meta",
+      "bytes": 60,
+      "sha256": "cf3ed606335235f86dac99561c5f2159c4bf52a37479be5d321c17d42473d259"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/TimeTrial/CircuitDefinition.cs",
+      "bytes": 1328,
+      "sha256": "248827be2b0261c967c27884acafb0075003f32fbed787885d9219c04ca18d3b"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/TimeTrial/CircuitDefinition.cs.meta",
+      "bytes": 60,
+      "sha256": "80b5b9a82eb00087cb50fdbe279bf0aa639e1c2ac40b81244bfd0b1870d9495f"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/TimeTrial/TimeTrialCircuitGenerator.cs",
+      "bytes": 9987,
+      "sha256": "c783e99971dd37f95cbe38ae086cd853adb1ff70fed8011684eb4b266fcff7f0"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/TimeTrial/TimeTrialCircuitGenerator.cs.meta",
+      "bytes": 60,
+      "sha256": "54b16a6d1713c815338d189d2e565edccd15f00b8f94a2afb9b574b7651063fe"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/TimeTrial/TimeTrialHUD.cs",
+      "bytes": 3604,
+      "sha256": "b659553137895f772c2dd1af3c3c30a32c9672b924ded385af6a1e685ece66ef"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/TimeTrial/TimeTrialHUD.cs.meta",
+      "bytes": 60,
+      "sha256": "5ec0c84c127a1c2a03be6a82a8b0789c3c4d936de1864581e4096f2288232e24"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/TimeTrial/TimeTrialManager.cs",
+      "bytes": 7481,
+      "sha256": "fe35de829caa510b2baee6df6015444b03f3fa1cae64302ca517ed52db4635e0"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/TimeTrial/TimeTrialManager.cs.meta",
+      "bytes": 60,
+      "sha256": "18f44f57eb543891defdde1a1b60a3407bcce56fc9824a26d01c1f3a7b9811a0"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI.meta",
+      "bytes": 180,
+      "sha256": "b426d5a0cbde5d82749481db66941f32b57750a1a0dbdabc42b7fc278cdabaac"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/ButtonPressFeedback.cs",
+      "bytes": 1242,
+      "sha256": "1928210eaa56e8b6a9c32cf33e8cefc7c340f2b8ed427443ee72c832935c612e"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/ButtonPressFeedback.cs.meta",
+      "bytes": 60,
+      "sha256": "eb30105d098014aa6adbe478ca08091be2d1c044a7fbc68570e91184e3ddf6ae"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/ChestPanelUI.cs",
+      "bytes": 29712,
+      "sha256": "546333d01d41fd2f5227087736f36cc9d5755b441c992b74dd8cb11e259c67b7"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/ChestPanelUI.cs.meta",
+      "bytes": 59,
+      "sha256": "9cddbe4d63675028bdf687100e763dc05f2663f5646e9641ee9b695340105037"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/ChestRewardModalUI.cs",
+      "bytes": 24196,
+      "sha256": "51451ab4fcf12578c5d65343236855f489a02b2f7d7d9f659c41ad88b18c81ba"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/ChestRewardModalUI.cs.meta",
+      "bytes": 59,
+      "sha256": "71b283f28f2e4dc7982add04c61a31dfdf9b0e6eff023be20f9044b802f6a92f"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/CoinPackShopUI.cs",
+      "bytes": 9694,
+      "sha256": "358ab0151c1e13cecd658191ac5239062fcb115967740c8d2dd66e1f9edf73bc"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/CoinPackShopUI.cs.meta",
+      "bytes": 60,
+      "sha256": "61178f3ba5914f2c8efdb89ec438fbaf02950d30a45d66510673b86027d888df"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/CoinPurchaseConfirmationUI.cs",
+      "bytes": 7653,
+      "sha256": "2ea143852bef667c390b677da3834ea8558223da7e04d1d36285972e56a1173c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/CoinPurchaseConfirmationUI.cs.meta",
+      "bytes": 243,
+      "sha256": "aa4b4a5be8b01a58702ca2fa3d9a92146535276173859fd88df1be1b77f2b3e0"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/EconomyCounterIconBinder.cs",
+      "bytes": 4917,
+      "sha256": "318a163a7ae2a77b122cd47a800edc2ce21fc962efac66a9224a4d4eb4fdc6f4"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/EconomyCounterIconBinder.cs.meta",
+      "bytes": 243,
+      "sha256": "88ce3e5b53f831acce1488c8566ed602c6d215ca3edb4161140bed244e7d0fde"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/GameplayHUD.cs",
+      "bytes": 45124,
+      "sha256": "207f5a0740614576718c366c7517d01c95c73013aed0f603ba79e6ee71ee97c9"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/GameplayHUD.cs.meta",
+      "bytes": 60,
+      "sha256": "9985cf1d22e33c34d18fc193b0aadb2d7b2729360716ee4b184af291925f1e34"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/GameplayPauseMenu.cs",
+      "bytes": 7838,
+      "sha256": "2ba969d99bca6105f5ac2ae14a0690318fa6a186cb31ac405c87b8d3042ad3f3"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/GameplayPauseMenu.cs.meta",
+      "bytes": 60,
+      "sha256": "c5d22ce8d821e62175075772cf793c4c48ea7653a5bda14015ff9113c806daeb"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/GaragePreviewRenderer.cs",
+      "bytes": 17201,
+      "sha256": "6b6d3a42605a4fdb47cecb04edc2426d8ee2c374d39f3c61d8bb625845bc502f"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/GaragePreviewRenderer.cs.meta",
+      "bytes": 60,
+      "sha256": "f87a23cb8d132b7dabbfc3ce73fdd436ebdaf12cf1503e6ec23eefee1cdeb0f6"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/GarageUI.cs",
+      "bytes": 157957,
+      "sha256": "6a9963dd14087cbd9ae6bd8881f785d66e682e4209385f25263298f5234b8126"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/GarageUI.cs.meta",
+      "bytes": 60,
+      "sha256": "65486946c54d24c23d5c6fc48fbde5b8848754cebe39414d1618272f569231cb"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/GemPackShopUI.cs",
+      "bytes": 13725,
+      "sha256": "ce7318903ab22021e9023d69c9954ab601a64b63b9fea722b7baa69e93b7f017"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/GemPackShopUI.cs.meta",
+      "bytes": 60,
+      "sha256": "9b930811a519cf2923b4d6014edf9b2a2ee80fbba748dd627ba35841c9c444ea"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/GooglePlayStatusUI.cs",
+      "bytes": 10898,
+      "sha256": "4d80a71be096f71081fcd00b99bd47fdebddb809aeb03edbfb0a5056332e8fae"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/GooglePlayStatusUI.cs.meta",
+      "bytes": 243,
+      "sha256": "7be498ed85e9824a50f095c594629af9cc02c98150dffec1f3e6da4d44f97382"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/HillAdventurerUiCatalog.cs",
+      "bytes": 2329,
+      "sha256": "eb32a2c5e563875236bf7f30e7efaf9b80b15a1694b170b702cb2819167abca5"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/HillAdventurerUiCatalog.cs.meta",
+      "bytes": 243,
+      "sha256": "65b3b3259a127d22bf1d57b3cf9d994fb441ecc9902ef4b482a3c7f66a7e0165"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/HoldButton.cs",
+      "bytes": 2734,
+      "sha256": "28c174c5ea2949ec72806968253cffdef5214a50f33b6796c356ff07f2a8b30f"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/HoldButton.cs.meta",
+      "bytes": 60,
+      "sha256": "7f5229f2f104262baed0da482d2c799adc705bee30fb7032ee65f385c955be90"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/MainMenuUI.cs",
+      "bytes": 7441,
+      "sha256": "30122748c1bf6a83affd60b5b57177b4e0fbc47c404e2bccd94ac76d70e318fa"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/MainMenuUI.cs.meta",
+      "bytes": 60,
+      "sha256": "717e59792603952f61a306439ce101cc67cad13054dbcbe734c8a738773fade4"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/PreStartMenuUI.cs",
+      "bytes": 62866,
+      "sha256": "019fa76aa2a46abf6d259f0f56a698ea3e2be269759260f6276e97d38fe930e9"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/PreStartMenuUI.cs.meta",
+      "bytes": 60,
+      "sha256": "c98ef683fec519521af6b4db72e725f813ba77b3c17bce7b74317e1dd612b7c0"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/ResultsUI.cs",
+      "bytes": 8712,
+      "sha256": "46e4387924cbe009cb051bfe1ec4f4248ad8eceeccaede774063fc593f2325be"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/ResultsUI.cs.meta",
+      "bytes": 60,
+      "sha256": "d8e68025c3cd52ad6f162f23cd240bacef08b892a66b1ab6051d710fb16f5da5"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/SafeArea.cs",
+      "bytes": 1573,
+      "sha256": "ad485a01bbe8ccddd87673941c089338935a8b8ee22c0a29d99dfa9dd0848656"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/SafeArea.cs.meta",
+      "bytes": 60,
+      "sha256": "2280943c5b66435b1286fce2ac70888e11a6d9364de8c96c3d8a1c420f947ed3"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/ShifterUI.cs",
+      "bytes": 5029,
+      "sha256": "14370ecaa6a0dc97dfa8053a49246e576761eff03d1b5da0478b0beda2fb861e"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/ShifterUI.cs.meta",
+      "bytes": 60,
+      "sha256": "610c3683cf5de0a01ebc24896affe18e288ced5a55037e49361b4039d5642286"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/StarterPackShopUI.cs",
+      "bytes": 14911,
+      "sha256": "3a4de79a7f7ce108884048cfecb571d3308fdd54b6b73cf480b9461f2fb270b5"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/StarterPackShopUI.cs.meta",
+      "bytes": 243,
+      "sha256": "a279622dbd31ae0964546e23721e8e82f411c5badfecc0df007752d32aa088bb"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/StylizedBitmapFont.cs",
+      "bytes": 28732,
+      "sha256": "af3763df53de4f01face47cf9c994101dd09eb2aa551cb487b70d2cef2c11f37"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/StylizedBitmapFont.cs.meta",
+      "bytes": 243,
+      "sha256": "31ebe92f2452674c35bef46cdeb7e94fd4e9c1cc7ad0a9c45a7ad7904ede876d"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/TeleportModalUI.cs",
+      "bytes": 28110,
+      "sha256": "45e25015d735f397850271722146ed6e3f7e2d902c8f3dc757974ba3b9bdc41c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/TeleportModalUI.cs.meta",
+      "bytes": 59,
+      "sha256": "ec32d6692acea1a821a86445ebc1d0d90060287c2796a91affac2a26dac4d5eb"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/TopNavigationUI.cs",
+      "bytes": 7950,
+      "sha256": "5ddbd8180c4eb556dab7642038a51be67730c2ea76b125d3d0c6afa2814755b9"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/TopNavigationUI.cs.meta",
+      "bytes": 59,
+      "sha256": "11e745f4d3daf9788c6eab2d07105763b1911ad8711330db69dfd95c3b39dcc5"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/TrackSelectionCardUI.cs",
+      "bytes": 15427,
+      "sha256": "27797c7355c645ce8b833cc82af939232f9eff5032ea44511ab5b88dfa56a6ca"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/TrackSelectionCardUI.cs.meta",
+      "bytes": 60,
+      "sha256": "4b3cd1143c353cc34b73f6f4967544fb2340290febe09dbfa041ba1f7f4ace26"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/TransmissionUI.cs",
+      "bytes": 1064,
+      "sha256": "444b2e4cf6f2d4e0052e542be10347e9877f1ee7167e060f676091b5fdcc0a98"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/TransmissionUI.cs.meta",
+      "bytes": 60,
+      "sha256": "79f2665cab0bd5753a32cbfc60bbcde406484f3a06e5af3884fc20d3cd03a64c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/VipSubscriptionShopUI.cs",
+      "bytes": 7509,
+      "sha256": "6dcc5534262370c848eb71a549f031e9f5bdc54ec147a6d41f595db0c2c08cf1"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/UI/VipSubscriptionShopUI.cs.meta",
+      "bytes": 59,
+      "sha256": "d69209f7743497af0842fb0f57c03bb2822f41c009cfd8e70c0ac3f3765578c3"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle.meta",
+      "bytes": 180,
+      "sha256": "0f52186cdcd3ecb4e9d334e35e296d208b23276e8c899f438b3a66c7dcd0fcc8"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/AccessoryRainbowEffect.cs",
+      "bytes": 1905,
+      "sha256": "b7ff0f1ac9450a7c98e0a3c2d7d2534c09fc282a31301f053c49079f32d1901f"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/AccessoryRainbowEffect.cs.meta",
+      "bytes": 243,
+      "sha256": "b164d7c3017c23fdd05238b13ec7ec3dcc1032677bcdd78ce676b8efb32ba651"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/AdventureBox2DStrongImpactDebug.cs",
+      "bytes": 6422,
+      "sha256": "9760c4731475005b857dd3a29431ceddda04dd7466b321b55e6c35c178d1c4b3"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/AdventureBox2DStrongImpactDebug.cs.meta",
+      "bytes": 60,
+      "sha256": "5ffe4881951542dacac38f7f75d8b521287ddb53f3cff18d172071947c63d27e"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/AdventurePhysics2DPlayModeProbe.cs",
+      "bytes": 54612,
+      "sha256": "637ad9c864b70a707a24253e9b46df4c4db465d0dd78083578878bc3cfe428ce"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/AdventurePhysics2DPlayModeProbe.cs.meta",
+      "bytes": 59,
+      "sha256": "279e4e0008ade08d21a330998f801fda121c5e469d0a21921c4947b69ca829b3"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/AerialThrusterController.cs",
+      "bytes": 12506,
+      "sha256": "77d6b4a6b170e31f3d58a2d2d01f7be8177e324ff035c76a59cdb22429203fa7"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/AerialThrusterController.cs.meta",
+      "bytes": 59,
+      "sha256": "b640a4f1fa93334e3a8cac76f03a63c302c02398b7a06f2df80cdb604e72032c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/AerialThrusterVfx.cs",
+      "bytes": 2443,
+      "sha256": "5a13b93a26c31fe0474e7a1d7b516d3c59be12cdd49e7344a89b8cc3a2bcfe2f"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/AerialThrusterVfx.cs.meta",
+      "bytes": 59,
+      "sha256": "d962f55c9ec49bfcaf5ee800f572b2460cd8d5bd99d719604f8efd8eeaa6eae7"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/ArticulatedDriver2D.cs",
+      "bytes": 27599,
+      "sha256": "5c29097b0885b9a939551de51e7be51d986c61df2473c3c863ed554e18078034"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/ArticulatedDriver2D.cs.meta",
+      "bytes": 60,
+      "sha256": "48ff70545198416c446263c9da192d2388a0fddf253dde72f85ba9214c28aae0"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/CharacterScarfDynamics.cs",
+      "bytes": 3297,
+      "sha256": "ca4c963e4b0e0b052a73e44c3eb8dfd571d53ee014cb16057cbe30da792fcf4c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/CharacterScarfDynamics.cs.meta",
+      "bytes": 59,
+      "sha256": "296540d3c3552d2ceec381fc53f387254ff1be3cc2056416b756bbf69081e9a2"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/CrashDetector.cs",
+      "bytes": 3205,
+      "sha256": "e4d27b0bea44e9beb5aa0e73a8a559cb447951811c8313f3cbfbf38a3ab083a8"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/CrashDetector.cs.meta",
+      "bytes": 60,
+      "sha256": "d28a1722a1edbfad6b25c782b1462f1a0c730ae66af1ae7b77bdf63f65232cfb"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/DriverDefinition.cs",
+      "bytes": 3507,
+      "sha256": "696ec275433098a40e12d13d57f4771bac0b766707e631706b8966cb3d5c5895"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/DriverDefinition.cs.meta",
+      "bytes": 60,
+      "sha256": "18d99851d1c15da27b5d5010188da7e0b33f3a9999c96ae4a00c306427edd598"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/DriverHeadImpact.cs",
+      "bytes": 12009,
+      "sha256": "146b94f76e7d562ebb5f67bb2176b3acb0639fbb053313b0c2e85c8be3846572"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/DriverHeadImpact.cs.meta",
+      "bytes": 60,
+      "sha256": "8a93f437ee12daee828719fd0b4c3ac375d306071a9ec4e93365e9a0cd35dce2"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/EngineController.cs",
+      "bytes": 2473,
+      "sha256": "e93347410521f8e9ffe7ba7f5fc20b1b4677ff523faa09d276deada092b931ea"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/EngineController.cs.meta",
+      "bytes": 60,
+      "sha256": "2b4f4b8a65a273d55f6f1779d653d8e65f1abcc680989ab52af6e99d8b3a3682"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/FormulaElectricSkinEffect.cs",
+      "bytes": 6014,
+      "sha256": "16dd3efd81991c75a801b6fdb233076b0be6d9176539ae128505acfe7edfaa6e"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/FormulaElectricSkinEffect.cs.meta",
+      "bytes": 60,
+      "sha256": "1cd00349c6df62f2a8b710a300226d4f727adfc8ab15e1bcf5e4766f1e9dd6d4"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/FuelSystem.cs",
+      "bytes": 2833,
+      "sha256": "91ece4ec5235e414283e4a2f6e97350a3e9ebb49663cba1738638e5f36f415f6"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/FuelSystem.cs.meta",
+      "bytes": 60,
+      "sha256": "1981810120aa54a49582fae5d36edac580c0d0ffdad7593e754d8dd67136ec53"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/GlitchCrystalTideEffect.cs",
+      "bytes": 4634,
+      "sha256": "7b50cae07d0f17d9c95148eb41f3c0b852be7a8d391acd39c647023bac9f170c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/GlitchCrystalTideEffect.cs.meta",
+      "bytes": 60,
+      "sha256": "f5af13b1d45c1d9ba7a833a722bc93495a298079af4eba2b887482019baabdea"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/HillAdventurerSkinEffect.cs",
+      "bytes": 3446,
+      "sha256": "95f41cb914031729391a85caa3c3d2c9a3945d9d80cd685f483d126382161509"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/HillAdventurerSkinEffect.cs.meta",
+      "bytes": 59,
+      "sha256": "b0a579cc68c6a99514985846cf9ec9dfb23de1d77059de1047dac84ffafc8455"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/LastHorizonVehicleAppearance.cs",
+      "bytes": 3637,
+      "sha256": "5f3a791752529bb36eb3c269db657126d8d44c3e2b882062a58ef641916858ad"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/LastHorizonVehicleAppearance.cs.meta",
+      "bytes": 60,
+      "sha256": "52c3ef3a893d63605a85aa166133b0f9a5a49e3cbb9dc96bebaaba100f971120"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/MovementPlaneConstraint.cs",
+      "bytes": 903,
+      "sha256": "e7ad7cdd093c2a43e1db328e51fd50bd2c8971b5d40da71cb7e2a4a79b406a44"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/MovementPlaneConstraint.cs.meta",
+      "bytes": 60,
+      "sha256": "b067b912304400b7a0b83ad2f1c00bb27e0abcc212a3d0cbc9b02d4ecf288d0e"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/RallyRoofDamage.cs",
+      "bytes": 18580,
+      "sha256": "5d30a022317817b33412a5586cc5a26aa8ed205fd3bd7b23247c000c69312dcf"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/RallyRoofDamage.cs.meta",
+      "bytes": 60,
+      "sha256": "0ccd2058cf2a1562cfbe5e67d7990eb1422552f943e3b5971761f5861718685f"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/SelectedVehicleFactory.cs",
+      "bytes": 11356,
+      "sha256": "83f188dede43c93c4f9823b03f0b5281657990167aac7cd03085707c95c5c613"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/SelectedVehicleFactory.cs.meta",
+      "bytes": 60,
+      "sha256": "cceb345cc9be74d52f1001fa419b3a11dbea88fd8fc923afea3e7134c36c4f23"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/SportBikeNeonFlowEffect.cs",
+      "bytes": 3889,
+      "sha256": "5b6fa1d97d1932990219670142f848b7bf1275861cdcb0b1ccb3fc002814ef28"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/SportBikeNeonFlowEffect.cs.meta",
+      "bytes": 60,
+      "sha256": "74468fcb784542479eff30cbecd25cbc68b116d8f841cd013478baa6802b5d41"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/Suspension2DController.cs",
+      "bytes": 31444,
+      "sha256": "e88304349b464805c9c09f3409f54512f34b6d24bfba6d6109b9d0ec08a48267"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/Suspension2DController.cs.meta",
+      "bytes": 59,
+      "sha256": "cc2771e16aad8d2e7b78d372edac404e3d23f0f1229402806dfc4bf44061625c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/SuspensionController.cs",
+      "bytes": 46559,
+      "sha256": "c49924e87fbf9b8a1b6fbd1f03fc173916c4c8c2ca772d77d945395cd274ee20"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/SuspensionController.cs.meta",
+      "bytes": 60,
+      "sha256": "6b057cfb503923005cf6ce242ce60b83b9b04732fba2f4ff8b468cb8066a0348"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/TransmissionController.cs",
+      "bytes": 5383,
+      "sha256": "1c0419c0b8031d2545168ff83918e917a4efdd5ff8ea7ba272880acc0facb07b"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/TransmissionController.cs.meta",
+      "bytes": 60,
+      "sha256": "a699ac17750422e494fcffdaff72746d7bd27a8e24558b4a7269dab4e8fcd54a"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/UpgradeEconomyDefinition.cs",
+      "bytes": 4998,
+      "sha256": "6f4932140e886c0fd90cebab6917aad0644f3f330e413f7b943dfc5159bdec45"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/UpgradeEconomyDefinition.cs.meta",
+      "bytes": 60,
+      "sha256": "50632c34e598ccb1c8d4738732f410eebc4e84b5879203cf2b2e90ace3c727b8"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/VehicleController.cs",
+      "bytes": 39286,
+      "sha256": "7496e689da66bdc871530483d3eb85203146dbbf1048b69cfcf2030c8c3e8b7b"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/VehicleController.cs.meta",
+      "bytes": 60,
+      "sha256": "4e92588299aa16d504dfe9011b262bf0e86e2a08e921ee7a3035cf973274aa3c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/VehicleDefinition.cs",
+      "bytes": 49772,
+      "sha256": "5c73b125dad46893def5d9f7fd539f33f7812254511659cef861fbd2fd6afa61"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/VehicleDefinition.cs.meta",
+      "bytes": 60,
+      "sha256": "6345a38409773f816e41b20d64bd8b420b3b097b9e0ddbdefd0c4640289d4cf1"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/VehicleInputController.cs",
+      "bytes": 5896,
+      "sha256": "51e145c6521b768ceb3f1673c962da535b408029e2c8b9436a82e3073cfb4ad1"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/VehicleInputController.cs.meta",
+      "bytes": 60,
+      "sha256": "457a12fe05ccf79aa2f96e1c328aa56dbc5ee7fe922e5157bc9828835b6c0611"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/VehiclePhysics2DController.cs",
+      "bytes": 32649,
+      "sha256": "385e13e106d62c9f2839bc35f05d4447d55dc8f61f2fb4ce17882b60589dd745"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/VehiclePhysics2DController.cs.meta",
+      "bytes": 59,
+      "sha256": "5895ca1341e0e6178e335ba97887ca836ed3985d02d57925cad8134130e6c091"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/VehicleRuntimeBase.cs",
+      "bytes": 2619,
+      "sha256": "6ba1294087d09bb014e32f76fbff414d96870ad7b425bd1ff554b16183883b57"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/VehicleRuntimeBase.cs.meta",
+      "bytes": 60,
+      "sha256": "fef5f4e1580b91433054ea9b6e178469ecf36e83a5e4fd585b34d55d1a611310"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/VehicleUpgradeState.cs",
+      "bytes": 3383,
+      "sha256": "139de25f0adf71bfeeef92ad88f5975948a86ceab8efd3dce1bf666b94ac7aec"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/VehicleUpgradeState.cs.meta",
+      "bytes": 60,
+      "sha256": "d62cbfe20ebb00cfdd697ea7a7e223491280a3232320db8e2c56e496b910e423"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/VehicleVisual2D.cs",
+      "bytes": 19697,
+      "sha256": "46f60ae0d561966321857b61a7f6bcc0e96a456848a42486086ec646d30bee43"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Vehicle/VehicleVisual2D.cs.meta",
+      "bytes": 60,
+      "sha256": "bde1332b0f238809c356f0e0c19fb1105554f3cbb0b0a130232fd47a512273e8"
+    },
+    {
+      "path": "Packages/manifest.json",
+      "bytes": 1964,
+      "sha256": "3b09b441a34e8a5ad1fc04c7e49fb9d3166f02a03834e450946cf171ef0ff63a"
+    },
+    {
+      "path": "Packages/packages-lock.json",
+      "bytes": 10316,
+      "sha256": "de22ac5486b93a077f7ce6f4d3d70d1f5c925a384043f4e393471b8ab0d6edb6"
+    },
+    {
+      "path": "ProjectSettings/AudioManager.asset",
+      "bytes": 546,
+      "sha256": "2e46c3310c149875bed869aa2d8cc26f01e9b052a6220ddd75a71c4c373444e4"
+    },
+    {
+      "path": "ProjectSettings/ClusterInputManager.asset",
+      "bytes": 120,
+      "sha256": "06a192320121e445dcff1ae8ddad2a948ff671ca134603c043d9f4e920427ea9"
+    },
+    {
+      "path": "ProjectSettings/DynamicsManager.asset",
+      "bytes": 1554,
+      "sha256": "b64913749454515b93c8a3a67b8aa48b79f7fcab312d22854c0a067811bb19d6"
+    },
+    {
+      "path": "ProjectSettings/EditorBuildSettings.asset",
+      "bytes": 1238,
+      "sha256": "e2588c73a01728d6441479ba7453a201bcfcea6993065dff0b216d193ded4a44"
+    },
+    {
+      "path": "ProjectSettings/EditorSettings.asset",
+      "bytes": 1603,
+      "sha256": "7039fecee33be1c1f7d1f7cc3fac65c2c0699a1f1c3fe029e21f06e704418cd5"
+    },
+    {
+      "path": "ProjectSettings/GooglePlayGameSettings.txt",
+      "bytes": 110,
+      "sha256": "699c0d5c40fc9d760e91dc97464e27f4910ce938b4d9e74db7b3624a5cd712c1"
+    },
+    {
+      "path": "ProjectSettings/GraphicsSettings.asset",
+      "bytes": 2787,
+      "sha256": "0f974e8acd413f0d1019dfcb930efc34a5a2071a9d17466800da83cb26824c12"
+    },
+    {
+      "path": "ProjectSettings/InputManager.asset",
+      "bytes": 6112,
+      "sha256": "14afacff3668da089908b16c02642e0b388e3ca7831bad469ac6aeba18f7263e"
+    },
+    {
+      "path": "ProjectSettings/MemorySettings.asset",
+      "bytes": 1227,
+      "sha256": "a660cb9890d880df92f3b80fa40723f183cc5ef2cb3ecc850b366191f05834c7"
+    },
+    {
+      "path": "ProjectSettings/MultiplayerManager.asset",
+      "bytes": 241,
+      "sha256": "eb870831f00c2e99ca9f535b38d5b3c6489cb198925a247b2f7bac2db4f9de25"
+    },
+    {
+      "path": "ProjectSettings/NavMeshAreas.asset",
+      "bytes": 1454,
+      "sha256": "75da067e99628dc5c30d90492887cdaff68171e7b33d1217a1311b182aa47b50"
+    },
+    {
+      "path": "ProjectSettings/PackageManagerSettings.asset",
+      "bytes": 1384,
+      "sha256": "b77f713a01f81b121b5414ea5a0df43c1f4324298d3fc37776a08b8c4942d688"
+    },
+    {
+      "path": "ProjectSettings/Packages/com.unity.ai.assistant/Settings.json",
+      "bytes": 342,
+      "sha256": "54ba37aabe4a7d2663325e93f66f063c6dcfdcad92316cbaddbad55fcbcb5698"
+    },
+    {
+      "path": "ProjectSettings/Physics2DSettings.asset",
+      "bytes": 1862,
+      "sha256": "1cfc0c8fbceec604fd7cd2a06c04ff05dddee6335b75c92b0f5715ad80ba9490"
+    },
+    {
+      "path": "ProjectSettings/PresetManager.asset",
+      "bytes": 153,
+      "sha256": "6ba879310e2be2e5ba18702578cda93b26b030ecd88e883fef22ab456a9f9697"
+    },
+    {
+      "path": "ProjectSettings/ProjectSettings.asset",
+      "bytes": 24089,
+      "sha256": "db39ff39eed020a7bf32aadf1c319e819d625203771557f900f9cfec7f0eb29f"
+    },
+    {
+      "path": "ProjectSettings/ProjectVersion.txt",
+      "bytes": 87,
+      "sha256": "9abeaab859eb8efb095197532db83952b86156e5b251be5a031cb587e50b630a"
+    },
+    {
+      "path": "ProjectSettings/QualitySettings.asset",
+      "bytes": 9468,
+      "sha256": "04a09b23baa77e0b85039dc00be3c86ef702eb5b7fb91f12a50a39b3050472b9"
+    },
+    {
+      "path": "ProjectSettings/SceneTemplateSettings.json",
+      "bytes": 3655,
+      "sha256": "e0cbb98bd0aa9449840ce663a4b81751ab0828f5d8d2bd37923644fee7095e62"
+    },
+    {
+      "path": "ProjectSettings/ShaderGraphSettings.asset",
+      "bytes": 575,
+      "sha256": "a0b37628e34d4ab97dcc1a26369b7c7e773c55c4cd2a86cd3f5fa37e88543ff0"
+    },
+    {
+      "path": "ProjectSettings/TagManager.asset",
+      "bytes": 456,
+      "sha256": "b5252f1beb6c0a6f84057aafeed330c699a80897a4bd9d8192f957dcdf936f26"
+    },
+    {
+      "path": "ProjectSettings/TimeManager.asset",
+      "bytes": 305,
+      "sha256": "c8537e73e067f8dd1f19060cf703365261967f5396d77cd3474f825c814cbe52"
+    },
+    {
+      "path": "ProjectSettings/URPProjectSettings.asset",
+      "bytes": 477,
+      "sha256": "c7fb928e0aabab57310310d78f03b61c028a8818ee6f183fc150b8eb6ca249a5"
+    },
+    {
+      "path": "ProjectSettings/UnityConnectSettings.asset",
+      "bytes": 1103,
+      "sha256": "84b91bd844e9632367405d0445062325e7fb80a18067a39930a1b874060707ed"
+    },
+    {
+      "path": "ProjectSettings/VFXManager.asset",
+      "bytes": 545,
+      "sha256": "b61a694c821740d94f56270892b0c36c16dce80aaa0fec83fe1e17c41a385b20"
+    },
+    {
+      "path": "ProjectSettings/VersionControlSettings.asset",
+      "bytes": 179,
+      "sha256": "3fe15395f872b9cfe908a111a1e87be2055c6ee367e2876e7e83a408c2b89d57"
+    },
+    {
+      "path": "ProjectSettings/XRSettings.asset",
+      "bytes": 167,
+      "sha256": "71f175773593ba28d42bf1af0543b2a465e0316d3b8f435aebf48ea66b31b621"
+    },
+    {
+      "path": "Tools/CompetitiveQA/Bench.cs",
+      "bytes": 1110,
+      "sha256": "e2334ea31408bdfed603bce022fe400f716292c99beaeaa0679c205abadae59f"
+    },
+    {
+      "path": "Tools/CompetitiveQA/CompetitiveQA.csproj",
+      "bytes": 2245,
+      "sha256": "25bfe3976eef57f722efdf06619a43537a7436881d5be2e68c61b88b6235aec7"
+    },
+    {
+      "path": "Tools/CompetitiveQA/Contracts.cs",
+      "bytes": 18681,
+      "sha256": "0c29733ef807bbad976731372c87da79e6d9e9f3ac7f67b2f60b459bcd26e4e3"
+    },
+    {
+      "path": "Tools/CompetitiveQA/Json.cs",
+      "bytes": 1714,
+      "sha256": "c01a20172efa05dd75d4052f20b534b7eea181353e30ff9dae223f67a51cb6e0"
+    },
+    {
+      "path": "Tools/CompetitiveQA/MmrEconomyLab.cs",
+      "bytes": 14310,
+      "sha256": "53c4c084d627dfcdc13ec701bcabcc75e6c858da4c4afb7f5401edec2414622b"
+    },
+    {
+      "path": "Tools/CompetitiveQA/MmrExperimentContracts.cs",
+      "bytes": 10416,
+      "sha256": "c13ad4fbf92080961aee50b0d834592d8b336dd0b3e7eb74e1ee8021a6ccb914"
+    },
+    {
+      "path": "Tools/CompetitiveQA/Program.cs",
+      "bytes": 2831,
+      "sha256": "f406f8ac5a6b2e56ee4ea1e38b77ef835a36bc4fd1a02886abfa48f82bc219ac"
+    },
+    {
+      "path": "Tools/CompetitiveQA/SeasonExpansionContracts.cs",
+      "bytes": 21322,
+      "sha256": "5f348338c535e5b256d2a9311f85602833f746d8e72ddef10cbb81faa8859b11"
+    },
+    {
+      "path": "Tools/CompetitiveQA/SeasonScaleBench.cs",
+      "bytes": 5016,
+      "sha256": "e5a07395f59e4180c5b5a335e0217c4e08278d69c1d8a27ffbd99178d3fbbb7e"
+    },
+    {
+      "path": "Tools/CompetitiveQA/Simulation.cs",
+      "bytes": 14704,
+      "sha256": "e8d318fdf5f4aee97d447670be352b3822640634f5a2aa9f190f440eba6a90a9"
+    },
+    {
+      "path": "Tools/CompetitiveQA/Stubs/UnityStubs.cs",
+      "bytes": 545,
+      "sha256": "846e7ca95996ac9d5f3ad39565ef8b77231edbe3ae2029ab39e8a7e4aca0586f"
+    },
+    {
+      "path": "Tools/CompetitiveQA/summarize_mmr_lab.py",
+      "bytes": 5357,
+      "sha256": "68444bc545d2ee02dffe13914e9c9e3771b197faa91271429c6f0da44ee389f0"
+    },
+    {
+      "path": "Tools/CompetitiveQA/write_season_report.py",
+      "bytes": 34859,
+      "sha256": "347610d248e32c20f44018767de2f0e35bcc30434e4633743fc9fffe2590d11d"
+    },
+    {
+      "path": "Tools/RC/Measure-SeasonMmrPerformance.ps1",
+      "bytes": 4526,
+      "sha256": "4b21801bee3626fc913a25ccee501332eea77a64c84dfb1e5e37c9e1d9ae0b63"
+    },
+    {
+      "path": "Tools/RC/analyze_elite.py",
+      "bytes": 6060,
+      "sha256": "5d918da04b3b8cc28c020263bbb4e6447ad1db0d1ce3af6665e82f11d5dc854d"
+    },
+    {
+      "path": "Tools/RC/analyze_items.py",
+      "bytes": 5991,
+      "sha256": "65dd9072d307b4315226184645e627ad7765f6bed826775b76c321906522b770"
+    },
+    {
+      "path": "Tools/RC/analyze_performance.py",
+      "bytes": 6733,
+      "sha256": "a4c0c889a94585797bd5d1d8e37b0ea40becb386ea345d0b3df361914125c15d"
+    },
+    {
+      "path": "Tools/RC/compare_performance.py",
+      "bytes": 5059,
+      "sha256": "87ecfe6d91ef6740a5db29c04230262d2edcb3449b03543d371c9012334bb831"
+    },
+    {
+      "path": "Tools/RC/export_elite_evidence.py",
+      "bytes": 8949,
+      "sha256": "59a5ca9ed9413b6922c3c5fdfefb8822d2b75ba1bb8bc0755a9b60351a15c80c"
+    },
+    {
+      "path": "Tools/RC/rc_forensics.py",
+      "bytes": 6871,
+      "sha256": "949bb6a943905126ee9abe0e68bb3bf8fff38fbff9fb7c951bd6d884c591bd78"
+    },
+    {
+      "path": "Tools/RC/release_gate_inventory.py",
+      "bytes": 4042,
+      "sha256": "94314c7d05479985231643770ca44fba29a2420f833e60c00e0012386285b788"
+    }
+  ],
+  "scenesAndPrefabs": [
+    {
+      "path": "Assets/AnimeHillRacing/Experiments/Box2DJeep/Box2DJeepTest.unity",
+      "bytes": 8818,
+      "sha256": "7a730b325c6ef107ae407aef7c6c38d9ae703fc50b9659991fc70686b41efdcf"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Experiments/Box2DJeep/Box2DStrongImpactPlayMode.unity",
+      "bytes": 47965,
+      "sha256": "671b5241a2644e0c24d4a2453a499967b1e4156faa79c17bbdbbd05e855ec1b1"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scenes/Adventure2_5D.unity",
+      "bytes": 169742,
+      "sha256": "c29662e8d9bf9fb264ec85b31ed0f01def744c237799ffbf9a5de25ff104912d"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scenes/Adventure3D.unity",
+      "bytes": 164142,
+      "sha256": "9673bf5137c5e08f7af685c9d544ffedb5eefa893a298c49d2850fd2f27e25f7"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scenes/ClimbGameplay.unity",
+      "bytes": 118230,
+      "sha256": "38a9c9242f3f74ffba9432c1e5ea8f8865e3aaed417c83c3097dcb4235d998dc"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scenes/Garage.unity",
+      "bytes": 935232,
+      "sha256": "468a7ccad341526a159863273013c90202d508d28a682a5d11fc768023a3453b"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scenes/MainMenu.unity",
+      "bytes": 147937302,
+      "sha256": "04bc14abefd42d7fb889372e9897feaa3c588e73c5f14ee959dc69794f2ac001"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scenes/PreStart.unity",
+      "bytes": 198819,
+      "sha256": "9389cb6b5284ae46a8acfe4247576694da19719351d8574db868dd81c725490b"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scenes/Prototype.unity",
+      "bytes": 108543,
+      "sha256": "6d3d11026cf5ce17eff230a1407a7d12200cf7d41113a8fbba5caff8ab2eb8bb"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scenes/Racing3D.unity",
+      "bytes": 10342,
+      "sha256": "129bde78bf5404321f88540fd8c72c0f091b3111bd9e50d842cf14dfd4d9e354"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scenes/RacingGarage.unity",
+      "bytes": 10314,
+      "sha256": "e71181587e3256853f90bf84e352e4a2ef3e021d10a8c832ef7cc5a818266443"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scenes/RacingSelect.unity",
+      "bytes": 10335,
+      "sha256": "367f691549aa0f947db345d596005f265577ba072d4da0a336299bd694af266d"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scenes/RoadGameplay.unity",
+      "bytes": 126118,
+      "sha256": "22a3945eb9acab562e72132dca5baafcf79a8607758ed703afc70e9e85a9be2b"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scenes/TimeTrial3D.unity",
+      "bytes": 129821,
+      "sha256": "2b53ed7d406cbc152fcbeb0dc7f4a708a74332732d600e12e57704954d9f6a23"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Experiments/Box2DJeep/Box2DJeepRig.prefab",
+      "bytes": 42046,
+      "sha256": "8a605d68fe25e69cc62b7448677f420056134169f0a774d63c8bad69c76f6f0c"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Prefabs/Vehicles/AerialSatelite_2D.prefab",
+      "bytes": 72093,
+      "sha256": "44ff333aa734eab935c6ac08d8520a2877fbc61f0ed95c551d507e42042eec42"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Prefabs/Vehicles/AerialSatelite_3D.prefab",
+      "bytes": 56500,
+      "sha256": "91cc0b894844d77aa9ff44a53fde53e354131ef4fcca22bd606b6d56c2b3e8ea"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Prefabs/Vehicles/Buggy_2D.prefab",
+      "bytes": 56234,
+      "sha256": "d22e02837793536cabef352fe6b80bc206bc3acca125de313a696648a6a8d554"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Prefabs/Vehicles/Buggy_3D.prefab",
+      "bytes": 56436,
+      "sha256": "2e61b87311757d7d7b004d5ca86c7709bd2ec4f5593de6d26306eb9b7b34beef"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Prefabs/Vehicles/Formula_2D.prefab",
+      "bytes": 55918,
+      "sha256": "0bcc180bb523d2c67d0eecfe7081223270a2c9d0004062b377eb426354e7989b"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Prefabs/Vehicles/Formula_2D_PhysX_Legacy.prefab",
+      "bytes": 67216,
+      "sha256": "52dfcad319d49bcca119e09d37a442a3cd5e621a526cd74eddb6b3a13c51ab37"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Prefabs/Vehicles/Formula_3D.prefab",
+      "bytes": 56149,
+      "sha256": "cf083fdb8315e401053f064e49dfd7850b9009cd9b5e2e12c65a857220f0bb72"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Prefabs/Vehicles/HillAdventurer_2D.prefab",
+      "bytes": 56111,
+      "sha256": "e5efeae1c49de9bbd7bd6cc21007b70a78d6bf88d62710a485113ac865b59801"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Prefabs/Vehicles/HillAdventurer_3D.prefab",
+      "bytes": 56336,
+      "sha256": "97886fa9f774cece897f36fe5443e3514b5dcc3aa8faf38c26959ce622c6030b"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Prefabs/Vehicles/Jeep_2D.prefab",
+      "bytes": 56054,
+      "sha256": "fb1307f7766fa6e9dc8baac501c7b2e225141cc77d071b3fd18303d7cf5d79f2"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Prefabs/Vehicles/Jeep_2D_PhysX_Legacy.prefab",
+      "bytes": 61917,
+      "sha256": "d59824e3069d68d4779138113e7a8a37271b8ae5c8afe09ab0bac0e2e9525fb9"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Prefabs/Vehicles/Jeep_3D.prefab",
+      "bytes": 56248,
+      "sha256": "e1de3795357922c8a65a16f63c3bc5381320332c68dc9de5c8650eeb3a9d7f46"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Prefabs/Vehicles/Rally_2D.prefab",
+      "bytes": 58863,
+      "sha256": "3be301c68992b8e8badd4edea1c12d5ad96ef7e320e5aee09e37bba878ecbb7e"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Prefabs/Vehicles/Rally_2D_PhysX_Legacy.prefab",
+      "bytes": 64406,
+      "sha256": "29bed493edc3024c32948c3d3a4c457d166bf52688e06f8cc27a070d8f81f1c4"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Prefabs/Vehicles/Rally_3D.prefab",
+      "bytes": 58501,
+      "sha256": "157e83eb3e5c86978605a73c4a873d842473753bf908087de354915fb1fa434e"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Prefabs/Vehicles/SportBike_2D.prefab",
+      "bytes": 55954,
+      "sha256": "bdd0b8047c8ab831f72951b37554b15d8a5339ac7647445c9c23076c02648361"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Prefabs/Vehicles/SportBike_3D.prefab",
+      "bytes": 56107,
+      "sha256": "a5b691fc9258d38467319d4741dd2b78c1bb8f0999d7b0019626b92f0cc88ccd"
+    }
+  ],
+  "previousArtifacts": [
+    {
+      "path": "Builds/HumanGateMmrValidated/HillAdventurer-HumanGate.exe",
+      "bytes": 667648,
+      "sha256": "47b23bfad0dbb1200a41daae299396c49924b87c0222e2e4258687a3505334a0",
+      "currentSha256": "47b23bfad0dbb1200a41daae299396c49924b87c0222e2e4258687a3505334a0",
+      "matchesPriorEvidence": true
+    },
+    {
+      "path": "Builds/HumanGateMmrValidated/UnityPlayer.dll",
+      "bytes": 83787176,
+      "sha256": "841da0185ff90b196e96e68ee7f32455c798c9544e2feabd75c1fcc46f489701",
+      "currentSha256": "841da0185ff90b196e96e68ee7f32455c798c9544e2feabd75c1fcc46f489701",
+      "matchesPriorEvidence": true
+    },
+    {
+      "path": "Builds/HumanGateMmrValidated/HillAdventurer-HumanGate_Data/Managed/Assembly-CSharp.dll",
+      "bytes": 1778688,
+      "sha256": "a96bb584dfac7c9675763526bfedef25995cc159de73366a7250a2031af11757",
+      "currentSha256": "a96bb584dfac7c9675763526bfedef25995cc159de73366a7250a2031af11757",
+      "matchesPriorEvidence": true
+    },
+    {
+      "path": "Builds/HumanGateMmrValidated/Jugar-HumanGate.cmd",
+      "bytes": 113,
+      "sha256": "502ef4ec6b315f150bf277dc7ea52639432ec12c2cf248bf84f7353703810dfb",
+      "currentSha256": "502ef4ec6b315f150bf277dc7ea52639432ec12c2cf248bf84f7353703810dfb",
+      "matchesPriorEvidence": true
+    },
+    {
+      "path": "Builds/HumanGateMmrValidated/Medir-Rendimiento.cmd",
+      "bytes": 243,
+      "sha256": "df46a64903d2d28889ef15924533a12b598d1fd7a1e3be7928f54b1348112d73",
+      "currentSha256": "df46a64903d2d28889ef15924533a12b598d1fd7a1e3be7928f54b1348112d73",
+      "matchesPriorEvidence": true
+    },
+    {
+      "path": "Builds/AndroidSizeForensics-20261018/season-expansion-policy-current.aab",
+      "bytes": 151231753,
+      "sha256": "f5f2b07519b16f15c264f527e2cdd6ee5e9ea2fd586e248404b8506a84c9c352",
+      "currentSha256": "f5f2b07519b16f15c264f527e2cdd6ee5e9ea2fd586e248404b8506a84c9c352",
+      "matchesPriorEvidence": true
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/RacingMlWeights.bytes",
+      "bytes": 108588,
+      "sha256": "0eb9b23327d6de4dfd05a5c104d459d2771d73e3df9d31a6c290ea537ff9ab33",
+      "currentSha256": "0eb9b23327d6de4dfd05a5c104d459d2771d73e3df9d31a6c290ea537ff9ab33",
+      "matchesPriorEvidence": true
+    },
+    {
+      "path": "Tools/ML/Models/Candidates/RC20261006/behavior_mlp.bytes",
+      "bytes": 120632,
+      "sha256": "75dae7b848febed359ba1c359276360618cd48937e0736d716d5167d0480c59a",
+      "currentSha256": "75dae7b848febed359ba1c359276360618cd48937e0736d716d5167d0480c59a",
+      "matchesPriorEvidence": true
+    }
+  ],
+  "scope": "SOURCE_AND_ARTIFACT_FORENSICS_NOT_RUNTIME_APPROVAL"
+}

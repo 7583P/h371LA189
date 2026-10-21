@@ -1,0 +1,9 @@
+{
+    "classification": "EDITOR_WARM_10K_ELITE_MATCHMAKING_NOT_RACE_FPS",
+    "bots": 10000,
+    "calls": 64,
+    "medianMs": 0.68735,
+    "p99Ms": 1.5735,
+    "maxMs": 1.5735,
+    "allocatedBytes": 0
+}

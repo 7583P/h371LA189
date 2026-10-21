@@ -1,0 +1,367 @@
+{
+  "head": "152279fb5a4cf443a90d31654ad7a90f51e5abb3",
+  "branch": "main",
+  "committed": false,
+  "sourceFiles": [
+    {
+      "path": "Assets/AnimeHillRacing/Resources/RacingRainbowRoad.shader",
+      "kind": "modified",
+      "sha256": "40c2237f421b281737aabcbbe67cd31d1709d8c771cbd78734bae7eae05d2cb2",
+      "bytes": 2090,
+      "beforeSha256": "40c2237f421b281737aabcbbe67cd31d1709d8c771cbd78734bae7eae05d2cb2",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Assets\\AnimeHillRacing\\Resources\\RacingRainbowRoad.shader"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/RacingRainbowRoad.shader.meta",
+      "kind": "modified",
+      "sha256": "f3a020e7f4b356ecfe85e7e250d2d0dc4e1a00c017309fcf496ebfce6fb4bd14",
+      "bytes": 60,
+      "beforeSha256": "f3a020e7f4b356ecfe85e7e250d2d0dc4e1a00c017309fcf496ebfce6fb4bd14",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Assets\\AnimeHillRacing\\Resources\\RacingRainbowRoad.shader.meta"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/RacingRainbowStructure.shader",
+      "kind": "modified",
+      "sha256": "ae33a1a86370ba94392307319976ce6824b49dd619469fe15ef24da74d65b018",
+      "bytes": 864,
+      "beforeSha256": "ae33a1a86370ba94392307319976ce6824b49dd619469fe15ef24da74d65b018",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Assets\\AnimeHillRacing\\Resources\\RacingRainbowStructure.shader"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Resources/RacingRainbowStructure.shader.meta",
+      "kind": "modified",
+      "sha256": "20e294cd38360d3926bb3088ea7173e3e23a16fa804c440fde73a4ccc1785fb9",
+      "bytes": 60,
+      "beforeSha256": "20e294cd38360d3926bb3088ea7173e3e23a16fa804c440fde73a4ccc1785fb9",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Assets\\AnimeHillRacing\\Resources\\RacingRainbowStructure.shader.meta"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingCompetitiveDisplayContracts.cs",
+      "kind": "modified",
+      "sha256": "d727adbb641cf750c3138117edef2e78ae39f09e6aec6d0602e7267d06e516e0",
+      "bytes": 15795,
+      "beforeSha256": "4282d26c7b56052e52ec49d98ebe84bf3fc791d7f1c9bc4cb0e7c9f75fa6cea0",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Assets\\AnimeHillRacing\\Scripts\\Editor\\RacingCompetitiveDisplayContracts.cs"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingCompetitiveDisplayContracts.cs.meta",
+      "kind": "modified",
+      "sha256": "010c1f66db6ad298cedb7135db7f2cd4b024007a589c7f86ac7593904cc70c2b",
+      "bytes": 60,
+      "beforeSha256": "010c1f66db6ad298cedb7135db7f2cd4b024007a589c7f86ac7593904cc70c2b",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Assets\\AnimeHillRacing\\Scripts\\Editor\\RacingCompetitiveDisplayContracts.cs.meta"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingRainbowReviewBatch.cs",
+      "kind": "modified",
+      "sha256": "cd61bbd2ecc2b9975a4915b8c9f73dc8fd4a71f5ae4be5223e37169ee868978a",
+      "bytes": 11278,
+      "beforeSha256": "cd61bbd2ecc2b9975a4915b8c9f73dc8fd4a71f5ae4be5223e37169ee868978a",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Assets\\AnimeHillRacing\\Scripts\\Editor\\RacingRainbowReviewBatch.cs"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingRainbowReviewBatch.cs.meta",
+      "kind": "modified",
+      "sha256": "1955e8b994a525bd2def9ec794c1f2edf18f57b5da62836c36c39691c772582a",
+      "bytes": 60,
+      "beforeSha256": "1955e8b994a525bd2def9ec794c1f2edf18f57b5da62836c36c39691c772582a",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Assets\\AnimeHillRacing\\Scripts\\Editor\\RacingRainbowReviewBatch.cs.meta"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingRcEvidenceBuilder.cs",
+      "kind": "modified",
+      "sha256": "b62de29aa248bf1b687496317137fc695e7d8b5c0022ec61398895cd073352e0",
+      "bytes": 12955,
+      "beforeSha256": "b62de29aa248bf1b687496317137fc695e7d8b5c0022ec61398895cd073352e0",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Assets\\AnimeHillRacing\\Scripts\\Editor\\RacingRcEvidenceBuilder.cs"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Competitive/LeagueIdentityLookup.cs",
+      "kind": "modified",
+      "sha256": "ff81241511f48f5aa5878a6b566e5a2d8aa43ed8b78b949c709f86333dd28648",
+      "bytes": 1932,
+      "beforeSha256": "ff81241511f48f5aa5878a6b566e5a2d8aa43ed8b78b949c709f86333dd28648",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Assets\\AnimeHillRacing\\Scripts\\Racing3D\\Competitive\\LeagueIdentityLookup.cs"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Competitive/LeagueIdentityLookup.cs.meta",
+      "kind": "modified",
+      "sha256": "cbb849263dc31194e770a914cb61fa211fc45822d8616541d15afffcb8482d91",
+      "bytes": 60,
+      "beforeSha256": "cbb849263dc31194e770a914cb61fa211fc45822d8616541d15afffcb8482d91",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Assets\\AnimeHillRacing\\Scripts\\Racing3D\\Competitive\\LeagueIdentityLookup.cs.meta"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Core/RaceManager.cs",
+      "kind": "modified",
+      "sha256": "310d4a01552e1b4e4b1adbbca91598d30736f24ac7dba4fb753a60ebcf8e6084",
+      "bytes": 18942,
+      "beforeSha256": "310d4a01552e1b4e4b1adbbca91598d30736f24ac7dba4fb753a60ebcf8e6084",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Assets\\AnimeHillRacing\\Scripts\\Racing3D\\Core\\RaceManager.cs"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingClosureProbe.cs",
+      "kind": "modified",
+      "sha256": "6e0eded11a335d1fc0b37c4e936ae36edf869338971fedbd724e2826ce3dc08d",
+      "bytes": 46131,
+      "beforeSha256": "ff2110519ddddffa0bc8d964e97188b288806228028a0a91f7cfd5965bbc2f44",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Assets\\AnimeHillRacing\\Scripts\\Racing3D\\Diagnostics\\RacingClosureProbe.cs"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingLeagueReadbackProbe.cs",
+      "kind": "modified",
+      "sha256": "1c911d7afc964a175b100b84d9adc732c67d4143b79ad5d16c3088edc4b15bb4",
+      "bytes": 6150,
+      "beforeSha256": "1c911d7afc964a175b100b84d9adc732c67d4143b79ad5d16c3088edc4b15bb4",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Assets\\AnimeHillRacing\\Scripts\\Racing3D\\Diagnostics\\RacingLeagueReadbackProbe.cs"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingLeagueReadbackProbe.cs.meta",
+      "kind": "modified",
+      "sha256": "5586ec3bf02739b34822ff355d42b5dfff3fc71a12aae3b3e0d926088c55dbe7",
+      "bytes": 60,
+      "beforeSha256": "5586ec3bf02739b34822ff355d42b5dfff3fc71a12aae3b3e0d926088c55dbe7",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Assets\\AnimeHillRacing\\Scripts\\Racing3D\\Diagnostics\\RacingLeagueReadbackProbe.cs.meta"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingRaceMetrics.cs",
+      "kind": "modified",
+      "sha256": "4c659ffe725ac2d26742a044b2f7c39635070fdeb51ee8566d24ea76809cd49c",
+      "bytes": 33981,
+      "beforeSha256": "4c659ffe725ac2d26742a044b2f7c39635070fdeb51ee8566d24ea76809cd49c",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Assets\\AnimeHillRacing\\Scripts\\Racing3D\\Diagnostics\\RacingRaceMetrics.cs"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/CanyonRushBuilder.cs",
+      "kind": "modified",
+      "sha256": "6557d8aa580c81a5620dc7656579898e9934259b8ad8d81d949c073bbfc0d599",
+      "bytes": 35446,
+      "beforeSha256": "6557d8aa580c81a5620dc7656579898e9934259b8ad8d81d949c073bbfc0d599",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Assets\\AnimeHillRacing\\Scripts\\Racing3D\\Environment\\CanyonRushBuilder.cs"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/RacingRainbowScenery.cs",
+      "kind": "modified",
+      "sha256": "971282c9750fe884541b43fae4ea38d2779091b0baea841c23ffc784ba231551",
+      "bytes": 10694,
+      "beforeSha256": "971282c9750fe884541b43fae4ea38d2779091b0baea841c23ffc784ba231551",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Assets\\AnimeHillRacing\\Scripts\\Racing3D\\Environment\\RacingRainbowScenery.cs"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Environment/RacingRainbowScenery.cs.meta",
+      "kind": "modified",
+      "sha256": "d3180e6821988bd7b36a85ac78764b4c87d15454500b1a09c724e802f19c2ddf",
+      "bytes": 60,
+      "beforeSha256": "d3180e6821988bd7b36a85ac78764b4c87d15454500b1a09c724e802f19c2ddf",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Assets\\AnimeHillRacing\\Scripts\\Racing3D\\Environment\\RacingRainbowScenery.cs.meta"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/MMR/RacingProgressionService.cs",
+      "kind": "modified",
+      "sha256": "8d8bc2cedc5a9a11d0a8c74e04271ab9ebce1e9ebe5aab48f9150bffc85678f1",
+      "bytes": 28670,
+      "beforeSha256": "8d8bc2cedc5a9a11d0a8c74e04271ab9ebce1e9ebe5aab48f9150bffc85678f1",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Assets\\AnimeHillRacing\\Scripts\\Racing3D\\MMR\\RacingProgressionService.cs"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Presentation/RacingVehicleVisuals.cs",
+      "kind": "modified",
+      "sha256": "7b9cd0e68f786199379952e6c351c9b97602169a7ddb4d046ad03fbea02fc2ed",
+      "bytes": 36530,
+      "beforeSha256": "7b9cd0e68f786199379952e6c351c9b97602169a7ddb4d046ad03fbea02fc2ed",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Assets\\AnimeHillRacing\\Scripts\\Racing3D\\Presentation\\RacingVehicleVisuals.cs"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingLeaderboardUI.cs",
+      "kind": "modified",
+      "sha256": "b2eb3da03abdc9f96550f7a4eaa5571bbbb6d3e950dcc0fe68d2a4f4074af4d2",
+      "bytes": 11183,
+      "beforeSha256": "32aea25e825aff30b0b548dd86319598ba80fb741615e0ef3dae7946a1b3f7f7",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Assets\\AnimeHillRacing\\Scripts\\Racing3D\\UI\\RacingLeaderboardUI.cs"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingResultsUI.cs",
+      "kind": "modified",
+      "sha256": "7026c958ff95b5113c51aa1f4f2f73f575e47188f53d7f9cb1fcc6cf9bdea6c8",
+      "bytes": 10983,
+      "beforeSha256": "7026c958ff95b5113c51aa1f4f2f73f575e47188f53d7f9cb1fcc6cf9bdea6c8",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Assets\\AnimeHillRacing\\Scripts\\Racing3D\\UI\\RacingResultsUI.cs"
+    },
+    {
+      "path": "Tools/CompetitiveQA/Json.cs",
+      "kind": "modified",
+      "sha256": "0ea975c72857a157fa839a0290ebb14fe91de7cb2070f8ddf6a2607026e63b0c",
+      "bytes": 3189,
+      "beforeSha256": "c01a20172efa05dd75d4052f20b534b7eea181353e30ff9dae223f67a51cb6e0",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Tools\\CompetitiveQA\\Json.cs"
+    },
+    {
+      "path": "Tools/CompetitiveQA/PhysicalLeagueReadback.cs",
+      "kind": "modified",
+      "sha256": "7959c80e9a0510f8ed038fcedd58df322382c7424ea055429fddba9b832e63e2",
+      "bytes": 4560,
+      "beforeSha256": "7959c80e9a0510f8ed038fcedd58df322382c7424ea055429fddba9b832e63e2",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Tools\\CompetitiveQA\\PhysicalLeagueReadback.cs"
+    },
+    {
+      "path": "Tools/CompetitiveQA/Program.cs",
+      "kind": "modified",
+      "sha256": "7108bf01c87705f19e96ba2ed246374333c7ba20aa61ed57392316786415069f",
+      "bytes": 3309,
+      "beforeSha256": "0ca965fbced183889b1aca55b1880f6f71713c4d658e9237940fbc486449545a",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Tools\\CompetitiveQA\\Program.cs"
+    },
+    {
+      "path": "Tools/CompetitiveQA/ReleaseJsonContracts.cs",
+      "kind": "new_or_not_in_source_snapshot",
+      "sha256": "a6433598e3e4f4b0feb5625ecacfc59879ef3f48e2665588538f7e1f4cc5e1d1",
+      "bytes": 2934,
+      "beforeSha256": null,
+      "snapshot": null
+    },
+    {
+      "path": "Tools/CompetitiveQA/ReleaseLabReadback.cs",
+      "kind": "modified",
+      "sha256": "2059767922c286b63c5b2cb35ef876378e4ad934d2cabb678a3ca7f41d358d85",
+      "bytes": 3639,
+      "beforeSha256": "2059767922c286b63c5b2cb35ef876378e4ad934d2cabb678a3ca7f41d358d85",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Tools\\CompetitiveQA\\ReleaseLabReadback.cs"
+    },
+    {
+      "path": "Tools/CompetitiveQA/ReleaseLookupContracts.cs",
+      "kind": "modified",
+      "sha256": "84f530b1e9eaac6336b99296c2aa481602d926471a185322d7df5ab085a0f424",
+      "bytes": 5919,
+      "beforeSha256": "84f530b1e9eaac6336b99296c2aa481602d926471a185322d7df5ab085a0f424",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Tools\\CompetitiveQA\\ReleaseLookupContracts.cs"
+    },
+    {
+      "path": "Tools/CompetitiveQA/ReleasePopulationBench.cs",
+      "kind": "modified",
+      "sha256": "79aef15db4a5b8de914f7da687b71feb6f824b30ee317077bb722b777db995a3",
+      "bytes": 3503,
+      "beforeSha256": "79aef15db4a5b8de914f7da687b71feb6f824b30ee317077bb722b777db995a3",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Tools\\CompetitiveQA\\ReleasePopulationBench.cs"
+    },
+    {
+      "path": "Tools/RC/Measure-AndroidDelivery.ps1",
+      "kind": "modified",
+      "sha256": "3ef54a11b08528487d7b256a8f7c08c2bf5842d18f0843f01c1dcda6f2bb7061",
+      "bytes": 4084,
+      "beforeSha256": "3ef54a11b08528487d7b256a8f7c08c2bf5842d18f0843f01c1dcda6f2bb7061",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Tools\\RC\\Measure-AndroidDelivery.ps1"
+    },
+    {
+      "path": "Tools/RC/Measure-ReleasePerformance.ps1",
+      "kind": "modified",
+      "sha256": "6647b24e2c5441b07491046081a62711eefb82160ccc5d3d014d24d70713b229",
+      "bytes": 4763,
+      "beforeSha256": "6647b24e2c5441b07491046081a62711eefb82160ccc5d3d014d24d70713b229",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Tools\\RC\\Measure-ReleasePerformance.ps1"
+    },
+    {
+      "path": "Tools/RC/Open-ReleaseHumanGate.ps1",
+      "kind": "modified",
+      "sha256": "a5e30bfd1681f6c791e274dcd512ba24ac737e618087471dbad06727f9969776",
+      "bytes": 3011,
+      "beforeSha256": "6db990b75dd2280c780a4d9f65ffcfb67065da0de47a5676f3b21730fc60447a",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Tools\\RC\\Open-ReleaseHumanGate.ps1"
+    },
+    {
+      "path": "Tools/RC/Run-ReleaseNativeReadback.ps1",
+      "kind": "modified",
+      "sha256": "7d0a1e375e0bb72748db9ef1c814b1d9b16b405f6b5f20f838f88e743e06fd65",
+      "bytes": 3465,
+      "beforeSha256": "6b03cb83f47eba5670b9a9e65c11ad1f674af5a9b12857ed3f58255008f7210a",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Tools\\RC\\Run-ReleaseNativeReadback.ps1"
+    },
+    {
+      "path": "Tools/RC/Run-ReleaseRaceMatrix.ps1",
+      "kind": "modified",
+      "sha256": "b2e41885664afc087c2eb63fba6c5b80a45fc9e2e92d5798b3fe532564bd808a",
+      "bytes": 5090,
+      "beforeSha256": "b2e41885664afc087c2eb63fba6c5b80a45fc9e2e92d5798b3fe532564bd808a",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Tools\\RC\\Run-ReleaseRaceMatrix.ps1"
+    },
+    {
+      "path": "Tools/RC/analyze_elite_forensics.py",
+      "kind": "modified",
+      "sha256": "d1e0ac9c4462a5561ccb0266a8c9802b715aca09320ee9435c579b2bb30c538a",
+      "bytes": 6472,
+      "beforeSha256": "d1e0ac9c4462a5561ccb0266a8c9802b715aca09320ee9435c579b2bb30c538a",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Tools\\RC\\analyze_elite_forensics.py"
+    },
+    {
+      "path": "Tools/RC/analyze_performance.py",
+      "kind": "modified",
+      "sha256": "2117434dbc7ae428e5545ba622e4b7736d5324e10c646ebe0ab1049de615e149",
+      "bytes": 7114,
+      "beforeSha256": "a4c0c889a94585797bd5d1d8e37b0ea40becb386ea345d0b3df361914125c15d",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Tools\\RC\\analyze_performance.py"
+    },
+    {
+      "path": "Tools/RC/analyze_release_recoveries.py",
+      "kind": "modified",
+      "sha256": "c17b7a61da59444c0f3da01106cf163f830928a14c9bb77bbca4f10ef3508494",
+      "bytes": 2464,
+      "beforeSha256": "c17b7a61da59444c0f3da01106cf163f830928a14c9bb77bbca4f10ef3508494",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Tools\\RC\\analyze_release_recoveries.py"
+    },
+    {
+      "path": "Tools/RC/compare_performance.py",
+      "kind": "modified",
+      "sha256": "ad7a9454da9c0da2a3ab386381bc5f580e33ff46094b90c39780a4d0e7524684",
+      "bytes": 5213,
+      "beforeSha256": "87ecfe6d91ef6740a5db29c04230262d2edcb3449b03543d371c9012334bb831",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Tools\\RC\\compare_performance.py"
+    },
+    {
+      "path": "Tools/RC/export_release_logs.py",
+      "kind": "modified",
+      "sha256": "8e2f4060825bd9326a28951c1f838b987a464285d215e8f3a1f594aca63b8f89",
+      "bytes": 2445,
+      "beforeSha256": "ec670718ed6e11b15c2b666c86dd9c9f5fd5db7598f5b69f8970d7927899a75f",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Tools\\RC\\export_release_logs.py"
+    },
+    {
+      "path": "Tools/RC/finalize_release_evidence.py",
+      "kind": "modified",
+      "sha256": "e0065a8496486f29d0a911993b8833cc94231d2207e4bf1afb7bfc3c0868ae35",
+      "bytes": 2887,
+      "beforeSha256": "e0065a8496486f29d0a911993b8833cc94231d2207e4bf1afb7bfc3c0868ae35",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Tools\\RC\\finalize_release_evidence.py"
+    },
+    {
+      "path": "Tools/RC/release_gate_inventory.py",
+      "kind": "modified",
+      "sha256": "94314c7d05479985231643770ca44fba29a2420f833e60c00e0012386285b788",
+      "bytes": 4042,
+      "beforeSha256": "94314c7d05479985231643770ca44fba29a2420f833e60c00e0012386285b788",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Tools\\RC\\release_gate_inventory.py"
+    },
+    {
+      "path": "Tools/RC/summarize_release_matrix.py",
+      "kind": "modified",
+      "sha256": "04946454e1cc84e314c98ec8d4e53c22737c158f67abe65cb68378845bfe650b",
+      "bytes": 3443,
+      "beforeSha256": "04946454e1cc84e314c98ec8d4e53c22737c158f67abe65cb68378845bfe650b",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Tools\\RC\\summarize_release_matrix.py"
+    },
+    {
+      "path": "Tools/RC/verify_release_integrity.py",
+      "kind": "modified",
+      "sha256": "c48c78286a159b156ba105d730034e7f684ed0514d4c755358664fd15133496d",
+      "bytes": 7661,
+      "beforeSha256": "90b4e72f865cfc3f7b79347e8807a4d202b7efd01722861bf9557719c16dd4da",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Tools\\RC\\verify_release_integrity.py"
+    },
+    {
+      "path": "Tools/RC/write_rainbow_review.py",
+      "kind": "modified",
+      "sha256": "a307293e2ada559e94d61ba0635134fb5e82890e725b711324ba52bd3eceaf61",
+      "bytes": 3104,
+      "beforeSha256": "a307293e2ada559e94d61ba0635134fb5e82890e725b711324ba52bd3eceaf61",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Tools\\RC\\write_rainbow_review.py"
+    }
+  ]
+}

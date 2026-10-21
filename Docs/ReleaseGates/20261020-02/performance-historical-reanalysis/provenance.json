@@ -1,0 +1,100 @@
+{
+  "classification": "RECOMPUTATION_OF_HISTORICAL_60_SECOND_WINDOWS_NOT_A_NEW_MEASUREMENT",
+  "utc": "2026-10-21T03:11:08.780378+00:00",
+  "sourceDirectory": "Docs\\ReleaseGates\\20261019-01\\focused-performance-20261020-041114-1a968eaa",
+  "inputs": [
+    {
+      "path": "Docs\\ReleaseGates\\20261019-01\\focused-performance-20261020-041114-1a968eaa\\performance-off-policy\\measurement-run.json",
+      "sha256Before": "8e923732975c6f40a9eaf023ffcc5cc01aeb35e1f535c72c01d6b9f073ddaf14",
+      "sha256After": "8e923732975c6f40a9eaf023ffcc5cc01aeb35e1f535c72c01d6b9f073ddaf14",
+      "unchanged": true
+    },
+    {
+      "path": "Docs\\ReleaseGates\\20261019-01\\focused-performance-20261020-041114-1a968eaa\\performance-off-policy\\seed-4207\\metrics.json",
+      "sha256Before": "9efcda0a98cb463c7c782600d5f90780bb6075ae99f23ac7e88cea885a08305d",
+      "sha256After": "9efcda0a98cb463c7c782600d5f90780bb6075ae99f23ac7e88cea885a08305d",
+      "unchanged": true
+    },
+    {
+      "path": "Docs\\ReleaseGates\\20261019-01\\focused-performance-20261020-041114-1a968eaa\\performance-off-policy\\seed-4207\\frame-forensics.json",
+      "sha256Before": "b90559ada5994d2e5f8dc2c0714c15ecfe4779f51b8a62595ce63beac06ac49c",
+      "sha256After": "b90559ada5994d2e5f8dc2c0714c15ecfe4779f51b8a62595ce63beac06ac49c",
+      "unchanged": true
+    },
+    {
+      "path": "Docs\\ReleaseGates\\20261019-01\\focused-performance-20261020-041114-1a968eaa\\performance-off-policy\\seed-4207\\render-proof.json",
+      "sha256Before": "ddfe9974b6a82f26339823ec469586646e2e1411a9f6950792af39eb3e6ec192",
+      "sha256After": "ddfe9974b6a82f26339823ec469586646e2e1411a9f6950792af39eb3e6ec192",
+      "unchanged": true
+    },
+    {
+      "path": "Docs\\ReleaseGates\\20261019-01\\focused-performance-20261020-041114-1a968eaa\\performance-off-policy\\seed-4207\\frame-times.csv",
+      "sha256Before": "9282e3e1cdb686e687a4d6822b835b7af15743ee3989b25ebecaf6a66eac81cb",
+      "sha256After": "9282e3e1cdb686e687a4d6822b835b7af15743ee3989b25ebecaf6a66eac81cb",
+      "unchanged": true
+    },
+    {
+      "path": "Docs\\ReleaseGates\\20261019-01\\focused-performance-20261020-041114-1a968eaa\\performance-off-policy\\seed-4207\\frame-forensics.csv",
+      "sha256Before": "7312f1d0fae2b411c27d14190658607c29451b00354b54d5908dd9f5d3b61042",
+      "sha256After": "7312f1d0fae2b411c27d14190658607c29451b00354b54d5908dd9f5d3b61042",
+      "unchanged": true
+    },
+    {
+      "path": "Docs\\ReleaseGates\\20261019-01\\focused-performance-20261020-041114-1a968eaa\\performance-off-policy\\seed-4207\\performance-analysis.json",
+      "sha256Before": "f70ad37dd769c0cf50196d505f5e2e856798d6ae22e292612fe4fc6768bbdefb",
+      "sha256After": "f70ad37dd769c0cf50196d505f5e2e856798d6ae22e292612fe4fc6768bbdefb",
+      "unchanged": true
+    },
+    {
+      "path": "Docs\\ReleaseGates\\20261019-01\\focused-performance-20261020-041114-1a968eaa\\performance-shadow-policy\\measurement-run.json",
+      "sha256Before": "ecd146882b2ed137259ee1e432dbeb7364356d5f13a91463a249decdc751dcea",
+      "sha256After": "ecd146882b2ed137259ee1e432dbeb7364356d5f13a91463a249decdc751dcea",
+      "unchanged": true
+    },
+    {
+      "path": "Docs\\ReleaseGates\\20261019-01\\focused-performance-20261020-041114-1a968eaa\\performance-shadow-policy\\seed-4207\\metrics.json",
+      "sha256Before": "83988af5c9f30e5dc06101ffbd97c6aebafb54fbde4f0bd27bc342f1fee3ad74",
+      "sha256After": "83988af5c9f30e5dc06101ffbd97c6aebafb54fbde4f0bd27bc342f1fee3ad74",
+      "unchanged": true
+    },
+    {
+      "path": "Docs\\ReleaseGates\\20261019-01\\focused-performance-20261020-041114-1a968eaa\\performance-shadow-policy\\seed-4207\\frame-forensics.json",
+      "sha256Before": "d80d5b3c5a25a4b8d8cc63ff72f7464ad4f479df6c657988077d4e6a953818a3",
+      "sha256After": "d80d5b3c5a25a4b8d8cc63ff72f7464ad4f479df6c657988077d4e6a953818a3",
+      "unchanged": true
+    },
+    {
+      "path": "Docs\\ReleaseGates\\20261019-01\\focused-performance-20261020-041114-1a968eaa\\performance-shadow-policy\\seed-4207\\render-proof.json",
+      "sha256Before": "774567cfec18f64a92ab93c62a1e2e2d55430de6d973073f60683de5fed9e140",
+      "sha256After": "774567cfec18f64a92ab93c62a1e2e2d55430de6d973073f60683de5fed9e140",
+      "unchanged": true
+    },
+    {
+      "path": "Docs\\ReleaseGates\\20261019-01\\focused-performance-20261020-041114-1a968eaa\\performance-shadow-policy\\seed-4207\\frame-times.csv",
+      "sha256Before": "1562a816256c924336fbff41ae47120abf9eba30edf33308d514595e7b52fa56",
+      "sha256After": "1562a816256c924336fbff41ae47120abf9eba30edf33308d514595e7b52fa56",
+      "unchanged": true
+    },
+    {
+      "path": "Docs\\ReleaseGates\\20261019-01\\focused-performance-20261020-041114-1a968eaa\\performance-shadow-policy\\seed-4207\\frame-forensics.csv",
+      "sha256Before": "aa473bc2f05943d168652378b302bffdfa535859901234e6a4abadabd4d43aac",
+      "sha256After": "aa473bc2f05943d168652378b302bffdfa535859901234e6a4abadabd4d43aac",
+      "unchanged": true
+    },
+    {
+      "path": "Docs\\ReleaseGates\\20261019-01\\focused-performance-20261020-041114-1a968eaa\\performance-shadow-policy\\seed-4207\\performance-analysis.json",
+      "sha256Before": "0e48c955a31f486d31f7639bec4d4925b2a6ec79d2f538e2d959d2a01a91a5c6",
+      "sha256After": "0e48c955a31f486d31f7639bec4d4925b2a6ec79d2f538e2d959d2a01a91a5c6",
+      "unchanged": true
+    }
+  ],
+  "allInputsUnchanged": true,
+  "numericReanalysisIdentical": {
+    "off": true,
+    "shadow": true
+  },
+  "existingOutputGuardsPassed": [
+    true,
+    true
+  ]
+}

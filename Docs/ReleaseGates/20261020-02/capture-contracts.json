@@ -1,0 +1,68 @@
+{
+  "classification": "QA_OBSERVATION_CAPTURE_REGRESSION_NOT_A_DRIVING_AB_OR_HUMAN_APPROVAL",
+  "passed": true,
+  "checks": {
+    "recentRealJump": true,
+    "observedAirborne": true,
+    "nearAuthoredNode": true,
+    "actualLanding": true,
+    "sameSeed": true,
+    "noRecoveryBetween": true,
+    "orderedEvents": true,
+    "renderedImagesExist": true,
+    "legacyLabelsRemoved": true,
+    "oldHarnessDidNotProveFlight": true
+  },
+  "flight": {
+    "classification": "OBSERVED_FLIGHT_NEAR_AUTHORED_MAIN_JUMP_NOT_A_REPLAY",
+    "captureEvent": "flight",
+    "seed": 4301,
+    "currentNode": 172,
+    "authoredJumpNode": 172,
+    "recoveries": 0,
+    "raceTime": 67.2696304321289,
+    "jumpAge": 0.0844573974609375,
+    "airborneSeconds": 0.0599999763071537,
+    "grounded": false,
+    "vehiclePosition": {
+      "x": -133.31053161621094,
+      "y": 6.754585266113281,
+      "z": -68.102783203125
+    }
+  },
+  "landing": {
+    "classification": "OBSERVED_FLIGHT_NEAR_AUTHORED_MAIN_JUMP_NOT_A_REPLAY",
+    "captureEvent": "landing",
+    "seed": 4301,
+    "currentNode": 175,
+    "authoredJumpNode": 172,
+    "recoveries": 0,
+    "raceTime": 68.0887451171875,
+    "jumpAge": 0.9035720825195312,
+    "airborneSeconds": 0.0,
+    "grounded": true,
+    "vehiclePosition": {
+      "x": -98.9967041015625,
+      "y": 5.999001979827881,
+      "z": -74.20655822753906
+    }
+  },
+  "files": [
+    {
+      "path": "independent-race\\mmr-10000\\seed-4301\\08-main-jump.png",
+      "sha256": "918dfffe6b11f74236b25a0947508cc0d9b44318213de49471a6ee2df328cad7"
+    },
+    {
+      "path": "independent-race\\mmr-10000\\seed-4301\\08-main-jump.json",
+      "sha256": "ff7bd3024d8442539c9fe877ddec20d255db6df877c1d02588764910b5565c65"
+    },
+    {
+      "path": "independent-race\\mmr-10000\\seed-4301\\08-main-jump-landing.png",
+      "sha256": "4a9d6b3a40a4673acae08123391f689b93d97c1e65e6fc7f736b960835ee4a5a"
+    },
+    {
+      "path": "independent-race\\mmr-10000\\seed-4301\\08-main-jump-landing.json",
+      "sha256": "b3bc1c2f567a43c46a197c617d0a44abd8353043616b7a71c3b054f5f57abc49"
+    }
+  ]
+}

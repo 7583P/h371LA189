@@ -1,0 +1,10 @@
+{
+  "status": "BLOCKED_DOMAIN_NOT_ESTABLISHED",
+  "configuredDeveloperDomain": null,
+  "playPackage": "com.matias.hilladventurer",
+  "attemptedListing": "https://play.google.com/store/apps/details?id=com.matias.hilladventurer",
+  "publicFetchResult": "Cache miss; two searches returned no results",
+  "domainRequestedFromUser": true,
+  "siteOrPublisherIdentityInvented": false,
+  "adsRequestedOrClicked": false
+}

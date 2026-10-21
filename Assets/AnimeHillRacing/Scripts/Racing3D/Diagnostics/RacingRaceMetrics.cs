@@ -8,7 +8,7 @@ namespace AnimeHillRacing.Racing3D
 {
     [Serializable] public sealed class RacerTelemetry
     {
-        public string name,vehicle,wheels;public int mmr,position,collisions,items,recoveries,checkpointVisits;public bool finished;
+        public string racerId,name,vehicle,wheels;public int mmr,position,collisions,items,recoveries,checkpointVisits;public bool finished;
         public float drivingSeconds,averageSpeedKmh,offroadSeconds,driftSeconds,airborneSeconds,bestLap,finishTime;
         public int shortcutVisits;public List<float> lapTimes=new List<float>();
         public int wallCollisions,racerCollisions,itemHits,miniTurbos,jumps,tricks,landingBoosts,shortcutCompletions,passingDecisions,defensiveDecisions,trafficBrakingDecisions;
@@ -191,7 +191,7 @@ namespace AnimeHillRacing.Racing3D
             }
             foreach(var racer in manager.ProgressTracker.Leaderboard)
             {
-                var metric=new RacerTelemetry{name=racer.Identity.displayName,vehicle=racer.Identity.vehicleId,wheels=racer.Identity.wheelId,mmr=racer.Identity.mmr,physics=racer.Vehicle,inventory=racer.Vehicle.GetComponent<ItemInventory>(),recovery=racer.Recovery};
+                var metric=new RacerTelemetry{racerId=racer.Identity.racerId,name=racer.Identity.displayName,vehicle=racer.Identity.vehicleId,wheels=racer.Identity.wheelId,mmr=racer.Identity.mmr,physics=racer.Vehicle,inventory=racer.Vehicle.GetComponent<ItemInventory>(),recovery=racer.Recovery};
                 metric.buildCategory=report.equalBuildBenchmark?"ControlledEqualBuild":racer.Identity.buildCategory.ToString();metric.metaProbability=racer.Identity.metaProbabilityUsed;
                 metric.ai=racer.Vehicle.GetComponent<AiVehicleController>();
                 metric.style=metric.ai!=null?metric.ai.Profile.style.ToString():"Human";

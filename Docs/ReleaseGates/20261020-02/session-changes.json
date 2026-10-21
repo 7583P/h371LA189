@@ -1,0 +1,94 @@
+{
+  "head": "152279fb5a4cf443a90d31654ad7a90f51e5abb3",
+  "branch": "main",
+  "committed": false,
+  "initialWorkingTreePreserved": true,
+  "sourceChanges": [
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Editor/RacingCompetitiveDisplayContracts.cs",
+      "kind": "modified_this_execution",
+      "beforeSha256": "4282d26c7b56052e52ec49d98ebe84bf3fc791d7f1c9bc4cb0e7c9f75fa6cea0",
+      "sha256": "d727adbb641cf750c3138117edef2e78ae39f09e6aec6d0602e7267d06e516e0",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Assets\\AnimeHillRacing\\Scripts\\Editor\\RacingCompetitiveDisplayContracts.cs"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/RacingClosureProbe.cs",
+      "kind": "modified_this_execution",
+      "beforeSha256": "ff2110519ddddffa0bc8d964e97188b288806228028a0a91f7cfd5965bbc2f44",
+      "sha256": "6e0eded11a335d1fc0b37c4e936ae36edf869338971fedbd724e2826ce3dc08d",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Assets\\AnimeHillRacing\\Scripts\\Racing3D\\Diagnostics\\RacingClosureProbe.cs"
+    },
+    {
+      "path": "Assets/AnimeHillRacing/Scripts/Racing3D/UI/RacingLeaderboardUI.cs",
+      "kind": "modified_this_execution",
+      "beforeSha256": "32aea25e825aff30b0b548dd86319598ba80fb741615e0ef3dae7946a1b3f7f7",
+      "sha256": "b2eb3da03abdc9f96550f7a4eaa5571bbbb6d3e950dcc0fe68d2a4f4074af4d2",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Assets\\AnimeHillRacing\\Scripts\\Racing3D\\UI\\RacingLeaderboardUI.cs"
+    },
+    {
+      "path": "Tools/CompetitiveQA/Json.cs",
+      "kind": "modified_this_execution",
+      "beforeSha256": "c01a20172efa05dd75d4052f20b534b7eea181353e30ff9dae223f67a51cb6e0",
+      "sha256": "0ea975c72857a157fa839a0290ebb14fe91de7cb2070f8ddf6a2607026e63b0c",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Tools\\CompetitiveQA\\Json.cs"
+    },
+    {
+      "path": "Tools/CompetitiveQA/Program.cs",
+      "kind": "modified_this_execution",
+      "beforeSha256": "0ca965fbced183889b1aca55b1880f6f71713c4d658e9237940fbc486449545a",
+      "sha256": "7108bf01c87705f19e96ba2ed246374333c7ba20aa61ed57392316786415069f",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Tools\\CompetitiveQA\\Program.cs"
+    },
+    {
+      "path": "Tools/RC/Open-ReleaseHumanGate.ps1",
+      "kind": "modified_this_execution",
+      "beforeSha256": "6db990b75dd2280c780a4d9f65ffcfb67065da0de47a5676f3b21730fc60447a",
+      "sha256": "a5e30bfd1681f6c791e274dcd512ba24ac737e618087471dbad06727f9969776",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Tools\\RC\\Open-ReleaseHumanGate.ps1"
+    },
+    {
+      "path": "Tools/RC/Run-ReleaseNativeReadback.ps1",
+      "kind": "modified_this_execution",
+      "beforeSha256": "6b03cb83f47eba5670b9a9e65c11ad1f674af5a9b12857ed3f58255008f7210a",
+      "sha256": "7d0a1e375e0bb72748db9ef1c814b1d9b16b405f6b5f20f838f88e743e06fd65",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Tools\\RC\\Run-ReleaseNativeReadback.ps1"
+    },
+    {
+      "path": "Tools/RC/analyze_performance.py",
+      "kind": "modified_this_execution",
+      "beforeSha256": "a4c0c889a94585797bd5d1d8e37b0ea40becb386ea345d0b3df361914125c15d",
+      "sha256": "2117434dbc7ae428e5545ba622e4b7736d5324e10c646ebe0ab1049de615e149",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Tools\\RC\\analyze_performance.py"
+    },
+    {
+      "path": "Tools/RC/compare_performance.py",
+      "kind": "modified_this_execution",
+      "beforeSha256": "87ecfe6d91ef6740a5db29c04230262d2edcb3449b03543d371c9012334bb831",
+      "sha256": "ad7a9454da9c0da2a3ab386381bc5f580e33ff46094b90c39780a4d0e7524684",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Tools\\RC\\compare_performance.py"
+    },
+    {
+      "path": "Tools/RC/export_release_logs.py",
+      "kind": "modified_this_execution",
+      "beforeSha256": "ec670718ed6e11b15c2b666c86dd9c9f5fd5db7598f5b69f8970d7927899a75f",
+      "sha256": "8e2f4060825bd9326a28951c1f838b987a464285d215e8f3a1f594aca63b8f89",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Tools\\RC\\export_release_logs.py"
+    },
+    {
+      "path": "Tools/RC/verify_release_integrity.py",
+      "kind": "modified_this_execution",
+      "beforeSha256": "90b4e72f865cfc3f7b79347e8807a4d202b7efd01722861bf9557719c16dd4da",
+      "sha256": "c48c78286a159b156ba105d730034e7f684ed0514d4c755358664fd15133496d",
+      "snapshot": "tmp\\ReleaseGates\\20261020-02\\before\\Tools\\RC\\verify_release_integrity.py"
+    },
+    {
+      "path": "Tools/CompetitiveQA/ReleaseJsonContracts.cs",
+      "kind": "new_this_execution",
+      "beforeSha256": null,
+      "sha256": "a6433598e3e4f4b0feb5625ecacfc59879ef3f48e2665588538f7e1f4cc5e1d1",
+      "snapshot": null
+    }
+  ],
+  "sourceChangeCount": 12,
+  "documentsAndRuntimeEvidence": "New files under this dated evidence directory; see SHA256SUMS.json"
+}

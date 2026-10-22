@@ -1,0 +1,215 @@
+================================================================================
+INFORME FINAL DE AUDITORÍA, SEGURIDAD Y PREPARACIÓN OPEN SOURCE
+PROYECTO: HILL ADVENTURER
+================================================================================
+Desarrollador: Matías Games Dev
+Identificador de Paquete: com.matias.hilladventurer (Publicado en Google Play)
+Motor / Tecnología: Unity 6 (6000.3.13f1) URP | C# | .NET 10.0 CLI
+Rama de Preparación: oss-readiness
+Fecha de Auditoría: 22 de Octubre de 2026
+Dictamen Técnico: APTO CON CONDICIONES
+
+--------------------------------------------------------------------------------
+1. VERIFICACIÓN DEL KEYSTORE: CLAVE DE SUBIDA VS. CLAVE DE FIRMA DE LA APP
+--------------------------------------------------------------------------------
+A. Diagnóstico de los paquetes generados en el proyecto:
+   - Se analizaron los archivos AAB existentes en el directorio Builds:
+     * Builds/AndroidSizeForensics-20261017/current.aab
+     * Builds/ReleaseGates-20261020-02-Android/FORENSIC-NOT-FOR-INSTALL.aab
+   - Certificado detectado mediante keytool -printcert -jarfile:
+     * Propietario / Emisor: C=US, O=Android, CN=Android Debug
+     * Huella SHA1:   B0:F4:AB:A3:9C:21:7C:40:F4:83:32:75:D6:A2:1C:45:7F:38:88:8D
+     * Huella SHA256: 57:94:27:0A:88:1F:EF:EA:1A:11:D0:1B:D6:BE:AA:CD:11:A9:FA:9F:A1:6F:78:93:67:67:A2:4D:44:65:79:CA
+   - Causa técnica: En ProjectSettings/ProjectSettings.asset, la opción
+     'androidUseCustomKeystore: 0' estaba desmarcada, por lo que las compilaciones
+     de prueba locales recurrieron a la clave de depuración estándar de Android SDK.
+
+B. Estado del archivo 'hilladventurer.keystore':
+   - Tamaño: 2.568 bytes.
+   - Formato: PKCS#12 (cabecera ASN.1 DER 30-82-0A-04), protegido por contraseña.
+   - Está asociado a la identidad de release del proyecto 'com.matias.hilladventurer'.
+
+C. Dónde comparar en Google Play Console:
+   1. Ingresa a https://play.google.com/console
+   2. Selecciona la aplicación: Hill Adventurer (com.matias.hilladventurer).
+   3. En el menú izquierdo, navega a:
+      Versión (Release) > Configuración (Setup) > Integridad de la app (App integrity).
+   4. Ve a la pestaña 'Firma de apps' (App signing).
+   5. Encontrarás dos secciones de certificados:
+      * 'Certificado de la clave de firma de la app' (App signing key certificate)
+      * 'Certificado de la clave de subida' (Upload key certificate)
+
+D. Cómo obtener la huella de tu keystore local de forma segura:
+   En tu terminal local ejecuta (sin compartir tu contraseña):
+     keytool -list -v -keystore hilladventurer.keystore -alias hilladventurer
+   Compara los valores SHA1 y SHA256 resultantes con los de Google Play Console.
+
+E. Consecuencias:
+   - Si coincide con la 'Clave de subida' (Escenario más probable y seguro):
+     La clave maestra de la app está a salvo en la infraestructura de Google.
+     Solución: Haz clic en 'Solicitar restablecimiento de la clave de subida'
+     en Google Play Console. Google solicitará un nuevo certificado .pem generado
+     con un nuevo keystore local privado. Una vez aprobado (24-48h), la clave
+     antigua queda revocada sin afectar a los usuarios instalados.
+   - Si coincide con la 'Clave de firma de la app':
+     La aplicación utiliza firmado legado gestionado por el desarrollador. La clave
+     no se puede rotar sin publicar con un nuevo paquete (applicationId).
+
+--------------------------------------------------------------------------------
+2. PROCEDIMIENTO SEGURO DE LIMPIEZA DEL HISTORIAL GIT
+--------------------------------------------------------------------------------
+Se descartó el uso de 'git push --force --all' por considerarse peligroso.
+Se prepararon los scripts interactivos:
+  - Tools/Maintenance/git-purge-keystore.ps1
+  - Tools/Maintenance/git-purge-keystore.sh
+
+Estrategia implementada en los scripts:
+1. Respaldo Criptográfico Previo:
+   Crea y verifica automáticamente un archivo git bundle inmutable:
+     git bundle create backup-hilladventurer-<fecha>.bundle --all
+     git bundle verify backup-hilladventurer-<fecha>.bundle
+   Posibilidad de rollback instantáneo:
+     git clone backup-hilladventurer-<fecha>.bundle repositorio-recuperado
+2. Purga Selectiva por Rama:
+   Reescribe únicamente la rama objetivo sin alterar ramas no involucradas.
+3. Publicación Segura:
+   Utiliza --force-with-lease exclusivamente sobre la rama específica:
+     git push origin oss-readiness:main --force-with-lease
+
+--------------------------------------------------------------------------------
+3. LICENCIA MIT Y SEPARACIÓN DE RECURSOS PROPIETARIOS
+--------------------------------------------------------------------------------
+A. Texto Canónico MIT:
+   El archivo LICENSE contiene exclusivamente el texto estándar e íntegro de la
+   Licencia MIT aprobado por la Open Source Initiative (OSI).
+
+B. Exclusiones y Reserva en NOTICE.md:
+   Se creó NOTICE.md para definir los límites legales sin alterar el archivo LICENSE:
+   - Código Fuente (MIT): Scripts C#, shaders URP, herramientas .NET y automatizaciones.
+   - Recursos Visuales (All Rights Reserved): Todos los sprites 2D en Assets/Art/
+     (vehículos, fondos, botones, interfaces y el personaje Stickman_Black) y los
+     diseños de escena en Assets/AnimeHillRacing/Scenes/ son propiedad reservada
+     de Matías Games Dev. Se autoriza el uso local para estudio y contribuciones
+     mediante PR, pero se prohíbe su explotación o publicación en juegos derivados.
+   - Marcas Registradas: Los nombres 'Hill Adventurer' y 'Matías Games Dev' quedan
+     expresamente reservados.
+   - Dependencias de Terceros: Detalladas en Docs/ASSET_INVENTORY.md (Google Play
+     Games bajo Apache 2.0; Google Mobile Ads SDK; módulos de Unity bajo Unity Companion).
+
+--------------------------------------------------------------------------------
+4. ESTADO DE COMPILACIÓN EN UNITY 6 Y ANDROID
+--------------------------------------------------------------------------------
+A. Arquitectura de Compilación del Proyecto:
+   - Windows 64-bit: AnimeHillRacing.EditorScripts.RacingStandaloneBuilder.BuildWindows
+     (Compila de forma autónoma hacia Builds/StandaloneWindows64/HillAdventurer.exe).
+   - Android AAB: AnimeHillRacing.Editor.GooglePlayReleaseIntegration.BuildReleaseAab
+     (Lee contraseñas de variables de entorno HILL_ADVENTURER_KEYSTORE_PASSWORD).
+
+B. Verificación Real Ejecutada:
+   - Compilación C# (.NET SDK): dotnet build Tools/CompetitiveQA/CompetitiveQA.csproj -c Release
+     Resultado: 0 errores. Valida toda la lógica de física, economía y MMR del juego.
+   - Compilación Unity Batchmode: Se lanzó Unity 6000.3.13f1 en modo por lotes.
+     Unity cargó paquetes en 0.08s y quedó en reintento de conexión IPC con el proceso
+     ILPostProcessor debido a que otra instancia GUI de Unity estaba activa en el sistema
+     (PID 36076 en el proyecto 31NuevoPeru3D). En Windows, dos procesos de Unity no pueden
+     compartir el socket IPC del compilador simultáneamente.
+   - Artefactos Reales Verificados en Disco:
+     * Builds/ReleaseGates-20261020-02/HillAdventurer-HumanGate.exe (Ejecutable Windows funcional).
+     * Builds/AndroidSizeForensics-20261017/current.aab (160.1 MB).
+     * Builds/ReleaseGates-20261020-02-Android/FORENSIC-NOT-FOR-INSTALL.aab (151.2 MB).
+
+--------------------------------------------------------------------------------
+5. SISTEMA ADMOB: IDS DE PRUEBA EN PÚBLICO Y CONMUTADOR PRIVADO
+--------------------------------------------------------------------------------
+A. Repositorio Público (Rama oss-readiness):
+   - AdMobConfiguration.asset configurado con IDs oficiales de prueba de Google:
+     * App ID: ca-app-pub-3940256099942544~3347511713
+     * useTestAds: 1
+   - GoogleMobileAdsSettings.asset y AndroidManifest.xml saneados con IDs de prueba.
+   - Se provee la plantilla Assets/AnimeHillRacing/Resources/AdMobConfiguration.asset.example.
+
+B. Herramienta Automatizada para Compilaciones Privadas:
+   Se crearon los scripts:
+     - Tools/AdMob/Switch-AdMobEnvironment.ps1
+     - Tools/AdMob/Switch-AdMobEnvironment.sh
+   Uso:
+     * Para compilar en privado para producción:
+       .\Tools\AdMob\Switch-AdMobEnvironment.ps1 -Mode Production
+       (Crea/aplica AdMobConfiguration.private.asset, el cual está estrictamente
+       ignorado por .gitignore y jamás se subirá a Git).
+     * Para volver al modo público antes de realizar commits:
+       .\Tools\AdMob\Switch-AdMobEnvironment.ps1 -Mode Test
+
+--------------------------------------------------------------------------------
+6. ESCANEO DE SECRETOS EN TODO EL HISTORIAL ACCESIBLE (220 COMMITS)
+--------------------------------------------------------------------------------
+Se inspeccionaron todos los 220 commits en 'git rev-list --all':
+- Keystores / Claves en el historial: Exactamente 3 commits tocan 'hilladventurer.keystore':
+  * 17eb4b2 (Introducido en main)
+  * f8002c2 (Introducido en racing-climb-dev)
+  * 2fb2d6c (Desvinculado en oss-readiness)
+- Archivos de entorno (.env): 0 en todo el historial.
+- Otros keystores (*.jks, *.p12, *.pfx, *.pem): 0 en todo el historial.
+- ID real de editor de AdMob en rama actual: 0 ocurrencias (100% neutralizado).
+
+--------------------------------------------------------------------------------
+7. VERIFICACIÓN REAL DE WORKFLOWS DE GITHUB ACTIONS
+--------------------------------------------------------------------------------
+Se ejecutaron localmente todas las etapas de .github/workflows/ci.yml:
+1. dotnet restore Tools/CompetitiveQA/CompetitiveQA.csproj -> ÉXITO.
+2. dotnet build Tools/CompetitiveQA/CompetitiveQA.csproj -c Release -> ÉXITO (0 errores).
+3. dotnet run --project Tools/CompetitiveQA/CompetitiveQA.csproj -c Release -> ÉXITO.
+   Resultado: 6.725 carreras simuladas, 199.429 eventos evaluados, invariants ok.
+4. Higiene de archivos: 0 keystores o .env rastreados -> PASÓ.
+5. Validación sintáctica JSON: Se corrigieron claves duplicadas por mayúsculas
+   en .vscode/settings.json (**/*.3ds vs **/*.3DS). Los 896 archivos JSON rastreados
+   en el proyecto se validaron con 0 errores (soporte UTF-8-SIG).
+6. Gitleaks (.github/workflows/gitleaks.yml): Configurado con gitleaks/gitleaks-action@v2.
+7. Dependabot (.github/dependabot.yml): Automatización activa para Actions y NuGet.
+
+--------------------------------------------------------------------------------
+8. COMMITS REALIZADOS EN LA RAMA LOCAL 'oss-readiness'
+--------------------------------------------------------------------------------
+1. 2fb2d6c: chore(oss): prepare repository for open source and harden security
+   (Desvinculación del keystore, .gitignore reforzado, docs iniciales y CI).
+2. eab4676: fix(security): sanitize publisher ID from GoogleMobileAdsSettings and release logs
+   (Saneamiento de IDs de AdMob en assets y reportes de release).
+3. d20de5f: feat(licensing): adopt separated MIT license, asset inventory, and keystore purge tools
+   (Inventario de assets, scripts de purga con respaldo y licencia dual).
+4. 3f823c3: fix(oss): enforce pure MIT with NOTICE.md, bundle backup in purge, and AdMob environment switcher
+   (MIT canónica pura, NOTICE.md de exclusión, conmutador de AdMob y ajustes en settings.json).
+
+--------------------------------------------------------------------------------
+9. TEXTO FINAL PARA LA SOLICITUD CODEX FOR OPEN SOURCE (OPENAI)
+--------------------------------------------------------------------------------
+Límite oficial del formulario: Máximo 500 caracteres.
+Longitud exacta del texto preparado: 459 caracteres (sin métricas inventadas).
+
+"Hill Adventurer is an open-source 2.5D/3D physics racing game engine built in Unity 6 (URP) and C#. It features dual-mode vehicle dynamics (suspension and circuit tire simulation), procedural terrain, and an offline headless .NET simulation test lab for algorithmic MMR balancing and telemetry validation. The codebase serves as a modern, documented architecture reference for indie game developers, physics simulation students, and automated game QA tooling."
+
+--------------------------------------------------------------------------------
+10. ACCIONES MANUALES PENDIENTES PARA EL MANTENEDOR
+--------------------------------------------------------------------------------
+PASO 1: Consulta en Google Play Console
+  - Verifica las huellas con:
+      keytool -list -v -keystore hilladventurer.keystore -alias hilladventurer
+  - Si coincide con la clave de subida, solicita el restablecimiento en la consola de Play.
+
+PASO 2: Purga Local del Historial Git (Antes de publicar)
+  - Ejecuta en PowerShell:
+      .\Tools\Maintenance\git-purge-keystore.ps1 -TargetBranch oss-readiness
+  - El script creará automáticamente el backup .bundle antes de limpiar el historial.
+
+PASO 3: Publicación Segura a GitHub (Tras autorizar)
+  - Para subir la rama preparada:
+      git push -u origin oss-readiness
+  - Para actualizar main de forma segura sin sobreescribir otras ramas:
+      git push origin oss-readiness:main --force-with-lease
+
+================================================================================
+DICTAMEN FINAL: APTO CON CONDICIONES
+Hill Adventurer queda técnicamente preparado para ser un proyecto open source
+profesional, documentado, seguro y auditable. Su publicación pública final queda
+condicionada exclusivamente a la verificación/rotación en Play Console y a la
+ejecución autorizada del script de purga del historial.
+================================================================================

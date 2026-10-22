@@ -1,4 +1,4 @@
-{
+﻿{
     "applicationId": "com.matias.hilladventurer",
     "versionName": "1.2",
     "scriptingBackend": "IL2CPP",
@@ -21,6 +21,6 @@
     "adAppIdIsGoogleSample": false,
     "adUnitsConfigured": true,
     "releaseUsesProductionUnits": true,
-    "adMobAndroidAppId": "ca-app-pub-1413480107943515~1999622115",
+    "adMobAndroidAppId": "ca-app-pub-3940256099942544~3347511713",
     "enabledScenes": "PreStart;Garage;MainMenu;Adventure2_5D;Adventure3D;TimeTrial3D;RacingSelect;RacingGarage;Racing3D;"
 }

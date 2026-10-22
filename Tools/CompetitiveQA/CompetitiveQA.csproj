@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Optimize>true</Optimize>
+    <UseAppHost>false</UseAppHost>
+    <DefineConstants>$(DefineConstants);COMPETITIVE_QA</DefineConstants>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <NoWarn>CS0162;CS0168;CS0219;CS0414;CS0649</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../Assets/AnimeHillRacing/Scripts/Racing3D/Competitive/*.cs" Link="Unity/Competitive/%(Filename).cs" />
+    <Compile Include="../../Assets/AnimeHillRacing/Scripts/Racing3D/MMR/CompactLeagueBot.cs" Link="Unity/MMR/CompactLeagueBot.cs" />
+    <Compile Include="../../Assets/AnimeHillRacing/Scripts/Racing3D/MMR/LeagueRankIndex.cs" Link="Unity/MMR/LeagueRankIndex.cs" />
+    <Compile Include="../../Assets/AnimeHillRacing/Scripts/Racing3D/MMR/LegacyLeagueMigration.cs" Link="Unity/MMR/LegacyLeagueMigration.cs" />
+    <Compile Include="../../Assets/AnimeHillRacing/Scripts/Racing3D/MMR/LocalLeagueEngine.cs" Link="Unity/MMR/LocalLeagueEngine.cs" />
+    <Compile Include="../../Assets/AnimeHillRacing/Scripts/Racing3D/MMR/LocalLeagueState.cs" Link="Unity/MMR/LocalLeagueState.cs" />
+    <Compile Include="../../Assets/AnimeHillRacing/Scripts/Racing3D/MMR/LocalLeagueStore.cs" Link="Unity/MMR/LocalLeagueStore.cs" />
+    <Compile Include="../../Assets/AnimeHillRacing/Scripts/Racing3D/MMR/LocalSeasonEngine.cs" Link="Unity/MMR/LocalSeasonEngine.cs" />
+    <Compile Include="../../Assets/AnimeHillRacing/Scripts/Racing3D/MMR/MmrTier.cs" Link="Unity/MMR/MmrTier.cs" />
+    <Compile Include="../../Assets/AnimeHillRacing/Scripts/Racing3D/MMR/RacingTitleCatalog.cs" Link="Unity/MMR/RacingTitleCatalog.cs" />
+    <Compile Include="../../Assets/AnimeHillRacing/Scripts/Racing3D/Diagnostics/Experiments/ExperimentalAfterRules.cs" Link="Unity/Experiments/ExperimentalAfterRules.cs" />
+    <Compile Include="../../Assets/AnimeHillRacing/Scripts/Racing3D/ML/RacingMlExecutionPolicy.cs" Link="Unity/ML/RacingMlExecutionPolicy.cs" />
+  </ItemGroup>
+</Project>

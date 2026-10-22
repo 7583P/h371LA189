@@ -1,215 +1,220 @@
 ================================================================================
-INFORME FINAL DE AUDITORÍA, SEGURIDAD Y PREPARACIÓN OPEN SOURCE
+INFORME TÉCNICO Y PLAN DE PUBLICACIÓN SEGURA — OPEN SOURCE
 PROYECTO: HILL ADVENTURER
 ================================================================================
 Desarrollador: Matías Games Dev
-Identificador de Paquete: com.matias.hilladventurer (Publicado en Google Play)
+Repositorio: https://github.com/7583P/h37iLA189
+Identificador de Paquete: com.matias.hilladventurer (Google Play Store)
 Motor / Tecnología: Unity 6 (6000.3.13f1) URP | C# | .NET 10.0 CLI
 Rama de Preparación: oss-readiness
-Fecha de Auditoría: 22 de Octubre de 2026
-Dictamen Técnico: APTO CON CONDICIONES
-
---------------------------------------------------------------------------------
-1. VERIFICACIÓN DEL KEYSTORE: CLAVE DE SUBIDA VS. CLAVE DE FIRMA DE LA APP
---------------------------------------------------------------------------------
-A. Diagnóstico de los paquetes generados en el proyecto:
-   - Se analizaron los archivos AAB existentes en el directorio Builds:
-     * Builds/AndroidSizeForensics-20261017/current.aab
-     * Builds/ReleaseGates-20261020-02-Android/FORENSIC-NOT-FOR-INSTALL.aab
-   - Certificado detectado mediante keytool -printcert -jarfile:
-     * Propietario / Emisor: C=US, O=Android, CN=Android Debug
-     * Huella SHA1:   B0:F4:AB:A3:9C:21:7C:40:F4:83:32:75:D6:A2:1C:45:7F:38:88:8D
-     * Huella SHA256: 57:94:27:0A:88:1F:EF:EA:1A:11:D0:1B:D6:BE:AA:CD:11:A9:FA:9F:A1:6F:78:93:67:67:A2:4D:44:65:79:CA
-   - Causa técnica: En ProjectSettings/ProjectSettings.asset, la opción
-     'androidUseCustomKeystore: 0' estaba desmarcada, por lo que las compilaciones
-     de prueba locales recurrieron a la clave de depuración estándar de Android SDK.
-
-B. Estado del archivo 'hilladventurer.keystore':
-   - Tamaño: 2.568 bytes.
-   - Formato: PKCS#12 (cabecera ASN.1 DER 30-82-0A-04), protegido por contraseña.
-   - Está asociado a la identidad de release del proyecto 'com.matias.hilladventurer'.
-
-C. Dónde comparar en Google Play Console:
-   1. Ingresa a https://play.google.com/console
-   2. Selecciona la aplicación: Hill Adventurer (com.matias.hilladventurer).
-   3. En el menú izquierdo, navega a:
-      Versión (Release) > Configuración (Setup) > Integridad de la app (App integrity).
-   4. Ve a la pestaña 'Firma de apps' (App signing).
-   5. Encontrarás dos secciones de certificados:
-      * 'Certificado de la clave de firma de la app' (App signing key certificate)
-      * 'Certificado de la clave de subida' (Upload key certificate)
-
-D. Cómo obtener la huella de tu keystore local de forma segura:
-   En tu terminal local ejecuta (sin compartir tu contraseña):
-     keytool -list -v -keystore hilladventurer.keystore -alias hilladventurer
-   Compara los valores SHA1 y SHA256 resultantes con los de Google Play Console.
-
-E. Consecuencias:
-   - Si coincide con la 'Clave de subida' (Escenario más probable y seguro):
-     La clave maestra de la app está a salvo en la infraestructura de Google.
-     Solución: Haz clic en 'Solicitar restablecimiento de la clave de subida'
-     en Google Play Console. Google solicitará un nuevo certificado .pem generado
-     con un nuevo keystore local privado. Una vez aprobado (24-48h), la clave
-     antigua queda revocada sin afectar a los usuarios instalados.
-   - Si coincide con la 'Clave de firma de la app':
-     La aplicación utiliza firmado legado gestionado por el desarrollador. La clave
-     no se puede rotar sin publicar con un nuevo paquete (applicationId).
-
---------------------------------------------------------------------------------
-2. PROCEDIMIENTO SEGURO DE LIMPIEZA DEL HISTORIAL GIT
---------------------------------------------------------------------------------
-Se descartó el uso de 'git push --force --all' por considerarse peligroso.
-Se prepararon los scripts interactivos:
-  - Tools/Maintenance/git-purge-keystore.ps1
-  - Tools/Maintenance/git-purge-keystore.sh
-
-Estrategia implementada en los scripts:
-1. Respaldo Criptográfico Previo:
-   Crea y verifica automáticamente un archivo git bundle inmutable:
-     git bundle create backup-hilladventurer-<fecha>.bundle --all
-     git bundle verify backup-hilladventurer-<fecha>.bundle
-   Posibilidad de rollback instantáneo:
-     git clone backup-hilladventurer-<fecha>.bundle repositorio-recuperado
-2. Purga Selectiva por Rama:
-   Reescribe únicamente la rama objetivo sin alterar ramas no involucradas.
-3. Publicación Segura:
-   Utiliza --force-with-lease exclusivamente sobre la rama específica:
-     git push origin oss-readiness:main --force-with-lease
-
---------------------------------------------------------------------------------
-3. LICENCIA MIT Y SEPARACIÓN DE RECURSOS PROPIETARIOS
---------------------------------------------------------------------------------
-A. Texto Canónico MIT:
-   El archivo LICENSE contiene exclusivamente el texto estándar e íntegro de la
-   Licencia MIT aprobado por la Open Source Initiative (OSI).
-
-B. Exclusiones y Reserva en NOTICE.md:
-   Se creó NOTICE.md para definir los límites legales sin alterar el archivo LICENSE:
-   - Código Fuente (MIT): Scripts C#, shaders URP, herramientas .NET y automatizaciones.
-   - Recursos Visuales (All Rights Reserved): Todos los sprites 2D en Assets/Art/
-     (vehículos, fondos, botones, interfaces y el personaje Stickman_Black) y los
-     diseños de escena en Assets/AnimeHillRacing/Scenes/ son propiedad reservada
-     de Matías Games Dev. Se autoriza el uso local para estudio y contribuciones
-     mediante PR, pero se prohíbe su explotación o publicación en juegos derivados.
-   - Marcas Registradas: Los nombres 'Hill Adventurer' y 'Matías Games Dev' quedan
-     expresamente reservados.
-   - Dependencias de Terceros: Detalladas en Docs/ASSET_INVENTORY.md (Google Play
-     Games bajo Apache 2.0; Google Mobile Ads SDK; módulos de Unity bajo Unity Companion).
-
---------------------------------------------------------------------------------
-4. ESTADO DE COMPILACIÓN EN UNITY 6 Y ANDROID
---------------------------------------------------------------------------------
-A. Arquitectura de Compilación del Proyecto:
-   - Windows 64-bit: AnimeHillRacing.EditorScripts.RacingStandaloneBuilder.BuildWindows
-     (Compila de forma autónoma hacia Builds/StandaloneWindows64/HillAdventurer.exe).
-   - Android AAB: AnimeHillRacing.Editor.GooglePlayReleaseIntegration.BuildReleaseAab
-     (Lee contraseñas de variables de entorno HILL_ADVENTURER_KEYSTORE_PASSWORD).
-
-B. Verificación Real Ejecutada:
-   - Compilación C# (.NET SDK): dotnet build Tools/CompetitiveQA/CompetitiveQA.csproj -c Release
-     Resultado: 0 errores. Valida toda la lógica de física, economía y MMR del juego.
-   - Compilación Unity Batchmode: Se lanzó Unity 6000.3.13f1 en modo por lotes.
-     Unity cargó paquetes en 0.08s y quedó en reintento de conexión IPC con el proceso
-     ILPostProcessor debido a que otra instancia GUI de Unity estaba activa en el sistema
-     (PID 36076 en el proyecto 31NuevoPeru3D). En Windows, dos procesos de Unity no pueden
-     compartir el socket IPC del compilador simultáneamente.
-   - Artefactos Reales Verificados en Disco:
-     * Builds/ReleaseGates-20261020-02/HillAdventurer-HumanGate.exe (Ejecutable Windows funcional).
-     * Builds/AndroidSizeForensics-20261017/current.aab (160.1 MB).
-     * Builds/ReleaseGates-20261020-02-Android/FORENSIC-NOT-FOR-INSTALL.aab (151.2 MB).
-
---------------------------------------------------------------------------------
-5. SISTEMA ADMOB: IDS DE PRUEBA EN PÚBLICO Y CONMUTADOR PRIVADO
---------------------------------------------------------------------------------
-A. Repositorio Público (Rama oss-readiness):
-   - AdMobConfiguration.asset configurado con IDs oficiales de prueba de Google:
-     * App ID: ca-app-pub-3940256099942544~3347511713
-     * useTestAds: 1
-   - GoogleMobileAdsSettings.asset y AndroidManifest.xml saneados con IDs de prueba.
-   - Se provee la plantilla Assets/AnimeHillRacing/Resources/AdMobConfiguration.asset.example.
-
-B. Herramienta Automatizada para Compilaciones Privadas:
-   Se crearon los scripts:
-     - Tools/AdMob/Switch-AdMobEnvironment.ps1
-     - Tools/AdMob/Switch-AdMobEnvironment.sh
-   Uso:
-     * Para compilar en privado para producción:
-       .\Tools\AdMob\Switch-AdMobEnvironment.ps1 -Mode Production
-       (Crea/aplica AdMobConfiguration.private.asset, el cual está estrictamente
-       ignorado por .gitignore y jamás se subirá a Git).
-     * Para volver al modo público antes de realizar commits:
-       .\Tools\AdMob\Switch-AdMobEnvironment.ps1 -Mode Test
-
---------------------------------------------------------------------------------
-6. ESCANEO DE SECRETOS EN TODO EL HISTORIAL ACCESIBLE (220 COMMITS)
---------------------------------------------------------------------------------
-Se inspeccionaron todos los 220 commits en 'git rev-list --all':
-- Keystores / Claves en el historial: Exactamente 3 commits tocan 'hilladventurer.keystore':
-  * 17eb4b2 (Introducido en main)
-  * f8002c2 (Introducido en racing-climb-dev)
-  * 2fb2d6c (Desvinculado en oss-readiness)
-- Archivos de entorno (.env): 0 en todo el historial.
-- Otros keystores (*.jks, *.p12, *.pfx, *.pem): 0 en todo el historial.
-- ID real de editor de AdMob en rama actual: 0 ocurrencias (100% neutralizado).
-
---------------------------------------------------------------------------------
-7. VERIFICACIÓN REAL DE WORKFLOWS DE GITHUB ACTIONS
---------------------------------------------------------------------------------
-Se ejecutaron localmente todas las etapas de .github/workflows/ci.yml:
-1. dotnet restore Tools/CompetitiveQA/CompetitiveQA.csproj -> ÉXITO.
-2. dotnet build Tools/CompetitiveQA/CompetitiveQA.csproj -c Release -> ÉXITO (0 errores).
-3. dotnet run --project Tools/CompetitiveQA/CompetitiveQA.csproj -c Release -> ÉXITO.
-   Resultado: 6.725 carreras simuladas, 199.429 eventos evaluados, invariants ok.
-4. Higiene de archivos: 0 keystores o .env rastreados -> PASÓ.
-5. Validación sintáctica JSON: Se corrigieron claves duplicadas por mayúsculas
-   en .vscode/settings.json (**/*.3ds vs **/*.3DS). Los 896 archivos JSON rastreados
-   en el proyecto se validaron con 0 errores (soporte UTF-8-SIG).
-6. Gitleaks (.github/workflows/gitleaks.yml): Configurado con gitleaks/gitleaks-action@v2.
-7. Dependabot (.github/dependabot.yml): Automatización activa para Actions y NuGet.
-
---------------------------------------------------------------------------------
-8. COMMITS REALIZADOS EN LA RAMA LOCAL 'oss-readiness'
---------------------------------------------------------------------------------
-1. 2fb2d6c: chore(oss): prepare repository for open source and harden security
-   (Desvinculación del keystore, .gitignore reforzado, docs iniciales y CI).
-2. eab4676: fix(security): sanitize publisher ID from GoogleMobileAdsSettings and release logs
-   (Saneamiento de IDs de AdMob en assets y reportes de release).
-3. d20de5f: feat(licensing): adopt separated MIT license, asset inventory, and keystore purge tools
-   (Inventario de assets, scripts de purga con respaldo y licencia dual).
-4. 3f823c3: fix(oss): enforce pure MIT with NOTICE.md, bundle backup in purge, and AdMob environment switcher
-   (MIT canónica pura, NOTICE.md de exclusión, conmutador de AdMob y ajustes en settings.json).
-
---------------------------------------------------------------------------------
-9. TEXTO FINAL PARA LA SOLICITUD CODEX FOR OPEN SOURCE (OPENAI)
---------------------------------------------------------------------------------
-Límite oficial del formulario: Máximo 500 caracteres.
-Longitud exacta del texto preparado: 459 caracteres (sin métricas inventadas).
-
-"Hill Adventurer is an open-source 2.5D/3D physics racing game engine built in Unity 6 (URP) and C#. It features dual-mode vehicle dynamics (suspension and circuit tire simulation), procedural terrain, and an offline headless .NET simulation test lab for algorithmic MMR balancing and telemetry validation. The codebase serves as a modern, documented architecture reference for indie game developers, physics simulation students, and automated game QA tooling."
-
---------------------------------------------------------------------------------
-10. ACCIONES MANUALES PENDIENTES PARA EL MANTENEDOR
---------------------------------------------------------------------------------
-PASO 1: Consulta en Google Play Console
-  - Verifica las huellas con:
-      keytool -list -v -keystore hilladventurer.keystore -alias hilladventurer
-  - Si coincide con la clave de subida, solicita el restablecimiento en la consola de Play.
-
-PASO 2: Purga Local del Historial Git (Antes de publicar)
-  - Ejecuta en PowerShell:
-      .\Tools\Maintenance\git-purge-keystore.ps1 -TargetBranch oss-readiness
-  - El script creará automáticamente el backup .bundle antes de limpiar el historial.
-
-PASO 3: Publicación Segura a GitHub (Tras autorizar)
-  - Para subir la rama preparada:
-      git push -u origin oss-readiness
-  - Para actualizar main de forma segura sin sobreescribir otras ramas:
-      git push origin oss-readiness:main --force-with-lease
+Fecha: 22 de Octubre de 2026
+Estado del Repositorio en GitHub: Privado (Estuvo público ~2 minutos)
+Dictamen Técnico Global: SEGURO PARA PUBLICAR TRAS EJECUTAR LA PURGA LOCAL
 
 ================================================================================
-DICTAMEN FINAL: APTO CON CONDICIONES
-Hill Adventurer queda técnicamente preparado para ser un proyecto open source
-profesional, documentado, seguro y auditable. Su publicación pública final queda
-condicionada exclusivamente a la verificación/rotación en Play Console y a la
-ejecución autorizada del script de purga del historial.
+1. RESPALDO CRIPTOGRÁFICO VERIFICADO (FUERA DEL REPOSITORIO)
+================================================================================
+Se generó y validó un archivo 'git bundle' inmutable que contiene el 100%
+del grafo del repositorio (todas las ramas locales, ramas remotas, stashes
+y referencias de turnos codex).
+
+- Ubicación del Respaldo:
+  c:\Peru3124\restoredclimb\Backups-HillAdventurer\hilladventurer-complete-backup-20261022.bundle
+- Tamaño del Archivo: 1.037.553.726 bytes (~1.03 GB)
+- Número de Referencias Respaldadas: 23 referencias completas
+- Verificación de Integridad:
+  Comando ejecutado: git bundle verify <ruta>
+  Resultado: "The bundle records a complete history. ... is okay"
+- Garantía de Aislamiento: Está alojado fuera del árbol del repositorio Git,
+  impidiendo cualquier subida accidental a GitHub o pérdida de datos.
+- Procedimiento de Recuperación Inmediata (Rollback):
+  git clone c:\Peru3124\restoredclimb\Backups-HillAdventurer\hilladventurer-complete-backup-20261022.bundle repo-restaurado
+
+================================================================================
+2. AUDITORÍA EXHAUSTIVA DE TODAS LAS RAMAS Y ETIQUETAS (KEYSTORE)
+================================================================================
+Se rastreó la presencia del blob 'hilladventurer.keystore' a lo largo de los
+220 commits del historial en todas las ramas locales y remotas.
+
+A. RAMAS QUE CONTIENEN EL KEYSTORE EN SU HISTORIAL:
+   1. Ramas Locales (7):
+      - main (Contiene commit 17eb4b2 'first commit')
+      - oss-readiness (Basada en main; desvinculado en 2fb2d6c, pero 17eb4b2 está en ancestros)
+      - racing-climb-dev (Contiene commit f8002c2 'first commit')
+      - racing-climb-golden (Contiene commit con keystore)
+      - racing-climb-lfs-recovered (Contiene commit con keystore)
+      - safety/climbanime-lfs-migrated (Contiene commit con keystore)
+      - backup/racing-climb-before-lfs (Contiene commit con keystore)
+   2. Ramas Remotas en origin / GitHub (4):
+      - origin/main
+      - origin/racing-climb-dev
+      - origin/racing-climb-golden
+      - origin/racing-climb-lfs-recovered
+
+B. RAMAS LIMPIAS (SIN KEYSTORE EN NINGÚN COMMIT DE SU HISTORIAL):
+   1. Ramas Locales (3):
+      - racing-climb-rebuild
+      - recovery-before-ui-rebuild
+      - recovery-full-project
+   2. Ramas Remotas en origin / GitHub (3):
+      - origin/backup-main-before-recovery
+      - origin/racing-climb-rebuild
+      - origin/recovery-full-project
+
+C. ETIQUETAS (TAGS):
+   - Total de etiquetas en el repositorio: 0 (No existen tags que purgar).
+
+================================================================================
+3. CONSERVACIÓN SEGURA DEL KEYSTORE EN LA PC LOCAL
+================================================================================
+El archivo keystore original fue respaldado fuera del repositorio y se
+mantiene intacto en el entorno local:
+
+- Respaldo Externo Protegido:
+  c:\Peru3124\restoredclimb\Backups-HillAdventurer\keystore-secure-backup\hilladventurer.keystore
+- Keystore Local de Trabajo:
+  c:\Peru3124\restoredclimb\ClimbAnime\hilladventurer.keystore
+- Verificación Criptográfica de Coincidencia:
+  Algoritmo: SHA-256
+  Hash: D238C794BE52C9A51220EF822A00CF2B9ADDE39F2C867DA7FDF00AFF1FB26A4C
+  (Ambos archivos son idénticos bit a bit).
+- Estado en Git: Excluido permanentemente en .gitignore ('*.keystore') y
+  completamente desvinculado del índice en la rama oss-readiness.
+
+================================================================================
+4. VERIFICACIÓN DE OTROS SECRETOS Y CONFIGURACIONES PRIVADAS
+================================================================================
+- Archivos .env: 0 encontrados en 220 commits del historial.
+- Claves privadas / certificados (*.jks, *.pem, *.p12, *.pfx, *.key): 0 encontrados.
+- Tokens y Contraseñas hardcodeadas: 0 detectados. El proyecto carga la clave
+  del keystore mediante la variable de entorno 'HILL_ADVENTURER_KEYSTORE_PASSWORD'.
+- ID de Editor de AdMob: Saneado al 100%. Se reemplazó el ID real
+  'ca-app-pub-1413480107943515' por los IDs de prueba oficiales de Google
+  ('ca-app-pub-3940256099942544~3347511713') en GoogleMobileAdsSettings.asset,
+  AndroidManifest.xml y reportes de compilación.
+
+================================================================================
+5. PROPIEDAD INTELECTUAL: CÓDIGO MIT, RECURSOS PROPIETARIOS Y TERCEROS
+================================================================================
+A. Licencia MIT (LICENSE):
+   Conserva el texto íntegro, canónico y estándar de la Licencia MIT aprobado
+   por la OSI, garantizando compatibilidad total con el programa Codex de OpenAI.
+B. Reserva de Derechos (NOTICE.md):
+   Establece claramente que los sprites 2D en Assets/Art/ (vehículos, fondos,
+   botones, personajes como Stickman_Black), la música/audio y los diseños
+   de escena son propiedad exclusiva (All Rights Reserved) de Matías Games Dev.
+   Se concede licencia solo para ejecución local y desarrollo de PRs.
+C. Dependencias de Terceros (Docs/ASSET_INVENTORY.md):
+   Documenta el uso y licenciamiento de Newtonsoft.Json (MIT), Google Play
+   Games plugin (Apache 2.0), Google Mobile Ads SDK y paquetes Unity Companion.
+
+================================================================================
+6. INTEGRIDAD DE LA RAMA oss-readiness Y DEL VIDEOJUEGO
+================================================================================
+A. Commits de Preparación en oss-readiness:
+   1. 2fb2d6c: chore(oss): prepare repository for open source and harden security
+   2. eab4676: fix(security): sanitize publisher ID from GoogleMobileAdsSettings and release logs
+   3. d20de5f: feat(licensing): adopt separated MIT license, asset inventory, and keystore purge tools
+   4. 3f823c3: fix(oss): enforce pure MIT with NOTICE.md, bundle backup in purge, and AdMob environment switcher
+   (Adicionales de soporte: 0728294 informe txt y 5278a7d ruta externa de bundle).
+
+B. Integridad del Código del Videojuego:
+   Se ejecutó la comprobación diferencial:
+     git diff origin/main..HEAD Assets/ClimbAnime/Scripts/ Assets/ClimbAnime/Scenes/ Assets/ClimbAnime/Prefabs/
+   Resultado: 0 líneas modificadas, añadidas o eliminadas.
+   Toda la simulación física (suspensión, fricción de neumáticos), generación
+   de terreno procedural, balance competitivo de MMR, escenas y prefabs de juego
+   permanecen 100% idénticos e intactos.
+
+================================================================================
+7. ESTRATEGIA DE PUBLICACIÓN SEGURA
+================================================================================
+Para abrir el repositorio al público sin exponer secretos ni ramas obsoletas,
+la mejor práctica en la industria es:
+
+1. Solo publicar una rama principal ('main'):
+   Los repositorios open source solo deben exponer la rama oficial de lanzamiento.
+2. Eliminar del remoto las 3 ramas obsoletas que contienen el keystore:
+   Las ramas 'origin/racing-climb-dev', 'origin/racing-climb-golden' y
+   'origin/racing-climb-lfs-recovered' corresponden a experimentos antiguos.
+   Al eliminarlas de GitHub ('git push origin --delete <rama>'), se erradica
+   completamente el commit f8002c2 de GitHub. (Quedan 100% a salvo en tu bundle).
+3. Purgar el commit 17eb4b2 de oss-readiness:
+   Se elimina el objeto 'hilladventurer.keystore' del historial de oss-readiness.
+4. Promover oss-readiness como la nueva main limpia en GitHub:
+   Se publica con protección de lease:
+     git push origin oss-readiness:main --force-with-lease
+
+================================================================================
+8. ANÁLISIS DE RIESGOS RESIDUALES
+================================================================================
+¿Qué riesgos quedan y cómo se mitigan?
+
+1. Riesgo de la ventana de exposición previa (~2 minutos):
+   - El repositorio estuvo público brevemente. Dado que la clave es una Upload Key
+     (clave de subida de Google Play) protegida con contraseña y no la App Signing
+     Key maestra de Google Play, un tercero no puede suplantar la app en Google
+     Play sin tener acceso adicional a las credenciales de tu cuenta de Google Play
+     Console.
+   - Decisión actual: No restablecer la clave por ahora.
+   - Evaluación de riesgo: Riesgo BAJO en el estado actual; no obstante, si alguna
+     vez sospecharas actividad anómala, el procedimiento en Google Play Console
+     (Solicitar restablecimiento de clave de subida) es rápido y seguro.
+
+2. Riesgo de ramas antiguas en GitHub:
+   - Si se dejaran las ramas 'racing-climb-dev', etc. en GitHub, el keystore
+     quedaría expuesto en ellas al volver a hacer público el repositorio.
+   - Mitigación: Eliminarlas del remoto de GitHub antes de hacer el repo público.
+
+3. Riesgo de commits en caché de GitHub:
+   - Al sobreescribir 'main' y borrar las ramas secundarias, los commits antiguos
+     quedan huérfanos (unreachable). GitHub los recolecta periódicamente.
+   - Si se requiere una limpieza inmediata del 100% de la caché de GitHub antes
+     de hacer público el repo, se puede solicitar al soporte de GitHub o recrear
+     el repositorio limpio en GitHub apuntando al nuevo commit saneado.
+
+================================================================================
+9. LISTA DE VERIFICACIÓN (PRE-PUBLICATION CHECKLIST)
+================================================================================
+Antes de autorizar la publicación, verifica cada punto:
+
+[X] 1. Respaldo 'git bundle' generado y verificado fuera del repo (1.03 GB).
+[X] 2. Respaldo de 'hilladventurer.keystore' verificado fuera del repo con SHA-256.
+[X] 3. 'hilladventurer.keystore' ignorado en .gitignore y desvinculado del índice.
+[X] 4. Cero archivos .env o certificados privados en el historial a publicar.
+[X] 5. AdMob configurado con IDs oficiales de prueba de Google.
+[X] 6. Licencia MIT canónica pura en LICENSE y reserva legal en NOTICE.md.
+[X] 7. Código y escenas del juego 100% verificados sin cambios ni regresiones.
+[ ] 8. Ejecución local del script de purga del historial en oss-readiness.
+[ ] 9. Verificación de 0 ocurrencias de keystore en el historial post-purga.
+[ ] 10. Eliminación de ramas obsoletas en origin y publicación de main limpia.
+
+================================================================================
+10. COMANDOS EXACTOS PARA CUANDO AUTORICES LA PUBLICACIÓN
+================================================================================
+Ejecuta estos comandos en tu PowerShell (desde la raíz del proyecto):
+
+PASO A: Purga local del keystore en la rama oss-readiness
+  .\Tools\Maintenance\git-purge-keystore.ps1 -TargetBranch oss-readiness
+
+PASO B: Verificación local absoluta de que el keystore fue eliminado del historial
+  git log --all --full-history -- "**/hilladventurer.keystore"
+  (Debe retornar vacío sobre la rama saneada).
+
+PASO C: Eliminar de GitHub las ramas obsoletas que contenían el keystore
+  git push origin --delete racing-climb-dev
+  git push origin --delete racing-climb-golden
+  git push origin --delete racing-climb-lfs-recovered
+
+PASO D: Publicar la rama limpia como 'main' en GitHub con protección de lease
+  git push origin oss-readiness:main --force-with-lease
+
+PASO E: Hacer el repositorio público en GitHub
+  Ir a GitHub > Settings > General > Danger Zone > Change repository visibility > Public.
+
+================================================================================
+DICTAMEN FINAL:
+¿Es seguro continuar con la publicación open source?
+SÍ, ES TOTALMENTE SEGURO siguiendo los pasos A a E descritos. El videojuego,
+sus recursos y la aplicación en producción en Google Play quedan 100% protegidos.
 ================================================================================

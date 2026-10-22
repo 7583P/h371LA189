@@ -7,7 +7,10 @@
 set -euo pipefail
 
 TARGET_BRANCH="${1:-oss-readiness}"
-BACKUP_BUNDLE="backup-hilladventurer-$(date +%Y%m%d-%H%M%S).bundle"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BACKUP_DIR="${SCRIPT_DIR}/../../../Backups-HillAdventurer"
+mkdir -p "$BACKUP_DIR"
+BACKUP_BUNDLE="${BACKUP_DIR}/backup-hilladventurer-$(date +%Y%m%d-%H%M%S).bundle"
 
 echo "=========================================================="
 echo "   HILL ADVENTURER: CONTROLLED GIT HISTORY PURGE SCRIPT   "

@@ -19,7 +19,11 @@ Write-Host ""
 Write-Host "Target branch to cleanse: $TargetBranch" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "STEP 1: CREATING VERIFIABLE CRYPTOGRAPHIC REPOSITORY BACKUP" -ForegroundColor Yellow
-$backupBundle = "backup-hilladventurer-$(Get-Date -Format 'yyyyMMdd-HHmmss').bundle"
+$backupDir = Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) "..\Backups-HillAdventurer"
+if (-not (Test-Path $backupDir)) {
+    New-Item -ItemType Directory -Force -Path $backupDir | Out-Null
+}
+$backupBundle = Join-Path (Resolve-Path $backupDir) "backup-hilladventurer-$(Get-Date -Format 'yyyyMMdd-HHmmss').bundle"
 Write-Host "Writing complete repository backup to $backupBundle..."
 git bundle create $backupBundle --all
 

@@ -141,9 +141,9 @@ Contributions, issues, and discussions are welcome! Please review our **[Contrib
 
 ---
 
-## License
+## License & Legal Notices
 
-This project utilizes a dual-licensing model to protect commercial artwork and trademarks while enabling open-source collaboration on the codebase:
-- **Source Code**: Licensed under the [MIT License](LICENSE) (see terms).
-- **Artistic Assets & Trademarks**: All artwork under `Assets/Art/`, scene arrangements, the title "Hill Adventurer", and "Matías Games Dev" branding are **Proprietary (All Rights Reserved)**.
-- **Third-Party Packages**: Retain their original licenses (Apache 2.0, Unity Companion, etc.) as detailed in **[Docs/ASSET_INVENTORY.md](Docs/ASSET_INVENTORY.md)**.
+This project utilizes a clear separation between open-source code and proprietary artistic assets:
+- **Source Code**: Licensed under the canonical [MIT License](LICENSE).
+- **Artistic Media & Trademarks**: All artwork under `Assets/Art/`, scene files, the title "Hill Adventurer", and "Matías Games Dev" branding are **Proprietary (All Rights Reserved)** as set forth in **[NOTICE.md](NOTICE.md)**.
+- **Third-Party Packages**: Retain their respective original licenses (Apache 2.0, Unity Companion, etc.) as itemized in **[Docs/ASSET_INVENTORY.md](Docs/ASSET_INVENTORY.md)**.

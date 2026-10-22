@@ -1,55 +1,65 @@
 <#
 .SYNOPSIS
-    Interactive script to safely purge 'hilladventurer.keystore' from Git history.
+    Interactive script to safely purge 'hilladventurer.keystore' from Git history with verifiable backup.
 .DESCRIPTION
-    WARNING: This script rewrites Git commit history.
-    DO NOT run without backing up your repository first.
-    All commit hashes will change. Remote force push will be required.
+    WARNING: This script rewrites Git commit history locally.
+    It creates a verifiable git bundle backup before proceeding.
+    It DOES NOT execute force-push automatically.
 #>
 
 param(
+    [string]$TargetBranch = "oss-readiness",
     [switch]$Force
 )
 
 Write-Host "==========================================================" -ForegroundColor Red
-Write-Host "   HILL ADVENTURER: GIT HISTORY KEYSTORE PURGE PROCEDURE   " -ForegroundColor Yellow
+Write-Host "   HILL ADVENTURER: CONTROLLED GIT HISTORY PURGE SCRIPT   " -ForegroundColor Yellow
 Write-Host "==========================================================" -ForegroundColor Red
 Write-Host ""
-Write-Host "This operation will:"
-Write-Host " 1. Remove 'hilladventurer.keystore' from ALL past commits."
-Write-Host " 2. Rewrite all commit SHA-1 hashes across the repository."
-Write-Host " 3. Require a force-push ('git push --force --all') to GitHub."
-Write-Host " 4. Invalidate existing forks/clones (collaborators must re-clone)."
+Write-Host "Target branch to cleanse: $TargetBranch" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "CRITICAL NOTE:" -ForegroundColor Cyan
-Write-Host "Purging Git history DOES NOT revoke the key on Google Play!"
-Write-Host "You must also reset your upload key in Google Play Console:"
-Write-Host " Play Console -> Release -> Setup -> App integrity -> Request upload key reset."
+Write-Host "STEP 1: CREATING VERIFIABLE CRYPTOGRAPHIC REPOSITORY BACKUP" -ForegroundColor Yellow
+$backupBundle = "backup-hilladventurer-$(Get-Date -Format 'yyyyMMdd-HHmmss').bundle"
+Write-Host "Writing complete repository backup to $backupBundle..."
+git bundle create $backupBundle --all
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "CRITICAL: Backup bundle creation failed! Aborting."
+    exit 1
+}
+
+Write-Host "Verifying backup bundle..."
+git bundle verify $backupBundle
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "CRITICAL: Backup bundle verification failed! Aborting."
+    exit 1
+}
+Write-Host "Backup verified successfully at: $backupBundle" -ForegroundColor Green
+Write-Host "ROLLBACK INSTRUCTION: To restore from this backup at any point, run:"
+Write-Host "  git clone $backupBundle restored-repo" -ForegroundColor Gray
 Write-Host ""
 
 if (-not $Force) {
-    $confirm = Read-Host "Are you absolutely sure you want to proceed? (Type 'YES-PURGE-HISTORY' to confirm)"
+    $confirm = Read-Host "Type 'YES-PURGE-HISTORY' to execute local history rewrite"
     if ($confirm -ne "YES-PURGE-HISTORY") {
-        Write-Host "Operation cancelled. No changes were made." -ForegroundColor Green
+        Write-Host "Operation cancelled by user. No history was modified." -ForegroundColor Green
         exit 0
     }
 }
 
-Write-Host "Checking for git-filter-repo..." -ForegroundColor Cyan
-$hasFilterRepo = Get-Command "git-filter-repo" -ErrorAction SilentlyContinue
-
-if ($hasFilterRepo) {
-    Write-Host "Executing git-filter-repo..." -ForegroundColor Yellow
-    git filter-repo --invert-paths --path hilladventurer.keystore --force
+Write-Host "Executing history rewrite for target branch..." -ForegroundColor Yellow
+if (Get-Command "git-filter-repo" -ErrorAction SilentlyContinue) {
+    git filter-repo --invert-paths --path hilladventurer.keystore --refs $TargetBranch --force
 } else {
-    Write-Host "git-filter-repo not found. Using git filter-branch fallback..." -ForegroundColor Yellow
     $env:FILTER_BRANCH_SQUELCH_WARNING = "1"
-    git filter-branch --force --index-filter "git rm --cached --ignore-unmatch hilladventurer.keystore" --prune-empty --tag-name-filter cat -- --all
+    git filter-branch --force --index-filter "git rm --cached --ignore-unmatch hilladventurer.keystore" --prune-empty --tag-name-filter cat -- $TargetBranch
 }
 
 Write-Host ""
-Write-Host "History purge completed locally!" -ForegroundColor Green
-Write-Host "Next steps required for remote repository:" -ForegroundColor Yellow
-Write-Host " 1. Verify log: git log --all -- hilladventurer.keystore (must be empty)"
-Write-Host " 2. Push rewritten history: git push origin --force --all"
-Write-Host " 3. Push rewritten tags: git push origin --force --tags"
+Write-Host "Local history purge completed!" -ForegroundColor Green
+Write-Host ""
+Write-Host "SAFE REMOTE PUBLISHING INSTRUCTIONS:" -ForegroundColor Yellow
+Write-Host " DO NOT use 'git push --force --all'."
+Write-Host " Instead, push only the validated target branch with lease protection:" -ForegroundColor Cyan
+Write-Host "   git push origin $TargetBranch --force-with-lease"
+Write-Host ""

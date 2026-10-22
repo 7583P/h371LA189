@@ -1,0 +1,35 @@
+name: Feature Request
+description: Propose a new feature, mechanic, vehicle, or optimization for Hill Adventurer
+title: "[FEATURE]: "
+labels: ["enhancement", "proposal"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        We welcome community ideas for physics improvements, new vehicle definitions, terrain modules, and performance optimizations.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or Motivation
+      description: Is your feature request related to a problem or limitation? (e.g., "I'm always frustrated when...")
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution / Feature
+      description: Describe the solution or feature you'd like to see implemented.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternative Approaches Considered
+      description: Describe any alternative solutions or features you've considered.
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context or Mockups
+      description: Add any other context, diagrams, or references here.

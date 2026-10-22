@@ -1,9 +1,9 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.matias.hilladventurer.privacy">
     <!-- Play Console declares Advertising ID use for ads/marketing. Keep this outside application. -->
     <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
     <application>
-        <!-- Generated from Resources/AdMobConfiguration by AdMobSettingsSynchronizer. -->
-        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-1413480107943515~1999622115" />
+        <!-- Generated from Resources/AdMobConfiguration by AdMobSettingsSynchronizer. Uses official test ID. -->
+        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713" />
     </application>
 </manifest>

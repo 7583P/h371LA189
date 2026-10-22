@@ -90,3 +90,50 @@ __pycache__/
 
 # Machine-specific validation launcher
 /Launch-Game.ps1
+
+# ==========================================
+# Security & Secret Management (Open Source)
+# ==========================================
+# Android Signing Keystores and Certificates
+*.keystore
+*.jks
+*.p12
+*.pfx
+*.pem
+*.cer
+*.crt
+*.key
+*.der
+
+# Environment Variables & Local Secret Stores
+.env
+.env.*
+!.env.example
+*.secret
+secrets.json
+local.properties
+
+# Google Services & Cloud Credentials (Client secrets)
+google-services.json
+GoogleService-Info.plist
+*service-account*.json
+*firebase-adminsdk*.json
+
+# Private Local Ad Configuration Overrides
+AdMobConfiguration.private.asset
+AdMobConfiguration.private.asset.meta
+
+# Git Patch / Merge Artifacts
+*.orig
+*.rej
+*.backup
+
+# OS Generated Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Dd]esktop.ini

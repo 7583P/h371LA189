@@ -1,0 +1,65 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ "main", "oss-readiness", "racing-climb-dev" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  validate-tools:
+    name: Build & Verify QA Tools
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore Dependencies
+        run: dotnet restore Tools/CompetitiveQA/CompetitiveQA.csproj
+
+      - name: Build CompetitiveQA CLI
+        run: dotnet build Tools/CompetitiveQA/CompetitiveQA.csproj --configuration Release --no-restore
+
+  repository-hygiene:
+    name: Verify Repository & Secret Hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Check for Disallowed Sensitive File Extensions
+        run: |
+          echo "Checking for committed sensitive files..."
+          DISALLOWED=$(find . -type f \( -name "*.keystore" -o -name "*.jks" -o -name "*.p12" -o -name "*.pfx" -o -name "*.env" -o -name "*.env.*" \) ! -name ".env.example" ! -path "./.git/*")
+          if [ -n "$DISALLOWED" ]; then
+            echo "ERROR: Disallowed sensitive files found in repository tree:"
+            echo "$DISALLOWED"
+            exit 1
+          fi
+          echo "No sensitive keystores or environment files detected in tree."
+
+      - name: Verify JSON Files Syntax
+        run: |
+          echo "Validating tracked JSON files in repository..."
+          python3 -c "
+          import json, subprocess, sys
+          files = subprocess.check_output(['git', 'ls-files', '*.json']).decode('utf-8').splitlines()
+          errors = 0
+          for path in files:
+              if not path.strip():
+                  continue
+              try:
+                  with open(path.strip(), 'r', encoding='utf-8-sig') as f:
+                      json.load(f)
+              except Exception as e:
+                  print(f'Invalid JSON in {path}: {e}')
+                  errors += 1
+          if errors > 0:
+              sys.exit(1)
+          print(f'Verified {len(files)} tracked JSON files successfully.')
+          "

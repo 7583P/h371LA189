@@ -1,0 +1,9 @@
+[allowlist]
+description = "Whitelist Unity PlayerPrefs save keys and test artifacts"
+regexes = [
+    '''AHR\.Racing\..*''',
+]
+paths = [
+    '''tmp/.*''',
+    '''Assets/AnimeHillRacing/Scripts/Racing3D/Save/RacingSaveData\.cs''',
+]

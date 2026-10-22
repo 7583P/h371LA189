@@ -25,6 +25,9 @@ jobs:
       - name: Build CompetitiveQA CLI
         run: dotnet build Tools/CompetitiveQA/CompetitiveQA.csproj --configuration Release --no-restore
 
+      - name: Run CompetitiveQA Invariants & MMR Simulation
+        run: dotnet run --project Tools/CompetitiveQA/CompetitiveQA.csproj --configuration Release --no-build
+
   repository-hygiene:
     name: Verify Repository & Secret Hygiene
     runs-on: ubuntu-latest

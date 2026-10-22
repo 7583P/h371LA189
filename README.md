@@ -143,6 +143,7 @@ Contributions, issues, and discussions are welcome! Please review our **[Contrib
 
 ## License
 
-The code license proposal is currently pending maintainer approval (see **[Docs/ASSET_LICENSING.md](Docs/ASSET_LICENSING.md)**). The recommended structure is:
-- **Code**: MIT License.
-- **Media & Assets**: Proprietary (All Rights Reserved) or CC-BY-NC 4.0 for Matías Games Dev artwork.
+This project utilizes a dual-licensing model to protect commercial artwork and trademarks while enabling open-source collaboration on the codebase:
+- **Source Code**: Licensed under the [MIT License](LICENSE) (see terms).
+- **Artistic Assets & Trademarks**: All artwork under `Assets/Art/`, scene arrangements, the title "Hill Adventurer", and "Matías Games Dev" branding are **Proprietary (All Rights Reserved)**.
+- **Third-Party Packages**: Retain their original licenses (Apache 2.0, Unity Companion, etc.) as detailed in **[Docs/ASSET_INVENTORY.md](Docs/ASSET_INVENTORY.md)**.

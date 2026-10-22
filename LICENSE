@@ -1,0 +1,47 @@
+MIT License with Media and Trademark Reservation
+
+Copyright (c) 2026 Matías Games Dev
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+==============================================================================
+ASSET AND TRADEMARK RESERVATION NOTICE
+==============================================================================
+
+The MIT License granted above applies SOLELY to the source code, build scripts,
+automated test harnesses, shaders, and documentation created by Matías Games Dev.
+
+1. PROPRIETARY ARTWORK AND MEDIA:
+   All visual assets, 2D sprites, textures, character illustrations, user
+   interface graphics, and level designs located under `Assets/Art/` and
+   `Assets/AnimeHillRacing/Scenes/` are proprietary creative works of Matías
+   Games Dev. All rights are reserved. No license is granted to redistribute,
+   commercialize, or publish these creative assets without prior written
+   consent from Matías Games Dev.
+
+2. TRADEMARKS AND BRANDING:
+   The game title "Hill Adventurer", studio name "Matías Games Dev", logos,
+   and associated trade dress are protected trademarks. This license does NOT
+   grant any right or permission to use these trademarks in derived products
+   or publications on digital distribution platforms (e.g., Google Play, Steam).
+
+3. THIRD-PARTY COMPONENTS:
+   Third-party plugins and libraries (including Google Play Games plugin and
+   Unity Technologies packages) are subject to their respective original
+   licenses as documented in `Docs/ASSET_INVENTORY.md`.

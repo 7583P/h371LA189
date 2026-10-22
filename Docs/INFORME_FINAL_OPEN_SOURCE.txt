@@ -3,7 +3,7 @@ INFORME TÉCNICO Y PLAN DE PUBLICACIÓN SEGURA — OPEN SOURCE
 PROYECTO: HILL ADVENTURER
 ================================================================================
 Desarrollador: Matías Games Dev
-Repositorio: https://github.com/7583P/h37iLA189
+Repositorio: https://github.com/7583P/h371LA189
 Identificador de Paquete: com.matias.hilladventurer (Google Play Store)
 Motor / Tecnología: Unity 6 (6000.3.13f1) URP | C# | .NET 10.0 CLI
 Rama de Preparación: oss-readiness

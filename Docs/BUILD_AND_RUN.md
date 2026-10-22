@@ -25,8 +25,8 @@ This guide provides step-by-step instructions for setting up, compiling, and run
 git lfs install
 
 # Clone the repository
-git clone https://github.com/7583P/h37iLA189.git
-cd h37iLA189
+git clone https://github.com/7583P/h371LA189.git
+cd h371LA189
 
 # Verify all LFS assets are pulled
 git lfs pull

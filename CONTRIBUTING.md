@@ -17,8 +17,8 @@ All contributors and maintainers are expected to follow our [Code of Conduct](CO
 2. **Git & Git LFS**: Ensure `git-lfs` is installed prior to cloning to ensure large binary assets (such as `MainMenu.unity`) are properly fetched:
    ```bash
    git lfs install
-   git clone https://github.com/7583P/h37iLA189.git
-   cd h37iLA189
+   git clone https://github.com/7583P/h371LA189.git
+   cd h371LA189
    git lfs pull
    ```
 3. **.NET SDK**: Version `10.0` (or `8.0`/`9.0`) to build CLI QA harnesses located under `Tools/CompetitiveQA/`.

@@ -1,6 +1,6 @@
 # Hill Adventurer
 
-[![CI](https://github.com/7583P/h37iLA189/actions/workflows/ci.yml/badge.svg)](https://github.com/7583P/h37iLA189/actions/workflows/ci.yml)
+[![CI](https://github.com/7583P/h371LA189/actions/workflows/ci.yml/badge.svg)](https://github.com/7583P/h371LA189/actions/workflows/ci.yml)
 [![Security Policy](https://img.shields.io/badge/security-policy-blue.svg)](SECURITY.md)
 [![Unity Version](https://img.shields.io/badge/Unity-6000.3.13f1%20URP-black.svg?logo=unity)](https://unity.com/)
 [![Target Platforms](https://img.shields.io/badge/Platforms-Android%20%7C%20Windows-green.svg)]()
@@ -72,8 +72,8 @@
 ```bash
 # Clone with Git LFS
 git lfs install
-git clone https://github.com/7583P/h37iLA189.git
-cd h37iLA189
+git clone https://github.com/7583P/h371LA189.git
+cd h371LA189
 git lfs pull
 ```
 

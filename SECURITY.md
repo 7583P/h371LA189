@@ -20,7 +20,7 @@ Only the current active branch and latest tagged release receive security fixes.
 If you discover a security vulnerability, sensitive data leakage, or credential exposure:
 
 1. **Do NOT open a public GitHub issue.** Public issues disclose potential vulnerabilities before a mitigation is available.
-2. Please report the vulnerability privately via **[GitHub Security Advisories](https://github.com/7583P/h37iLA189/security/advisories/new)** or by emailing the project maintainer at `matiasxdfuaqpro910@gmail.com`.
+2. Please report the vulnerability privately via **[GitHub Security Advisories](https://github.com/7583P/h371LA189/security/advisories/new)** or by emailing the project maintainer at `matiasxdfuaqpro910@gmail.com`.
 3. In your report, please include:
    - Type of issue (e.g., hardcoded credential, secret leakage, serialization flaw).
    - Affected file path, commit hash, or component.
